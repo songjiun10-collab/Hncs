@@ -120,6 +120,22 @@ target_L 중앙값으로 256단계 LUT을 직접 학습 (learn_tone_curve.py).
 소프트 숄더로 수렴 - "toe+리니어미드+shoulder" 가정과 결이 다르고
 오히려 로그형 톤커브에 가까움. 표본이 X1D 계열 위주 10장뿐이라는 한계는
 동일하게 있음.
+
+실험 기록 (음성 결과, 2026-07): v12 LUT이 raw+jpeg 10장뿐이라 과적합
+우려가 있어, bin별 표본수에 반비례해 v11 파라메트릭 커브 쪽으로 수축
+시키는 정규화(reg_lut[v] = (count[v]*empirical[v] + lambda*parametric[v])
+/ (count[v]+lambda))를 추가해보고, 10장 leave-one-out 교차검증으로
+lambda별 일반화 성능을 측정 (regularized_lut_loocv.py). 결과: lambda=0
+(정규화 없음)이 LOO RMSE 14.6으로 제일 좋고, lambda를 키울수록(파라메트릭
+쪽으로 더 당길수록) 오히려 계속 나빠짐(lambda=20000일 때 20.7, 순수
+파라메트릭 28.0). 원인: bin당 표본이 적어 보여도 실제로는 매 fold마다
+9장 * 약 108만 픽셀 = 약 970만 픽셀이 들어가서 경험적 평균 자체의
+분산은 이미 충분히 작고, 반대로 파라메트릭 커브는 표본 부족이 아니라
+모양 자체(toe+shoulder 가정)가 실측 톤커브(로그형)와 달라서 그쪽으로
+당길수록 체계적 편향만 커짐. "표본이 적으니 정규화해야 한다"는 직관이
+이 경우엔 안 맞았음 - apply_hncs_learned()는 그대로(정규화 없는 순수
+경험적 LUT) 유지. hue/a,b는 정규화 여부와 무관하게 L채널 LUT 구조상
+항상 보존됨.
 """
 import cv2
 import numpy as np

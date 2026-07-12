@@ -6,3 +6,4 @@ __pycache__/
 *.pyc
 raw_calib_cache/
 learned_tone_lut.npy
+regularized_tone_lut.npy

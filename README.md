@@ -17,6 +17,7 @@ Natural Colour Solution)의 톤/색 특성을 코드로 근사하는 프로젝�
 | `calibrate_from_raw.py` | raw_url이 있는 행을 rawpy로 중립 렌더링해서 진짜 전/후(raw→공식JPEG) 페어 기반 그리드서치 |
 | `learn_tone_curve.py` | 같은 raw+jpeg 페어에서 neutral_L→target_L 매핑을 픽셀 단위로 직접 학습해 256단계 LUT 생성 (파라메트릭 커브 가정 없음) |
 | `hasselblad_hncs_learned.py` | `learn_tone_curve.py`로 학습한 LUT을 내장한 데이터 기반 대안 - `apply_hncs_learned()` |
+| `regularized_lut_loocv.py` | 학습 LUT을 파라메트릭 커브 쪽으로 정규화해보고 10장 leave-one-out 교차검증으로 실제 도움이 되는지 검증 (결론: 정규화 안 하는 게 나음) |
 | `face_detection_yunet.onnx` | `portrait_skin_analysis.py`가 쓰는 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) |
 
 ## 설치
@@ -78,3 +79,8 @@ python3 learn_tone_curve.py          # raw+jpeg 픽셀 대응으로 톤커브 �
   더 나음. 다만 raw+jpeg 페어가 10장뿐이라 표본 수 제약은 동일하게 있고,
   8비트 변환 왕복 과정에서 나오는 hue 오차가 `apply_hncs`보다 약간 큼
   (평균 |delta|~3.0/179, 여전히 육안상 무시할 수준)
+- 학습 LUT을 표본 부족 우려로 파라메트릭 커브 쪽에 정규화해봤지만, 10장
+  leave-one-out 교차검증 결과 정규화 없는 순수 경험적 LUT이 가장 좋음
+  (LOO RMSE 14.6, 정규화를 강하게 걸수록 20.7→28.0으로 악화) — bin당
+  픽셀 표본이 충분히 많아 분산 문제보다 파라메트릭 커브 자체의 모양
+  편향이 더 크기 때문. `apply_hncs_learned`는 정규화 없이 그대로 유지
