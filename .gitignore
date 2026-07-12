@@ -11,3 +11,5 @@ raw_calib_cache_fuji/
 fuji_pairs_manifest.csv
 downloaded_samples_leica/
 leica_stats_result.csv
+downloaded_samples_phaseone/
+phaseone_stats_result.csv
