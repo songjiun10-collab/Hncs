@@ -23,7 +23,9 @@ HNCS 순정 근사 - X 시스템 통합 (X1D + X1D II + X2D + X2D II 혼합 풀)
   샘플만으로 별도 분리.
 
 라이브러리 구조:
-  hasselblad_hncs   - X 시스템 통합 순정 근사 (이 파일)
+  hasselblad_hncs          - X 시스템 통합 순정 근사 (이 파일, 파라메트릭 커브)
+  hasselblad_hncs_learned  - 같은 목표를 raw+jpeg 페어에서 직접 학습한
+                             LUT으로 근사 (v12, RMSE 더 낮음 - 아래 참고)
   hasselblad_day    - 낮 그레이딩 (day/night 통합 검토 중)
   hasselblad_night  - 밤 그레이딩 (〃)
 
@@ -103,6 +105,21 @@ RMSE는 오히려 악화(23.3->28.2, 최적 exposure_gamma도 0.7->0.32로 크�
 sRGB 감마 베이스라인이 일반적 카메라 프로파일 출력과 우연히 더 비슷한
 형태였던 것으로 보임. 그래서 gamma=(2.222,4.5) 베이스라인 유지, linear
 실험은 되돌림 (재시도 방지용 기록).
+
+실측 검증 (v12, 2026-07): toe+리니어미드+shoulder라는 파라메트릭 모양을
+아예 가정하지 않고, raw+jpeg 페어(10장, gamma=(2.222,4.5) 베이스라인)의
+neutral_L/target_L을 픽셀 단위로 대응시켜(총 1,078만 쌍) neutral_L값별
+target_L 중앙값으로 256단계 LUT을 직접 학습 (learn_tone_curve.py).
+결과 RMSE=15.4로 v11 파라메트릭(23.3)보다 낮음 - hasselblad_hncs_learned.py
+의 apply_hncs_learned()로 분리해서 제공 (이 파일의 apply_hncs 기본값은
+안 건드림: 원본이 raw+jpeg 페어 10장뿐이라 완전히 대체하기엔 표본이
+작다고 판단, 파라메트릭/데이터기반 두 버전을 나란히 유지).
+
+학습된 커브 특징: 그림자 리프트가 원안(toe_lift 0.001)보다 훨씬 급격함
+(neutral_L 16->target_L 49), 중간톤은 로그형으로 완만해지다 하이라이트는
+소프트 숄더로 수렴 - "toe+리니어미드+shoulder" 가정과 결이 다르고
+오히려 로그형 톤커브에 가까움. 표본이 X1D 계열 위주 10장뿐이라는 한계는
+동일하게 있음.
 """
 import cv2
 import numpy as np

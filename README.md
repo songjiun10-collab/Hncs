@@ -15,6 +15,8 @@ Natural Colour Solution)의 톤/색 특성을 코드로 근사하는 프로젝�
 | `analyze_all_samples.py` | CSV의 jpeg_url 전체를 받아 블랙포인트/화이트포인트/채도 통계 추출 |
 | `portrait_skin_analysis.py` | 얼굴 검출(YuNet)로 인물 서브셋 추출 + `apply_hncs` 적용 전/후 피부톤 hue 불변성 검증 |
 | `calibrate_from_raw.py` | raw_url이 있는 행을 rawpy로 중립 렌더링해서 진짜 전/후(raw→공식JPEG) 페어 기반 그리드서치 |
+| `learn_tone_curve.py` | 같은 raw+jpeg 페어에서 neutral_L→target_L 매핑을 픽셀 단위로 직접 학습해 256단계 LUT 생성 (파라메트릭 커브 가정 없음) |
+| `hasselblad_hncs_learned.py` | `learn_tone_curve.py`로 학습한 LUT을 내장한 데이터 기반 대안 - `apply_hncs_learned()` |
 | `face_detection_yunet.onnx` | `portrait_skin_analysis.py`가 쓰는 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) |
 
 ## 설치
@@ -47,9 +49,10 @@ cv2.imwrite("photo_hncs.jpg", result)
 python3 analyze_all_samples.py       # 전체 샘플 통계
 python3 portrait_skin_analysis.py    # 인물 서브셋 + 피부톤 hue 검증
 python3 calibrate_from_raw.py        # raw 기반 진짜 전/후 그리드서치 (rawpy 필요, 대용량 다운로드)
+python3 learn_tone_curve.py          # raw+jpeg 픽셀 대응으로 톤커브 직접 학습 (rawpy 필요)
 ```
 
-## 현재까지의 실측 결론 (v11 기준, `hasselblad_hncs.py` docstring 참고)
+## 현재까지의 실측 결론 (v12 기준, `hasselblad_hncs.py` docstring 참고)
 
 - 공식 샘플 124장 통합 풀 기준 블랙p2=11.3, 화이트p99.5=223.9, 인물
   서브셋(43장)은 10.2/226.3 — v8(19~20장) 대비 큰 변동 없음
@@ -60,7 +63,18 @@ python3 calibrate_from_raw.py        # raw 기반 진짜 전/후 그리드서치
   격차를 못 메꾸는 문제를 확인 (v10) → `exposure_gamma` 파라미터 추가,
   극단적 하이키 샘플(오큘러스 실내, 그림자 없음)을 블랙포인트 피팅에서
   제외하고 재탐색 (v11)
-- 최종 채택: `white_point=1.0`, `exposure_gamma=0.7` 반영, `toe_lift`/
-  `shoulder_start`는 원안(0.001/0.78) 유지 — RMSE 36.3→23.3 개선.
-  숄더 시작점을 0.5까지 낮추면 RMSE가 16.5까지 더 떨어지지만 그림자유효
-  표본이 8장뿐이라 커브 모양 자체를 바꾸는 건 과적합으로 보고 보류
+- 최종 채택(`apply_hncs`, v11): `white_point=1.0`, `exposure_gamma=0.7`
+  반영, `toe_lift`/`shoulder_start`는 원안(0.001/0.78) 유지 —
+  RMSE 36.3→23.3 개선. 숄더 시작점을 0.5까지 낮추면 RMSE가 16.5까지
+  더 떨어지지만 그림자유효 표본이 8장뿐이라 커브 모양 자체를 바꾸는 건
+  과적합으로 보고 보류
+- raw 렌더링 베이스라인을 파이프라인상 더 정확해 보이는 linear
+  감마(1,1)로 바꿔봤지만 RMSE가 오히려 악화(23.3→28.2) — rawpy 자체
+  디모자이크/컬러매트릭스가 핫셀블라드 실제 파이프라인과 다른 알고리즘
+  이라 "센서에 더 가깝게" 만드는 게 도움이 안 됨 (음성 결과, 되돌림)
+- `apply_hncs_learned` (v12, `hasselblad_hncs_learned.py`): toe/shoulder
+  모양을 가정하지 않고 raw+jpeg 페어에서 neutral_L→target_L 매핑을
+  픽셀 단위(1,078만 쌍)로 직접 학습 — RMSE 15.4로 파라메트릭(23.3)보다
+  더 나음. 다만 raw+jpeg 페어가 10장뿐이라 표본 수 제약은 동일하게 있고,
+  8비트 변환 왕복 과정에서 나오는 hue 오차가 `apply_hncs`보다 약간 큼
+  (평균 |delta|~3.0/179, 여전히 육안상 무시할 수준)
