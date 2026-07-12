@@ -1,0 +1,4 @@
+downloaded_samples/
+csv_stats_result.csv
+__pycache__/
+*.pyc

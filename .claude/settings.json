@@ -1,0 +1,15 @@
+{
+  "sandbox": {
+    "mode": "auto-allow",
+    "allowedDomains": [
+      "cdn.hasselblad.com",
+      "hasselblad.com",
+      "www.hasselblad.com",
+      "live.staticflickr.com",
+      "staticflickr.com",
+      "pypi.org",
+      "files.pythonhosted.org",
+      "registry.npmjs.org"
+    ]
+  }
+}
