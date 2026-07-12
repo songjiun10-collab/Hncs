@@ -33,7 +33,9 @@ GALLERIES = [
     ("Leica M9", "https://www.imaging-resource.com/PRODS/M9/M9GALLERY.HTM"),
     ("Leica X Vario", "https://www.imaging-resource.com/PRODS/leica-x-vario/leica-x-varioGALLERY.HTM"),
     ("Leica SL2", "https://www.imaging-resource.com/PRODS/leica-sl2/leica-sl2GALLERY.HTM"),
-    ("Leica T (Typ 701)", "https://www.imaging-resource.com/cameras/leica-t-typ-701-review/gallery/"),
+    # "Leica T (Typ 701)" URL은 추측이었는데 확인해보니 존재하지 않는 슬러그라
+    # 사이트가 엉뚱한(후지 GFX100) 갤러리로 리다이렉트시켰음 - 검증된 URL을
+    # 못 찾아서 제외. 실제 URL 찾으면 다시 추가.
 ]
 
 MAX_PER_CAMERA = 15  # 카메라당 최대 다운로드 수 (대역폭/시간 절약)
@@ -87,7 +89,10 @@ def download(url, path):
 
 
 def exif_check(path):
-    out = subprocess.run(["exiftool", "-Make", "-Software"], input=open(path, "rb").read(),
+    # 수정: exiftool은 파일명 인자가 있어야 그 파일을 읽는다 - stdin으로
+    # 파이핑하면(인자 없이) 아무 것도 못 읽어서 항상 "라이카 아님"으로
+    # 오탐지됐었음 (SL2/M9/X Vario 전부 스킵되는 버그의 원인)
+    out = subprocess.run(["exiftool", "-Make", "-Software", path],
                           capture_output=True, timeout=30)
     text = out.stdout.decode("utf-8", errors="ignore")
     make_ok = "leica" in text.lower()
