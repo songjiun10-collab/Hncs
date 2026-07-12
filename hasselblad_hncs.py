@@ -92,9 +92,17 @@ def _film_curve(x, toe_lift=0.001, shoulder_start=0.78, white_point=0.90):
 
 
 def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
-               white_point=0.90, clahe_clip=1.25):
+               white_point=0.90, clahe_clip=1.25, exposure_gamma=1.0):
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
+
+    # 0. 전역 노출 리프트 (v10: 중립 렌더링과 그레이딩 결과 사이 밝기
+    #    격차가 toe/shoulder만으론 안 메꿔져서 추가. exposure_gamma=1.0이면
+    #    기존 동작과 동일 - no-op)
+    if exposure_gamma != 1.0:
+        x = np.arange(256, dtype=np.float32) / 255.0
+        exp_lut = np.clip((x ** exposure_gamma) * 255, 0, 255).astype(np.uint8)
+        l = cv2.LUT(l, exp_lut)
 
     # 1. 지각 보상 대비 (커브보다 먼저 - 순서 중요)
     clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))

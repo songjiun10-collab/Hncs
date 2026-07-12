@@ -18,7 +18,7 @@ import cv2
 import numpy as np
 import rawpy
 
-from hasselblad_hncs import apply_hncs, _film_curve
+from hasselblad_hncs import apply_hncs
 
 CSV_PATH = "hasselblad_sample_images.csv"
 CACHE_DIR = "raw_calib_cache"
@@ -71,7 +71,8 @@ def load_jpeg(url, path, max_dim=2000):
 
 def stats(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    return dict(b2=np.percentile(gray, 2), w995=np.percentile(gray, 99.5))
+    dark_pct = (gray < 40).sum() / gray.size * 100
+    return dict(b2=np.percentile(gray, 2), w995=np.percentile(gray, 99.5), dark_pct=dark_pct)
 
 
 def collect_pairs():
@@ -114,45 +115,59 @@ def main():
             continue
 
         target_stats = stats(target_img)
-        dataset.append(dict(name=r['filename'], neutral=neutral, target=target_stats))
-        print(f"  OK - 타깃 b2={target_stats['b2']:.1f} w995={target_stats['w995']:.1f}")
+        shadow_valid = target_stats['dark_pct'] > 5
+        dataset.append(dict(name=r['filename'], neutral=neutral, target=target_stats,
+                             shadow_valid=shadow_valid))
+        flag = "" if shadow_valid else "  (그림자무효 - 블랙포인트 피팅 제외)"
+        print(f"  OK - 타깃 b2={target_stats['b2']:.1f} w995={target_stats['w995']:.1f}{flag}")
 
-    print(f"\n사용 가능한 페어: {len(dataset)}개")
+    print(f"\n사용 가능한 페어: {len(dataset)}개 "
+          f"(그림자유효 {sum(d['shadow_valid'] for d in dataset)}개)")
     if not dataset:
         return
 
-    # --- 그리드서치 ---
-    best = None
-    for toe_lift in (0.0, 0.001, 0.005, 0.01, 0.02):
-        for shoulder_start in (0.70, 0.74, 0.78, 0.82):
-            for white_point in (0.85, 0.88, 0.90, 0.92, 0.95, 1.0):
-                err = 0.0
-                for d in dataset:
-                    graded = apply_hncs(d['neutral'], toe_lift=toe_lift,
-                                         shoulder_start=shoulder_start, white_point=white_point)
-                    s = stats(graded)
-                    err += (s['b2'] - d['target']['b2']) ** 2 + (s['w995'] - d['target']['w995']) ** 2
-                err /= len(dataset)
-                if best is None or err < best[0]:
-                    best = (err, toe_lift, shoulder_start, white_point)
+    def pair_error(d, s):
+        err = (s['w995'] - d['target']['w995']) ** 2
+        if d['shadow_valid']:
+            err += (s['b2'] - d['target']['b2']) ** 2
+        return err
 
-    err, toe_lift, shoulder_start, white_point = best
+    # --- 그리드서치 (전역 노출 리프트 포함) ---
+    best = None
+    for exposure_gamma in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5):
+        for toe_lift in (0.0, 0.001, 0.005, 0.01, 0.02):
+            for shoulder_start in (0.70, 0.74, 0.78, 0.82):
+                for white_point in (0.85, 0.88, 0.90, 0.92, 0.95, 1.0):
+                    err = 0.0
+                    for d in dataset:
+                        graded = apply_hncs(d['neutral'], toe_lift=toe_lift,
+                                             shoulder_start=shoulder_start, white_point=white_point,
+                                             exposure_gamma=exposure_gamma)
+                        s = stats(graded)
+                        err += pair_error(d, s)
+                    err /= len(dataset)
+                    if best is None or err < best[0]:
+                        best = (err, exposure_gamma, toe_lift, shoulder_start, white_point)
+
+    err, exposure_gamma, toe_lift, shoulder_start, white_point = best
     print(f"\n=== 최적 파라미터 (RMSE={err**0.5:.2f}) ===")
-    print(f"toe_lift={toe_lift}, shoulder_start={shoulder_start}, white_point={white_point}")
+    print(f"exposure_gamma={exposure_gamma}, toe_lift={toe_lift}, "
+          f"shoulder_start={shoulder_start}, white_point={white_point}")
 
     print("\n=== 현재 기본값과 비교 (페어별) ===")
     cur_err = 0.0
     best_err = 0.0
     for d in dataset:
         cur = stats(apply_hncs(d['neutral']))
-        new = stats(apply_hncs(d['neutral'], toe_lift=toe_lift,
-                                shoulder_start=shoulder_start, white_point=white_point))
+        new = stats(apply_hncs(d['neutral'], toe_lift=toe_lift, shoulder_start=shoulder_start,
+                                white_point=white_point, exposure_gamma=exposure_gamma))
         t = d['target']
+        flag = "" if d['shadow_valid'] else "  (그림자무효)"
         print(f"  {d['name']:25s} target b2={t['b2']:5.1f} w995={t['w995']:5.1f}  "
               f"| 기존 b2={cur['b2']:5.1f} w995={cur['w995']:5.1f}  "
-              f"| 신규 b2={new['b2']:5.1f} w995={new['w995']:5.1f}")
-        cur_err += (cur['b2'] - t['b2']) ** 2 + (cur['w995'] - t['w995']) ** 2
-        best_err += (new['b2'] - t['b2']) ** 2 + (new['w995'] - t['w995']) ** 2
+              f"| 신규 b2={new['b2']:5.1f} w995={new['w995']:5.1f}{flag}")
+        cur_err += pair_error(d, cur)
+        best_err += pair_error(d, new)
     print(f"\n기존 파라미터 RMSE={ (cur_err/len(dataset))**0.5:.2f}")
     print(f"신규 파라미터 RMSE={ (best_err/len(dataset))**0.5:.2f}")
 
