@@ -90,6 +90,19 @@ exposure_gamma=0.7, white_point=1.0만 반영(toe_lift/shoulder_start는
 자체는 유지되고 단지 화이트를 끝까지 밝게 두는 것이라 "숄더 형태
 없앰"과는 다름 - 실측상 계속 일관되게 지지됨), exposure_gamma
 1.0(no-op)->0.7 (신규 파라미터 기본 활성화).
+
+실험 기록 (음성 결과, 2026-07): calibrate_from_raw.py의 rawpy 베이스라인을
+gamma=(2.222,4.5)(sRGB형) 대신 gamma=(1,1)(linear)로 바꿔서 "디모자이크+
+컬러매트릭스 직후, 톤커브 적용 전" 상태에 더 가깝게 만들어봄 (실제
+파이프라인: RAW -> demosaic -> color matrix -> camera profile -> tone
+curve -> JPEG엔진 순서를 고려하면 이론상 더 정확해야 함). 그런데 실측
+RMSE는 오히려 악화(23.3->28.2, 최적 exposure_gamma도 0.7->0.32로 크게
+이동). 원인으로 추정: rawpy의 디모자이크/컬러매트릭스가 핫셀블라드
+자체 파이프라인과 다른 알고리즘이라, "센서에 더 가깝게" 만든다고 해서
+핫셀블라드의 실제 camera profile 출력과 더 비슷해지는 게 아님 - 오히려
+sRGB 감마 베이스라인이 일반적 카메라 프로파일 출력과 우연히 더 비슷한
+형태였던 것으로 보임. 그래서 gamma=(2.222,4.5) 베이스라인 유지, linear
+실험은 되돌림 (재시도 방지용 기록).
 """
 import cv2
 import numpy as np
