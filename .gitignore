@@ -9,3 +9,5 @@ learned_tone_lut.npy
 regularized_tone_lut.npy
 raw_calib_cache_fuji/
 fuji_pairs_manifest.csv
+downloaded_samples_leica/
+leica_stats_result.csv
