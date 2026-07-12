@@ -29,11 +29,13 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `core/engine.py` | population-fit 브랜드(leica/phaseone/pentax/ricoh_gr) 공용 엔진 - 네 브랜드 모두 raw 기준선 없이 population 타깃을 `film_curve`에 직접 대입하는 동일 구조라 하나로 합침 |
 | `core/stats.py` | population 통계 계산 (`image_stats`: 블랙p2/화이트p99.5/채도/그림자비율) |
 | `core/validation.py` | "진짜 미가공 SOOC인가" EXIF 검증, hue 측정 헬퍼 |
+| `core/denoise.py` | 노이즈 제거 (`denoise()`: nlm/bilateral) - 고ISO 샘플을 브랜드 룩 적용 전에 정리할 때 씀 |
 | `datasets/hasselblad/hasselblad_sample_images.csv` | 핫셀블라드 공식 샘플 메타데이터 (카메라/렌즈/작가/jpeg_url/raw_url) |
 | `datasets/fuji/fuji_sample_pages.csv` | mirrorlesscomparison.com 후지 갤러리의 RAW/JPEG Google Drive 링크 |
 | `tools/analyze.py` | population 통계/검증 CLI - `hasselblad`/`leica`/`phaseone`/`pentax`/`ricoh_gr`/`fuji_film_modes`/`portrait` 모드 |
 | `tools/download.py` | imaging-resource.com 갤러리 공용 스크레이퍼 + 후지 Google Drive RAW/JPEG 페어 다운로더 |
 | `tools/calibrate.py` | 핫셀블라드 raw+jpeg 페어 캘리브레이션 CLI - `grid_search`/`learn_curve`/`regularize` 모드 |
+| `tools/denoise.py` | 노이즈 제거 CLI - `python3 -m tools.denoise input.jpg output.jpg [--strength N] [--method nlm\|bilateral]` |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
 
 ## 설치
