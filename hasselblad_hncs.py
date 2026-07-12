@@ -74,6 +74,22 @@ toe_lift/shoulder_start/white_point 유지.
 다음 단계 후보(미착수): apply_hncs에 hasselblad_day/night처럼 전역
 노출/감마 보정 단계를 추가한 뒤 재피팅, 또는 x1d-II-sample-09(타깃
 b2=123, 극단치) 등 이상치를 걸러내고 재검증.
+
+실측 검증 (v11, 2026-07): v10 후속. x1d-II-sample-09(오큘러스 실내,
+사실상 전체가 흰색이라 그림자 없음)를 그림자무효로 블랙포인트 피팅에서
+제외하고, exposure_gamma 파라미터를 그리드서치에 포함해 재시도.
+
+exposure_gamma=0.7, white_point=1.0만 반영(toe_lift/shoulder_start는
+원안 0.001/0.78 유지) - RMSE 36.3->23.3 (그림자유효 8장+화이트포인트
+10장 기준). shoulder_start를 0.5까지 낮추면 RMSE가 16.5까지 더 떨어지긴
+하지만, 그림자유효 샘플이 8장뿐이라 거기서 커브 모양 자체(선형 미드톤
+구간)를 크게 바꾸는 건 과적합 위험이 커서 채택 안 함 - 표본이 더
+늘어나기 전까진 toe_lift/shoulder_start는 원안 유지가 안전하다고 판단.
+
+기본값 변경: white_point 0.90->1.0 (경계값이지만 스모스텝 숄더 형태
+자체는 유지되고 단지 화이트를 끝까지 밝게 두는 것이라 "숄더 형태
+없앰"과는 다름 - 실측상 계속 일관되게 지지됨), exposure_gamma
+1.0(no-op)->0.7 (신규 파라미터 기본 활성화).
 """
 import cv2
 import numpy as np
@@ -92,7 +108,7 @@ def _film_curve(x, toe_lift=0.001, shoulder_start=0.78, white_point=0.90):
 
 
 def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
-               white_point=0.90, clahe_clip=1.25, exposure_gamma=1.0):
+               white_point=1.0, clahe_clip=1.25, exposure_gamma=0.7):
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
