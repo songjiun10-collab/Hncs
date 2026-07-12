@@ -29,6 +29,7 @@ Natural Colour Solution)의 톤/색 특성을 코드로 근사하는 프로젝�
 | `analyze_pentax_samples.py` | imaging-resource.com Pentax 645Z/K-1 리뷰 갤러리에서 미편집 SOOC JPEG population 통계 추출 (`pentax_stats_result.csv`) |
 | `pentax_color.py` | 위 population 통계로 1차 피팅한 펜탁스 색감 근사 - `apply_pentax_look()` |
 | `analyze_ricoh_gr_samples.py` | imaging-resource.com Ricoh GR III/GR IIIx 리뷰 갤러리에서 population 통계 추출 (`ricoh_gr_stats_result.csv`) - 펜탁스와 같은 EXIF 패턴(리코이미징) |
+| `ricoh_gr_color.py` | 위 population 통계로 1차 피팅한 GR 색감 근사 - `apply_ricoh_gr_look()` |
 
 ## 설치
 
@@ -182,3 +183,19 @@ One 때와 마찬가지로 못 찾아서 population 통계만 사용.
   편향인지는 미확인, raw 페어 없이는 판단 불가
 - `apply_pentax_look()`도 동일한 population-fit 방식, 동일한 미검증
   한계(shoulder_start/clahe_clip/hue·채도 무조작)
+
+## Ricoh GR (`ricoh_gr_color.py`)
+
+imaging-resource.com 리뷰 갤러리(GR III + GR IIIx)에서 population 통계
+추출. 펜탁스와 같은 리코이미징 브랜드라 EXIF 패턴도 동일.
+
+- 1차 수집(n=40)에서 GR IIIx에 조리개 브라케팅 테스트샷(-f2.8/-f4.0/
+  -f8.0 등, 같은 장면 반복 촬영 6장)이 섞여 population을 왜곡 - Phase
+  One의 ISO 차트와 같은 종류 문제. 파일명 정규식(`-f\d`)으로 걸러내고
+  재계산(영향은 작았음: 채도 87.7→84.9, 표본 비중이 15%로 ISO 테스트
+  30%보다 적었기 때문). `analyze_ricoh_gr_samples.py`의 SKIP_PATTERN에
+  반영해서 다음 실행부터는 자동 제외
+- population 통계(n=34, f값 테스트 제외): 블랙p2=10.3, 화이트p99.5=243.9,
+  채도=84.9
+- `apply_ricoh_gr_look()`도 동일한 population-fit 방식, 동일한 미검증
+  한계

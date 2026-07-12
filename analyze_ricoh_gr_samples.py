@@ -34,7 +34,12 @@ DETAIL_LINK_RE = re.compile(
 FULL_IMG_RE = re.compile(r'<a href="([^"]+)" target="_blank"><img([^>]*)class="attachment-full size-full"')
 
 EDIT_KEYWORDS = ("edit", "-mod", "unsharpmask", "nosharp", "stack")
+# "-iso-"는 Phase One 때 겪은 ISO 노이즈 테스트 차트(같은 장면 반복)용,
+# f값 정규식은 GR IIIx에서 발견한 조리개 브라케팅 테스트(-f2.8/-f4.0 등,
+# 역시 같은 장면 반복) 제외용 - 둘 다 population 통계용으로는 대표성 없는
+# 기술 테스트샷이라 뺀다
 SKIP_KEYWORDS = ("-iso-",)
+SKIP_PATTERN = re.compile(r"-f\d")
 
 
 def fetch(url):
@@ -60,7 +65,8 @@ def list_gallery_images(gallery_url):
             continue
         seen.add(detail_path)
         thumb_url = _img_url(img_attrs)
-        if any(k in thumb_url.lower() for k in EDIT_KEYWORDS + SKIP_KEYWORDS):
+        low = thumb_url.lower()
+        if any(k in low for k in EDIT_KEYWORDS + SKIP_KEYWORDS) or SKIP_PATTERN.search(low):
             continue
         results.append(detail_path)
     return results
