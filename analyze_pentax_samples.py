@@ -1,23 +1,15 @@
 """
-imaging-resource.com의 Phase One 카메라 리뷰 갤러리에서 population 통계를
-뽑는다.
+imaging-resource.com의 Pentax 카메라 리뷰 갤러리에서 population 통계를 뽑는다
+(645Z 중형포맷, K-1 풀프레임). 라이카/Phase One과 같은 스크래핑 구조
+재사용 - lazy-load(data-lazy-src) 대응, "-MOD" 후보정 파일명 제외.
 
-라이카/후지와 개념적으로 다른 지점: Phase One 디지털백은 스튜디오/테더링
-중심이라 컨슈머 카메라 같은 인카메라 JPEG 엔진이 사실상 의미가 없다.
-실제로 받아본 샘플의 EXIF Software는 전부 "Capture One"(Phase One 자체
-제작 RAW 컨버터)이었다 - 이건 라이카/후지 때 걸러냈던 "리뷰어가 Photoshop/
-Lightroom으로 편집한 제3자 편집본"과 달리 Phase One의 공식 렌더링 소프트웨어
-자체이므로 오히려 이게 맞는 타깃이다. 그래서 이 프로젝트의 목표는
-"Phase One 카메라 JPEG"가 아니라 "Capture One 기본 렌더링"이 된다.
+EXIF 확인: Make가 "RICOH IMAGING COMPANY, LTD."(펜탁스는 리코가 인수한
+브랜드), Software가 카메라 펌웨어 버전 문자열("PENTAX 645Z Ver. 1.00")인
+것으로 진짜 SOOC(미편집) 확인.
 
-이 사이트는 라이카 때 쓴 것과 같은 CMS 템플릿이지만 일부 갤러리는 이미지가
-지연로딩(data-lazy-src)돼 있어서 정규식을 그에 맞게 조정했고, 리뷰어의
-후보정 버전은 파일명 접미사가 "-EDIT"가 아니라 "-MOD"인 경우가 많아서
-필터 키워드를 넓혔다. 상세페이지의 진짜 원본(href) 링크가 종종 404라
-scaled 버전으로 폴백한다.
-
-Phase One XT 갤러리 URL은 추측했지만 존재하지 않는 슬러그라 사이트가
-엉뚱한 catch-all 페이지로 리다이렉트시켜서 제외 - 검증된 URL을 못 찾음.
+Phase One 때와 같은 이유로 imaging-resource.com에서 DNG 다운로드 링크는
+이제 못 찾음(구 사이트 템플릿의 기능이었는데 개편되며 사라진 듯) - raw 페어
+없이 population 통계만.
 """
 import csv
 import os
@@ -25,31 +17,27 @@ import re
 import subprocess
 import time
 import urllib.request
+from collections import defaultdict
 
 import cv2
 import numpy as np
 
-CACHE_DIR = "downloaded_samples_phaseone"
+CACHE_DIR = "downloaded_samples_pentax"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
 GALLERIES = [
-    ("Phase One XF 100MP", "https://www.imaging-resource.com/PRODS/phase-one-xf-100mp/phase-one-xf-100mpGALLERY.HTM"),
+    ("Pentax 645Z", "https://www.imaging-resource.com/cameras/pentax-645z-review/gallery/"),
+    ("Pentax K-1", "https://www.imaging-resource.com/cameras/pentax-k-1-review/gallery/"),
 ]
 
-MAX_PER_CAMERA = 30
+MAX_PER_CAMERA = 20
 
 DETAIL_LINK_RE = re.compile(
     r'href="(/cameras/[^"]+/image/\d+\?section=gallery)"[^>]*>\s*<img([^>]*)>'
 )
-# src가 class보다 앞에 오는 경우가 있어서(Leica 때 겪은 버그) class 뒤에
-# src를 기대하는 정규식은 안 됨 - img 태그 속성 전체를 캡처해서 src를 따로 뽑음
 FULL_IMG_RE = re.compile(r'<a href="([^"]+)" target="_blank"><img([^>]*)class="attachment-full size-full"')
 
 EDIT_KEYWORDS = ("edit", "-mod", "unsharpmask", "nosharp", "stack")
-# ISO 노이즈 테스트 차트(같은 장면, ISO만 다르게 반복 촬영)는 population
-# 통계를 왜곡시켜서 제외 - 첫 실행(20장)에서 8장 중 6장이 이거였고, 빼고 나니
-# 채도 평균이 76.9 -> 118.6으로 크게 달라졌음 (기술 테스트샷이라 자연스러운
-# 색 분포가 아니었던 것)
 SKIP_KEYWORDS = ("-iso-",)
 
 
@@ -109,11 +97,11 @@ def download(url, path):
 
 
 def exif_check(path):
-    out = subprocess.run(["exiftool", "-Software", path], capture_output=True, timeout=30)
+    out = subprocess.run(["exiftool", "-Make", "-Software", path], capture_output=True, timeout=30)
     text = out.stdout.decode("utf-8", errors="ignore").lower()
-    capture_one = "capture one" in text
-    third_party_edit = any(s in text for s in ["photoshop", "lightroom"])
-    return capture_one, third_party_edit
+    make_ok = "ricoh" in text or "pentax" in text
+    edited = any(s in text for s in ["photoshop", "lightroom", "capture one", "camera raw"])
+    return make_ok, edited
 
 
 def stats(img):
@@ -137,7 +125,7 @@ def main():
         except Exception as e:
             print(f"  갤러리 목록 실패: {e}")
             continue
-        print(f"  후보 {len(detail_paths)}장 (MOD/EDIT 제외)")
+        print(f"  후보 {len(detail_paths)}장 (MOD/EDIT/ISO 제외)")
 
         n_ok = 0
         for detail_path in detail_paths:
@@ -154,15 +142,14 @@ def main():
             fname = f"{camera.replace(' ', '_')}_{os.path.basename(original_url)}"
             path = os.path.join(CACHE_DIR, fname)
             if not download(original_url, path):
-                # 원본(href)이 404인 경우가 종종 있어서 scaled로 폴백
                 fname = f"{camera.replace(' ', '_')}_{os.path.basename(scaled_url)}"
                 path = os.path.join(CACHE_DIR, fname)
                 if not download(scaled_url, path):
                     continue
 
-            capture_one, third_party_edit = exif_check(path)
-            if not capture_one or third_party_edit:
-                print(f"  스킵 ({'Capture One 아님' if not capture_one else '제3자 편집됨'}): {fname}")
+            make_ok, edited = exif_check(path)
+            if not make_ok or edited:
+                print(f"  스킵 ({'펜탁스 아님' if not make_ok else '편집된 파일'}): {fname}")
                 os.remove(path)
                 continue
 
@@ -179,7 +166,7 @@ def main():
         print("\n결과 없음")
         return
 
-    with open("phaseone_stats_result.csv", "w", newline="", encoding="utf-8") as f:
+    with open("pentax_stats_result.csv", "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
         writer.writeheader()
         writer.writerows(results)
@@ -192,7 +179,18 @@ def main():
     print(f"화이트p99.5 타깃: {np.mean([r['w995'] for r in results]):.1f}")
     print(f"채도 평균: {np.mean([r['sat'] for r in results]):.1f}")
 
-    print("\n저장: phaseone_stats_result.csv")
+    print(f"\n=== 카메라별 ===")
+    groups = defaultdict(list)
+    for r in results:
+        groups[r["camera"]].append(r)
+    for cam, rows in groups.items():
+        sv = [r for r in rows if r["dark_pct"] > 5]
+        b2 = np.mean([r["b2"] for r in sv]) if sv else float("nan")
+        w995 = np.mean([r["w995"] for r in rows])
+        sat = np.mean([r["sat"] for r in rows])
+        print(f"{cam:15s} n={len(rows):2d}  b2={b2:5.1f}  w995={w995:5.1f}  sat={sat:5.1f}")
+
+    print("\n저장: pentax_stats_result.csv")
 
 
 if __name__ == "__main__":
