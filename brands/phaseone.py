@@ -5,7 +5,7 @@ Phase One 디지털백은 스튜디오/테더링 중심이라 컨슈머 카메�
 JPEG 엔진이 사실상 의미 없다. imaging-resource.com에서 받은 샘플들의 EXIF
 Software가 전부 "Capture One"(Phase One 자체 제작 RAW 컨버터)이었으므로,
 이 프로젝트가 재현하려는 건 "카메라 JPEG"가 아니라 "Capture One 기본
-렌더링"이다 (analyze_phaseone_samples.py 참고).
+렌더링"이다 (tools/analyze.py phaseone 모드).
 
 population 통계 (2026-07, imaging-resource.com Phase One XF 100MP 리뷰
 갤러리, 30장 - exiftool Software="Capture One" 확인, Photoshop/Lightroom
@@ -19,15 +19,12 @@ population 통계 (2026-07, imaging-resource.com Phase One XF 100MP 리뷰
 
 라이카와 마찬가지로 raw(IIQ) 기준선을 못 구해서(imaging-resource.com의
 DNG 다운로드 링크는 현재 사이트 템플릿에서 사라진 것으로 보임) 그리드서치가
-아니라 population 타깃을 `_film_curve`의 toe_lift/white_point에 직접
+아니라 population 타깃을 film_curve의 toe_lift/white_point에 직접
 대입한 1차 버전. shoulder_start/clahe_clip/hue·채도 무조작 가정은 검증
 없이 핫셀블라드 기본값을 차용 - raw 페어를 구하면 가장 먼저 검증할 부분
-(leica_color.py와 동일한 한계).
+(leica.py와 동일한 한계).
 """
-import cv2
-import numpy as np
-
-from hasselblad_hncs import _film_curve
+from core.engine import apply_population_fit_look
 
 _TOE_LIFT = 11.4 / 255
 _WHITE_POINT = 228.4 / 255
@@ -37,15 +34,4 @@ _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
 def apply_phaseone_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
                          white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    x = np.arange(256, dtype=np.float32) / 255.0
-    lut = np.clip(_film_curve(x, toe_lift, shoulder_start, white_point) * 255,
-                  0, 255).astype(np.uint8)
-    l = cv2.LUT(l, lut)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)

@@ -1,52 +1,40 @@
+"""
+후지필름 스타일 필름 시뮬레이션 프리셋 8종.
+
+Astia/Pro Neg Std는 실측 검증됨(tools/analyze.py fuji_film_modes 모드,
+mirrorlesscomparison.com 리뷰 갤러리의 RAW+SOOC JPEG에서 실제 Film Mode
+태그(exiftool)별 population 비교) - 나머지 6종은 대응하는 실측 라벨을
+못 구해서(Eterna/Nostalgic Neg/Reala Ace/Acros 등은 이 사이트 표본에
+없었음) 여전히 미검증 추정.
+
+raw+jpeg "같은 사진" 페어를 노려봤지만(mirrorlesscomparison.com의 "RAW
+samples"/"SOOC JPG samples" 폴더), 이 사이트는 애초에 같은 촬영을 짝지어
+올린 게 아니라 그냥 각각 다른 사진들이었음 - 10개 카메라, RAW 57장+JPEG
+40장을 받았는데 EXIF 촬영시각이 정확히 일치하는 페어는 3쌍뿐(그마저 다
+Provia). raw 기반 캘리브레이션(핫셀블라드 v10~v12급)은 포기하고
+population 비교로 전환.
+
+Astia/Pro Neg Std에서 실제로 발견한 버그: 둘 다 실측과 정반대로 채도가
+올랐음(Astia 실측 -12.9 vs 프리셋 +9.4, Pro Neg Std 실측 -19.4 vs 프리셋
++11.3). 원인은 톤커브를 BGR 채널에 개별로 걸어서(apply_lut) 채널 간
+격차가 벌어지며 채도가 재상승하는 것(원본 125.0 -> HSV desaturation 후
+109.4 -> BGR별 커브 후 139.7, 원본보다도 높아짐). hasselblad_hncs처럼
+Lab L채널에만 커브를 적용하도록 두 프리셋 다 수정. Pro Neg Std는 L채널로
+옮긴 뒤에도 여전히 반대 방향이었는데, 커브 모양 자체가 틀렸던 것으로
+판명 - 기존엔 대비를 강조하는 S커브(n=1.4)를 썼는데 실측은 Pro Neg Std가
+Provia보다 오히려 대비가 낮은 플랫한 프로파일(블랙p2 +2.7, 화이트p99.5
+-19.0)이었음. 대비 완화 커브(n=0.65)로 교체. 수정 후 재검증: Astia 1/3
+-> 2/3 방향 일치, Pro Neg Std 0/3 -> 3/3 방향 일치.
+"""
 import cv2
 import numpy as np
 
-
-def apply_lut(img, lut):
-    if img.dtype != np.uint8:
-        img = np.clip(img * 255, 0, 255).astype(np.uint8)
-    return cv2.LUT(img, lut)
+from core.curve import apply_highlight_rolloff, s_curve
+from core.lut import apply_lut
 
 
 # ==========================================
-# 공유 헬퍼 (버그 수정의 핵심)
-# ==========================================
-def _s_curve(x, n=2.0):
-    """
-    대칭 S자 커브. x^n / (x^n + (1-x)^n) 형태.
-    항상 y(0)=0, y(1)=1을 보장하므로 사인 기반 커브에서 발생하던
-    "끝단이 0/1에 안 닿는" 문제가 원천적으로 없음.
-    n=1: 직선(변화 없음) / n>1: 콘트라스트 강조 S자 / n<1: 대비 완화
-    """
-    x_safe = np.clip(x, 1e-6, 1 - 1e-6)
-    return (x_safe ** n) / (x_safe ** n + (1 - x_safe) ** n)
-
-
-def _apply_highlight_rolloff(x, y, start=0.8):
-    """
-    y 배열(이미 다른 커브가 적용된 상태)에 이어서 하이라이트만 부드럽게 압축.
-    연속성 보장: rolloff 시작값을 커브에서 실제로 보간해서 가져오므로
-    Acros에서 발생했던 "롤오프 시작점에서 값이 뚝 떨어지는" 문제가 없음.
-    """
-    mask = x > start
-    if not np.any(mask):
-        return y
-    y_start = np.interp(start, x, y)
-    headroom = 1.0 - y_start
-    t = (x[mask] - start) / (1 - start)
-    smooth_t = t * t * (3 - 2 * t)
-    y[mask] = y_start + smooth_t * headroom
-    return y
-
-
-def _shadow_lift(x, y, lift=0.02, threshold=0.1):
-    mask = x < threshold
-    y[mask] = y[mask] + (lift * (1 - (x[mask] / threshold)))
-    return y
-
-
-# ==========================================
-# 1. Astia/Soft (부드러운 색감, 인물용)
+# 1. Astia/Soft (부드러운 색감, 인물용) - 실측 검증됨
 # ==========================================
 def apply_astia(img_bgr):
     img = img_bgr.astype(np.float32)
@@ -56,18 +44,15 @@ def apply_astia(img_bgr):
 
     img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(img_lab)
-    # 수정: 실측(fuji_pairs_manifest.csv 기반 population 비교)해보니 Astia는
-    # Provia보다 채도가 낮은데(부드러운 색감), 기존 코드는 a채널을 1.05배로
-    # 키워서 반대로 채도가 오르는 버그였음. a/b를 중심(128)으로 당겨서
-    # 채도를 낮추는 걸로 교체.
+    # 실측: Astia는 Provia보다 채도가 낮음(부드러운 색감) - a/b를 중심
+    # (128)으로 당겨서 채도를 낮춤
     a = np.clip(128 + (a.astype(np.float32) - 128) * 0.85, 0, 255).astype(np.uint8)
     b = np.clip(128 + (b.astype(np.float32) - 128) * 0.85, 0, 255).astype(np.uint8)
 
     # 하이라이트만 소프트하게 압축 - L채널에만 적용해서 hue/채도 보존
-    # (기존엔 BGR 채널 각각에 LUT을 걸어서 채도가 왜곡됐음)
     x = np.arange(256, dtype=np.float32) / 255.0
     y = x.copy()
-    y = _apply_highlight_rolloff(x, y, start=0.7)
+    y = apply_highlight_rolloff(x, y, start=0.7)
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
     l = cv2.LUT(l, lut)
 
@@ -75,28 +60,21 @@ def apply_astia(img_bgr):
 
 
 # ==========================================
-# 2. PRO Neg. Std (스튜디오 인물용, 부드러움)
+# 2. PRO Neg. Std (스튜디오 인물용, 부드러움) - 실측 검증됨
 # ==========================================
 def apply_pro_neg_std(img_bgr):
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.85, 0, 255)
     img = cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
-    # 수정: 예전엔 대비를 "강조"하는 S커브(n=1.4, n>1)를 썼는데, 실측
-    # population 비교(fuji_pairs_manifest.csv, analyze_fuji_film_modes.py)
-    # 결과 실제 Pro Neg Std는 Provia보다 블랙p2가 더 뜨고(+2.7) 화이트p99.5는
-    # 더 낮아서(-19.0) 오히려 Provia보다 대비가 "낮은" 플랫한 프로파일이었음
-    # (스튜디오 인물용으로 나중에 그레이딩하기 좋게 일부러 평평하게 만든 것).
-    # n<1(대비 완화)로 뒤집음.
+    # 실측: 실제 Pro Neg Std는 Provia보다 대비가 낮은 플랫 프로파일이라
+    # n<1(대비 완화) 사용
     x = np.arange(256, dtype=np.float32) / 255.0
-    y = _s_curve(x, n=0.65)
+    y = s_curve(x, n=0.65)
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
 
-    # 수정: BGR 채널 각각에 LUT을 걸면(apply_lut) 채널 간 격차가 벌어지면서
-    # 채도가 다시 오름 - 실측 확인 결과 위의 HSV desaturation(x0.85)이
-    # 완전히 상쇄되고 원본보다도 채도가 높아지는 역전이 있었음
-    # (원본 125.0 -> 1단계 109.4 -> 2단계(BGR LUT) 139.7). L채널에만
-    # 적용해서 desaturation이 유지되도록 교체.
+    # L채널에만 적용해서 desaturation이 유지되도록 함 (BGR 채널별로 걸면
+    # 채도가 재상승하는 버그가 있었음)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
     l = cv2.LUT(l, lut)
@@ -104,17 +82,15 @@ def apply_pro_neg_std(img_bgr):
 
 
 # ==========================================
-# 3. PRO Neg. Hi (Std + 콘트라스트 강화)
+# 3. PRO Neg. Hi (Std + 콘트라스트 강화) - 미검증
 # ==========================================
 def apply_pro_neg_hi(img_bgr):
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.85, 0, 255)
     img = cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
-    # 수정: n=2.2 S커브로 진짜 대비 강화 (기존엔 끝단 압축으로 오히려
-    # 다이나믹레인지가 줄어드는 역효과가 있었음 - 이제 0/1 정확히 도달)
     x = np.arange(256, dtype=np.float32) / 255.0
-    y = _s_curve(x, n=2.2)
+    y = s_curve(x, n=2.2)
 
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
     img_curved = apply_lut(img, lut)
@@ -127,7 +103,7 @@ def apply_pro_neg_hi(img_bgr):
 
 
 # ==========================================
-# 4. Eterna/Cinema (영화 느낌, 플랫, 틸 쉐도우)
+# 4. Eterna/Cinema (영화 느낌, 플랫, 틸 쉐도우) - 미검증
 # ==========================================
 def apply_eterna_cinema(img_bgr):
     x = np.arange(256, dtype=np.float32) / 255.0
@@ -152,15 +128,13 @@ def apply_eterna_cinema(img_bgr):
 
 
 # ==========================================
-# 5. Eterna Bleach Bypass (표백 현상, 저채도 고대비)
+# 5. Eterna Bleach Bypass (표백 현상, 저채도 고대비) - 미검증
 # ==========================================
 def apply_eterna_bleach_bypass(img_bgr):
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.25, 0, 255)
     img_low_sat = cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
-    # 수정: np.where 두 분기가 동일해서 사실상 죽은 코드였음 - 단순화.
-    # 강한 대비 + 양끝 하드클리핑 (표백현상 특유의 날아간 느낌)은 그대로 유지
     x = np.arange(256, dtype=np.float32) / 255.0
     y = np.clip(x * 1.5 - 0.25, 0, 1)
 
@@ -169,7 +143,7 @@ def apply_eterna_bleach_bypass(img_bgr):
 
 
 # ==========================================
-# 6. Nostalgic Neg (빈티지, 따뜻한 앰버 강조)
+# 6. Nostalgic Neg (빈티지, 따뜻한 앰버 강조) - 미검증
 # ==========================================
 def apply_nostalgic_neg(img_bgr):
     img = img_bgr.astype(np.float32)
@@ -189,7 +163,7 @@ def apply_nostalgic_neg(img_bgr):
 
 
 # ==========================================
-# 7. Reala Ace (정확한 색 재현, 정직한 룩)
+# 7. Reala Ace (정확한 색 재현, 정직한 룩) - 미검증
 # ==========================================
 def apply_reala_ace(img_bgr):
     if img_bgr.dtype != np.uint8:
@@ -201,14 +175,14 @@ def apply_reala_ace(img_bgr):
 
     x = np.arange(256, dtype=np.float32) / 255.0
     y = x.copy()
-    y = _apply_highlight_rolloff(x, y, start=0.85)
+    y = apply_highlight_rolloff(x, y, start=0.85)
 
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
     return apply_lut(img, lut)
 
 
 # ==========================================
-# 8. Acros / Monochrome (흑백)
+# 8. Acros / Monochrome (흑백) - 미검증
 # ==========================================
 def apply_acros(img_bgr, filter_type='none'):
     b, g, r = cv2.split(img_bgr)
@@ -224,11 +198,9 @@ def apply_acros(img_bgr, filter_type='none'):
 
     gray = np.clip(gray, 0, 255).astype(np.uint8)
 
-    # 수정: 기존엔 x=0.9에서 커브값이 약 0.991 -> 0.9로 뚝 떨어지는
-    # 불연속(밴딩 유발)이 있었음. S커브 + 연속성 보장 롤오프 헬퍼로 교체.
     x = np.arange(256, dtype=np.float32) / 255.0
-    y = _s_curve(x, n=1.6)
-    y = _apply_highlight_rolloff(x, y, start=0.9)
+    y = s_curve(x, n=1.6)
+    y = apply_highlight_rolloff(x, y, start=0.9)
 
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
     return cv2.LUT(gray, lut)
