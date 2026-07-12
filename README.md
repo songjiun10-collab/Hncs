@@ -24,6 +24,9 @@ Natural Colour Solution)의 톤/색 특성을 코드로 근사하는 프로젝�
 | `analyze_fuji_film_modes.py` | 받은 SOOC JPEG를 실제 Film Mode 태그(exiftool)별로 묶어 population 통계 비교, `film_sim_presets.py`의 프리셋이 실측과 같은 방향으로 채도/톤을 움직이는지 검증 |
 | `analyze_leica_samples.py` | imaging-resource.com 카메라 리뷰 갤러리(M9/X Vario/SL2)에서 미편집 SOOC JPEG를 모아 population 통계 추출 (`leica_stats_result.csv`) |
 | `leica_color.py` | 위 population 통계로 1차 피팅한 라이카 색감 근사 - `apply_leica_look()` (raw 페어 없이 만든 초기 버전, 아래 한계 참고) |
+| `analyze_phaseone_samples.py` | imaging-resource.com Phase One XF 100MP 리뷰 갤러리에서 미편집 SOOC JPEG population 통계 추출 (`phaseone_stats_result.csv`) - EXIF Software가 Capture One이라 "카메라 JPEG"가 아니라 "Capture One 기본 렌더링"이 타깃 |
+| `phaseone_color.py` | 위 population 통계로 1차 피팅한 Phase One/Capture One 색감 근사 - `apply_phaseone_look()` |
+| `analyze_pentax_samples.py` | imaging-resource.com Pentax 645Z/K-1 리뷰 갤러리에서 미편집 SOOC JPEG population 통계 추출 (`pentax_stats_result.csv`) |
 
 ## 설치
 
@@ -141,3 +144,23 @@ Software 태그로 Photoshop/Lightroom 편집본 제외)을 모아 population
   raw 기준선이 없어 그리드서치로 피팅한 게 아니고, shoulder_start/
   clahe_clip/hue·채도 무조작 가정은 전부 핫셀블라드 값을 검증 없이
   차용한 것. raw 페어를 구하면 제일 먼저 검증해야 할 부분
+
+## Phase One (`phaseone_color.py`)
+
+Phase One 디지털백은 스튜디오/테더링 중심이라 컨슈머 카메라 같은
+인카메라 JPEG 엔진이 사실상 없음 - imaging-resource.com에서 받은 샘플
+전부 EXIF Software가 "Capture One"(Phase One 자체 RAW 컨버터)이었음.
+그래서 이 프로젝트가 재현하려는 건 "카메라 JPEG"가 아니라 "Capture One
+기본 렌더링"이 됨. raw(IIQ) 다운로드 링크는 imaging-resource.com 현재
+사이트 템플릿에서 못 찾음(라이카 SL2도 마찬가지였음 - 개편되며 사라진
+기능으로 보임) - 라이카와 같은 population 통계 방식으로 접근.
+
+- 1차 실행(n=20)에서 8/20이 ISO 노이즈 테스트 차트(ISO-50~25600, 같은
+  장면 반복 촬영)였는데 이게 population을 왜곡시킴 - 채도 평균이 76.9로
+  나왔다가 차트 샷을 빼니 118.6으로 확 달라짐. 파일명 "-iso-" 필터를
+  추가하고 표본을 30장으로 늘려 재실행
+- population 통계(n=30, ISO 차트 제외): 블랙p2=11.4(그림자유효 9장),
+  화이트p99.5=228.4, 채도=96.0
+- `apply_phaseone_look()`도 leica_color.py와 같은 방식(raw 기준선 없이
+  population 타깃을 toe_lift/white_point에 직접 대입) - shoulder_start/
+  clahe_clip/hue·채도 무조작 가정 미검증인 것도 동일
