@@ -39,7 +39,9 @@ GALLERIES = [
 MAX_PER_CAMERA = 15  # 카메라당 최대 다운로드 수 (대역폭/시간 절약)
 
 DETAIL_LINK_RE = re.compile(r'href="(/cameras/[^"]+/image/\d+\?section=gallery)"[^>]*>\s*<img[^>]*src="([^"]+)"')
-FULL_IMG_RE = re.compile(r'class="attachment-full size-full"[^>]*src="([^"]+)"')
+# 상세페이지의 <a href="FULL.jpg" target="_blank"><img ... class="attachment-full
+# size-full" ...></a> - href가 scaled 버전보다 더 큰 진짜 원본이라 이쪽을 씀
+FULL_IMG_RE = re.compile(r'<a href="([^"]+)" target="_blank"><img[^>]*class="attachment-full size-full"')
 
 
 def fetch(url):
