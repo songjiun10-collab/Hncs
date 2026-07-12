@@ -4,3 +4,4 @@ portrait_stats_result.csv
 skin_hue_result.csv
 __pycache__/
 *.pyc
+raw_calib_cache/
