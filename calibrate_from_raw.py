@@ -134,10 +134,10 @@ def main():
 
     # --- 그리드서치 (전역 노출 리프트 포함) ---
     best = None
-    for exposure_gamma in (1.0, 0.9, 0.8, 0.7, 0.6, 0.5):
-        for toe_lift in (0.0, 0.001, 0.005, 0.01, 0.02):
-            for shoulder_start in (0.70, 0.74, 0.78, 0.82):
-                for white_point in (0.85, 0.88, 0.90, 0.92, 0.95, 1.0):
+    for exposure_gamma in (0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3):
+        for toe_lift in (0.0, 0.005, 0.02):
+            for shoulder_start in (0.50, 0.58, 0.66, 0.70, 0.74, 0.78, 0.82):
+                for white_point in (0.90, 0.95, 1.0):
                     err = 0.0
                     for d in dataset:
                         graded = apply_hncs(d['neutral'], toe_lift=toe_lift,
