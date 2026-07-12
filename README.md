@@ -27,6 +27,8 @@ Natural Colour Solution)의 톤/색 특성을 코드로 근사하는 프로젝�
 | `analyze_phaseone_samples.py` | imaging-resource.com Phase One XF 100MP 리뷰 갤러리에서 미편집 SOOC JPEG population 통계 추출 (`phaseone_stats_result.csv`) - EXIF Software가 Capture One이라 "카메라 JPEG"가 아니라 "Capture One 기본 렌더링"이 타깃 |
 | `phaseone_color.py` | 위 population 통계로 1차 피팅한 Phase One/Capture One 색감 근사 - `apply_phaseone_look()` |
 | `analyze_pentax_samples.py` | imaging-resource.com Pentax 645Z/K-1 리뷰 갤러리에서 미편집 SOOC JPEG population 통계 추출 (`pentax_stats_result.csv`) |
+| `pentax_color.py` | 위 population 통계로 1차 피팅한 펜탁스 색감 근사 - `apply_pentax_look()` |
+| `analyze_ricoh_gr_samples.py` | imaging-resource.com Ricoh GR III/GR IIIx 리뷰 갤러리에서 population 통계 추출 (`ricoh_gr_stats_result.csv`) - 펜탁스와 같은 EXIF 패턴(리코이미징) |
 
 ## 설치
 
@@ -164,3 +166,19 @@ Phase One 디지털백은 스튜디오/테더링 중심이라 컨슈머 카메�
 - `apply_phaseone_look()`도 leica_color.py와 같은 방식(raw 기준선 없이
   population 타깃을 toe_lift/white_point에 직접 대입) - shoulder_start/
   clahe_clip/hue·채도 무조작 가정 미검증인 것도 동일
+
+## Pentax (`pentax_color.py`)
+
+imaging-resource.com 리뷰 갤러리(645Z 중형포맷 + K-1 풀프레임)에서
+미편집 SOOC JPEG 40장을 모음. EXIF Make="RICOH IMAGING COMPANY, LTD."
+(펜탁스는 리코이미징 소유 브랜드), Software가 카메라 펌웨어 버전
+문자열인 것으로 진짜 SOOC 확인. 이 사이트에서 DNG 링크는 라이카/Phase
+One 때와 마찬가지로 못 찾아서 population 통계만 사용.
+
+- population 통계(n=40): 전체 블랙p2=10.8, 화이트p99.5=239.1, 채도=124.1
+- 바디별: 645Z(n=20) 블랙p2=10.4/화이트p99.5=247.2/채도=141.1, K-1(n=20)
+  블랙p2=11.1/화이트p99.5=231.0/채도=107.1 - 블랙포인트는 거의 같은데
+  645Z가 화이트/채도 둘 다 높음. 중형포맷 특성인지 표본(리뷰어 1인)
+  편향인지는 미확인, raw 페어 없이는 판단 불가
+- `apply_pentax_look()`도 동일한 population-fit 방식, 동일한 미검증
+  한계(shoulder_start/clahe_clip/hue·채도 무조작)
