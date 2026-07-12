@@ -52,19 +52,26 @@ def apply_astia(img_bgr):
     img = img_bgr.astype(np.float32)
     img[:, :, 2] = np.clip(img[:, :, 2] * 1.03, 0, 255)  # R
     img[:, :, 0] = np.clip(img[:, :, 0] * 0.97, 0, 255)  # B
+    img = img.astype(np.uint8)
 
-    img_lab = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2LAB)
+    img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(img_lab)
-    a = np.clip(a.astype(np.float32) * 1.05, 0, 255).astype(np.uint8)
-    img = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    # 수정: 실측(fuji_pairs_manifest.csv 기반 population 비교)해보니 Astia는
+    # Provia보다 채도가 낮은데(부드러운 색감), 기존 코드는 a채널을 1.05배로
+    # 키워서 반대로 채도가 오르는 버그였음. a/b를 중심(128)으로 당겨서
+    # 채도를 낮추는 걸로 교체.
+    a = np.clip(128 + (a.astype(np.float32) - 128) * 0.85, 0, 255).astype(np.uint8)
+    b = np.clip(128 + (b.astype(np.float32) - 128) * 0.85, 0, 255).astype(np.uint8)
 
-    # 하이라이트만 소프트하게 압축 (연속성 보장된 헬퍼 사용)
+    # 하이라이트만 소프트하게 압축 - L채널에만 적용해서 hue/채도 보존
+    # (기존엔 BGR 채널 각각에 LUT을 걸어서 채도가 왜곡됐음)
     x = np.arange(256, dtype=np.float32) / 255.0
     y = x.copy()
     y = _apply_highlight_rolloff(x, y, start=0.7)
-
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
-    return apply_lut(img, lut)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
 
 # ==========================================
@@ -75,13 +82,25 @@ def apply_pro_neg_std(img_bgr):
     img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.85, 0, 255)
     img = cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
-    # 수정: 사인+선형 혼합 대신 완만한 S커브(n=1.4)로 교체
-    # 기존 코드는 검은점이 0.1까지 들려서 과하게 "탁해진" 느낌이었음
+    # 수정: 예전엔 대비를 "강조"하는 S커브(n=1.4, n>1)를 썼는데, 실측
+    # population 비교(fuji_pairs_manifest.csv, analyze_fuji_film_modes.py)
+    # 결과 실제 Pro Neg Std는 Provia보다 블랙p2가 더 뜨고(+2.7) 화이트p99.5는
+    # 더 낮아서(-19.0) 오히려 Provia보다 대비가 "낮은" 플랫한 프로파일이었음
+    # (스튜디오 인물용으로 나중에 그레이딩하기 좋게 일부러 평평하게 만든 것).
+    # n<1(대비 완화)로 뒤집음.
     x = np.arange(256, dtype=np.float32) / 255.0
-    y = _s_curve(x, n=1.4)
-
+    y = _s_curve(x, n=0.65)
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
-    return apply_lut(img, lut)
+
+    # 수정: BGR 채널 각각에 LUT을 걸면(apply_lut) 채널 간 격차가 벌어지면서
+    # 채도가 다시 오름 - 실측 확인 결과 위의 HSV desaturation(x0.85)이
+    # 완전히 상쇄되고 원본보다도 채도가 높아지는 역전이 있었음
+    # (원본 125.0 -> 1단계 109.4 -> 2단계(BGR LUT) 139.7). L채널에만
+    # 적용해서 desaturation이 유지되도록 교체.
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    l = cv2.LUT(l, lut)
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
 
 # ==========================================
