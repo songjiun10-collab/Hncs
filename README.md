@@ -19,6 +19,11 @@ Natural Colour Solution)의 톤/색 특성을 코드로 근사하는 프로젝�
 | `hasselblad_hncs_learned.py` | `learn_tone_curve.py`로 학습한 LUT을 내장한 데이터 기반 대안 - `apply_hncs_learned()` |
 | `regularized_lut_loocv.py` | 학습 LUT을 파라메트릭 커브 쪽으로 정규화해보고 10장 leave-one-out 교차검증으로 실제 도움이 되는지 검증 (결론: 정규화 안 하는 게 나음) |
 | `face_detection_yunet.onnx` | `portrait_skin_analysis.py`가 쓰는 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) |
+| `fetch_fuji_sample_links.py` | mirrorlesscomparison.com의 후지 카메라 리뷰 갤러리에서 "SOOC JPG and RAW" Google Drive 링크를 긁어 `fuji_sample_pages.csv`로 저장 |
+| `download_fuji_pairs.py` | 위 링크에서 RAW+JPEG를 받아 EXIF 촬영시각으로 같은 사진끼리 페어 매칭 (`fuji_pairs_manifest.csv`) - 실제로는 페어가 거의 없다는 게 밝혀짐(아래 결론 참고) |
+| `analyze_fuji_film_modes.py` | 받은 SOOC JPEG를 실제 Film Mode 태그(exiftool)별로 묶어 population 통계 비교, `film_sim_presets.py`의 프리셋이 실측과 같은 방향으로 채도/톤을 움직이는지 검증 |
+| `analyze_leica_samples.py` | imaging-resource.com 카메라 리뷰 갤러리(M9/X Vario/SL2)에서 미편집 SOOC JPEG를 모아 population 통계 추출 (`leica_stats_result.csv`) |
+| `leica_color.py` | 위 population 통계로 1차 피팅한 라이카 색감 근사 - `apply_leica_look()` (raw 페어 없이 만든 초기 버전, 아래 한계 참고) |
 
 ## 설치
 
@@ -84,3 +89,55 @@ python3 learn_tone_curve.py          # raw+jpeg 픽셀 대응으로 톤커브 �
   (LOO RMSE 14.6, 정규화를 강하게 걸수록 20.7→28.0으로 악화) — bin당
   픽셀 표본이 충분히 많아 분산 문제보다 파라메트릭 커브 자체의 모양
   편향이 더 크기 때문. `apply_hncs_learned`는 정규화 없이 그대로 유지
+
+## 후지필름 (`film_sim_presets.py`)
+
+후지는 카메라에 내장된 필름시뮬레이션(Provia/Astia/Velvia/Classic
+Chrome/Pro Neg Std 등) 프리셋이 여러 개 있어서, 핫셀블라드와 다른
+검증 방법을 씀: mirrorlesscomparison.com 리뷰 갤러리에서 진짜
+미편집 SOOC JPEG를 모으고, exiftool로 읽은 실제 Film Mode 태그별로
+population 통계를 비교해서 `film_sim_presets.py`의 각 프리셋이 실측과
+같은 방향으로 채도/톤을 움직이는지 확인 (`analyze_fuji_film_modes.py`).
+
+- raw+jpeg 같은 사진 페어를 노려봤지만(`download_fuji_pairs.py`),
+  이 사이트의 "RAW samples"와 "SOOC JPG samples" 폴더는 애초에 같은
+  촬영을 짝지어 올린 게 아니라 그냥 각각 다른 사진들이었음 - 10개
+  카메라, RAW 57장+JPEG 40장을 받았는데 EXIF 촬영시각이 정확히 일치하는
+  페어는 3쌍뿐(그마저 다 Provia). raw 기반 캘리브레이션(핫셀블라드
+  v10~v12급)은 포기하고 population 비교로 전환.
+- 실측(n=8~15) vs `apply_astia`/`apply_pro_neg_std`를 Provia 사진에
+  적용했을 때의 방향 비교 결과, 둘 다 실측과 정반대로 채도가 올랐음
+  (Astia 실측 -12.9 vs 프리셋 +9.4, Pro Neg Std 실측 -19.4 vs 프리셋
+  +11.3). 원인은 톤커브를 BGR 채널에 개별로 걸어서(`apply_lut`) 채널
+  간 격차가 벌어지며 채도가 재상승하는 것 (원본 125.0 -> HSV
+  desaturation 후 109.4 -> BGR별 커브 후 139.7, 원본보다도 높아짐).
+  `apply_hncs.py`처럼 Lab L채널에만 커브를 적용하도록 두 프리셋 다 수정.
+- Pro Neg Std는 L채널로 옮긴 뒤에도 여전히 반대 방향이었는데, 커브
+  모양 자체가 틀렸던 것으로 판명 - 기존엔 대비를 강조하는 S커브
+  (n=1.4)를 썼는데 실측은 Pro Neg Std가 Provia보다 오히려 대비가 낮은
+  플랫한 프로파일(블랙p2 +2.7, 화이트p99.5 -19.0)이었음. 대비 완화
+  커브(n=0.65)로 교체.
+- 수정 후 재검증: Astia 1/3 → 2/3 방향 일치, Pro Neg Std 0/3 → 3/3
+  방향 일치.
+
+## 라이카 (`leica_color.py`)
+
+라이카는 후지식 다중 필름시뮬레이션이 없고, 핫셀블라드 공식 킷 같은
+raw+jpeg 페어 세트도 못 찾음 (dpreview/kenrockwell/photographyblog는
+Cloudflare 봇 차단, stevehuffphoto.com은 Photoshop/Lightroom 편집본이라
+SOOC 아님, leicarumors.com이 링크한 DNG는 Dropbox 폴더인데 JS
+렌더링이라 목록을 못 긁음 - Fuji 때 Google Drive는 `gdown`으로
+우회했지만 Dropbox는 동급 도구가 없었음). 대신 imaging-resource.com
+카메라 리뷰 갤러리에서 미편집 SOOC JPEG 45장(M9/X Vario/SL2, exiftool
+Software 태그로 Photoshop/Lightroom 편집본 제외)을 모아 population
+통계만 냈음 - 핫셀블라드 v8/v9와 같은 급, raw 대비 진짜 전/후 피팅은
+아직 없음.
+
+- population 통계(n=45): 블랙p2=9.2, 화이트p99.5=229.8, 채도=98.6.
+  카메라별 편차가 커서(SL2 화이트p99.5=192.1 vs M9 251.6) 표본이 더
+  모일 때까지 전체 평균을 타깃으로 사용
+- `leica_color.py`의 `apply_leica_look()`은 이 population 타깃을
+  `_film_curve`의 toe_lift/white_point에 직접 대입해서 만든 1차 버전 -
+  raw 기준선이 없어 그리드서치로 피팅한 게 아니고, shoulder_start/
+  clahe_clip/hue·채도 무조작 가정은 전부 핫셀블라드 값을 검증 없이
+  차용한 것. raw 페어를 구하면 제일 먼저 검증해야 할 부분
