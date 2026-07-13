@@ -146,13 +146,12 @@ BRAND_CONFIGS = {
     "phaseone": dict(
         galleries=[
             ("Phase One XF 100MP", "https://www.imaging-resource.com/PRODS/phase-one-xf-100mp/phase-one-xf-100mpGALLERY.HTM"),
-            # XF 100MP 갤러리가 CDN 손상으로 110장 중 16장만 살아남아서
-            # (brands/phaseone.py 참고) 표본 확대 목적으로 추가 - 별도
-            # 카메라(뷰카메라형 XT바디 + IQ4 백)라 population을 그냥
-            # 합치는 게 맞는지는 불확실하지만, 둘 다 "Capture One 기본
-            # 렌더링"을 재현한다는 이 프로젝트의 목표(카메라 JPEG 엔진이
-            # 아니라)에는 부합해서 일단 카메라별로 나눠 같이 수집
-            ("Phase One XT", "https://www.imaging-resource.com/cameras/phase-one-xt-review/gallery/"),
+            # "Phase One XT" 갤러리(imaging-resource.com/cameras/
+            # phase-one-xt-review/gallery/, 218장 후보)를 표본 확대용으로
+            # 시도했다가 뺐음 - 무결성 검증 통과분 13장이 전부 "-ACHROMATIC-"
+            # 파일명의 흑백 전용 백(채도=0)이었음. 컬러 population
+            # 타깃(toe_lift/white_point 피팅용)에 흑백 전용 카메라를
+            # 섞으면 안 되므로 제외.
         ],
         max_per_camera=30,
         # Phase One은 스튜디오/테더링 중심이라 인카메라 JPEG 엔진이
