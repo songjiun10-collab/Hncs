@@ -71,6 +71,19 @@ imaging-resource.com은 "Still Life" 스튜디오 테스트 섹션에 원래 raw
 사이트가 WordPress로 마이그레이션되며 그 경로가 깨져 지금은 전부 404 -
 사용 불가. 억지로 raw 기준선을 만들 근거가 없어 population-fit 방식을
 유지하기로 결정.
+
+픽셀 시그니처 분석(2026-07, `datasets/canon/{tone,color,texture,gamut}_signature.json`
++ `joint_distribution.npz`): 위 115장(버스트 중복 제거 후)을 Leica/
+Pentax/Ricoh GR/Phase One과 동일 방법론(사진 단위 동일가중 평균, 중앙
+2400x2400 크롭에서 샤프닝/미세대비/노이즈/에지헤일로 측정)으로 재분석.
+톤 재계산 결과 그림자유효(82장) 블랙p2=15.04로 population 타깃값(15.0)과
+거의 정확히 일치해 방법론 일관성 재확인. 채도=89.80(위 population 수치와
+동일), 샤프닝=3.39(초기 계산은 스케일 안 맞았던 Sobel std를 15로 나눠
+Leica/Ricoh GR과 비슷한 자릿수로 맞춤), chroma_mean=16.39. hue/채도를
+안 건드리는 설계라 color/gamut 수치는 보정 타깃이 아니라 참고 자료.
+**micro_contrast(3.85)는 DoG sigma pair(1,2)가 Leica/Pentax/Ricoh GR/
+Nikon(8~12대)과 달라서 그 브랜드들과 직접 비교하면 안 됨** (자세한 이유는
+texture_signature.json의 methodology 필드 참고).
 """
 from core.engine import apply_population_fit_look
 

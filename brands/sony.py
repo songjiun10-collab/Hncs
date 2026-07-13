@@ -71,6 +71,23 @@ population-fit에 쓴 A7 IV는 아예 없고, 겹치는 바디(A7/A7 III/A7S)도
 페어링 자체가 안 되는 구조적 문제라 무의미. imaging-resource.com의
 raw 다운로드 링크는 사이트 마이그레이션으로 죽어서 사용 불가. 억지로
 raw 기준선을 만들 근거가 없어 population-fit 방식을 유지하기로 결정.
+
+픽셀 시그니처 분석(2026-07, `datasets/sony/{tone,color,texture,gamut}_signature.json`
++ `joint_distribution.npz`): 위 115장을 Leica/Pentax/Ricoh GR/Phase
+One과 동일 방법론(사진 단위 동일가중 평균, 중앙 2400x2400 크롭에서
+샤프닝/미세대비/노이즈/에지헤일로 측정)으로 재분석. 톤 재계산 결과
+그림자유효(98장) 블랙p2=9.14로 population 타깃값(9.1)과 거의 정확히
+일치해 방법론 일관성 재확인. 채도=97.58(위 population 수치와 동일),
+chroma_mean=13.69. **샤프닝 지표 수정**: 최초 계산은 Sobel gradient
+magnitude 표준편차를 스케일 없이 그대로 써서 평균 54.59로 나왔는데,
+Canon이 같은 지표를 15로 나눠 기존 population-fit 브랜드(Leica 2.48/
+Ricoh GR 3.36)와 비슷한 자릿수로 맞춘 걸 뒤늦게 발견 - Sony만 스케일이
+빠져 값이 15~20배 컸던 것. Canon과 동일하게 /15로 재계산해 3.64로
+수정(texture_signature.json에 원본 값과 수정 이력 기록해둠). hue/채도를
+안 건드리는 설계라 color/gamut 수치는 보정 타깃이 아니라 참고 자료.
+**micro_contrast(3.82)는 DoG sigma pair(1,2)가 Leica/Pentax/Ricoh GR/
+Nikon(8~12대)과 달라서 그 브랜드들과 직접 비교하면 안 됨** (자세한 이유는
+texture_signature.json의 methodology 필드 참고).
 """
 from core.engine import apply_population_fit_look
 

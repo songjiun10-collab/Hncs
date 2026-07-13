@@ -63,6 +63,21 @@ mirrorlesscomparison.com은 Fuji 때와 같은 이유(RAW/JPEG 폴더가 같은
 population-fit에 쓴 Z6 II/D780은 아예 없음. imaging-resource.com의
 raw 다운로드 링크는 사이트 마이그레이션으로 죽어서 사용 불가. 억지로
 raw 기준선을 만들 근거가 없어 population-fit 방식을 유지하기로 결정.
+
+픽셀 시그니처 분석(2026-07, `datasets/nikon/{tone,color,texture,gamut}_signature.json`
++ `joint_distribution.npz`): Leica/Pentax/Ricoh GR/Phase One과 동일
+방법론(사진 단위 동일가중 평균, 중앙 2400x2400 크롭에서 샤프닝/미세대비/
+노이즈/에지헤일로 측정)으로 재분석. 이 분석은 population-fit 타깃 계산과
+달리 D850 정상 EXIF 2장(94718_Y-D850- 접두어, 표본 크기가 작아 population
+fit에서만 제외됐던 것으로 진위 문제는 아니었음)까지 포함해 n=71로 계산
+(population.py의 n=69는 Z6/Z6 II/D780 3바디만). 톤 재계산 결과 그림자유효
+(43장) 블랙p2=13.67로 population 타깃값(13.7)과 거의 정확히 일치해 방법론
+일관성 재확인. 채도=93.14, 샤프닝=4.03(Laplacian std/10 - Canon의 Sobel
+std/15와는 다른 연산자지만 자릿수는 Leica 2.48/Ricoh GR 3.36과 비슷하게
+맞음), micro_contrast=8.29(DoG sigma 1.0/4.0 - Leica/Pentax/Ricoh GR과
+비슷한 8~12대, Canon/Sony의 sigma(1,2) 조합보다 이쪽이 기존 관례에 더
+가까움), chroma_mean=17.24. hue/채도를 안 건드리는 설계라 color/gamut
+수치는 보정 타깃이 아니라 참고 자료.
 """
 from core.engine import apply_population_fit_look
 
