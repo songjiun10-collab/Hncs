@@ -76,6 +76,23 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
     전부 흑백 전용 Achromatic 백이라 컬러 population에는 못 써서 제외)
 자세한 수치는 각 브랜드 파일 docstring 참고.
 
+## 브랜드 함수 QA 검증 (2026-07)
+
+Canon/Sony/Nikon 추가 후 `brands/*.py`의 모든 `apply_*` 함수(핫셀블라드
+4종 + 후지 프리셋 9종 + 라이카/Phase One/Pentax/Ricoh GR/Canon/Sony/
+Nikon 7종, 총 20개)를 랜덤 BGR 배열에 돌려 shape/dtype이 그대로
+보존되는지 스모크테스트함. 전부 정상 동작 확인 - 발견된 버그 없음
+(주의: `apply_acros`/`apply_monochrome`은 설계상 1채널 그레이스케일을
+반환하므로 shape 비교 시 별도 취급 필요, `core.curve`/`core.lut`에서
+`fuji.py`로 재노출된 `apply_highlight_rolloff`/`apply_lut`은 브랜드
+프리셋이 아니라 범용 헬퍼라 이 테스트 대상이 아님).
+
+**진행 중**: Canon/Sony/Nikon도 나머지 5개 브랜드처럼 픽셀 단위 5종
+시그니처 분석(tone/color/texture/gamut/joint_distribution)으로
+확장하는 작업과, 이 세 브랜드를 raw 기준선 있는 캘리브레이션(핫셀블라드
+급)으로 업그레이드할 수 있는 raw+jpeg 페어 소스를 찾는 리서치를
+백그라운드로 진행 중 - 완료되면 이 섹션과 브랜드별 문단을 갱신할 예정.
+
 ## 설치
 
 ```
