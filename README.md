@@ -26,6 +26,7 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
 | `brands/ricoh_gr.py` | Ricoh GR 색감 근사 - `apply_ricoh_gr_look()` |
+| `brands/canon.py` | Canon 색감 근사(EOS R5/R6/R8/R3/R 5바디 population) - `apply_canon_look()` |
 | `core/curve.py` | 톤커브 수학 (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - 여러 브랜드 모듈이 공유 |
 | `core/lut.py` | LUT 적용 헬퍼 |
 | `core/engine.py` | population-fit 브랜드(leica/phaseone/pentax/ricoh_gr) 공용 엔진 - 네 브랜드 모두 raw 기준선 없이 population 타깃을 `film_curve`에 직접 대입하는 동일 구조라 하나로 합침 |
