@@ -54,6 +54,15 @@ leica.py/phaseone.py/pentax.py/ricoh_gr.py와 동일한 한계: raw 기준선이
 없어 population 타깃을 film_curve의 toe_lift/white_point에 직접 대입한
 것이고, shoulder_start/clahe_clip/hue·채도 무조작 가정은 검증 없이
 핫셀블라드 기본값을 차용.
+
+raw 기준선 업그레이드 가능성 조사(2026-07): mirrorlesscomparison.com과
+imaging-resource.com 양쪽에서 Nikon raw+jpeg 페어 소스를 재확인했으나
+둘 다 불가로 결론(canon.py 참고 - 동일 조사를 세 브랜드 공통으로 진행).
+mirrorlesscomparison.com은 Fuji 때와 같은 이유(RAW/JPEG 폴더가 같은
+프레임 페어가 아님)로 못 씀 - 이 사이트엔 Z6/Z7 갤러리만 있고
+population-fit에 쓴 Z6 II/D780은 아예 없음. imaging-resource.com의
+raw 다운로드 링크는 사이트 마이그레이션으로 죽어서 사용 불가. 억지로
+raw 기준선을 만들 근거가 없어 population-fit 방식을 유지하기로 결정.
 """
 from core.engine import apply_population_fit_look
 

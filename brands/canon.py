@@ -57,6 +57,20 @@ leica.py/phaseone.py/pentax.py/ricoh_gr.py와 동일한 한계: raw
 기준선이 없어 population 타깃을 film_curve의 toe_lift/white_point에
 직접 대입한 것이고, shoulder_start/clahe_clip/hue·채도 무조작 가정은
 검증 없이 핫셀블라드 기본값을 차용.
+
+raw 기준선 업그레이드 가능성 조사(2026-07): mirrorlesscomparison.com과
+imaging-resource.com 양쪽에서 Canon raw+jpeg 페어 소스를 재확인했으나
+둘 다 불가로 결론. mirrorlesscomparison.com은 Fuji 때 이미 겪은 문제
+(RAW 폴더와 JPEG 폴더가 같은 프레임을 짝지어 올린 게 아니라 리뷰어가
+각각 따로 고른 다른 사진들)가 Canon EOS R 갤러리(RAW 10장/JPEG 5장)에서도
+그대로 재현됨 - EXIF DateTimeOriginal 대조 결과 정확히 일치하는 페어
+0개(가장 가까운 것도 83초 차이). 그나마도 이 사이트는 EOS R/RP만 있고
+population-fit에 쓴 최신 바디(R5/R6/R8/R3)는 갤러리 자체가 없음.
+imaging-resource.com은 "Still Life" 스튜디오 테스트 섹션에 원래 raw
+다운로드 링크(`*.CR3.HTM`)가 있어서 픽셀 대응이 가능한 구조였지만,
+사이트가 WordPress로 마이그레이션되며 그 경로가 깨져 지금은 전부 404 -
+사용 불가. 억지로 raw 기준선을 만들 근거가 없어 population-fit 방식을
+유지하기로 결정.
 """
 from core.engine import apply_population_fit_look
 
