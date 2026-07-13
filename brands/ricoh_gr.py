@@ -18,6 +18,11 @@ population 통계 (2026-07, n=34, f값 테스트 제외):
   전체:            블랙p2=10.3  화이트p99.5=243.9  채도=84.9
   GR III (n=20):   블랙p2=11.1  화이트p99.5=245.8  채도=78.3
 
+무결성 검증(2026-07, core/validation.py is_image_usable() 적용): 같은
+imaging-resource.com에서 Hasselblad/Phase One/Pentax 갤러리가 CDN 자체
+손상 문제를 갖고 있던 게 드러나서 이 40장(f값 테스트 포함)도 재검증
+했음 - 전부 행 단위 손상 없이 정상. 위 수치 변경 없음.
+
 leica.py/phaseone.py/pentax.py와 동일한 한계: raw 기준선이 없어
 population 타깃을 film_curve의 toe_lift/white_point에 직접 대입,
 shoulder_start/clahe_clip/hue·채도 무조작 가정은 미검증.

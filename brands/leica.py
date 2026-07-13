@@ -24,6 +24,11 @@ DNG는 Dropbox 폴더인데 JS 렌더링이라 목록을 못 긁음 - Google Dri
   Leica X Vario(n=15): 블랙p2=14.2 화이트p99.5=245.8  채도=109.9
   Leica SL2 (n=15):  블랙p2=7.3   화이트p99.5=192.1   채도=92.5  (최신, 46MP)
 
+무결성 검증(2026-07, core/validation.py is_image_usable() 적용): 같은
+imaging-resource.com에서 Hasselblad/Phase One/Pentax 갤러리가 CDN 자체
+손상 문제를 갖고 있던 게 드러나서 이 45장도 재검증했음 - 전부(45/45)
+행 단위 손상 없이 정상. 위 수치 변경 없음.
+
 카메라별 편차가 큼(특히 SL2의 화이트p99.5가 M9보다 60 가까이 낮음) -
 세대/센서가 다른 3개 바디를 묶은 population이라 핫셀블라드 v9 초기의
 "낮/밤 샘플이 안 갈려서 std가 컸던" 상황과 비슷하다고 보고, 표본이

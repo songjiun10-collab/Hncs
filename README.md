@@ -30,7 +30,7 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `core/lut.py` | LUT 적용 헬퍼 |
 | `core/engine.py` | population-fit 브랜드(leica/phaseone/pentax/ricoh_gr) 공용 엔진 - 네 브랜드 모두 raw 기준선 없이 population 타깃을 `film_curve`에 직접 대입하는 동일 구조라 하나로 합침 |
 | `core/stats.py` | population 통계 계산 (`image_stats`: 블랙p2/화이트p99.5/채도/그림자비율) |
-| `core/validation.py` | "진짜 미가공 SOOC인가" EXIF 검증, hue 측정 헬퍼 |
+| `core/validation.py` | "진짜 미가공 SOOC인가" EXIF 검증, "실제로 온전히 디코드되는가" 무결성 검증(`is_image_usable`), hue 측정 헬퍼 |
 | `core/denoise.py` | 노이즈 제거 (`denoise()`: nlm/bilateral) - 고ISO 샘플을 브랜드 룩 적용 전에 정리할 때 씀 |
 | `datasets/hasselblad/hasselblad_sample_images.csv` | 핫셀블라드 공식 샘플 메타데이터 (카메라/렌즈/작가/jpeg_url/raw_url) |
 | `datasets/fuji/fuji_sample_pages.csv` | mirrorlesscomparison.com 후지 갤러리의 RAW/JPEG Google Drive 링크 |
@@ -39,6 +39,27 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `tools/calibrate.py` | 핫셀블라드 raw+jpeg 페어 캘리브레이션 CLI - `grid_search`/`learn_curve`/`regularize` 모드 |
 | `tools/denoise.py` | 노이즈 제거 CLI - `python3 -m tools.denoise input.jpg output.jpg [--strength N] [--method nlm\|bilateral]` |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
+
+## 이미지 신뢰성 정책 (2026-07~)
+
+imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원본
+파일 자체를 손상된 채로 저장하고 있는 걸 발견했다(Hasselblad X2D 100C
+갤러리 72%, Phase One XF 100MP 갤러리 100%, Pentax 645Z/K-1 갤러리
+40%가 디코드 도중 멈추고 나머지가 빈 채로 저장돼 있었음 - 재다운로드를
+여러 방식으로 반복해도 똑같이 재현돼서 전송 문제가 아니라 사이트에
+저장된 파일 자체의 결함으로 확인). `cv2.imread()`는 이런 파일도
+"Premature end of JPEG file" 경고만 띄우고 나머지를 검은 픽셀로 채운 채
+조용히 "성공"해버려서 로드 성공 여부나 shape만으로는 못 거른다.
+
+**그래서 이제부터 모든 population 분석은 `core/validation.py`의
+`is_image_usable()`(행 단위 표준편차로 손상 여부 판정)을 통과한
+이미지만 쓴다.** `tools/analyze.py`의 모든 다운로드 경로(핫셀블라드
+공식 CDN + imaging-resource.com 4개 브랜드)에 이미 적용돼 있어 앞으로
+새로 스크레이핑하는 이미지는 자동으로 걸러진다. 기존에 커밋된 population
+통계(Leica/Ricoh GR)는 재검증 결과 손상 없음을 확인했고, 손상이 있었던
+Phase One(전체 손상, 갤러리 재수집 후 n=16으로 축소)과 Pentax(40장 중
+16장 손상, 재수집으로 n=40 유지)는 재검증된 수치로 교체했다(각 브랜드
+파일 docstring 참고).
 
 ## 설치
 

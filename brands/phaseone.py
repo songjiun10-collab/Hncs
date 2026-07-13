@@ -17,6 +17,19 @@ population 통계 (2026-07, imaging-resource.com Phase One XF 100MP 리뷰
   최종(n=30, ISO 차트 제외): 블랙p2=11.4(그림자유효 9장), 화이트p99.5=228.4,
   채도=96.0
 
+무결성 재검증(2026-07, core/validation.py is_image_usable() 적용 후):
+imaging-resource.com media CDN이 이 갤러리의 특정 업로드 배치(2019-05
+재처리분, "Y-JG-IQ4-150MP-*" 전체)를 통째로 손상시켜 저장하고 있었던
+게 드러남 - 원본(href) 링크는 전부 404, scaled 폴백도 행 단위로 텅
+비어있어(디코드가 중간에 멈춤) 위 30장 중 상당수가 사실 못 쓰는
+이미지였음. 갤러리 전체(후보 110장)를 무결성 검증 통과분만 다시 모으니
+16장(그림자유효 6장)으로 줄었지만 전부 실제로 온전한 이미지:
+  재검증(n=16): 블랙p2=12.8(그림자유효 6장), 화이트p99.5=226.5, 채도=114.5
+b2/w995는 기존 값과 비슷하지만(오차범위) 채도는 96.0->114.5로 꽤
+달라짐 - 손상됐던 이미지들이 채도 계산에도 영향을 준 것으로 보임.
+이 재검증값을 최종 채택. 그림자유효 표본이 6장뿐이라 블랙p2는 여전히
+불확실성이 큼.
+
 라이카와 마찬가지로 raw(IIQ) 기준선을 못 구해서(imaging-resource.com의
 DNG 다운로드 링크는 현재 사이트 템플릿에서 사라진 것으로 보임) 그리드서치가
 아니라 population 타깃을 film_curve의 toe_lift/white_point에 직접
@@ -26,8 +39,8 @@ DNG 다운로드 링크는 현재 사이트 템플릿에서 사라진 것으로 
 """
 from core.engine import apply_population_fit_look
 
-_TOE_LIFT = 11.4 / 255
-_WHITE_POINT = 228.4 / 255
+_TOE_LIFT = 12.8 / 255
+_WHITE_POINT = 226.5 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
