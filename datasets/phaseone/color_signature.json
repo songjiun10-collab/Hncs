@@ -1,0 +1,93 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료 (핫셀블라드 color_signature.json과 동일 방법론). population은 이미지 단위 동일 가중치 평균. n=16으로 매우 작은 표본이니(brands/phaseone.py docstring 참고) 참고용으로만 볼 것 - 이미지 한 장 바뀌면 평균/표준편차가 쉽게 흔들린다.",
+  "n_images": 16,
+  "population": {
+    "sat_mean": {
+      "mean": 114.52146983146667,
+      "std": 54.334701055108106,
+      "n": 16
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006323-WB-scaled.jpg",
+      "sat_mean": 139.61549377441406,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006324-WB-scaled.jpg",
+      "sat_mean": 166.2581329345703,
+      "hue_mean": 75.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006393-scaled.jpg",
+      "sat_mean": 70.79535675048828,
+      "hue_mean": 51.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006472-scaled.jpg",
+      "sat_mean": 77.5290298461914,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006513-scaled.jpg",
+      "sat_mean": 180.9025421142578,
+      "hue_mean": 69.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006523-scaled.jpg",
+      "sat_mean": 191.95037841796875,
+      "hue_mean": 56.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006582-scaled.jpg",
+      "sat_mean": 103.30806732177734,
+      "hue_mean": 58.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006612-scaled.jpg",
+      "sat_mean": 105.42244720458984,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006650-scaled.jpg",
+      "sat_mean": 129.9633331298828,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006661-scaled.jpg",
+      "sat_mean": 42.14358901977539,
+      "hue_mean": 91.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006676-scaled.jpg",
+      "sat_mean": 42.83557891845703,
+      "hue_mean": 101.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006681-scaled.jpg",
+      "sat_mean": 47.295631408691406,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006721-scaled.jpg",
+      "sat_mean": 142.16770935058594,
+      "hue_mean": 71.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_YCF004667-scaled.jpg",
+      "sat_mean": 82.71821594238281,
+      "hue_mean": 66.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_YCF004669-scaled.jpg",
+      "sat_mean": 84.37520599365234,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_YCF004670-scaled.jpg",
+      "sat_mean": 225.06280517578125,
+      "hue_mean": 77.0
+    }
+  ]
+}

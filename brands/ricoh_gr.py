@@ -41,6 +41,17 @@ GR II가 블랙p2가 눈에 띄게 낮음(4.7, 나머지는 7.5~11.1) - 초기 �
 차이일 수도 있어 원인 미확인. 이 확대된 전체 population(n=80)을 최종
 타깃으로 채택.
 
+픽셀 시그니처 분석(2026-07, `datasets/ricoh_gr/{tone,color,texture,gamut}_signature.json`
++ `joint_distribution.npz`): 캐시 디렉토리를 다시 스캔해서 n=81(위
+n=80 population 계산 이후 캐시에 남아있던 파일 1장 차이, f값/effect
+테스트샷은 재확인 결과 섞이지 않음)로 핫셀블라드와 동일한 방법론(사진
+단위 동일가중 평균, 중앙 2400x2400 크롭 텍스처 측정)으로 재분석.
+b2=9.25/w995=245.31로 위 population 수치(8.4/245.2)와 비슷한 범위.
+GR/GR II/GR III/GR IIIx 카메라별 분리 유지(GR II median=66.3으로
+가장 어두움). 샤프닝/미세대비/노이즈/에지헤일로/gamut은 아직 카메라별
+분리 없이 전체 평균만 냄 - hue/채도를 안 건드리는 설계라 color/gamut
+수치는 보정 타깃이 아니라 참고 자료.
+
 leica.py/phaseone.py/pentax.py와 동일한 한계: raw 기준선이 없어
 population 타깃을 film_curve의 toe_lift/white_point에 직접 대입,
 shoulder_start/clahe_clip/hue·채도 무조작 가정은 미검증.
