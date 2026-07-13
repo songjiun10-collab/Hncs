@@ -23,14 +23,32 @@ imaging-resource.com에서 Hasselblad/Phase One/Pentax 갤러리가 CDN 자체
 손상 문제를 갖고 있던 게 드러나서 이 40장(f값 테스트 포함)도 재검증
 했음 - 전부 행 단위 손상 없이 정상. 위 수치 변경 없음.
 
+표본 확대(2026-07): 같은 회사/같은 GR 라인업인 GR(1세대, 2013)과
+GR II(2015) 갤러리를 추가로 찾아서(각 20장) n=34->80으로 확대. GR II
+쪽에 HDR 효과 on/off 비교샷(같은 장면 반복, "-effect"/"-no-effect"
+파일명 2장)이 섞여있어 f값 테스트와 같은 방식으로 필터링. Phase One
+XT 때와 달리 GR 라인업은 전부 컬러 APS-C 콤팩트라 흑백 전용 백 같은
+이종 카메라 혼입 위험은 없었음.
+
+  전체(n=80):         블랙p2=8.4   화이트p99.5=245.2  채도=91.4
+  GR III (n=20):      블랙p2=11.1  화이트p99.5=245.8  채도=78.3  (변경 없음)
+  GR IIIx (n=20):     블랙p2=10.3  화이트p99.5=244.2  채도=92.3
+  GR (n=20):          블랙p2=7.5   화이트p99.5=245.1  채도=86.2
+  GR II (n=20):       블랙p2=4.7   화이트p99.5=245.7  채도=108.9
+
+GR II가 블랙p2가 눈에 띄게 낮음(4.7, 나머지는 7.5~11.1) - 초기 센서
+세대라 그림자 렌더링이 다를 수도, 표본(리뷰어 1인, 촬영지)에 의한
+차이일 수도 있어 원인 미확인. 이 확대된 전체 population(n=80)을 최종
+타깃으로 채택.
+
 leica.py/phaseone.py/pentax.py와 동일한 한계: raw 기준선이 없어
 population 타깃을 film_curve의 toe_lift/white_point에 직접 대입,
 shoulder_start/clahe_clip/hue·채도 무조작 가정은 미검증.
 """
 from core.engine import apply_population_fit_look
 
-_TOE_LIFT = 10.3 / 255
-_WHITE_POINT = 243.9 / 255
+_TOE_LIFT = 8.4 / 255
+_WHITE_POINT = 245.2 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 

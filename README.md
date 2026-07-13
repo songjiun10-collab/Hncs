@@ -59,8 +59,11 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
 적용돼 있어 앞으로 새로 스크레이핑하는 이미지는 자동으로 걸러진다.
 
 기존에 커밋된/캐시된 population 데이터를 전부 재검증한 결과:
-  - Leica(45장), Ricoh GR(40장), Fuji(mirrorlesscomparison.com,
-    10개 바디 40장 JPEG): 손상 0장 - 수치 변경 없음
+  - Leica(45장), Fuji(mirrorlesscomparison.com, 10개 바디 40장 JPEG):
+    손상 0장 - 수치 변경 없음
+  - Ricoh GR: 기존 40장(GR III+IIIx) 손상 0장. 이후 GR/GR II 갤러리를
+    추가로 찾아 n=80으로 확대(GR II의 HDR on/off 비교샷은 필터링) -
+    재검증된 수치로 교체
   - Pentax(40장 중 16장 손상): 재수집으로 n=40 유지, 재검증된 수치로 교체
   - Phase One(30장 중 30장 전부 손상): 갤러리 전체(110장 후보)를
     재수집했지만 91장이 또 손상이라 n=16으로 축소, 재검증된 수치로 교체

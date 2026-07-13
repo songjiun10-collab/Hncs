@@ -184,13 +184,21 @@ BRAND_CONFIGS = {
         galleries=[
             ("Ricoh GR III", "https://www.imaging-resource.com/cameras/ricoh-gr-iii-review/gallery/"),
             ("Ricoh GR IIIx", "https://www.imaging-resource.com/cameras/ricoh-gr-iiix-review/gallery/"),
+            # 표본 확대(2026-07) - GR(1세대, 2013)과 GR II(2015)도 같은
+            # 회사/같은 EXIF 검증 패턴이라 추가. Phase One XT 때처럼 흑백
+            # 전용 백 같은 이종 카메라가 섞일 위험은 없음(GR 라인은 전부
+            # 컬러 APS-C 콤팩트).
+            ("Ricoh GR", "https://www.imaging-resource.com/cameras/ricoh-gr-review/gallery/"),
+            ("Ricoh GR II", "https://www.imaging-resource.com/cameras/ricoh-gr-ii-review/gallery/"),
         ],
         max_per_camera=20,
         expected_keywords=("ricoh", "pentax"),
         reject_keywords=("photoshop", "lightroom", "capture one", "camera raw"),
         # "-f\d"는 GR IIIx의 조리개 브라케팅 테스트샷(-f2.8/-f4.0/-f8.0,
-        # 같은 장면 반복) 제외용 - ISO 차트와 같은 종류 문제
-        skip_keywords=("edit", "-mod", "unsharpmask", "nosharp", "stack", "-iso-"),
+        # 같은 장면 반복) 제외용 - ISO 차트와 같은 종류 문제. "-effect"/
+        # "-no-effect"는 GR II의 HDR 효과 on/off 비교샷(같은 장면 반복,
+        # 2026-07 표본확대 때 발견) 제외용.
+        skip_keywords=("edit", "-mod", "unsharpmask", "nosharp", "stack", "-iso-", "-effect"),
         skip_patterns=(re.compile(r"-f\d"),),
         cache_dir="downloaded_samples_ricoh_gr",
         result_csv="ricoh_gr_stats_result.csv",
