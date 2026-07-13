@@ -21,7 +21,7 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `brands/hasselblad.py` | ⭐ 공식 Stable - `apply_hncs`(X 시스템 통합 HNCS 파라메트릭 근사) |
 | `brands/hasselblad_learned.py` | Experimental - `apply_hncs_learned` (raw+jpeg 페어에서 직접 학습한 LUT, RMSE는 더 낮지만 표본 10장) |
 | `brands/hasselblad_day.py` / `brands/hasselblad_night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (day/night 타깃이 apply_hncs 전체 population 타깃에 수렴 중이라 유지 근거 약해지는 중) |
-| `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 9종 (Astia, PRO Neg, Eterna, Acros, Classic Negative 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 실측 검증됨 |
+| `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 10종 (Astia, PRO Neg, Eterna, Acros, Classic Negative 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 실측 검증됨 |
 | `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
@@ -79,19 +79,40 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
 ## 브랜드 함수 QA 검증 (2026-07)
 
 Canon/Sony/Nikon 추가 후 `brands/*.py`의 모든 `apply_*` 함수(핫셀블라드
-4종 + 후지 프리셋 9종 + 라이카/Phase One/Pentax/Ricoh GR/Canon/Sony/
-Nikon 7종, 총 20개)를 랜덤 BGR 배열에 돌려 shape/dtype이 그대로
-보존되는지 스모크테스트함. 전부 정상 동작 확인 - 발견된 버그 없음
+4종 + 후지 프리셋 10종 + 라이카/Phase One/Pentax/Ricoh GR/Canon/Sony/
+Nikon 7종, 총 21개)를 랜덤 BGR 배열에 돌려 shape/dtype이 그대로
+보존되는지 확인함. 전부 정상 동작 확인 - 발견된 버그 없음
 (주의: `apply_acros`/`apply_monochrome`은 설계상 1채널 그레이스케일을
 반환하므로 shape 비교 시 별도 취급 필요, `core.curve`/`core.lut`에서
 `fuji.py`로 재노출된 `apply_highlight_rolloff`/`apply_lut`은 브랜드
-프리셋이 아니라 범용 헬퍼라 이 테스트 대상이 아님).
+프리셋이 아니라 범용 헬퍼라 이 테스트 대상이 아님). 처음엔 수동
+스모크테스트였다가 `tests/test_brands.py`로 정식 테스트화 - 이 과정에서
+README가 후지 프리셋 개수를 9종으로 잘못 적어온 걸 발견해 10종으로
+정정(코드 자체는 원래도 맞았음, 문서만 stale했음).
 
-**진행 중**: Canon/Sony/Nikon도 나머지 5개 브랜드처럼 픽셀 단위 5종
-시그니처 분석(tone/color/texture/gamut/joint_distribution)으로
-확장하는 작업과, 이 세 브랜드를 raw 기준선 있는 캘리브레이션(핫셀블라드
-급)으로 업그레이드할 수 있는 raw+jpeg 페어 소스를 찾는 리서치를
-백그라운드로 진행 중 - 완료되면 이 섹션과 브랜드별 문단을 갱신할 예정.
+Canon/Sony/Nikon도 나머지 5개 브랜드처럼 픽셀 단위 5종 시그니처 분석
+(tone/color/texture/gamut/joint_distribution)으로 확장 완료
+(`datasets/canon,sony,nikon/`) - 이 과정에서 3개 병렬 에이전트가 각자
+sharpening/micro_contrast 공식을 독립 추정하며 스케일이 갈린 걸 발견해
+Sony를 재계산하고 Canon/Sony vs Nikon 간 micro_contrast 비교불가
+caveat를 남겼다(각 브랜드 docstring 참고). 이 세 브랜드를 raw 기준선
+있는 캘리브레이션(핫셀블라드급)으로 업그레이드할 수 있는 raw+jpeg 페어
+소스도 조사했으나 mirrorlesscomparison.com(페어링 자체가 안 됨)/
+imaging-resource.com(raw 다운로드 링크 사망) 둘 다 불가로 결론,
+population-fit 방식 유지.
+
+## 테스트
+
+`tests/` 아래 `unittest` 기반 테스트가 있다(pytest 등 외부 의존성 추가
+없이 `requirements.txt` 최소 의존성 원칙 유지). `core/curve.py`(톤커브
+수학, 경계조건/단조성/연속성)/`core/stats.py`(population 통계 계산)/
+`core/validation.py`(무결성 검증, CDN 손상 패턴 재현)/`core/engine.py`
+(population-fit 엔진)/`brands/*.py`(모든 `apply_*` 룩 함수의 shape/dtype
+보존, 후지 프리셋 개수 일치) 커버.
+
+```
+python3 -m unittest discover -s tests -v
+```
 
 ## 설치
 
