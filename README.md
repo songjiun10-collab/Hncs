@@ -54,12 +54,19 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
 **그래서 이제부터 모든 population 분석은 `core/validation.py`의
 `is_image_usable()`(행 단위 표준편차로 손상 여부 판정)을 통과한
 이미지만 쓴다.** `tools/analyze.py`의 모든 다운로드 경로(핫셀블라드
-공식 CDN + imaging-resource.com 4개 브랜드)에 이미 적용돼 있어 앞으로
-새로 스크레이핑하는 이미지는 자동으로 걸러진다. 기존에 커밋된 population
-통계(Leica/Ricoh GR)는 재검증 결과 손상 없음을 확인했고, 손상이 있었던
-Phase One(전체 손상, 갤러리 재수집 후 n=16으로 축소)과 Pentax(40장 중
-16장 손상, 재수집으로 n=40 유지)는 재검증된 수치로 교체했다(각 브랜드
-파일 docstring 참고).
+공식 CDN + imaging-resource.com 4개 브랜드)와 `tools/download.py`의
+후지 Google Drive 다운로드 경로(`download_fuji_pairs()`) 전부에 이미
+적용돼 있어 앞으로 새로 스크레이핑하는 이미지는 자동으로 걸러진다.
+
+기존에 커밋된/캐시된 population 데이터를 전부 재검증한 결과:
+  - Leica(45장), Ricoh GR(40장), Fuji(mirrorlesscomparison.com,
+    10개 바디 40장 JPEG): 손상 0장 - 수치 변경 없음
+  - Pentax(40장 중 16장 손상): 재수집으로 n=40 유지, 재검증된 수치로 교체
+  - Phase One(30장 중 30장 전부 손상): 갤러리 전체(110장 후보)를
+    재수집했지만 91장이 또 손상이라 n=16으로 축소, 재검증된 수치로 교체
+    (표본 확대를 위해 Phase One XT 갤러리도 시도했으나 살아남은 이미지가
+    전부 흑백 전용 Achromatic 백이라 컬러 population에는 못 써서 제외)
+자세한 수치는 각 브랜드 파일 docstring 참고.
 
 ## 설치
 

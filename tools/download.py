@@ -23,6 +23,9 @@ import urllib.request
 import gdown
 import requests
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.validation import is_image_usable
+
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
 
@@ -257,7 +260,11 @@ def download_fuji_pairs():
 
         raw_files = _collect_files(raw_dir, {".raf"})
         jpeg_files = _collect_files(jpeg_dir, {".jpg", ".jpeg"})
-        print(f"  raw {len(raw_files)}장, jpeg {len(jpeg_files)}장")
+        n_before = len(jpeg_files)
+        jpeg_files = [f for f in jpeg_files if is_image_usable(f)]
+        if len(jpeg_files) < n_before:
+            print(f"  손상 JPEG 제외: {n_before - len(jpeg_files)}장")
+        print(f"  raw {len(raw_files)}장, jpeg {len(jpeg_files)}장 (무결성 검증 통과분)")
 
         raw_by_time = {}
         for f in raw_files:
