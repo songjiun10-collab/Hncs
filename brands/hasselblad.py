@@ -177,9 +177,9 @@ def apply_hncs_learned(img_bgr, clahe_clip=1.25):
 
 def apply_hasselblad_day(
     img_bgr,
-    midtone_gamma=0.95,
-    contrast_n=1.15,
-    white_point=0.96,
+    midtone_gamma=0.85,
+    contrast_n=1.35,
+    white_point=0.92,
     rolloff_start=0.80,
     saturation=1.0,
     clahe_clip=1.3,
@@ -190,6 +190,20 @@ def apply_hasselblad_day(
     5장/전체 8장) -> midtone_gamma 1.18->0.95, white_point 0.94->0.96,
     contrast_n 1.35->1.15. 재현: 블랙p2=12.8(목표13.4), 화이트p99.5=231.0
     (목표230.2).
+
+    v3 (2026-07, 표본 확대): 공식 샘플 풀 124장을 실제로 한 장씩 육안
+    검토해서(콘택트시트) 확실한 야간 장면 12장(가로등/네온/오로라/은하수/
+    도심야경 등)을 골라내고 나머지 112장을 day로 재분류 - v2는 8장뿐이던
+    표본이 124장으로 늘어남. 새 타깃: 블랙p2=11.5, 화이트p99.5=224.1
+    (day 112장 기준) -> midtone_gamma 0.95->0.85, contrast_n 1.15->1.35,
+    white_point 0.96->0.92 (rolloff_start/saturation/clahe_clip은 그대로).
+    day 40장 서브샘플 그리드서치 RMSE 22.01->18.65.
+
+    day(11.5/224.1)와 night(9.7/221.3, 아래 참고)이 v2 때보다 더 수렴함 -
+    핫셀블라드 전체 population 타깃(v9: 11.3/223.9)과도 거의 같은 값이라,
+    day/night를 별개 프리셋으로 유지할 근거가 계속 약해지고 있음(아직
+    apply_hncs로 통합은 안 함 - 통합하면 이 두 함수가 없어지므로 별도
+    작업으로 결정 필요).
     """
     # --- 톤: 전부 L채널 (색 보존 구조) ---
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
@@ -231,6 +245,15 @@ def apply_hasselblad_night(
     포르쉐주차장, 전부 그림자유효). 타깃 블랙p2=15.0, 화이트p99.5=228.5
     -> black_out 0.07->0.02, white_out 0.65->0.88. 재현: 블랙p2=14.2
     (목표15.0), 화이트p99.5=228.8(목표228.5).
+
+    v3 (2026-07, 표본 확대): 공식 샘플 풀 124장을 육안 콘택트시트 검토로
+    재분류(포르쉐주차장 포함 12장이 확실한 야간 - 가로등/네온/오로라/
+    은하수/도심야경 등). 새 타깃 블랙p2=9.7, 화이트p99.5=221.3 (12장,
+    전부 그림자유효) -> 그리드서치 결과 기존 기본값(black_out=0.02,
+    white_out=0.88)이 그대로 최적으로 나옴(RMSE 20.61, 변경 없음).
+    apply_hasselblad_day의 v3 재보정과 마찬가지로 이 새 타깃도 전체
+    population 타깃(v9: 11.3/223.9)에 가까워서 day/night 통합 근거가
+    더 강해짐.
     """
     # --- 0+1. 노출 정규화 + S커브를 모두 L채널에서 (색 보존) ---
     # BGR 감마 리프트는 min채널을 상대적으로 더 올려 채도를 죽임 -> L에서 수행

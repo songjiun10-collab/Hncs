@@ -82,7 +82,23 @@ python3 -m tools.calibrate learn_curve    # raw+jpeg 픽셀 대응으로 톤커�
 python3 -m tools.calibrate regularize     # 학습 LUT 정규화 + leave-one-out 교차검증
 ```
 
-## 현재까지의 실측 결론 (v12 기준, `brands/hasselblad.py` docstring 참고)
+## 현재까지의 실측 결론 (v12/day-night v3 기준, `brands/hasselblad.py` docstring 참고)
+
+- **재검증(2026-07, brands/core/tools 리팩토링 후)**: `apply_hncs`(순정)와
+  `apply_hncs_learned`(런드)를 `tools.calibrate grid_search`/`learn_curve`로
+  다시 돌려서 RMSE가 리팩토링 전과 완전히 동일하게 재현됨을 확인
+  (23.31→16.51 grid_search, 23.31→15.41 learn_curve) - raw+jpeg 페어가
+  여전히 10장뿐이라(나머지는 죽은 링크) 더 재보정할 새 데이터는 없음
+- **day/night v3**: 공식 샘플 124장을 콘택트시트로 만들어 한 장씩 육안
+  검토, 확실한 야간 장면 12장(가로등/네온/오로라/은하수/도심야경 등)을
+  골라내고 나머지 112장을 day로 재분류(v2는 day 5장+night 4장뿐이었음).
+  새 타깃: day 블랙p2=11.5/화이트p99.5=224.1(n=112), night 블랙p2=9.7/
+  화이트p99.5=221.3(n=12) - v2보다 표본이 훨씬 크고 여전히(오히려 더)
+  전체 population 타깃(11.3/223.9)에 수렴함. `apply_hasselblad_day`는
+  새 타깃으로 재피팅(midtone_gamma 0.95→0.85, contrast_n 1.15→1.35,
+  white_point 0.96→0.92, RMSE 22.01→18.65), `apply_hasselblad_night`는
+  그리드서치해도 기존 기본값이 그대로 최적으로 나와 변경 없음. day/night를
+  별개 프리셋으로 유지할 근거는 계속 약해지는 중(통합은 아직 안 함)
 
 - 공식 샘플 124장 통합 풀 기준 블랙p2=11.3, 화이트p99.5=223.9, 인물
   서브셋(43장)은 10.2/226.3 — v8(19~20장) 대비 큰 변동 없음
