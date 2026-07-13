@@ -33,7 +33,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.stats import image_stats
-from core.validation import genuine_render_check, region_hue
+from core.validation import genuine_render_check, is_image_array_usable, is_image_usable, region_hue
 from tools.download import list_gallery_images, resolve_full_image, download_file
 
 
@@ -54,7 +54,7 @@ def _hasselblad_download(url, path, max_dim=2000):
             data = resp.read()
         arr = np.frombuffer(data, dtype=np.uint8)
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
-        if img is None:
+        if img is None or not is_image_array_usable(img):
             return False
         h, w = img.shape[:2]
         scale = max_dim / max(h, w)
@@ -220,11 +220,21 @@ def run_imaging_resource_brand(brand):
 
             fname = f"{camera.replace(' ', '_')}_{os.path.basename(original_url)}"
             path = os.path.join(cfg["cache_dir"], fname)
-            if not download_file(original_url, path):
-                # 원본(href)이 404인 경우가 종종 있어서 scaled로 폴백
+            ok = download_file(original_url, path) and is_image_usable(path)
+            if not ok:
+                # 원본(href)이 404거나 media.imaging-resource.com에 손상된
+                # 채로 저장돼 있는 경우가 종종 있어서 scaled로 폴백
+                # (2026-07 실측: 사이트 자체 CDN 손상 - core/validation.py
+                # is_image_usable() docstring 참고)
+                if os.path.exists(path):
+                    os.remove(path)
                 fname = f"{camera.replace(' ', '_')}_{os.path.basename(scaled_url)}"
                 path = os.path.join(cfg["cache_dir"], fname)
-                if not download_file(scaled_url, path):
+                ok = download_file(scaled_url, path) and is_image_usable(path)
+                if not ok:
+                    if os.path.exists(path):
+                        os.remove(path)
+                    print(f"  스킵 (손상된 원본/scaled, imaging-resource.com CDN 문제): {fname}")
                     continue
 
             expected_ok, rejected = genuine_render_check(path, cfg["expected_keywords"], cfg["reject_keywords"])
