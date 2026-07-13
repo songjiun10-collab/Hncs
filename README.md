@@ -18,7 +18,9 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 
 | 파일 | 역할 |
 |---|---|
-| `brands/hasselblad.py` | X 시스템(X1D~X2D II) HNCS 근사 - `apply_hncs`(파라메트릭), `apply_hncs_learned`(raw+jpeg 페어에서 학습한 LUT), `apply_hasselblad_day`/`apply_hasselblad_night` |
+| `brands/hasselblad.py` | ⭐ 공식 Stable - `apply_hncs`(X 시스템 통합 HNCS 파라메트릭 근사) |
+| `brands/hasselblad_learned.py` | Experimental - `apply_hncs_learned` (raw+jpeg 페어에서 직접 학습한 LUT, RMSE는 더 낮지만 표본 10장) |
+| `brands/hasselblad_day.py` / `brands/hasselblad_night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (day/night 타깃이 apply_hncs 전체 population 타깃에 수렴 중이라 유지 근거 약해지는 중) |
 | `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 8종 (Astia, PRO Neg, Eterna, Acros 등) - Astia/Pro Neg Std는 실측 검증됨 |
 | `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |

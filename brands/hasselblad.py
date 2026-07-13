@@ -1,11 +1,17 @@
 """
 HNCS(Hasselblad Natural Colour Solution) 근사 - X 시스템 통합
-(X1D + X1D II + X2D + X2D II 혼합 풀). 이 파일은 원래 hasselblad_hncs.py
-+ hasselblad_hncs_learned.py + hasselblad_day.py + hasselblad_night.py
-4개 파일이었던 걸 brands/ 리팩토링 때 하나로 합쳤다 - 4개 함수
-(apply_hncs/apply_hncs_learned/apply_hasselblad_day/apply_hasselblad_night)
-모두 "같은 X 시스템 색과학을 다른 방법/다른 서브셋으로 근사한다"는
-공통 목표라 한 파일에 묶는 게 자연스러웠다.
+(X1D + X1D II + X2D + X2D II 혼합 풀). ⭐ 공식 Stable - `apply_hncs`
+하나만 담는다. 원래 이 파일 하나에 apply_hncs/apply_hncs_learned/
+apply_hasselblad_day/apply_hasselblad_night 4개 함수가 다 있었는데,
+"공식 채택(파라메트릭)" vs "실험/레거시"를 명확히 가르려고 다시 분리했다:
+  brands/hasselblad.py         - apply_hncs (이 파일, Stable)
+  brands/hasselblad_learned.py - apply_hncs_learned (Experimental)
+  brands/hasselblad_day.py     - apply_hasselblad_day (Legacy)
+  brands/hasselblad_night.py   - apply_hasselblad_night (Legacy)
+day/night가 "Legacy"인 이유: v3 재보정(2026-07) 결과 day/night 타깃 둘 다
+apply_hncs의 전체 population 타깃에 거의 수렴해서, 별도 프리셋으로 유지할
+근거가 계속 약해지는 중이기 때문 (아직 apply_hncs로 통합은 안 함 - 각
+파일 docstring 참고).
 
 문서화된 HNCS 설계 원칙 (hasselblad.com):
 1. "Hasselblad Film Curve" - toe + 리니어 미드 + shoulder의 필름형 톤커브
@@ -16,16 +22,6 @@ HNCS(Hasselblad Natural Colour Solution) 근사 - X 시스템 통합
 5. HNCS는 X 시스템 전체(X1D~X2D II)에 걸쳐 일관 적용되는 색철학 -> 바디
    세대를 섞어서 풀링하는 것이 오히려 "카메라 개체차"를 노이즈로 상쇄시켜
    "X 시스템 공통 색과학"을 더 안정적으로 드러냄 (설계 판단, 2026-07)
-
-라이브러리 구조 (이 파일 안의 4개 함수):
-  apply_hncs          - X 시스템 통합 순정 근사 (파라메트릭 커브, 기본)
-  apply_hncs_learned   - 같은 목표를 raw+jpeg 페어에서 직접 학습한 LUT으로
-                         근사 (v12, RMSE 더 낮음 - 아래 참고)
-  apply_hasselblad_day    - 낮 장면 그레이딩
-  apply_hasselblad_night  - 밤 장면 그레이딩 (DR 중앙 압축)
-  (day/night 자체 실측 결과, 타깃이 apply_hncs의 전체 population과 거의
-  수렴한다는 게 나와서 - 아래 "day/night" 섹션 참고 - 언젠가 apply_hncs로
-  통합할 근거가 있음. 아직 안 함)
 
 === apply_hncs 실측 검증 이력 ===
 
@@ -67,33 +63,28 @@ gamma=(2.222,4.5)(sRGB형) 대신 gamma=(1,1)(linear)로 바꿔서 "디모자이
 "센서에 더 가깝게" 만든다고 실제 camera profile 출력과 더 비슷해지는 게
 아니었음. gamma=(2.222,4.5) 베이스라인 유지, linear 실험은 되돌림.
 
-v12: toe+리니어미드+shoulder라는 파라메트릭 모양을 아예 가정하지 않고,
-raw+jpeg 페어(10장, gamma=(2.222,4.5) 베이스라인)의 neutral_L/target_L을
-픽셀 단위로 대응시켜(총 1,078만 쌍) neutral_L값별 target_L 중앙값으로
-256단계 LUT을 직접 학습 (tools/calibrate.py learn_curve 모드). RMSE=15.4로
-v11 파라메트릭(23.3)보다 낮음 - apply_hncs_learned()로 분리 제공(이
-파일의 apply_hncs 기본값은 안 건드림: 원본이 raw+jpeg 페어 10장뿐이라
-완전히 대체하기엔 표본이 작다고 판단, 파라메트릭/데이터기반 두 버전을
-나란히 유지). 학습된 커브는 그림자 리프트가 원안보다 훨씬 급격하고
-(neutral_L 16->target_L 49), 중간톤은 로그형으로 완만해지다 하이라이트는
-소프트 숄더로 수렴 - "toe+리니어미드+shoulder" 가정과 결이 다름.
+v12: raw+jpeg 페어(10장)를 픽셀 단위로 대응시켜 직접 LUT을 학습하는
+데이터기반 버전을 시도, RMSE=15.4로 이 파일의 파라메트릭(23.3)보다
+낮게 나옴 - 별도 파일 `brands/hasselblad_learned.py`의
+apply_hncs_learned()로 분리 제공 (원본이 10장뿐이라 표본이 작다고 판단해
+이 파일의 apply_hncs 기본값은 안 건드리고 나란히 유지, 자세한 이력은
+그 파일 docstring 참고).
 
-실험 기록 (음성 결과): v12 LUT이 raw+jpeg 10장뿐이라 과적합 우려가 있어,
-bin별 표본수에 반비례해 v11 파라메트릭 커브 쪽으로 수축시키는 정규화를
-추가해보고, 10장 leave-one-out 교차검증으로 lambda별 일반화 성능을 측정
-(tools/calibrate.py regularize 모드). 결과: lambda=0(정규화 없음)이 LOO
-RMSE 14.6으로 제일 좋고, lambda를 키울수록(파라메트릭 쪽으로 더 당길수록)
-오히려 계속 나빠짐(lambda=20000일 때 20.7, 순수 파라메트릭 28.0). 원인:
-매 fold마다 9장 * 약 108만 픽셀 = 약 970만 픽셀이 들어가서 경험적 평균
-자체의 분산은 이미 충분히 작고, 파라메트릭 커브는 표본 부족이 아니라
-모양 자체(toe+shoulder 가정)가 실측 톤커브(로그형)와 달라서 그쪽으로
-당길수록 체계적 편향만 커짐. apply_hncs_learned()는 정규화 없는 순수
-경험적 LUT 그대로 유지.
+재검증(2026-07, brands/core/tools 리팩토링 후): `tools.calibrate
+grid_search`/`learn_curve`로 다시 돌려서 RMSE가 리팩토링 전과 완전히
+동일하게 재현됨을 확인(23.31->16.51 grid_search, 23.31->15.41
+learn_curve) - raw+jpeg 페어가 여전히 10장뿐이라(나머지는 죽은 링크) 더
+재보정할 새 데이터는 없음.
+
+파이프라인 시그니처 분석(2026-07, 공식 샘플 124장 전량 진짜 원본
+재다운로드로 샤프닝/미세대비/노이즈/에지헤일로/JPEG 특성 측정): 어느
+지표도 확실하고 비혼재된 신호가 아니어서 이 파일에 새 파라미터를
+반영하지 않기로 결정 (자세한 근거는 README.md 참고).
 """
 import cv2
 import numpy as np
 
-from core.curve import film_curve, s_curve, apply_highlight_rolloff
+from core.curve import film_curve
 
 
 def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
@@ -121,164 +112,3 @@ def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
 
     # 3. 채도/hue 무조작 (rich saturation은 "안 건드림"으로 달성)
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
-
-
-# neutral_L(0~255) -> target_L, tools/calibrate.py learn_curve 모드로
-# raw+jpeg 10페어에서 학습 (v12). raw+jpeg 페어 기준 RMSE:
-#   apply_hncs (파라메트릭)     23.31
-#   apply_hncs_learned (이 LUT) 15.41
-# 학습에 쓴 원본이 10장(대부분 X1D 계열)뿐이라 표본이 늘어나면 LUT이
-# 달라질 수 있음. CLAHE와 hue/채도 무조작 원칙은 apply_hncs와 동일하게
-# 유지 - 다만 커브 자체가 apply_hncs 기본값보다 급격해서 8비트 Lab<->BGR
-# <->HSV 왕복 변환에서 나오는 hue 반올림 오차가 apply_hncs(평균
-# |delta|~0.2)보다 큼(샘플 1장 기준 평균 |delta|~3.0/179) - 여전히 육안상
-# 무시할 수준이지만 apply_hncs만큼 엄격하게 불변은 아님.
-_LEARNED_LUT = np.array([
-    3, 9, 12, 14, 15, 16, 18, 21, 27, 27, 28, 36, 38, 39, 40, 46,
-    49, 50, 52, 54, 57, 57, 58, 59, 60, 60, 65, 65, 65, 68, 68, 69,
-    69, 72, 72, 73, 75, 79, 79, 79, 79, 79, 79, 79, 79, 80, 80, 82,
-    84, 86, 86, 88, 89, 91, 94, 97, 99, 102, 103, 106, 109, 110, 113, 113,
-    114, 115, 117, 119, 119, 120, 122, 123, 124, 128, 130, 130, 132, 135, 138, 139,
-    141, 143, 145, 147, 149, 150, 152, 154, 155, 157, 159, 160, 161, 162, 164, 165,
-    166, 168, 169, 170, 171, 172, 174, 175, 177, 178, 179, 180, 181, 183, 184, 185,
-    186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186, 186,
-    195, 201, 201, 202, 202, 202, 203, 204, 205, 207, 207, 208, 209, 209, 210, 210,
-    211, 211, 212, 213, 213, 213, 213, 213, 216, 217, 217, 218, 219, 220, 221, 222,
-    222, 223, 223, 224, 224, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225, 225,
-    225, 225, 225, 225, 225, 225, 225, 225, 225, 226, 226, 226, 226, 226, 226, 227,
-    227, 228, 228, 229, 229, 230, 230, 231, 231, 232, 232, 233, 234, 234, 234, 235,
-    235, 236, 236, 236, 237, 238, 238, 238, 239, 239, 240, 240, 240, 241, 241, 242,
-    242, 243, 243, 244, 244, 244, 245, 245, 245, 246, 246, 246, 246, 247, 247, 248,
-    248, 248, 248, 249, 249, 249, 249, 249, 250, 255, 255, 255, 255, 255, 255, 255,
-], dtype=np.uint8)
-
-
-def apply_hncs_learned(img_bgr, clahe_clip=1.25):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    l = cv2.LUT(l, _LEARNED_LUT)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
-
-
-# === day/night ===
-# v1(day: 홍콩 3장, night: 한강 1장, 출처 불확실)로 만든 강한 그레이딩은
-# 공식 샘플로 재검증하니 낮/밤 타깃이 거의 수렴함(day blackp2 13.4 vs
-# night 15.0, 화이트 230.2 vs 228.5) - v1의 극단적 스타일은 "X1D 낮/밤
-# 특성"이 아니라 그 사진 1~3장의 그레이딩(혹은 사진가 개인 스타일)이었을
-# 가능성이 높음. v2(아래)는 공식 day 5장/night 4장 실측으로 되돌린 버전.
-# day/night 타깃이 apply_hncs의 전체 population 타깃(11.3/223.9, v9
-# 기준)과도 큰 차이가 없어서, 장기적으로는 apply_hncs 하나로 통합할
-# 근거가 있음 - 아직 통합 작업은 안 함.
-
-def apply_hasselblad_day(
-    img_bgr,
-    midtone_gamma=0.85,
-    contrast_n=1.35,
-    white_point=0.92,
-    rolloff_start=0.80,
-    saturation=1.0,
-    clahe_clip=1.3,
-):
-    """
-    v2: 공식 day 샘플 5장 실측 (아이슬란드폭포/타워브리지/숲개울인물/
-    드레스인물/풀숲나비). 타깃 블랙p2=13.4, 화이트p99.5=230.2 (그림자유효
-    5장/전체 8장) -> midtone_gamma 1.18->0.95, white_point 0.94->0.96,
-    contrast_n 1.35->1.15. 재현: 블랙p2=12.8(목표13.4), 화이트p99.5=231.0
-    (목표230.2).
-
-    v3 (2026-07, 표본 확대): 공식 샘플 풀 124장을 실제로 한 장씩 육안
-    검토해서(콘택트시트) 확실한 야간 장면 12장(가로등/네온/오로라/은하수/
-    도심야경 등)을 골라내고 나머지 112장을 day로 재분류 - v2는 8장뿐이던
-    표본이 124장으로 늘어남. 새 타깃: 블랙p2=11.5, 화이트p99.5=224.1
-    (day 112장 기준) -> midtone_gamma 0.95->0.85, contrast_n 1.15->1.35,
-    white_point 0.96->0.92 (rolloff_start/saturation/clahe_clip은 그대로).
-    day 40장 서브샘플 그리드서치 RMSE 22.01->18.65.
-
-    day(11.5/224.1)와 night(9.7/221.3, 아래 참고)이 v2 때보다 더 수렴함 -
-    핫셀블라드 전체 population 타깃(v9: 11.3/223.9)과도 거의 같은 값이라,
-    day/night를 별개 프리셋으로 유지할 근거가 계속 약해지고 있음(아직
-    apply_hncs로 통합은 안 함 - 통합하면 이 두 함수가 없어지므로 별도
-    작업으로 결정 필요).
-    """
-    # --- 톤: 전부 L채널 (색 보존 구조) ---
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    x = np.arange(256, dtype=np.float32) / 255.0
-    y = x ** midtone_gamma          # 미드톤 다운
-    y = s_curve(y, n=contrast_n)    # 깊은 블랙 + 대비
-    y = apply_highlight_rolloff(x, y, start=rolloff_start)
-    y = y * white_point             # 화이트포인트 압축
-    lut = np.clip(y * 255, 0, 255).astype(np.uint8)
-    l = cv2.LUT(l, lut)
-
-    # 마이크로 콘트라스트 (레퍼런스의 살아있는 텍스처)
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    img_u8 = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
-
-    # --- 채도 (hue 불변) ---
-    if saturation != 1.0:
-        hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
-        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation, 0, 255)
-        img_u8 = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
-
-    return img_u8
-
-
-def apply_hasselblad_night(
-    img_bgr,
-    black_out=0.02,      # v1: 0.07 (한강1장) -> 4장 풀링 시 축소
-    white_out=0.88,      # v1: 0.65 -> 밤 타깃도 낮과 거의 같아 대폭 완화
-    saturation=1.08,   # 실측 교훈: 핫셀 야경은 채도가 살아있는 압축 톤 (억제 아님)
-    contrast_n=1.2,
-    exposure_gamma=None, # None이면 자동 노출 정규화 (중앙명도 -> 0.21)
-):
-    """
-    v2: 공식 night 샘플 4장 실측 (야간교량/도심야경자동차/유목해변/
-    포르쉐주차장, 전부 그림자유효). 타깃 블랙p2=15.0, 화이트p99.5=228.5
-    -> black_out 0.07->0.02, white_out 0.65->0.88. 재현: 블랙p2=14.2
-    (목표15.0), 화이트p99.5=228.8(목표228.5).
-
-    v3 (2026-07, 표본 확대): 공식 샘플 풀 124장을 육안 콘택트시트 검토로
-    재분류(포르쉐주차장 포함 12장이 확실한 야간 - 가로등/네온/오로라/
-    은하수/도심야경 등). 새 타깃 블랙p2=9.7, 화이트p99.5=221.3 (12장,
-    전부 그림자유효) -> 그리드서치 결과 기존 기본값(black_out=0.02,
-    white_out=0.88)이 그대로 최적으로 나옴(RMSE 20.61, 변경 없음).
-    apply_hasselblad_day의 v3 재보정과 마찬가지로 이 새 타깃도 전체
-    population 타깃(v9: 11.3/223.9)에 가까워서 day/night 통합 근거가
-    더 강해짐.
-    """
-    # --- 0+1. 노출 정규화 + S커브를 모두 L채널에서 (색 보존) ---
-    # BGR 감마 리프트는 min채널을 상대적으로 더 올려 채도를 죽임 -> L에서 수행
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    if exposure_gamma is None:
-        valid = l[l > 3]  # 순흑 프레임 제외
-        med = np.median(valid) / 255.0 if valid.size else 0.21
-        exposure_gamma = float(np.clip(np.log(0.18) / np.log(max(med, 1e-4)), 0.35, 1.0))
-    x = np.arange(256, dtype=np.float32) / 255.0
-    y = s_curve(x ** exposure_gamma, n=contrast_n)
-    lut = np.clip(y * 255, 0, 255).astype(np.uint8)
-    l = cv2.LUT(l, lut)
-    img_u8 = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
-
-    # --- 2. 채도 (hue 불변) ---
-    hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
-    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * saturation, 0, 255)
-    img = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR).astype(np.float32) / 255.0
-
-    # --- 3. DR 중앙 압축 (핵심): BGR 전 채널 [0,1] -> [black,white] ---
-    # smoothstep 숄더로 상단 부드럽게 (하드클립 없이 white_out으로 수렴)
-    hl = img > 0.6
-    t = (img[hl] - 0.6) / 0.4
-    img[hl] = 0.6 + (t * t * (3 - 2 * t)) * (white_out + 0.05 - 0.6)  # 최상단 광원만 white_out 약간 초과 허용
-    img = black_out + img * (1.0 - black_out)
-
-    return np.clip(img * 255, 0, 255).astype(np.uint8)
