@@ -21,7 +21,7 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `brands/hasselblad.py` | ⭐ 공식 Stable - `apply_hncs`(X 시스템 통합 HNCS 파라메트릭 근사) |
 | `brands/hasselblad_learned.py` | Experimental - `apply_hncs_learned` (raw+jpeg 페어에서 직접 학습한 LUT, RMSE는 더 낮지만 표본 10장) |
 | `brands/hasselblad_day.py` / `brands/hasselblad_night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (day/night 타깃이 apply_hncs 전체 population 타깃에 수렴 중이라 유지 근거 약해지는 중) |
-| `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 10종 (Astia, PRO Neg, Eterna, Acros, Classic Negative 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 실측 검증됨 |
+| `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 10종 (Astia, PRO Neg, Eterna, Acros, Classic Negative 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 population 실측 검증됨, Pro Neg Hi/Eterna Cinema/Nostalgic Neg는 동일장면 비교차트로 추가 검증·재보정(표본 n=1~3, 저신뢰) |
 | `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
@@ -113,7 +113,8 @@ population-fit 방식 유지.
 `core/validation.py`(무결성 검증, CDN 손상 패턴 재현)/`core/engine.py`
 (population-fit 엔진)/`brands/*.py`(모든 `apply_*` 룩 함수의 shape/dtype
 보존, 후지 프리셋 개수 일치)/`tools/fuji_chart_calibrate.py`(크롭박스
-추출, delta 집계) 커버.
+추출, delta 집계) 커버. `.github/workflows/tests.yml`이 push/PR마다
+자동으로 이 스위트를 돌린다.
 
 ```
 python3 -m unittest discover -s tests -v

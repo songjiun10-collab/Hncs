@@ -56,14 +56,18 @@ population 방식(서로 다른 사진들을 필름모드별로 모아 통계 �
   적어(양쪽 다 한 자릿수) 어느 쪽이 맞는지 판단 근거 부족. 기존 코드는
   안 건드림(이미 실사용 중인 걸 소표본 하나로 뒤집는 건 위험) - 표본이
   더 모이면 재확인 필요.
-- **Pro Neg Hi/Eterna Cinema**: 처음으로 실측 delta 확보(Pro Neg Hi
-  n=3: 블랙p2 -19.0, 채도 +5.8 / Eterna Cinema n=2: 블랙p2 +6.0, 채도
-  -12.8) - 방향은 기존 구현과 대체로 일치하지만 강도가 실측보다 훨씬
-  과함(Pro Neg Hi 프리셋 채도 delta +21.2 vs 실측 +5.8, Eterna Cinema
-  프리셋 블랙p2 delta +32.5 vs 실측 +6.0). 둘 다 아직 BGR채널/CLAHE 방식
-  구조라 sat_mult 등 튜닝 파라미터가 없어서 그리드서치 재보정은 보류 -
-  Bleach Bypass/Classic Negative처럼 Lab L채널 커브 구조로 옮기는 리팩터가
-  선행돼야 함(추후 작업).
+- **Pro Neg Hi/Eterna Cinema 리팩터+재보정**: 처음으로 실측 delta 확보
+  (Pro Neg Hi n=3: 블랙p2 -19.0, 채도 +5.8 / Eterna Cinema, Provia 라벨이
+  확실한 차트 1장 기준: 블랙p2 +6.0, 채도 -12.8) - 둘 다 대비커브를
+  apply_lut()로 BGR 채널에 개별 적용하던 구조라(Astia/Pro Neg Std 때와
+  같은 패턴) 강도가 실측보다 훨씬 과했음(Pro Neg Hi 채도 delta 실측 +5.8
+  vs 기존프리셋 +23.2, Eterna Cinema 블랙p2 delta 실측 +6.0 vs 기존
+  +32.5). Bleach Bypass/Classic Negative처럼 Lab L채널 커브 구조로
+  리팩터하고 그리드서치로 재보정 - Pro Neg Hi는 3장 평균으로 상당히
+  근접(채도 delta +6.5, 목표 +5.8), Eterna Cinema는 신뢰도 있는 차트가
+  1장뿐이라 그 1장에 정확히 맞춘 것이라 과적합 위험이 있음(다른 차트
+  1장은 무라벨 셀을 Provia로 추정한 것이라 튜닝에서 제외 - 그 차트까지
+  포함한 집계에서는 채도 방향이 어긋남, 각 함수 docstring에 상세 기록).
 - **Nostalgic Neg 버그 발견 및 부분 수정**: 실측(n=1) 채도 delta가 거의
   0(+0.8)인데 기존 구현은 +123까지 폭주 - Astia/Pro Neg Std 때와 같은
   BGR 채널별 조정+곱셈식 boost 버그. BGR 채널 조정 제거 + Lab a/b를
@@ -135,38 +139,57 @@ def apply_pro_neg_std(img_bgr):
 
 
 # ==========================================
-# 3. PRO Neg. Hi (Std + 콘트라스트 강화) - 미검증
+# 3. PRO Neg. Hi (Std + 콘트라스트 강화) - 실측 검증됨(2026-07, n=3, 동일장면 비교차트)
 # ==========================================
-def apply_pro_neg_hi(img_bgr):
-    img_hsv = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2HSV).astype(np.float32)
-    img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.85, 0, 255)
-    img = cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+def apply_pro_neg_hi(img_bgr, sat_mult=1.10, contrast_n=1.7, clahe_clip=1.5):
+    """
+    2026-07 동일장면 비교차트 실측(n=3): 기존 구현은 대비커브를
+    apply_lut()로 BGR 채널에 개별 적용해서(Astia/Pro Neg Std 때와 같은
+    패턴) 채도가 실측보다 훨씬 크게 뜸(예: 채도 delta 실측 +5.8 vs 프리셋
+    +23.2). Lab L채널에만 커브+CLAHE를 걸도록 바꾸고 그리드서치로 재보정
+    (HSV desaturation 0.85 -> saturation 배율 1.10로 반전 - 실측은 Pro
+    Neg Hi가 Provia보다 오히려 살짝 더 채도가 높았음, contrast_n
+    2.2->1.7) - RMSE 개선(3장 평균 기준).
+    """
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
 
     x = np.arange(256, dtype=np.float32) / 255.0
-    y = s_curve(x, n=2.2)
-
+    y = s_curve(x, n=contrast_n)
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
-    img_curved = apply_lut(img, lut)
+    l = cv2.LUT(l, lut)
 
-    img_lab = cv2.cvtColor(img_curved, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(img_lab)
-    clahe = cv2.createCLAHE(clipLimit=1.5, tileGridSize=(8, 8))
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
     l = clahe.apply(l)
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+    img_u8 = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * sat_mult, 0, 255)
+    return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
 
 # ==========================================
-# 4. Eterna/Cinema (영화 느낌, 플랫, 틸 쉐도우) - 미검증
+# 4. Eterna/Cinema (영화 느낌, 플랫, 틸 쉐도우) - 실측 일부 검증(2026-07, n=1, 동일장면 비교차트)
 # ==========================================
-def apply_eterna_cinema(img_bgr):
+def apply_eterna_cinema(img_bgr, sat_mult=0.55, black_lift=0.04, white_point=0.90):
+    """
+    2026-07 동일장면 비교차트 실측(Provia 라벨이 확실한 차트 1장 기준 -
+    다른 차트 하나는 무라벨 셀을 Provia로 추정한 것이라 신뢰도 낮아 튜닝엔
+    제외): 기존 구현은 flatten 커브를 apply_lut()로 BGR 채널에 개별
+    적용했고(black_lift=0.15로 과하게 밝힘) 블랙p2 delta가 실측(+6.0)의
+    5배 이상(+30~35)으로 떴음. Lab L채널에만 커브를 걸도록 바꾸고
+    black_lift/white_point/sat_mult를 그 차트 1장에 맞춰 재보정(0.15->0.04,
+    0.85->0.90, 0.65->0.55) - 정확히 맞긴 하지만 표본이 1장뿐이라 과적합
+    위험 있음, 표본이 더 모이면 재확인 필요.
+    """
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
     x = np.arange(256, dtype=np.float32) / 255.0
-    y = np.clip(x * 0.7 + 0.15, 0, 1)
-
-    lut = np.clip(y * 255, 0, 255).astype(np.uint8)
-    img_flat = apply_lut(img_bgr, lut)
-
-    img_lab = cv2.cvtColor(img_flat, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(img_lab)
+    lut = np.clip((black_lift + x * (white_point - black_lift)) * 255, 0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
     l_float = l.astype(np.float32) / 255.0
 
     shadow_weight = np.clip(1.0 - (l_float * 2.0), 0, 1)
@@ -176,7 +199,7 @@ def apply_eterna_cinema(img_bgr):
     img_shifted = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
     img_hsv = cv2.cvtColor(img_shifted, cv2.COLOR_BGR2HSV).astype(np.float32)
-    img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.65, 0, 255)
+    img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * sat_mult, 0, 255)
     return cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
 
