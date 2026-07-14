@@ -1,5 +1,5 @@
 """
-후지필름 스타일 필름 시뮬레이션 프리셋 9종.
+후지필름 스타일 필름 시뮬레이션 프리셋 10종.
 
 Astia/Pro Neg Std는 실측 검증됨(tools/analyze.py fuji_film_modes 모드,
 mirrorlesscomparison.com 리뷰 갤러리의 RAW+SOOC JPEG에서 실제 Film Mode
@@ -39,6 +39,45 @@ Provia 102장/Classic Negative 28장/Bleach Bypass 7장/Classic Chrome 2장.
   많이 확보돼서(28장) 새로 만듦 - Bleach Bypass와 같은 구조로 그리드서치
   피팅, RMSE=5.7
 - Classic Chrome은 2장뿐이라 피팅 근거 부족, 추가 안 함
+
+동일장면 비교차트 검증(2026-07, `tools/fuji_chart_calibrate.py`): 위
+population 방식(서로 다른 사진들을 필름모드별로 모아 통계 비교)은
+장면/노출 편향이 섞이는 한계가 있는데, 사용자가 리뷰 블로그/영상에서
+직접 찾아 공유해준 "동일 장면을 여러 필름모드로 나란히 보여주는" 비교차트
+8장(각기 다른 레이아웃 - 2x5/2x3/2x2 그리드, 대각선 5스트립, 세로
+4스트립 등)을 `datasets/fuji/chart_comparisons/manifest.json`에 크롭박스
+(box_frac, 사람이 육안으로 확인해서 기록 - 레이아웃이 이미지마다 달라서
+자동 경계검출 대신 수동 확인이 더 신뢰도 높다고 판단)로 기록하고, Provia
+베이스라인이 있는 차트는 실제 apply_* 함수를 그 차트의 Provia 크롭에
+걸어 "같은 장면 페어" 기준 실측 delta vs 프리셋 delta를 비교했다
+(`datasets/fuji/chart_comparison_stats.json`). 주요 발견:
+- **Astia 모순 발견**: 이 실측(n=5, 채도 delta=+6.6)이 기존 population
+  검증(17-27행, 채도가 낮아진다는 결론)과 반대 방향으로 나옴 - 표본이
+  적어(양쪽 다 한 자릿수) 어느 쪽이 맞는지 판단 근거 부족. 기존 코드는
+  안 건드림(이미 실사용 중인 걸 소표본 하나로 뒤집는 건 위험) - 표본이
+  더 모이면 재확인 필요.
+- **Pro Neg Hi/Eterna Cinema**: 처음으로 실측 delta 확보(Pro Neg Hi
+  n=3: 블랙p2 -19.0, 채도 +5.8 / Eterna Cinema n=2: 블랙p2 +6.0, 채도
+  -12.8) - 방향은 기존 구현과 대체로 일치하지만 강도가 실측보다 훨씬
+  과함(Pro Neg Hi 프리셋 채도 delta +21.2 vs 실측 +5.8, Eterna Cinema
+  프리셋 블랙p2 delta +32.5 vs 실측 +6.0). 둘 다 아직 BGR채널/CLAHE 방식
+  구조라 sat_mult 등 튜닝 파라미터가 없어서 그리드서치 재보정은 보류 -
+  Bleach Bypass/Classic Negative처럼 Lab L채널 커브 구조로 옮기는 리팩터가
+  선행돼야 함(추후 작업).
+- **Nostalgic Neg 버그 발견 및 부분 수정**: 실측(n=1) 채도 delta가 거의
+  0(+0.8)인데 기존 구현은 +123까지 폭주 - Astia/Pro Neg Std 때와 같은
+  BGR 채널별 조정+곱셈식 boost 버그. BGR 채널 조정 제거 + Lab a/b를
+  가산식으로 변경해 +35까지 줄였지만 표본 1장으로 더 정밀하게 맞추는 건
+  과적합이라 보류.
+- **Acros/필터 4종**: 방향 전부 일치(채도 급감 확인) - 다만 블랙p2 하락
+  폭이 프리셋이 실측의 약 2배(예: Acros 실측 -1.0 vs 프리셋 -12.0)로
+  과함. Acros는 흑백 변환이라 sat delta는 항상 -58~-74 근처로 나오는데
+  이건 그레이스케일 자체의 성질이라 정보량이 적음(프리셋도 그레이스케일
+  변환이라 항상 같은 값) - b2 쪽 불일치가 더 의미 있는 신호.
+- **Classic Negative**: n=1이지만 방향 대체로 일치(채도 -3.5 vs -6.4).
+- Velvia는 이 프로젝트에 대응하는 apply_* 함수가 없어 비교 제외(raw
+  실측 delta만 기록: n=5, 채도 +15.2 - 향후 프리셋 추가 시 참고).
+- Reala Ace는 8장의 비교차트 어디에도 라벨이 없어 이번엔 검증 못 함.
 """
 import cv2
 import numpy as np
@@ -174,17 +213,28 @@ def apply_eterna_bleach_bypass(img_bgr, sat_mult=0.32, contrast_n=1.7,
 
 
 # ==========================================
-# 6. Nostalgic Neg (빈티지, 따뜻한 앰버 강조) - 미검증
+# 6. Nostalgic Neg (빈티지, 따뜻한 앰버 강조) - 실측 일부 검증(2026-07, n=1)
 # ==========================================
 def apply_nostalgic_neg(img_bgr):
-    img = ensure_uint8(img_bgr).astype(np.float32)
-    img[:, :, 2] = np.clip(img[:, :, 2] * 1.1, 0, 255)
-    img[:, :, 0] = np.clip(img[:, :, 0] * 0.9, 0, 255)
-
-    img_lab = cv2.cvtColor(img.astype(np.uint8), cv2.COLOR_BGR2LAB)
+    """
+    2026-07 동일장면 비교차트 실측(사용자가 직접 찾아 공유한 차트 1장,
+    n=1이라 확정적이진 않음): 채도 delta가 거의 0(+0.8)에 가까운데, 기존
+    구현은 BGR R/B 채널을 각각 배율(x1.1/x0.9)로 조정한 뒤 Lab a/b까지
+    128 초과분에 배율(x1.1/x1.15)로 boost를 걸어서 두 단계가 겹치며
+    채도가 +123까지 폭주했음 - Astia/Pro Neg Std/Bleach Bypass 때 이미
+    겪은 "BGR 채널별 조정 + 곱셈식 boost가 채도를 과도하게 재상승시키는"
+    것과 같은 버그 패턴. BGR 채널 조정을 없애고 a/b를 곱셈이 아니라 고정량
+    가산(+6/+8)으로 바꿔서 이미 채도가 높은 픽셀에서 폭주하지 않게 수정 -
+    수정 후 채도 delta는 +35까지 줄었지만(123 -> 35) 실측 목표(+0.8)에는
+    아직 못 미침. 표본이 1장뿐이라 이 이상 그리드서치로 정밀 맞추는 건
+    과적합 위험이 커서(포트레이트/빌딩 장면 하나에만 맞추는 꼴) 보류 -
+    표본이 더 모이면 재보정.
+    """
+    img = ensure_uint8(img_bgr)
+    img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(img_lab)
-    a = np.where(a > 128, np.clip(a.astype(np.float32) * 1.1, 0, 255), a).astype(np.uint8)
-    b = np.where(b > 128, np.clip(b.astype(np.float32) * 1.15, 0, 255), b).astype(np.uint8)
+    a = np.where(a > 128, np.clip(a.astype(np.float32) + 6, 0, 255), a).astype(np.uint8)
+    b = np.where(b > 128, np.clip(b.astype(np.float32) + 8, 0, 255), b).astype(np.uint8)
 
     l_float = l.astype(np.float32) / 255.0
     l_float = np.where(l_float > 0.8, 0.8 + (l_float - 0.8) * 0.5, l_float)

@@ -40,10 +40,12 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `datasets/hasselblad/hasselblad_sample_images.csv` | 핫셀블라드 공식 샘플 메타데이터 (카메라/렌즈/작가/jpeg_url/raw_url) |
 | `datasets/fuji/fuji_sample_pages.csv` | mirrorlesscomparison.com 후지 갤러리의 RAW/JPEG Google Drive 링크 |
 | `datasets/fuji/fuji_imaging_resource_filmmodes.json` | imaging-resource.com X100V/X-T5/X-T4 리뷰 갤러리에서 모은 269장, exiftool FilmMode 태그 포함(Velvia/Provia/Classic Negative/Bleach Bypass/Classic Chrome) - Eterna Bleach Bypass 재보정과 Classic Negative 신규 프리셋의 근거 데이터 |
+| `datasets/fuji/chart_comparisons/manifest.json` + `chart_comparison_stats.json` | 사용자가 직접 찾아 공유한 "동일 장면 다중 필름모드 비교차트" 8장의 크롭박스(manifest)와 실측 delta/프리셋 delta 비교 결과(stats) - population 방식과 달리 장면/노출이 고정된 페어 비교라 증거력이 더 강함. 원본 차트 이미지 자체는 제3자 저작물이라 커밋 안 함(`downloaded_samples_fuji_charts/`, gitignore) |
 | `datasets/<brand>/{tone,color,texture,gamut}_signature.json` + `joint_distribution.npz` | 픽셀 단위 5종 시그니처 분석(hasselblad/leica/pentax/ricoh_gr/phaseone/canon/sony/nikon/panasonic/olympus 전부 있음) - 톤/채도-hue/샤프닝-미세대비-노이즈-에지헤일로/Lab 색역, 사진 단위 동일가중 평균 방법론(픽셀 그대로 풀링하면 해상도 편차로 왜곡됨 - `tone_signature.json`의 methodology 필드 참고). **주의**: texture의 sharpening/micro_contrast는 브랜드별로 원본 계산 스크립트가 커밋에 안 남아있어 에이전트마다 공식을 다시 추정하면서 스케일이 갈렸음 - Sony의 sharpening은 최초 계산이 15~20배 커서 Canon 공식(/15)에 맞춰 재계산했고, Canon/Sony의 micro_contrast(DoG sigma 1,2)는 Nikon/Leica/Pentax/Ricoh GR(sigma 1,4 추정, 8~12대)과 자릿수가 달라 서로 직접 비교하면 안 됨(각 브랜드 `.py` docstring과 `texture_signature.json`의 methodology 필드에 상세 기록). Panasonic/Olympus부터는 사고 재발 방지를 위해 Canon 공식을 그대로 재사용하도록 에이전트에 명시 지시했고 실제로 sharpening/micro_contrast가 Canon과 근접하게 나와 일관성이 확인됨 |
 | `tools/analyze.py` | population 통계/검증 CLI - `hasselblad`/`leica`/`phaseone`/`pentax`/`ricoh_gr`/`fuji_film_modes`/`portrait` 모드 |
 | `tools/download.py` | imaging-resource.com 갤러리 공용 스크레이퍼 + 후지 Google Drive RAW/JPEG 페어 다운로더 |
 | `tools/calibrate.py` | 핫셀블라드 raw+jpeg 페어 캘리브레이션 CLI - `grid_search`/`learn_curve`/`regularize` 모드 |
+| `tools/fuji_chart_calibrate.py` | 후지 "동일 장면 비교차트" 검증 CLI - `python3 -m tools.fuji_chart_calibrate report` (manifest.json의 크롭박스로 스트립 추출 -> 실측 delta vs 프리셋 delta 테이블 출력) |
 | `tools/denoise.py` | 노이즈 제거 CLI - `python3 -m tools.denoise input.jpg output.jpg [--strength N] [--method nlm\|bilateral]` |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
 
@@ -110,7 +112,8 @@ population-fit 방식 유지.
 수학, 경계조건/단조성/연속성)/`core/stats.py`(population 통계 계산)/
 `core/validation.py`(무결성 검증, CDN 손상 패턴 재현)/`core/engine.py`
 (population-fit 엔진)/`brands/*.py`(모든 `apply_*` 룩 함수의 shape/dtype
-보존, 후지 프리셋 개수 일치) 커버.
+보존, 후지 프리셋 개수 일치)/`tools/fuji_chart_calibrate.py`(크롭박스
+추출, delta 집계) 커버.
 
 ```
 python3 -m unittest discover -s tests -v
