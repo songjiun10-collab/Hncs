@@ -98,6 +98,26 @@ mirrorlesscomparison.com과 imaging-resource.com 양쪽에서 raw+jpeg 페어
 링크가 사이트 마이그레이션으로 깨짐). Olympus 전용으로 별도 조사는
 하지 않았으나 동일한 사이트 구조적 문제라 population-fit 방식을
 유지하기로 결정.
+
+픽셀 시그니처 분석 (2026-07, `datasets/olympus/` - n=123): tone/color/
+texture/gamut 4개 json + joint_distribution.npz를
+canon.py/sony.py/nikon.py/panasonic.py와 동일 스키마로 추가. 위
+population 통계 절의 n=122보다 1장 많은데, 캐시 디렉토리
+(downloaded_samples_olympus/)에 OM-1의 "090430" 파일이 원래 125장
+population-fit 집계에는 없었지만 남아있던 걸 확인 - EXIF Make="OM
+Digital Solutions"로 정상, 인접 파일 "090415"와 burst 중복 판정 기준
+(w995 차이<=2, 채도 차이<=1.5)에도 안 걸려(w995 차이=23, 채도
+차이=34) 진짜 별도 샘플로 판단해 제외하지 않았다 - Nikon
+시그니처분석(n=71 vs population n=69)과 같은 처리 방식. 그림자유효
+(dark_pct>5) 부분집합 블랙p2=14.49(n=63)는 population 통계 절의
+"블랙p2=14.5(그림자유효 63)"과 거의 정확히 일치, 화이트p99.5=232.36도
+232.2와 사실상 일치해 population 수치가 정확히 재현됐음을 확인.
+sharpening/micro_contrast는 Canon 공식(Sobel std/15, DoG(1,2) std)을
+그대로 재사용해 sharpening=3.82, micro_contrast=4.43으로 Canon
+(3.39/3.85)과 같은 자릿수가 나와 공식 일관성이 재확인됐다.
+overshoot/undershoot는 Canon 원본 스크립트 미보존으로 텍스트 설명만
+보고 재구현한 것이라 브랜드 간 1:1 비교는 보장 안 됨(캐논/소니/파나소닉과
+동일 caveat).
 """
 from core.engine import apply_population_fit_look
 
