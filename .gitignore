@@ -28,3 +28,6 @@ olympus_stats_result.csv
 downloaded_samples_panasonic/
 panasonic_stats_result.csv
 downloaded_samples_fuji_charts/
+downloaded_samples_sigma/
+sigma_stats_result.csv
+sigma_stats_result_dedup.csv
