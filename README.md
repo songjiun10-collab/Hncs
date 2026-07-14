@@ -30,6 +30,7 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `brands/nikon.py` | Nikon 색감 근사(Z6/Z6 II/D780 3바디 population - Z9/D850 갤러리는 EXIF 빠진 자리표시자 이미지뿐이라 제외) - `apply_nikon_look()` |
 | `brands/sony.py` | Sony 색감 근사(A7/A7R/A7S/A7 III/A7 IV 5바디 population, 바디당 23장) - `apply_sony_look()` |
 | `brands/panasonic.py` | Panasonic(Lumix) 색감 근사(GH5/GH6/G9 MFT + S5/S1 풀프레임 5바디 population, n=120) - `apply_panasonic_look()` |
+| `brands/olympus.py` | Olympus(현 OM System) 색감 근사(OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F 5바디 population, n=122) - `apply_olympus_look()` |
 | `core/curve.py` | 톤커브 수학 (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - 여러 브랜드 모듈이 공유 |
 | `core/lut.py` | LUT 적용 헬퍼 |
 | `core/engine.py` | population-fit 브랜드(leica/phaseone/pentax/ricoh_gr) 공용 엔진 - 네 브랜드 모두 raw 기준선 없이 population 타깃을 `film_curve`에 직접 대입하는 동일 구조라 하나로 합침 |
