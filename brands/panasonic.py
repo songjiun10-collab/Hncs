@@ -91,6 +91,23 @@ raw 기준선 업그레이드 가능성: canon.py/nikon.py에서 이미 mirrorle
 imaging-resource.com의 raw 다운로드 링크가 사이트 마이그레이션으로 깨짐).
 Panasonic 전용으로 별도 조사는 하지 않았으나 동일한 사이트 구조적 문제라
 population-fit 방식을 유지하기로 결정.
+
+픽셀 시그니처 분석 (2026-07, `datasets/panasonic/` - 버스트 중복 제거 후
+동일한 n=120): tone/color/texture/gamut 4개 json + L/a-b 채널 풀링
+히스토그램 joint_distribution.npz를 canon.py/sony.py/nikon.py와 동일
+스키마로 추가. sharpening/micro_contrast는 Sony 스케일 버그(15~20배 큰
+값으로 잘못 계산됐던 사고) 재발을 막기 위해 Canon의 공식을 그대로
+재사용(샤프닝=중앙크롭 Sobel 그래디언트크기 표준편차/15, 미세대비=DoG
+(sigma1=1,sigma2=2) 표준편차, 스케일 없음) - 결과는 sharpening=3.24,
+micro_contrast=3.80으로 Canon(3.39/3.85)과 같은 자릿수·근접한 값이 나와
+공식 일관성이 재확인됐음. tone_signature.json의 그림자유효(dark_pct>5)
+부분집합 블랙p2=13.43(n=82)은 위 population 통계 절의 "블랙p2=13.4(그림자유효
+82)"와 거의 정확히 일치 - 원본 population 수치가 그림자유효 부분집합
+기준이었다는 걸 재확인. overshoot/undershoot 에지헤일로 지표는 Canon
+원본 스크립트가 커밋되지 않아 텍스트 설명만 보고 새로 구현한 것이라
+파라미터가 정확히 같다는 보장은 없음(datasets/panasonic/texture_signature.json
+methodology 필드에 명시) - sharpening/micro_contrast만큼 브랜드 간
+1:1 비교 가능하다고 보지 말 것.
 """
 from core.engine import apply_population_fit_look
 
