@@ -42,7 +42,7 @@ class TestApplyPopulationFitLook(unittest.TestCase):
         out_low = apply_population_fit_look(self.img, toe_lift=1 / 255,
                                              shoulder_start=0.78,
                                              white_point=230 / 255, clahe_clip=1.25)
-        out_high = apply_population_fit_look(self.img, toe_lift=30 / 255,
+        out_high = apply_population_fit_look(self.img, toe_lift=20 / 255,
                                               shoulder_start=0.78,
                                               white_point=230 / 255, clahe_clip=1.25)
         self.assertFalse(np.array_equal(out_low, out_high))

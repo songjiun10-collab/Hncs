@@ -44,14 +44,14 @@ import cv2
 import numpy as np
 
 from core.curve import apply_highlight_rolloff, s_curve
-from core.lut import apply_lut
+from core.lut import apply_lut, ensure_uint8
 
 
 # ==========================================
 # 1. Astia/Soft (부드러운 색감, 인물용) - 실측 검증됨
 # ==========================================
 def apply_astia(img_bgr):
-    img = img_bgr.astype(np.float32)
+    img = ensure_uint8(img_bgr).astype(np.float32)
     img[:, :, 2] = np.clip(img[:, :, 2] * 1.03, 0, 255)  # R
     img[:, :, 0] = np.clip(img[:, :, 0] * 0.97, 0, 255)  # B
     img = img.astype(np.uint8)
@@ -77,7 +77,7 @@ def apply_astia(img_bgr):
 # 2. PRO Neg. Std (스튜디오 인물용, 부드러움) - 실측 검증됨
 # ==========================================
 def apply_pro_neg_std(img_bgr):
-    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
+    img_hsv = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2HSV).astype(np.float32)
     img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.85, 0, 255)
     img = cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
@@ -99,7 +99,7 @@ def apply_pro_neg_std(img_bgr):
 # 3. PRO Neg. Hi (Std + 콘트라스트 강화) - 미검증
 # ==========================================
 def apply_pro_neg_hi(img_bgr):
-    img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
+    img_hsv = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2HSV).astype(np.float32)
     img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.85, 0, 255)
     img = cv2.cvtColor(img_hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
 
@@ -159,7 +159,7 @@ def apply_eterna_bleach_bypass(img_bgr, sat_mult=0.32, contrast_n=1.7,
     black_lift 재보정 - 기존(sat_mult=0.25 단순곱, BGR 채널별 커브) RMSE
     34.2 -> 신규(Lab L채널 커브) RMSE 2.8.
     """
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    lab = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
     x = np.arange(256, dtype=np.float32) / 255.0
@@ -177,7 +177,7 @@ def apply_eterna_bleach_bypass(img_bgr, sat_mult=0.32, contrast_n=1.7,
 # 6. Nostalgic Neg (빈티지, 따뜻한 앰버 강조) - 미검증
 # ==========================================
 def apply_nostalgic_neg(img_bgr):
-    img = img_bgr.astype(np.float32)
+    img = ensure_uint8(img_bgr).astype(np.float32)
     img[:, :, 2] = np.clip(img[:, :, 2] * 1.1, 0, 255)
     img[:, :, 0] = np.clip(img[:, :, 0] * 0.9, 0, 255)
 
@@ -197,8 +197,7 @@ def apply_nostalgic_neg(img_bgr):
 # 7. Reala Ace (정확한 색 재현, 정직한 룩) - 미검증
 # ==========================================
 def apply_reala_ace(img_bgr):
-    if img_bgr.dtype != np.uint8:
-        img_bgr = np.clip(img_bgr * 255, 0, 255).astype(np.uint8)
+    img_bgr = ensure_uint8(img_bgr)
 
     img_hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
     img_hsv[:, :, 1] = np.clip(img_hsv[:, :, 1] * 0.95, 0, 255)
@@ -216,7 +215,7 @@ def apply_reala_ace(img_bgr):
 # 8. Acros / Monochrome (흑백) - 미검증
 # ==========================================
 def apply_acros(img_bgr, filter_type='none'):
-    b, g, r = cv2.split(img_bgr)
+    b, g, r = cv2.split(ensure_uint8(img_bgr))
 
     if filter_type == 'red':
         gray = (0.1 * b + 0.3 * g + 0.6 * r)
@@ -257,7 +256,7 @@ def apply_classic_negative(img_bgr, sat_mult=0.65, contrast_n=1.4,
     저채도/고대비). Eterna Bleach Bypass와 동일한 구조(Lab L채널 대비
     커브 + HSV 채도 배율)로 그리드서치 피팅, RMSE=5.7.
     """
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    lab = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
     x = np.arange(256, dtype=np.float32) / 255.0

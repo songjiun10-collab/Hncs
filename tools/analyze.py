@@ -47,7 +47,9 @@ HASSELBLAD_CACHE_DIR = "downloaded_samples"
 def _hasselblad_download(url, path, max_dim=2000):
     """원본이 1억화소급이라 다운로드 후 리사이즈해서 저장 (용량/속도 절약)"""
     if os.path.exists(path):
-        return True
+        if is_image_usable(path):
+            return True
+        os.remove(path)  # 이전 실행에서 손상된 채로 캐시된 파일 - 재다운로드
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=30) as resp:
@@ -102,9 +104,9 @@ def run_hasselblad():
     print("\n=== 전수분석 결과 ===")
     print(f"총 다운로드 성공: {len(results)}장")
     print(f"그림자유효(블랙포인트 계산용): {len(shadow_valid)}장")
-    if b2_target:
+    if b2_target is not None:
         print(f"블랙p2 타깃: {b2_target:.1f}  (std={np.std([r['b2'] for r in shadow_valid]):.1f})")
-    if w995_target:
+    if w995_target is not None:
         print(f"화이트p99.5 타깃: {w995_target:.1f}  (std={np.std([r['w995'] for r in results]):.1f})")
 
     print("\n=== 바디별 그룹 ===")
@@ -234,7 +236,8 @@ def run_imaging_resource_brand(brand):
 
             fname = f"{camera.replace(' ', '_')}_{os.path.basename(original_url)}"
             path = os.path.join(cfg["cache_dir"], fname)
-            ok = download_file(original_url, path) and is_image_usable(path)
+            img = cv2.imread(path) if download_file(original_url, path) else None
+            ok = img is not None and is_image_array_usable(img)
             if not ok:
                 # 원본(href)이 404거나 media.imaging-resource.com에 손상된
                 # 채로 저장돼 있는 경우가 종종 있어서 scaled로 폴백
@@ -244,22 +247,26 @@ def run_imaging_resource_brand(brand):
                     os.remove(path)
                 fname = f"{camera.replace(' ', '_')}_{os.path.basename(scaled_url)}"
                 path = os.path.join(cfg["cache_dir"], fname)
-                ok = download_file(scaled_url, path) and is_image_usable(path)
+                img = cv2.imread(path) if download_file(scaled_url, path) else None
+                ok = img is not None and is_image_array_usable(img)
                 if not ok:
                     if os.path.exists(path):
                         os.remove(path)
                     print(f"  스킵 (손상된 원본/scaled, imaging-resource.com CDN 문제): {fname}")
                     continue
 
-            expected_ok, rejected = genuine_render_check(path, cfg["expected_keywords"], cfg["reject_keywords"])
+            try:
+                expected_ok, rejected = genuine_render_check(path, cfg["expected_keywords"], cfg["reject_keywords"])
+            except Exception as e:
+                # exiftool이 이 한 장에서만 실패해도 지금까지 모은 나머지
+                # 결과는 살리기 위해 이 파일만 스킵하고 계속 진행
+                print(f"  스킵 (exiftool 실패: {e}): {fname}")
+                continue
             if not expected_ok or rejected:
                 print(f"  스킵 ({'기대 렌더러 아님' if not expected_ok else '편집된 파일'}): {fname}")
                 os.remove(path)
                 continue
 
-            img = cv2.imread(path)
-            if img is None:
-                continue
             st = image_stats(img)
             results.append(dict(camera=camera, filename=fname, url=original_url, **st))
             n_ok += 1
@@ -354,6 +361,15 @@ def run_fuji_film_modes():
     print("\n=== 실측 델타 (필름모드 - Provia) vs 프리셋 델타 (프리셋(Provia사진) - Provia사진) ===")
     provia_paths = [p for p in jpeg_paths if FUJI_MODE_MAP.get(film_modes.get(p)) == "Provia"]
 
+    # Provia 원본은 어느 프리셋을 적용하든 베이스 통계가 동일하므로 한
+    # 번만 디코드+계산해서 재사용 (예전엔 프리셋마다, 게다가 필드마다
+    # 따로 cv2.imread+image_stats를 다시 불러 최대 8배 중복 계산했음)
+    provia_imgs = [img for img in (cv2.imread(p) for p in provia_paths) if img is not None]
+    base_stats = [image_stats(img) for img in provia_imgs]
+    base_sats = [s['sat'] for s in base_stats]
+    base_b2s = [s['b2'] for s in base_stats]
+    base_w995s = [s['w995'] for s in base_stats]
+
     preset_fns = {"Astia": apply_astia, "Pro Neg Std": apply_pro_neg_std}
     for label, fn in preset_fns.items():
         if label not in agg:
@@ -363,19 +379,10 @@ def run_fuji_film_modes():
         real_delta_b2 = agg[label]['b2'] - agg['Provia']['b2']
         real_delta_w995 = agg[label]['w995'] - agg['Provia']['w995']
 
-        preset_sats, preset_b2s, preset_w995s = [], [], []
-        for p in provia_paths:
-            img = cv2.imread(p)
-            if img is None:
-                continue
-            out = fn(img)
-            st = image_stats(out)
-            preset_sats.append(st['sat'])
-            preset_b2s.append(st['b2'])
-            preset_w995s.append(st['w995'])
-        base_sats = [image_stats(cv2.imread(p))['sat'] for p in provia_paths]
-        base_b2s = [image_stats(cv2.imread(p))['b2'] for p in provia_paths]
-        base_w995s = [image_stats(cv2.imread(p))['w995'] for p in provia_paths]
+        preset_stats = [image_stats(fn(img)) for img in provia_imgs]
+        preset_sats = [s['sat'] for s in preset_stats]
+        preset_b2s = [s['b2'] for s in preset_stats]
+        preset_w995s = [s['w995'] for s in preset_stats]
 
         preset_delta_sat = np.mean(preset_sats) - np.mean(base_sats)
         preset_delta_b2 = np.mean(preset_b2s) - np.mean(base_b2s)
@@ -384,7 +391,7 @@ def run_fuji_film_modes():
         def arrow(v):
             return "+" if v > 0 else ("-" if v < 0 else "0")
 
-        print(f"\n[{label}] (실측 n={agg[label]['n']}, Provia n={len(provia_paths)})")
+        print(f"\n[{label}] (실측 n={agg[label]['n']}, Provia n={len(provia_imgs)})")
         print(f"  채도  실측 {real_delta_sat:+6.1f} ({arrow(real_delta_sat)})  "
               f"프리셋 {preset_delta_sat:+6.1f} ({arrow(preset_delta_sat)})  "
               f"{'일치' if arrow(real_delta_sat) == arrow(preset_delta_sat) else '불일치'}")

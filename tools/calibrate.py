@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from brands.hasselblad import apply_hncs
 from core.curve import film_curve
+from core.validation import is_image_array_usable
 
 CACHE_DIR = "raw_calib_cache"
 CSV_PATH = "datasets/hasselblad/hasselblad_sample_images.csv"
@@ -53,6 +54,15 @@ def collect_pairs():
             and not r['raw_url'].lower().endswith('.tif')]
 
 
+def _resize_to_max_dim(img, max_dim):
+    """긴 변이 max_dim을 넘으면 비율 유지 축소 (5군데서 각자 반복하던 걸 통합)."""
+    h, w = img.shape[:2]
+    scale = max_dim / max(h, w)
+    if scale < 1:
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+    return img
+
+
 def load_neutral_render(raw_path, shape_hw=None, max_dim=2000):
     with rawpy.imread(raw_path) as raw:
         rgb = raw.postprocess(
@@ -66,24 +76,16 @@ def load_neutral_render(raw_path, shape_hw=None, max_dim=2000):
         if bgr.shape[:2] != shape_hw:
             bgr = cv2.resize(bgr, (shape_hw[1], shape_hw[0]), interpolation=cv2.INTER_AREA)
         return bgr
-    h, w = bgr.shape[:2]
-    scale = max_dim / max(h, w)
-    if scale < 1:
-        bgr = cv2.resize(bgr, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
-    return bgr
+    return _resize_to_max_dim(bgr, max_dim)
 
 
 def load_jpeg(url, path, max_dim=2000):
     if not download(url, path):
         return None
     img = cv2.imread(path)
-    if img is None:
+    if img is None or not is_image_array_usable(img):
         return None
-    h, w = img.shape[:2]
-    scale = max_dim / max(h, w)
-    if scale < 1:
-        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
-    return img
+    return _resize_to_max_dim(img, max_dim)
 
 
 def gray_stats(img):
@@ -196,9 +198,7 @@ def run_learn_curve():
         target = cv2.imread(jpeg_path)
         if target is None:
             continue
-        h, w = target.shape[:2]
-        scale = 1200 / max(h, w)  # 픽셀 대응 통계용이라 해상도는 낮춰도 충분
-        target = cv2.resize(target, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+        target = _resize_to_max_dim(target, 1200)  # 픽셀 대응 통계용이라 해상도는 낮춰도 충분
 
         try:
             neutral = load_neutral_render(raw_path, shape_hw=target.shape[:2])
@@ -250,26 +250,19 @@ def run_learn_curve():
         jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
         if not (os.path.exists(raw_path) and os.path.exists(jpeg_path)):
             continue
-        target = cv2.imread(jpeg_path)
-        h, w = target.shape[:2]
-        scale = 2000 / max(h, w)
-        if scale < 1:
-            target = cv2.resize(target, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+        target = _resize_to_max_dim(cv2.imread(jpeg_path), 2000)
         neutral = load_neutral_render(raw_path, shape_hw=target.shape[:2])
 
-        t_gray = cv2.cvtColor(target, cv2.COLOR_BGR2GRAY)
-        t_stats = dict(b2=np.percentile(t_gray, 2), w995=np.percentile(t_gray, 99.5))
-        dark_pct = (t_gray < 40).sum() / t_gray.size * 100
+        t_stats = gray_stats(target)
+        dark_pct = t_stats['dark_pct']
 
-        cur_gray = cv2.cvtColor(apply_hncs(neutral), cv2.COLOR_BGR2GRAY)
-        cur_stats = dict(b2=np.percentile(cur_gray, 2), w995=np.percentile(cur_gray, 99.5))
+        cur_stats = gray_stats(apply_hncs(neutral))
 
         lab = cv2.cvtColor(neutral, cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
         l_learned = cv2.LUT(l, lut_mono.astype(np.uint8))
         learned_bgr = cv2.cvtColor(cv2.merge((l_learned, a, b)), cv2.COLOR_LAB2BGR)
-        learned_gray = cv2.cvtColor(learned_bgr, cv2.COLOR_BGR2GRAY)
-        learned_stats = dict(b2=np.percentile(learned_gray, 2), w995=np.percentile(learned_gray, 99.5))
+        learned_stats = gray_stats(learned_bgr)
 
         w_err = lambda s: (s['w995'] - t_stats['w995']) ** 2
         b_err = lambda s: (s['b2'] - t_stats['b2']) ** 2 if dark_pct > 5 else 0.0
@@ -316,9 +309,7 @@ def _collect_pair_pixels():
         target = cv2.imread(jpeg_path)
         if target is None:
             continue
-        h, w = target.shape[:2]
-        scale = 1200 / max(h, w)
-        target = cv2.resize(target, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+        target = _resize_to_max_dim(target, 1200)
 
         with rawpy.imread(raw_path) as raw:
             rgb = raw.postprocess(use_camera_wb=True, no_auto_bright=True,
@@ -329,12 +320,11 @@ def _collect_pair_pixels():
 
         n_l = cv2.cvtColor(neutral, cv2.COLOR_BGR2LAB)[:, :, 0].ravel()
         t_l = cv2.cvtColor(target, cv2.COLOR_BGR2LAB)[:, :, 0].ravel()
-        t_gray = cv2.cvtColor(target, cv2.COLOR_BGR2GRAY)
-        dark_pct = (t_gray < 40).sum() / t_gray.size * 100
+        t_stats = gray_stats(target)
 
         dataset.append(dict(name=r['filename'], neutral_l=n_l, target_l=t_l,
-                             b2=np.percentile(t_gray, 2), w995=np.percentile(t_gray, 99.5),
-                             shadow_valid=dark_pct > 5))
+                             b2=t_stats['b2'], w995=t_stats['w995'],
+                             shadow_valid=t_stats['dark_pct'] > 5))
         print(f"  {r['filename']} - {n_l.size}px")
     return dataset
 

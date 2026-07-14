@@ -42,6 +42,13 @@ class TestFilmCurve(unittest.TestCase):
         film_curve(self.x)
         np.testing.assert_array_equal(self.x, x_copy)
 
+    def test_monotonic_even_when_toe_lift_exceeds_toe_domain(self):
+        # toe_lift가 toe 구간 상한(0.1)을 넘으면 [0,0.1] 보간 기울기가
+        # 음수가 돼서 어두운 픽셀이 밝은 픽셀보다 밝게 나오는 반전이
+        # 생겼던 버그 - 0.099로 clamp해서 방지했는지 확인.
+        y = film_curve(self.x, toe_lift=0.3)
+        self.assertTrue(np.all(np.diff(y) >= -1e-6))
+
 
 class TestSCurve(unittest.TestCase):
     def test_endpoints(self):

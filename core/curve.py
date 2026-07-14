@@ -13,6 +13,10 @@ def film_curve(x, toe_lift=0.001, shoulder_start=0.78, white_point=0.90):
     """Film Curve: toe(완만 진입+미세 리프트) + 리니어 미드 + smoothstep shoulder"""
     y = x.copy()
     toe_mask = x < 0.1
+    # toe는 [0,0.1] -> [toe_lift,0.1]로 선형보간하는 구간이라 toe_lift가
+    # 0.1 이상이면 기울기(0.1-toe_lift)가 음수가 돼서 어두운 픽셀이 밝은
+    # 픽셀보다 더 밝게 나오는 반전이 생김 - 0.1 미만으로 clamp해서 방지.
+    toe_lift = min(toe_lift, 0.099)
     t = x[toe_mask] / 0.1
     y[toe_mask] = toe_lift + t * (0.1 - toe_lift)   # [0,0.1] -> [lift,0.1]
     sh_mask = x > shoulder_start
