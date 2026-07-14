@@ -22,6 +22,7 @@ BRAND_LOOKS = [
     ("brands.canon", "apply_canon_look"),
     ("brands.sony", "apply_sony_look"),
     ("brands.nikon", "apply_nikon_look"),
+    ("brands.panasonic", "apply_panasonic_look"),
 ]
 
 # fuji.py는 필름 시뮬레이션 프리셋이 여러 개라 따로 나열. apply_acros/
