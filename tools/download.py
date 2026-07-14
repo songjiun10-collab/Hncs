@@ -91,7 +91,7 @@ def resolve_full_image(detail_path, base_url="https://www.imaging-resource.com")
 
 
 def download_file(url, path):
-    if os.path.exists(path):
+    if os.path.exists(path) and os.path.getsize(path) > 0:
         return True
     try:
         req = urllib.request.Request(url, headers=HEADERS)
@@ -146,8 +146,14 @@ def fetch_fuji_links():
     긁어 FUJI_LINKS_CSV로 저장 (원래 fetch_fuji_sample_links.py)."""
     rows = []
     for url in FUJI_GALLERY_URLS:
-        resp = requests.get(url, headers=HEADERS, timeout=30)
-        resp.raise_for_status()
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=30)
+            resp.raise_for_status()
+        except Exception as e:
+            # 갤러리 하나가 타임아웃/404/5xx여도 나머지 갤러리에서 이미
+            # 모은 행은 살리기 위해 이 갤러리만 스킵하고 계속 진행
+            print(f"  실패: {url} -> {e}")
+            continue
         links = find_fuji_drive_links(resp.text)
         title_match = re.search(r"<title>(.*?)</title>", resp.text)
         title = title_match.group(1) if title_match else url

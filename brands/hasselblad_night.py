@@ -17,7 +17,7 @@ def apply_hasselblad_night(
     white_out=0.88,      # v1: 0.65 -> 밤 타깃도 낮과 거의 같아 대폭 완화
     saturation=1.08,   # 실측 교훈: 핫셀 야경은 채도가 살아있는 압축 톤 (억제 아님)
     contrast_n=1.2,
-    exposure_gamma=None, # None이면 자동 노출 정규화 (중앙명도 -> 0.21)
+    exposure_gamma=None, # None이면 자동 노출 정규화 (중앙명도 -> 0.18, 순흑 프레임일 땐 0.21로 가정)
 ):
     """
     v2: 공식 night 샘플 4장 실측 (야간교량/도심야경자동차/유목해변/

@@ -60,7 +60,13 @@ def apply_hasselblad_day(
     lut = np.clip(y * 255, 0, 255).astype(np.uint8)
     l = cv2.LUT(l, lut)
 
-    # 마이크로 콘트라스트 (레퍼런스의 살아있는 텍스처)
+    # 마이크로 콘트라스트 (레퍼런스의 살아있는 텍스처) - apply_hncs(brands/
+    # hasselblad.py)는 "CLAHE가 커브보다 먼저"를 원칙으로 명시하는데 이
+    # 함수는 반대(커브 다음 CLAHE)다. 의도적 불일치는 아니고 이 순서로
+    # v2/v3 그리드서치가 이미 진행된 상태라, 원칙에 맞춰 순서를 바꾸면
+    # 위 문서화된 재현값(블랙p2/화이트p99.5)이 깨진다 - 그래서 순서는
+    # 그대로 두고 이 함수가 Legacy(day/night를 apply_hncs로 통합할지 아직
+    # 미결정)라는 점을 감안해 재보정 없이는 손대지 않기로 함.
     clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
     l = clahe.apply(l)
 

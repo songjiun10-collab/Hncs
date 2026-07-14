@@ -70,14 +70,22 @@ def estimate_noise_sigma(gray):
 def estimate_noise_flat_patch(gray, patch_size=32, flat_fraction=0.1):
     """실제 디테일에 덜 흔들리는 버전: 32x32 패치로 나눠 분산이 가장 낮은
     (=가장 평평한, 텍스처가 적은) 하위 10% 패치에서만 노이즈를 측정한다.
-    하늘/벽처럼 진짜 균일한 영역이 있어야 의미 있는 값이 나옴."""
+    하늘/벽처럼 진짜 균일한 영역이 있어야 의미 있는 값이 나옴.
+
+    2026-07: 패치 그리드 range()가 h/w를 patch_size로 나눈 나머지만큼만
+    돌아서(예: 2400/48처럼 딱 나눠떨어지면) 마지막 행/열 패치가 누락되던
+    off-by-one을 수정(+1). datasets/*/texture_signature.json의 noise
+    필드 중 patch_size=48을 2400x2400 크롭에 쓴(정확히 나눠떨어지는)
+    브랜드들은 이 수정 전 값이라 마지막 행/열이 빠진 채로 계산됐었음 -
+    편향은 작지만(전체 패치의 약 4%) 재계산은 하지 않음(전수 재실행 비용
+    대비 이득이 작다고 판단)."""
     h, w = gray.shape
     gray_f = gray.astype(np.float64)
     kernel = np.array([[1, -2, 1], [-2, 4, -2], [1, -2, 1]], dtype=np.float64)
 
     patches, variances = [], []
-    for y in range(0, h - patch_size, patch_size):
-        for x in range(0, w - patch_size, patch_size):
+    for y in range(0, h - patch_size + 1, patch_size):
+        for x in range(0, w - patch_size + 1, patch_size):
             p = gray_f[y:y + patch_size, x:x + patch_size]
             variances.append(p.var())
             patches.append(p)

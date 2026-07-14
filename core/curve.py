@@ -9,8 +9,15 @@ film_sim_presets.py(후지 프리셋)에 있던 헬퍼들로, 둘 다 여러 브
 import numpy as np
 
 
-def film_curve(x, toe_lift=0.001, shoulder_start=0.78, white_point=0.90):
-    """Film Curve: toe(완만 진입+미세 리프트) + 리니어 미드 + smoothstep shoulder"""
+def film_curve(x, toe_lift=0.001, shoulder_start=0.78, white_point=1.0):
+    """Film Curve: toe(완만 진입+미세 리프트) + 리니어 미드 + smoothstep shoulder
+
+    white_point 기본값은 apply_hncs의 v11 채택값(1.0, brands/hasselblad.py
+    참고)과 맞춰뒀다 - 모든 실제 호출부(hasselblad.py/core/engine.py/
+    tools/calibrate.py)는 항상 명시적으로 값을 넘기므로 이 기본값에
+    의존하지 않지만, 향후 새 호출부가 생략했을 때 구버전 값(0.90)이
+    조용히 쓰이는 걸 방지하기 위해 최신값으로 맞춰둠.
+    """
     y = x.copy()
     toe_mask = x < 0.1
     # toe는 [0,0.1] -> [toe_lift,0.1]로 선형보간하는 구간이라 toe_lift가
