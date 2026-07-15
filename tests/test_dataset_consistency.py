@@ -24,7 +24,8 @@ def _load_all_texture_signatures():
     result = {}
     for path in sorted(glob.glob(os.path.join(DATASETS_DIR, "*", "texture_signature.json"))):
         brand = os.path.basename(os.path.dirname(path))
-        result[brand] = json.load(open(path, encoding="utf-8"))
+        with open(path, encoding="utf-8") as f:
+            result[brand] = json.load(f)
     return result
 
 
