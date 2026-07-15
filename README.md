@@ -107,6 +107,21 @@ caveat를 남겼다(각 브랜드 docstring 참고). 이 세 브랜드를 raw �
 imaging-resource.com(raw 다운로드 링크 사망) 둘 다 불가로 결론,
 population-fit 방식 유지.
 
+**population 통계 재현성 감사(2026-07)**: 13개 브랜드 중 population-fit
+방식 10개(leica/phaseone/pentax/ricoh_gr/canon/sony/nikon/panasonic/
+olympus/sigma) 전부를 대상으로, 각 브랜드 docstring에 적힌 population
+수치가 지금 로컬에 캐시된 이미지로 처음부터 다시 계산해도 재현되는지
+`core.stats.image_stats()`로 전수 재검증했다(캐시 파일 834장,
+`is_image_array_usable()` 무결성도 재확인 - 손상 0건). 결과: **10/10
+전부 일치**, 실제 불일치 0건. Sigma에서 재구현한 버스트 중복 제거
+로직이 `brands/sigma.py`에 이미 문서화된 것과 동일한 거짓양성(파일명
+접두사가 다른데 프레임번호만 우연히 근접한 두 장을 같은 장면으로
+오판 - "YC-78.jpg" vs "YSDIM0080.jpg")을 재현했지만, 이는 감사
+스크립트가 원본 수집 스크립트의 접두사매칭 보강 로직을 재구현하지
+않아서 생긴 것이지 실제 커밋된 데이터의 문제는 아님(원인 추적 후 확인).
+`_TOE_LIFT`/`_WHITE_POINT` 상수도 10개 브랜드 전부 docstring의 최종
+채택값과 정확히 일치.
+
 ## 테스트
 
 `tests/` 아래 `unittest` 기반 테스트가 있다(pytest 등 외부 의존성 추가
