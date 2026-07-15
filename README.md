@@ -114,8 +114,10 @@ population-fit 방식 유지.
 `core/validation.py`(무결성 검증, CDN 손상 패턴 재현)/`core/engine.py`
 (population-fit 엔진)/`brands/*.py`(모든 `apply_*` 룩 함수의 shape/dtype
 보존, 후지 프리셋 개수 일치)/`tools/fuji_chart_calibrate.py`(크롭박스
-추출, delta 집계) 커버. `.github/workflows/tests.yml`이 push/PR마다
-자동으로 이 스위트를 돌린다.
+추출, delta 집계)/`datasets/*/texture_signature.json` 전체(sharpening/
+micro_contrast/noise가 브랜드 간 합리적 범위 안에 있는지 - Sony
+스케일버그 같은 자릿수 오류 재발 방지 가드레일) 커버.
+`.github/workflows/tests.yml`이 push/PR마다 자동으로 이 스위트를 돌린다.
 
 ```
 python3 -m unittest discover -s tests -v
