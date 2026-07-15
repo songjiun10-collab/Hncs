@@ -1,5 +1,5 @@
 {
-  "methodology": "샤프닝/미세대비/노이즈/에지헤일로는 이미지 중앙 2400x2400 크롭에서만 계산 (핫셀블라드 texture_signature.json과 동일 방법론). 이번 Phase One 표본은 16장 전부 2560x1920 또는 1920x2560이라 한 변이 항상 2400px 미만이므로 실제로는 크롭 없이 전체 이미지를 그대로 썼다. 에지헤일로 overshoot/undershoot는 Sobel 그래디언트 방향-coherence가 0.9를 넘는 edge 픽셀만 골라(최대 1200개 샘플) 수직 프로파일에서 step(밝은쪽-어두운쪽 기준값)이 25 이상이고 바깥 영역이 다른 edge에 오염되지 않은 경우만 집계한 것 - JPEG 링잉과 진짜 샤프닝 halo를 완전히 못 가르는 한계가 있음(README 참고). population 통계는 이미지 단위 동일 가중치 평균. n=16으로 매우 작은 표본이라(brands/phaseone.py docstring 참고) n_edges가 이미지당 작을 수 있다(이번 실행 전체 합계 n_edges=5744) - 이는 실제 값을 그대로 보고한 것이며 과장하지 않았다. 이미지 한두 장의 이상치가 population 평균/표준편차를 크게 흔들 수 있으니 과신하지 말 것.",
+  "methodology": "샤프닝/미세대비/노이즈/에지헤일로는 이미지 중앙 2400x2400 크롭에서만 계산 (핫셀블라드 texture_signature.json과 동일 방법론). 이번 Phase One 표본은 16장 전부 2560x1920 또는 1920x2560이라 한 변이 항상 2400px 미만이므로 실제로는 크롭 없이 전체 이미지를 그대로 썼다. 에지헤일로 overshoot/undershoot는 Sobel 그래디언트 방향-coherence가 0.9를 넘는 edge 픽셀만 골라(최대 1200개 샘플) 수직 프로파일에서 step(밝은쪽-어두운쪽 기준값)이 25 이상이고 바깥 영역이 다른 edge에 오염되지 않은 경우만 집계한 것 - JPEG 링잉과 진짜 샤프닝 halo를 완전히 못 가르는 한계가 있음(README 참고). population 통계는 이미지 단위 동일 가중치 평균. n=16으로 매우 작은 표본이라(brands/phaseone.py docstring 참고) n_edges가 이미지당 작을 수 있다(이번 실행 전체 합계 n_edges=5744) - 이는 실제 값을 그대로 보고한 것이며 과장하지 않았다. 이미지 한두 장의 이상치가 population 평균/표준편차를 크게 흔들 수 있으니 과신하지 말 것. [2026-07 수정: tools/iso_noise.py의 estimate_noise_flat_patch() off-by-one 버그(마지막 행/열 패치 누락) 수정 후 noise 필드를 patch_size=32, flat_fraction=0.1로 재계산함 (캐시된 원본 이미지 재사용, 다른 필드는 변경 없음). population 평균 0.055 -> 0.060.]",
   "n_images": 16,
   "population": {
     "sharpening": {
@@ -13,8 +13,8 @@
       "n": 16
     },
     "noise": {
-      "mean": 0.055170600070274106,
-      "std": 0.06928631995646631,
+      "mean": 0.05993133516572903,
+      "std": 0.07360164378001051,
       "n": 16
     },
     "overshoot": {
@@ -35,7 +35,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.33996660916901994,
       "micro_contrast": 3.4464406448411933,
-      "noise": 0.03968433232520723,
+      "noise": 0.042589471147665606,
       "n_edges": 489,
       "overshoot": 3.382914521430269,
       "undershoot": 2.327106975678392
@@ -46,7 +46,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.34603567661498497,
       "micro_contrast": 3.5095328770145926,
-      "noise": 0.045607367000611305,
+      "noise": 0.050132565492620004,
       "n_edges": 488,
       "overshoot": 2.766733269715789,
       "undershoot": 2.3096583035121565
@@ -57,7 +57,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.512997824195146,
       "micro_contrast": 4.187857494432084,
-      "noise": 0.0027640828485218966,
+      "noise": 0.014854093479294816,
       "n_edges": 362,
       "overshoot": 6.395802504106495,
       "undershoot": 3.461629977892253
@@ -68,7 +68,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 1.0539439060793119,
       "micro_contrast": 9.213695537952011,
-      "noise": 0.1407707907854366,
+      "noise": 0.16095802856079616,
       "n_edges": 84,
       "overshoot": 6.2592401661647905,
       "undershoot": 9.612099301443632
@@ -79,7 +79,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.4613085100638896,
       "micro_contrast": 7.131027462991186,
-      "noise": 0.000394868978360271,
+      "noise": 0.0,
       "n_edges": 361,
       "overshoot": 18.164947319733674,
       "undershoot": 0.9270116669346167
@@ -90,7 +90,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.3471459703443084,
       "micro_contrast": 4.981568796004973,
-      "noise": 0.000789737956720542,
+      "noise": 0.000928380842455926,
       "n_edges": 409,
       "overshoot": 4.314908978768702,
       "undershoot": 1.195949264093877
@@ -101,7 +101,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 1.4862407603977572,
       "micro_contrast": 9.223126812441123,
-      "noise": 0.2365265180378023,
+      "noise": 0.24660116127735535,
       "n_edges": 77,
       "overshoot": 15.458560199538448,
       "undershoot": 5.411198870474363
@@ -112,7 +112,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.6368969382415448,
       "micro_contrast": 6.387109234416709,
-      "noise": 0.000394868978360271,
+      "noise": 0.0,
       "n_edges": 273,
       "overshoot": 2.747282591171791,
       "undershoot": 5.01018111454686
@@ -123,7 +123,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 1.3118982908450216,
       "micro_contrast": 5.384015160907463,
-      "noise": 0.03218182173636208,
+      "noise": 0.03272542469657139,
       "n_edges": 537,
       "overshoot": 2.7068657204184716,
       "undershoot": 5.693560238085308
@@ -134,7 +134,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.4429532341292675,
       "micro_contrast": 2.9091150596542383,
-      "noise": 0.01934857993965328,
+      "noise": 0.01671085516420667,
       "n_edges": 353,
       "overshoot": 3.9474976497982572,
       "undershoot": 7.53100212253206
@@ -145,7 +145,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.39733084820338105,
       "micro_contrast": 2.735738687032882,
-      "noise": 0.02132292483145463,
+      "noise": 0.017639236006662593,
       "n_edges": 246,
       "overshoot": 2.4314639416256907,
       "undershoot": 7.528645753851828
@@ -156,7 +156,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.7715375163602632,
       "micro_contrast": 4.497972043961853,
-      "noise": 0.006317903653764336,
+      "noise": 0.005570285054735557,
       "n_edges": 354,
       "overshoot": 1.72356537762129,
       "undershoot": 3.598142297985641
@@ -167,7 +167,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.35295703653694604,
       "micro_contrast": 3.362085190765156,
-      "noise": 0.011451200372447859,
+      "noise": 0.00928380842455926,
       "n_edges": 317,
       "overshoot": 3.8089900232487532,
       "undershoot": 3.7338274166581287
@@ -178,7 +178,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.6303902435092701,
       "micro_contrast": 6.360414148468933,
-      "noise": 0.06929950570222757,
+      "noise": 0.08297403779449838,
       "n_edges": 451,
       "overshoot": 3.3453715989449995,
       "undershoot": 2.309564733746186
@@ -189,7 +189,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 0.6604152252388665,
       "micro_contrast": 6.496283700923876,
-      "noise": 0.07087898161566865,
+      "noise": 0.08610732313778713,
       "n_edges": 322,
       "overshoot": 4.816641358337405,
       "undershoot": 2.7542944504840703
@@ -200,7 +200,7 @@
       "subsampling": "YCbCr4:4:4 (1 1)",
       "sharpening": 1.1278821437232314,
       "micro_contrast": 11.988357240305627,
-      "noise": 0.18499611636178695,
+      "noise": 0.19182669157245572,
       "n_edges": 621,
       "overshoot": 3.255128094994164,
       "undershoot": 2.280623888914698

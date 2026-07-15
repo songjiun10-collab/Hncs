@@ -75,10 +75,13 @@ def estimate_noise_flat_patch(gray, patch_size=32, flat_fraction=0.1):
     2026-07: 패치 그리드 range()가 h/w를 patch_size로 나눈 나머지만큼만
     돌아서(예: 2400/48처럼 딱 나눠떨어지면) 마지막 행/열 패치가 누락되던
     off-by-one을 수정(+1). datasets/*/texture_signature.json의 noise
-    필드 중 patch_size=48을 2400x2400 크롭에 쓴(정확히 나눠떨어지는)
-    브랜드들은 이 수정 전 값이라 마지막 행/열이 빠진 채로 계산됐었음 -
-    편향은 작지만(전체 패치의 약 4%) 재계산은 하지 않음(전수 재실행 비용
-    대비 이득이 작다고 판단)."""
+    필드 중 이 함수를 쓴 population-fit 브랜드 10개(canon/nikon/olympus/
+    panasonic/sigma/sony는 patch_size=48, leica/pentax/phaseone/ricoh_gr은
+    함수 기본값 32 추정)를 캐시된 원본 이미지로 재계산해서 반영함(각
+    texture_signature.json의 methodology 필드에 재계산 기록, 변화는
+    평균 노이즈 기준 1% 이내로 작았음). Hasselblad만 당시 쓴 원본
+    캐시가 지금 안 남아있어 재계산 못 함(hasselblad/texture_signature.json
+    참고)."""
     h, w = gray.shape
     gray_f = gray.astype(np.float64)
     kernel = np.array([[1, -2, 1], [-2, 4, -2], [1, -2, 1]], dtype=np.float64)

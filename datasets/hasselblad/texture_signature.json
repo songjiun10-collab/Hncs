@@ -1,5 +1,5 @@
 {
-  "methodology": "샤프닝/미세대비/노이즈/에지헤일로는 이미지 중앙 2400x2400 크롭에서만 계산 (전체 해상도에서 Sobel/가우시안 컨볼루션을 124장 다 돌리면 너무 느림, 중앙크롭은 이전 5장/13장 파일럿 분석과 동일 방법론). 에지헤일로 overshoot는 JPEG 링잉과 진짜 샤프닝 halo를 못 가르는 한계가 있음(README 참고).",
+  "methodology": "샤프닝/미세대비/노이즈/에지헤일로는 이미지 중앙 2400x2400 크롭에서만 계산 (전체 해상도에서 Sobel/가우시안 컨볼루션을 124장 다 돌리면 너무 느림, 중앙크롭은 이전 5장/13장 파일럿 분석과 동일 방법론). 에지헤일로 overshoot는 JPEG 링잉과 진짜 샤프닝 halo를 못 가르는 한계가 있음(README 참고). [2026-07: tools/iso_noise.py의 estimate_noise_flat_patch() off-by-one 버그(마지막 행/열 패치 누락) 수정 후 다른 9개 population-fit 브랜드는 noise 필드를 캐시 이미지로 재계산했으나, Hasselblad는 이 값을 계산할 당시 쓴 원본 해상도 캐시(/tmp/true_originals/, 커밋 안 됨)가 지금 남아있지 않고 현재 downloaded_samples/는 리사이즈 재인코딩본이라 재계산 불가 - noise 값은 그대로 두되 이 버그의 영향을 받았을 가능성이 있다는 점만 기록.]",
   "n_images": 124,
   "population": {
     "sharpening": {
