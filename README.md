@@ -39,6 +39,7 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 | `core/validation.py` | "진짜 미가공 SOOC인가" EXIF 검증, "실제로 온전히 디코드되는가" 무결성 검증(`is_image_usable`), hue 측정 헬퍼 |
 | `core/denoise.py` | 노이즈 제거 (`denoise()`: nlm/bilateral) - 고ISO 샘플을 브랜드 룩 적용 전에 정리할 때 씀 |
 | `datasets/hasselblad/hasselblad_sample_images.csv` | 핫셀블라드 공식 샘플 메타데이터 (카메라/렌즈/작가/jpeg_url/raw_url) |
+| `datasets/hasselblad/texture_signature_recomputed.json` | 기존 `texture_signature.json`은 파일명이 `orig_N.jpg`뿐이라 CSV 행 매칭이 불확실(순번 추정, 78개 검증 중 3개 불일치) - CSV의 jpeg_url로 원본을 처음부터 다시 받아 파일명이 정확히 일치하는 새 세트로 재구축(n=123, noise off-by-one 수정 반영). 기존 파일은 원본 기록 보존 목적으로 그대로 둠 |
 | `datasets/fuji/fuji_sample_pages.csv` | mirrorlesscomparison.com 후지 갤러리의 RAW/JPEG Google Drive 링크 |
 | `datasets/fuji/fuji_imaging_resource_filmmodes.json` | imaging-resource.com X100V/X-T5/X-T4 리뷰 갤러리에서 모은 269장, exiftool FilmMode 태그 포함(Velvia/Provia/Classic Negative/Bleach Bypass/Classic Chrome) - Eterna Bleach Bypass 재보정과 Classic Negative 신규 프리셋의 근거 데이터 |
 | `datasets/fuji/chart_comparisons/manifest.json` + `chart_comparison_stats.json` | 사용자가 직접 찾아 공유한 "동일 장면 다중 필름모드 비교차트" 8장의 크롭박스(manifest)와 실측 delta/프리셋 delta 비교 결과(stats) - population 방식과 달리 장면/노출이 고정된 페어 비교라 증거력이 더 강함. 원본 차트 이미지 자체는 제3자 저작물이라 커밋 안 함(`downloaded_samples_fuji_charts/`, gitignore) |
