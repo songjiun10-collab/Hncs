@@ -125,8 +125,9 @@ docs/         상세 문서 (방법론/실측 결론/브랜드별 기록/파일�
 필터링·Google Drive URL 분류 - 네트워크 호출은 mock 처리)/
 `datasets/*/texture_signature.json` 전체(sharpening/micro_contrast/noise가
 브랜드 간 합리적 범위 안에 있는지 - Sony 스케일버그 같은 자릿수 오류
-재발 방지 가드레일) 커버. `.github/workflows/tests.yml`이 push/PR마다
-자동으로 이 스위트를 돌린다.
+재발 방지 가드레일)/`core/lut.py`/`core/denoise.py`/`tools/iso_noise.py`
+(패치 그리드 off-by-one 회귀 테스트 포함) 커버. `.github/workflows/tests.yml`이
+push/PR마다 자동으로 이 스위트를 돌린다.
 
 ```
 python3 -m unittest discover -s tests -v
