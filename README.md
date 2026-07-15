@@ -1,5 +1,7 @@
 # HNCS
 
+*[English README](README.en.md)*
+
 카메라/디지털백 제조사별 공식(또는 공식에 준하는) 샘플 이미지를 실측
 분석해서 각 브랜드의 색과학을 코드로 근사하는 프로젝트. 원래 핫셀블라드
 HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법론을
