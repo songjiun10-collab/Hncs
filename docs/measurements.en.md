@@ -110,3 +110,23 @@ As of v12/day-night v3 (see `brands/hasselblad.py`'s docstring).
   increases) - because there are enough pixel samples per bin that variance isn't the problem;
   the parametric curve's own shape bias is the bigger source of error. `apply_hncs_learned` is
   kept without regularization
+- **Another expansion attempt (2026-07) - all negative results.** Investigated whether any
+  usable source exists beyond the 124 photos.
+  - Directly parsed `hasselblad.com/learn/sample-images/`'s X/H/V system gallery pages down to
+    the Storyblok CMS `page-data.json` and cross-checked against the existing 124 photos
+    (139 CSV rows) - zero new files. The official source is already saturated.
+  - Hasselblad's official Instagram posts (verified 8 user-supplied screenshots) - EXIF is
+    entirely stripped by platform re-encoding, and one of the posts turned out to be
+    sponsored/edited content - unusable.
+  - explorecams.com (500px-sourced) X1D gallery, all 51 listed photos (1 detail page 404'd,
+    50 checked) - full EXIF verification: 44% Lightroom/Photoshop-edited, 36% completely
+    stripped EXIF, 14% Instagram re-encoded, and only 6% (3 photos) looked like genuine SOOC -
+    and all 3 of those were from the same photographer (Raymond Cheung). Too small and too
+    non-diverse a subset to add to the population - excluded.
+  - imaging-resource.com's X2D 100C review gallery (the same source already used for the other
+    4 population-fit brands) - all 45 non-edited candidates came back corrupted on
+    imaging-resource.com's own CDN ("Premature end of JPEG file", reproduced byte-for-byte via
+    both curl and urllib) - zero survivors. See "Image trustworthiness policy" in
+    `docs/methodology.en.md` for details.
+  - **Conclusion**: there is no known path to grow the sample beyond 124 photos right now.
+    `apply_hncs`/`apply_hncs_learned`/day-night parameters remain unchanged.

@@ -35,6 +35,19 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
     전부 흑백 전용 Achromatic 백이라 컬러 population에는 못 써서 제외)
 자세한 수치는 각 브랜드 파일 docstring 참고.
 
+**핫셀블라드 X2D 100C 갤러리 후속 조사(2026-07) - 최종 결론: 사용 불가.**
+위에서 "72% 손상"이라고만 언급하고 후속 결론을 안 남겼던 게 있어서
+`tools.analyze`의 `run_imaging_resource_brand()`로 실제로 돌려봤다.
+편집본("-MOD") 페어를 제외한 비-MOD 후보 45장 전부를 원본/scaled 두
+버전 다 시도했지만 44장이 "Premature end of JPEG file"로 손상, 나머지
+1장은 EXIF 기대 렌더러 불일치 - **생존 0장**. curl과 python urllib
+두 경로로 동일 URL을 재다운로드해 바이트 단위로 완전히 동일하게 깨져
+있음을 확인해서 우리 다운로드 파이프라인 버그가 아니라 imaging-resource.com
+CDN에 저장된 파일 자체의 손상임을 재확인했다(Phase One XF 100MP 갤러리
+100% 손상 사례와 같은 성격). Phase One XT 때처럼 `BRAND_CONFIGS`에는
+넣지 않고 `tools/analyze.py` 주석으로만 시도 기록을 남김 - 핫셀블라드는
+여전히 `cdn.hasselblad.com` 공식 124장 단일 소스가 최선이다.
+
 ## 브랜드 함수 QA 검증 (2026-07)
 
 Canon/Sony/Nikon 추가 후 `brands/*.py`의 모든 `apply_*` 함수(핫셀블라드

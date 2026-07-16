@@ -17,6 +17,22 @@ Re-verifying all previously committed/cached population data:
   - Phase One (all 30 of 30 corrupted): re-collected from the whole gallery (110 candidates), but 91 of those were also corrupted, shrinking to n=16 - replaced with re-verified numbers (also tried the Phase One XT gallery to expand the sample, but the surviving images were all shot on a color-less Achromatic back, unusable for a color population, so it was excluded)
 See each brand file's docstring for exact numbers.
 
+**Hasselblad X2D 100C gallery follow-up (2026-07) - final verdict: unusable.**
+The "72% corrupted" figure above never got a documented follow-up
+conclusion, so we actually ran it through `run_imaging_resource_brand()`
+in `tools.analyze`. Of the 45 non-"-MOD" (unedited) candidates, both the
+original and scaled versions were tried for every one - 44 came back
+corrupted ("Premature end of JPEG file"), and the remaining 1 failed the
+expected-renderer EXIF check - **zero survivors**. Re-downloading the
+same URLs via both curl and Python's urllib produced byte-identical
+corrupted files, confirming this is not a bug in our download pipeline
+but genuine corruption in the files as stored on imaging-resource.com's
+CDN (the same character of failure as the Phase One XF 100MP gallery's
+100% corruption). As with Phase One XT, this was left out of
+`BRAND_CONFIGS` and only documented as a code comment in
+`tools/analyze.py` - Hasselblad's official 124-photo `cdn.hasselblad.com`
+set remains the best available source.
+
 ## Brand-function QA verification (2026-07)
 
 After adding Canon/Sony/Nikon, ran every `apply_*` function in `brands/*.py` (4 Hasselblad variants + 10 Fuji presets + 7 population-fit brands (Leica/Phase One/Pentax/Ricoh GR/Canon/Sony/Nikon), 21 total) on a random BGR array and confirmed shape/dtype are preserved. Everything works correctly - no bugs found

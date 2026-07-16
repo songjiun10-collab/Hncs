@@ -109,3 +109,24 @@ v12/day-night v3 기준 (`brands/hasselblad.py` docstring 참고).
   (LOO RMSE 14.6, 정규화를 강하게 걸수록 20.7→28.0으로 악화) — bin당
   픽셀 표본이 충분히 많아 분산 문제보다 파라메트릭 커브 자체의 모양
   편향이 더 크기 때문. `apply_hncs_learned`는 정규화 없이 그대로 유지
+- **표본 확대 재시도(2026-07) - 전부 음성 결과**: 124장 외에 더 쓸 수
+  있는 소스가 있는지 재조사했다.
+  - `hasselblad.com/learn/sample-images/`의 X/H/V system 갤러리 페이지를
+    Storyblok CMS의 `page-data.json`까지 직접 파싱해서 전수 대조 - 기존
+    124장(139행) 대비 새로 추가된 파일 0장. 공식 소스는 이미 포화 상태.
+  - 하셀블라드 공식 Instagram 게시물(사용자 제공 스크린샷 8장 검증) -
+    EXIF가 플랫폼 재인코딩으로 전부 소실, 그중 한 장은 협찬/편집 콘텐츠로
+    확인 - 못 씀
+  - explorecams.com(500px 소스) X1D 갤러리 51장(1장은 상세페이지 404로
+    제외, 50장 검증) 전수 EXIF 검증 - 44% Lightroom/Photoshop 편집,
+    36% EXIF 완전 삭제, 14% Instagram 재인코딩, 진짜 SOOC로 보이는 건
+    6%(3장)뿐인데다 전부 동일 작가(Raymond Cheung) - population에 넣기엔
+    표본도 작고 편중돼서 제외
+  - imaging-resource.com X2D 100C 리뷰 갤러리(다른 4개 population-fit
+    브랜드와 같은 소스) - 비편집 후보 45장 전부 imaging-resource.com
+    CDN 자체 손상("Premature end of JPEG file", curl/urllib 두 경로로
+    바이트 단위 재현 확인)으로 생존 0장. 상세: `docs/methodology.md`
+    "이미지 신뢰성 정책"
+  - **결론**: 현재 알려진 경로로는 124장에서 표본을 더 늘릴 방법이 없다.
+    `apply_hncs`/`apply_hncs_learned`/day-night 파라미터는 변경 없이
+    유지.

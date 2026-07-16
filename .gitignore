@@ -32,5 +32,3 @@ downloaded_samples_sigma/
 sigma_stats_result.csv
 sigma_stats_result_dedup.csv
 downloaded_samples_hasselblad_trueres/
-downloaded_samples_hasselblad_ir/
-hasselblad_ir_stats_result.csv
