@@ -128,5 +128,9 @@ As of v12/day-night v3 (see `brands/hasselblad.py`'s docstring).
     imaging-resource.com's own CDN ("Premature end of JPEG file", reproduced byte-for-byte via
     both curl and urllib) - zero survivors. See "Image trustworthiness policy" in
     `docs/methodology.en.md` for details.
+  - dpreview.com's sample galleries (`/samples/album/hasselblad-*`) - the galleries themselves
+    exist, but the site is behind a Cloudflare bot challenge (`cf-mitigated: challenge`,
+    confirmed to be dpreview.com's own origin response, not a proxy policy block), so automated
+    scraping isn't possible - excluded without attempting to bypass it.
   - **Conclusion**: there is no known path to grow the sample beyond 124 photos right now.
     `apply_hncs`/`apply_hncs_learned`/day-night parameters remain unchanged.

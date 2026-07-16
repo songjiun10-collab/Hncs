@@ -127,6 +127,10 @@ v12/day-night v3 기준 (`brands/hasselblad.py` docstring 참고).
     CDN 자체 손상("Premature end of JPEG file", curl/urllib 두 경로로
     바이트 단위 재현 확인)으로 생존 0장. 상세: `docs/methodology.md`
     "이미지 신뢰성 정책"
+  - dpreview.com 샘플 갤러리(`/samples/album/hasselblad-*`) - 실제로
+    갤러리 자체는 존재하지만 사이트가 Cloudflare 봇 챌린지로 막혀 있어
+    (`cf-mitigated: challenge`, 프록시가 아니라 dpreview.com 자체 오리진
+    응답) 자동 스크레이핑이 불가능 - 우회 시도 안 하고 제외
   - **결론**: 현재 알려진 경로로는 124장에서 표본을 더 늘릴 방법이 없다.
     `apply_hncs`/`apply_hncs_learned`/day-night 파라미터는 변경 없이
     유지.
