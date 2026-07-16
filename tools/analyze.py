@@ -205,6 +205,27 @@ BRAND_CONFIGS = {
         cache_dir="downloaded_samples_ricoh_gr",
         result_csv="ricoh_gr_stats_result.csv",
     ),
+    # 핫셀블라드 표본 확대(2026-07) - 기존 124장은 전부 cdn.hasselblad.com
+    # 공식 갤러리(hasselblad.com/learn/sample-images/) 단일 소스였음. 다른
+    # 소스(하셀 공식 인스타그램, explorecams.com/500px)는 EXIF Software
+    # 검증 결과 대부분 편집/재인코딩이라 못 씀(docs/methodology.md 참고).
+    # imaging-resource.com에 X2D 100C 리뷰 갤러리(자체 카메라 테스트샷,
+    # 다른 4개 브랜드와 동일 소스)가 있는 걸 확인 - 각 장면마다 원본과
+    # "-MOD"(리뷰어 보정본) 페어로 올라와 있어서 원본만 골라 쓰면 됨. 키는
+    # "hasselblad_ir"로 분리 - CLI의 "hasselblad" mode는 이미 공식 CSV
+    # 전수분석(run_hasselblad)이 선점하고 있어서 겹치지 않게 함.
+    "hasselblad_ir": dict(
+        galleries=[
+            ("Hasselblad X2D 100C", "https://www.imaging-resource.com/cameras/hasselblad-x2d-100c-review/gallery/"),
+        ],
+        max_per_camera=50,
+        expected_keywords=("hasselblad",),
+        reject_keywords=("photoshop", "lightroom", "capture one", "camera raw"),
+        skip_keywords=("edit", "-mod", "unsharpmask", "nosharp", "stack", "-iso-"),
+        skip_patterns=(),
+        cache_dir="downloaded_samples_hasselblad_ir",
+        result_csv="hasselblad_ir_stats_result.csv",
+    ),
 }
 
 
@@ -481,4 +502,4 @@ if __name__ == "__main__":
     elif mode == "portrait":
         run_portrait()
     else:
-        print("usage: python3 -m tools.analyze [hasselblad|leica|phaseone|pentax|ricoh_gr|fuji_film_modes|portrait]")
+        print("usage: python3 -m tools.analyze [hasselblad|hasselblad_ir|leica|phaseone|pentax|ricoh_gr|fuji_film_modes|portrait]")
