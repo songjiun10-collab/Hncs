@@ -95,6 +95,12 @@ python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks
 python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
 ```
 
+![RAW -> Log 색공간 데모 - sRGB 디코드 vs V-Log 인코딩](docs/images/raw_pipeline_demo.jpg)
+
+*동일 RAW(Fujifilm X-T1) 한 장을 표준 sRGB로 디코드한 것(왼쪽)과
+`tools.raw_pipeline --log-space V-Log`로 인코딩한 것(오른쪽) 비교. 오른쪽의
+밋밋한 저대비/저채도 모습은 정상 - 그레이딩되지 않은 Log 상태 그대로다.*
+
 지원 Log 색공간: `core/log_pipeline.py`의 `LOG_SPACES` 참고(F-Log/F-Log2/
 V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log).
 Log 커브-색역 페어링은 `colour-science`가 제공하는 정의를 그대로 쓴
@@ -117,6 +123,14 @@ python3 -m hybrid_engine.convert photo.jpg out.jpg --target hasselblad
 # RAW가 있는 경우
 python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
 ```
+
+![hybrid_engine 데모 - Nikon JPEG을 Hasselblad 룩으로 변환](docs/images/hybrid_engine_demo.jpg)
+
+*Nikon D5300으로 찍은 부다페스트 국회의사당 야경 JPEG(왼쪽, 데모용으로
+제공받음 - `docs/images/preset_demo.jpg`/`before_after_hncs.jpg`와 같은
+소스 사진)을 `hybrid_engine.convert --target hasselblad`로 변환한
+결과(오른쪽) - EXIF로 Nikon을 자동인식해서 그 톤커브를 역산해 근사 중립
+상태로 되돌린 뒤 `apply_hncs`를 재적용했다.*
 
 **알려진 한계** (각 모듈 docstring에도 명시):
 - `core/color_matrix.py`: 카메라 고유 색매트릭스로 정규화해도 센서
@@ -159,6 +173,8 @@ python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
 - [x] population 통계 재현성 감사 도구
 - [x] RAW -> Log 색공간(F-Log2/S-Log3/V-Log 등) + `.cube` LUT 적용
       파이프라인(`tools/raw_pipeline.py`, 브랜드 엔진과 별도)
+- [x] EXIF 기반 카메라 간 색감 변환 엔진 V0.1(`hybrid_engine/`, RAW/JPEG
+      입력 둘 다 지원, 브랜드 톤커브 역산 + ΔE 평가 루프)
 
 ## 구조
 
@@ -188,7 +204,9 @@ docs/         상세 문서 (방법론/실측 결론/브랜드별 기록/파일�
 브랜드 간 합리적 범위 안에 있는지 - Sony 스케일버그 같은 자릿수 오류
 재발 방지 가드레일)/`core/lut.py`/`core/denoise.py`/`tools/iso_noise.py`
 (패치 그리드 off-by-one 회귀 테스트 포함)/`core/log_pipeline.py`(노출
-보정, Log 인코딩, `.cube` LUT 적용, 지원하는 모든 `LOG_SPACES` 검증) 커버.
+보정, Log 인코딩, `.cube` LUT 적용, 지원하는 모든 `LOG_SPACES` 검증)/
+`hybrid_engine/`(정규화/톤/색/색매트릭스/파이프라인/ΔE 평가/EXIF 브랜드
+인식·프리셋 역산 전체, 32개 테스트) 커버.
 `.github/workflows/tests.yml`이 push/PR마다 자동으로 이 스위트를 돌린다.
 
 ```

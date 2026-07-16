@@ -88,6 +88,13 @@ python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks
 python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
 ```
 
+![RAW -> Log colorspace demo - sRGB decode vs V-Log encoding](docs/images/raw_pipeline_demo.jpg)
+
+*The same RAW (Fujifilm X-T1) decoded to standard sRGB (left) vs encoded with
+`tools.raw_pipeline --log-space V-Log` (right). The flat, low-contrast/
+low-saturation look on the right is expected - it's the ungraded Log state
+as-is.*
+
 Supported Log spaces: see `LOG_SPACES` in `core/log_pipeline.py` (F-Log/F-Log2/V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log). The curve-gamut pairings use `colour-science`'s own definitions as-is - they haven't been cross-checked exhaustively against each manufacturer's official spec, the same kind of "unverified" caveat as the rest of this project's flagged items.
 
 ## hybrid_engine/ - EXIF-driven cross-camera color conversion (V0.1)
@@ -101,6 +108,14 @@ python3 -m hybrid_engine.convert photo.jpg out.jpg --target hasselblad
 # RAW available
 python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
 ```
+
+![hybrid_engine demo - Nikon JPEG converted to a Hasselblad look](docs/images/hybrid_engine_demo.jpg)
+
+*A Nikon D5300 JPEG of the Budapest Parliament at night (left, provided for
+this demo - the same source photo as `docs/images/preset_demo.jpg`/
+`before_after_hncs.jpg`) converted with `hybrid_engine.convert --target
+hasselblad` (right) - EXIF auto-detects Nikon, inverts its tone curve back
+toward a neutral baseline, then re-applies `apply_hncs`.*
 
 **Known limitations** (also documented in each module's docstring):
 - `core/color_matrix.py`: even with camera-specific color-matrix normalization, sensor spectral sensitivities are never exactly proportional to the CIE standard observer (metamerism), so a physically perfect camera-agnostic colorspace isn't possible - the residual can only be reduced via the ΔE loop, not eliminated
@@ -141,6 +156,9 @@ python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
 - [x] Population-statistics reproducibility audit tooling
 - [x] RAW -> Log colorspace (F-Log2/S-Log3/V-Log/etc.) + `.cube` LUT
       pipeline (`tools/raw_pipeline.py`, separate from the brand engine)
+- [x] EXIF-driven cross-camera color conversion engine V0.1
+      (`hybrid_engine/`, supports both RAW and JPEG input, brand tone-curve
+      inversion + a ΔE evaluation loop)
 
 ## Structure
 
@@ -158,7 +176,7 @@ full file-by-file breakdown.
 
 ## Tests
 
-There's an `unittest`-based test suite under `tests/` (no pytest or other external dependency added, keeping `requirements.txt`'s minimal-dependency principle). Covers `core/curve.py` (tone-curve math, boundary conditions/monotonicity/continuity) / `core/stats.py` (population statistics computation) / `core/validation.py` (integrity validation, reproducing the CDN corruption pattern) / `core/engine.py` (the population-fit engine) / `brands/*.py` (shape/dtype preservation for every `apply_*` look function, Fuji preset count consistency) / `tools/fuji_chart_calibrate.py` (crop-box extraction, delta aggregation) / `tools/download.py` (imaging-resource.com HTML parsing, filtering, Google Drive URL classification - network calls are mocked) / all of `datasets/*/texture_signature.json` (whether sharpening/micro_contrast/noise fall within a sane cross-brand range - a regression guard against a Sony-scale-bug-style order-of-magnitude error) / `core/lut.py` / `core/denoise.py` / `tools/iso_noise.py` (including a regression test for the patch-grid off-by-one bug) / `core/log_pipeline.py` (exposure adjustment, Log encoding, `.cube` LUT application, every supported `LOG_SPACES` entry). `.github/workflows/tests.yml` runs this suite automatically on every push/PR.
+There's an `unittest`-based test suite under `tests/` (no pytest or other external dependency added, keeping `requirements.txt`'s minimal-dependency principle). Covers `core/curve.py` (tone-curve math, boundary conditions/monotonicity/continuity) / `core/stats.py` (population statistics computation) / `core/validation.py` (integrity validation, reproducing the CDN corruption pattern) / `core/engine.py` (the population-fit engine) / `brands/*.py` (shape/dtype preservation for every `apply_*` look function, Fuji preset count consistency) / `tools/fuji_chart_calibrate.py` (crop-box extraction, delta aggregation) / `tools/download.py` (imaging-resource.com HTML parsing, filtering, Google Drive URL classification - network calls are mocked) / all of `datasets/*/texture_signature.json` (whether sharpening/micro_contrast/noise fall within a sane cross-brand range - a regression guard against a Sony-scale-bug-style order-of-magnitude error) / `core/lut.py` / `core/denoise.py` / `tools/iso_noise.py` (including a regression test for the patch-grid off-by-one bug) / `core/log_pipeline.py` (exposure adjustment, Log encoding, `.cube` LUT application, every supported `LOG_SPACES` entry) / `hybrid_engine/` (normalization/tone/color/color-matrix/pipeline/ΔE evaluation/EXIF brand detection and preset inversion, end to end - 32 tests). `.github/workflows/tests.yml` runs this suite automatically on every push/PR.
 
 ```
 python3 -m unittest discover -s tests -v
