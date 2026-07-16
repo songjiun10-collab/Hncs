@@ -44,29 +44,47 @@ HASSELBLAD_CSV_PATH = "datasets/hasselblad/hasselblad_sample_images.csv"
 HASSELBLAD_CACHE_DIR = "downloaded_samples"
 
 
+def _check_genuine_bytes(data, reject_keywords=("photoshop", "lightroom", "camera raw")):
+    """다운로드한 원본 바이트(리사이즈 전)의 EXIF Software 태그를 확인해서
+    Photoshop/Lightroom 등 제3자 편집 흔적이 있는지 판정한다. 리사이즈 후
+    cv2.imwrite로 재저장하면 EXIF가 통째로 날아가서 이 시점에서만 검증
+    가능 - GitHub 이슈 #4에서 지적된 문제(genuine_render_check이
+    run_hasselblad()엔 안 걸려있었던 것)의 수정."""
+    tmp_path = "/tmp/_hasselblad_genuine_check.jpg"
+    with open(tmp_path, "wb") as f:
+        f.write(data)
+    out = subprocess.run(["exiftool", "-Software", tmp_path], capture_output=True, timeout=30)
+    text = out.stdout.decode("utf-8", errors="ignore").lower()
+    return not any(k in text for k in reject_keywords)
+
+
 def _hasselblad_download(url, path, max_dim=2000):
-    """원본이 1억화소급이라 다운로드 후 리사이즈해서 저장 (용량/속도 절약)"""
+    """원본이 1억화소급이라 다운로드 후 리사이즈해서 저장 (용량/속도 절약).
+    반환: (성공 여부, "edited"면 Photoshop/Lightroom 등 제3자 편집 감지로
+    스킵된 것 - 실패와 구분해서 집계할 수 있게 사유를 같이 반환)."""
     if os.path.exists(path):
         if is_image_usable(path):
-            return True
+            return True, None
         os.remove(path)  # 이전 실행에서 손상된 채로 캐시된 파일 - 재다운로드
     try:
         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read()
+        if not _check_genuine_bytes(data):
+            return False, "edited"
         arr = np.frombuffer(data, dtype=np.uint8)
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         if img is None or not is_image_array_usable(img):
-            return False
+            return False, "corrupt"
         h, w = img.shape[:2]
         scale = max_dim / max(h, w)
         if scale < 1:
             img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
         cv2.imwrite(path, img, [cv2.IMWRITE_JPEG_QUALITY, 92])
-        return True
+        return True, None
     except Exception as e:
         print(f"  실패: {url} -> {e}")
-        return False
+        return False, "error"
 
 
 def run_hasselblad():
@@ -75,6 +93,7 @@ def run_hasselblad():
         rows = list(csv.DictReader(f))
 
     results = []
+    edited_count = 0
     for i, row in enumerate(rows):
         url = row.get('jpeg_url', '').strip()
         if not url:
@@ -82,7 +101,11 @@ def run_hasselblad():
         fname = f"{i:03d}_{row['filename']}"
         path = os.path.join(HASSELBLAD_CACHE_DIR, fname)
         print(f"[{i + 1}/{len(rows)}] {row['camera']} - {row['photographer']}")
-        if not _hasselblad_download(url, path):
+        ok, reason = _hasselblad_download(url, path)
+        if not ok:
+            if reason == "edited":
+                edited_count += 1
+                print(f"  스킵 (Photoshop/Lightroom 등 편집 감지): {row['filename']}")
             continue
         img = cv2.imread(path)
         if img is None:
@@ -103,6 +126,7 @@ def run_hasselblad():
 
     print("\n=== 전수분석 결과 ===")
     print(f"총 다운로드 성공: {len(results)}장")
+    print(f"편집(Photoshop/Lightroom 등) 감지로 제외: {edited_count}장")
     print(f"그림자유효(블랙포인트 계산용): {len(shadow_valid)}장")
     if b2_target is not None:
         print(f"블랙p2 타깃: {b2_target:.1f}  (std={np.std([r['b2'] for r in shadow_valid]):.1f})")

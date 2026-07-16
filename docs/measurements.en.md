@@ -178,7 +178,57 @@ them checked out against the actual code and data:
   of this uncertainty, but the cause was never pinned down explicitly as "the raw pipeline
   itself isn't characterized."
 
-**In progress**: re-verifying Phocus contamination via an EXIF-preserving redownload, and
-recomputing the population excluding cameralabs.com, could both change `apply_hncs`'s actual
-shipped parameters, so whether to proceed is being decided separately. The offer of X2D II
-raw+jpeg pairs is also under separate discussion.
+### Phocus contamination re-verification results (2026-07)
+
+Range-fetched the first 256KB of all 139 originals (pre-resize) and re-checked the EXIF
+Software tag on every one - the existing 124-photo cache couldn't be checked this way at all,
+because `_hasselblad_download()`'s `cv2.imwrite` resave strips EXIF entirely (that function
+turned out to be the actual root cause). Results:
+
+- **34 photos (24%) carry an Adobe Photoshop/Lightroom/Camera Raw Software tag** - clearly
+  third-party edited. Issue #4's concern was correct.
+- 6 carry a plain version string (`1.1.6.3`/`3.1.0`/`3.0.0`, Make=Hasselblad,
+  Model=X2D/X2D II) - same pattern seen in the earlier explorecams.com verification (recorded
+  above), read as the camera's/Phocus's own renderer signature rather than an editing tool, so
+  not classified as edited.
+- 84 have no Software tag at all (can't tell whether that's genuinely unedited or stripped
+  during upload to Hasselblad's CMS - "unverified," not "confirmed clean").
+- 3 hit HTTP 403 (likely rate-limiting) - unverified.
+
+**Recomputed the population excluding cameralabs.com and confirmed-Adobe-edited photos**
+(n=124 -> n=65, nearly halved):
+
+| | n (shadow-valid) | Black p2 | White p99.5 |
+|---|---|---|---|
+| Currently shipped (full pool) | 124 (94) | 11.3 | 223.9 |
+| Cleaned (official + non-edited only) | 65 (50) | 10.9 | 224.4 |
+
+The gap is 3% for black-p2, 0.2% for white-p99.5 - smaller than the ~5-7% this project has
+already treated as "noise level" several times over. **Conclusion: contaminated samples really
+were mixed in, but they didn't meaningfully distort the population targets** -
+`apply_hncs`/`apply_hncs_learned` parameters are left unchanged (consistent with the
+anti-overfitting principle already in place).
+
+Also recomputed the per-generation breakdown on the cleaned 65-photo set:
+
+| Generation | n (shadow-valid) | Black p2 | White p99.5 |
+|---|---|---|---|
+| X2D line | 48 (38) | 10.2 | 227.0 |
+| X1D line | 4 (4) | 11.8 | 229.0 |
+| 907X/CFV | 13 (8) | 14.1 | 213.3 |
+
+The X1D subset drops to just 4 photos - too thin to draw a conclusion from. The
+cross-generation pooling question (point 3 above) remains open, and its root cause remains
+that the raw+jpeg calibration pairs are X1D-only - the offered X2D II pairs are the only
+realistic path to closing that gap.
+
+**Code fix**: added an EXIF Software check (`_check_genuine_bytes()`) to
+`tools/analyze.py`'s `_hasselblad_download()`, applied to the raw bytes *before* the resize
+step, so re-running `python3 -m tools.analyze hasselblad` now automatically excludes
+Photoshop/Lightroom-edited photos and prints the exclusion count. cameralabs.com is not
+hard-excluded (the table above shows its distorting effect is noise-level, too weak to justify
+excluding a whole third-party source) - the `source` column is already in the CSV if anyone
+wants to filter on it later.
+
+The X2D II raw+jpeg pair contribution is proceeding separately (see the GitHub issue #4
+thread).
