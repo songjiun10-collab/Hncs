@@ -117,6 +117,14 @@ this demo - the same source photo as `docs/images/preset_demo.jpg`/
 hasselblad` (right) - EXIF auto-detects Nikon, inverts its tone curve back
 toward a neutral baseline, then re-applies `apply_hncs`.*
 
+![hybrid_engine demo, 4 more photos - cathedral interior/flag/street](docs/images/hybrid_engine_demo_more.jpg)
+
+*Four more photos from the same trip (all provided for this demo) - the two
+cathedral-interior shots had no EXIF at all (likely stripped in transit
+through a messaging app), so `--source nikon` was passed explicitly; all
+four were shot in portrait and needed `PIL.ImageOps.exif_transpose()` to
+fix orientation before conversion.*
+
 **Known limitations** (also documented in each module's docstring):
 - `core/color_matrix.py`: even with camera-specific color-matrix normalization, sensor spectral sensitivities are never exactly proportional to the CIE standard observer (metamerism), so a physically perfect camera-agnostic colorspace isn't possible - the residual can only be reduced via the ΔE loop, not eliminated
 - `core/preset_inverse.py`: only the L-channel tone curve of population-fit brands can be inverted (it has a closed-form inverse) - CLAHE (perceptual contrast compensation) is an adaptive operation and isn't inverted, and brands without a raw+jpeg pair (e.g. Fuji) simply aren't this kind of curve to begin with, so they're out of scope by design

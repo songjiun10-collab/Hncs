@@ -132,6 +132,13 @@ python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
 결과(오른쪽) - EXIF로 Nikon을 자동인식해서 그 톤커브를 역산해 근사 중립
 상태로 되돌린 뒤 `apply_hncs`를 재적용했다.*
 
+![hybrid_engine 데모 추가 4장 - 성당 내부/국기/거리 사진](docs/images/hybrid_engine_demo_more.jpg)
+
+*같은 여행에서 찍은 추가 사진 4장(전부 데모용으로 제공받음) - 성당 내부
+2장은 EXIF가 아예 없어(메신저 전송 과정에서 소실로 추정) `--source
+nikon`을 직접 지정했고, 전부 세로 촬영이라 `PIL.ImageOps.exif_transpose()`로
+방향을 먼저 바로잡은 뒤 변환했다.*
+
 **알려진 한계** (각 모듈 docstring에도 명시):
 - `core/color_matrix.py`: 카메라 고유 색매트릭스로 정규화해도 센서
   분광감도가 CIE 표준관측자와 정확히 비례하지 않아(메타메리즘) 완벽한
