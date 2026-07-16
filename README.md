@@ -79,6 +79,28 @@ pip install -r requirements.txt
 `cdn.hasselblad.com`, `live.staticflickr.com` 등으로의 네트워크 접근을
 자동 허용하는 샌드박스 설정입니다.
 
+## RAW → Log 색공간 파이프라인 (전문가용)
+
+브랜드별 `apply_*` 엔진과는 목적이 다른 별도 모듈. "이 카메라가 실제로
+찍는 JPEG 색을 근사"하는 게 아니라, **카메라 종류에 무관하게** RAW를
+표준 중간 색공간(ProPhoto RGB Linear)으로 통일한 뒤 원하는 영상 카메라의
+Log 커브/색역(F-Log2, S-Log3, V-Log, ARRI LogC3/4 등)으로 인코딩해서
+그 카메라용 크리에이티브 `.cube` LUT를 RAW 사진에도 색 어긋남 없이 적용할
+수 있게 한다 ([raw-alchemy](https://github.com/shenmintao/raw-alchemy)에서
+아이디어를 참고, `colour-science` 기반으로 재구현).
+
+```
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3
+python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks/my_look.cube
+python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
+```
+
+지원 Log 색공간: `core/log_pipeline.py`의 `LOG_SPACES` 참고(F-Log/F-Log2/
+V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log).
+Log 커브-색역 페어링은 `colour-science`가 제공하는 정의를 그대로 쓴
+것으로, 각 제조사 공식 스펙과 전수 대조 검증까지는 안 됐다는 게 이
+프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat.
+
 ## 목표 / 철학
 
 - 주관적인 "필감" 묘사가 아니라 population 통계, raw+jpeg 페어,
@@ -107,6 +129,8 @@ pip install -r requirements.txt
 - [x] `unittest` 기반 자동 테스트 스위트
 - [x] GitHub Actions CI(push/PR마다 자동 실행)
 - [x] population 통계 재현성 감사 도구
+- [x] RAW -> Log 색공간(F-Log2/S-Log3/V-Log 등) + `.cube` LUT 적용
+      파이프라인(`tools/raw_pipeline.py`, 브랜드 엔진과 별도)
 
 ## 구조
 
@@ -135,8 +159,9 @@ docs/         상세 문서 (방법론/실측 결론/브랜드별 기록/파일�
 `datasets/*/texture_signature.json` 전체(sharpening/micro_contrast/noise가
 브랜드 간 합리적 범위 안에 있는지 - Sony 스케일버그 같은 자릿수 오류
 재발 방지 가드레일)/`core/lut.py`/`core/denoise.py`/`tools/iso_noise.py`
-(패치 그리드 off-by-one 회귀 테스트 포함) 커버. `.github/workflows/tests.yml`이
-push/PR마다 자동으로 이 스위트를 돌린다.
+(패치 그리드 off-by-one 회귀 테스트 포함)/`core/log_pipeline.py`(노출
+보정, Log 인코딩, `.cube` LUT 적용, 지원하는 모든 `LOG_SPACES` 검증) 커버.
+`.github/workflows/tests.yml`이 push/PR마다 자동으로 이 스위트를 돌린다.
 
 ```
 python3 -m unittest discover -s tests -v

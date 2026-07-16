@@ -35,6 +35,7 @@ docs/         Detailed documentation (this directory)
 | `core/stats.py` | Population statistics computation (`image_stats`: black-point p2 / white-point p99.5 / saturation / shadow fraction) |
 | `core/validation.py` | "Is this genuinely unedited SOOC" EXIF verification, "does this actually decode intact" integrity check (`is_image_usable`), hue-measurement helper |
 | `core/denoise.py` | Noise reduction (`denoise()`: nlm/bilateral) - used to clean up high-ISO samples before applying a brand look |
+| `core/log_pipeline.py` | RAW -> Log colorspace pipeline, separate from the brand engine - standardizes RAW into ProPhoto RGB Linear, then encodes into a video camera's Log curve/gamut (F-Log2/S-Log3/V-Log/etc.), with optional `.cube` LUT application ([inspired by raw-alchemy](https://github.com/shenmintao/raw-alchemy), built on `colour-science`) |
 | `datasets/hasselblad/hasselblad_sample_images.csv` | Hasselblad's official sample metadata (camera/lens/photographer/jpeg_url/raw_url) |
 | `datasets/hasselblad/texture_signature_recomputed.json` | The existing `texture_signature.json`'s filenames are just `orig_N.jpg`, so matching back to the original CSV rows is unreliable (positional guess only - 3 mismatches found out of 78 spot-checked). Rebuilt from scratch by re-downloading the originals from the CSV's jpeg_url column, with filenames that match the CSV exactly (n=123, includes the noise off-by-one fix). The original file is left untouched to preserve the historical record |
 | `datasets/fuji/fuji_sample_pages.csv` | RAW/JPEG Google Drive links for Fuji galleries on mirrorlesscomparison.com |
@@ -46,5 +47,6 @@ docs/         Detailed documentation (this directory)
 | `tools/calibrate.py` | Hasselblad raw+jpeg pair calibration CLI - `grid_search`/`learn_curve`/`regularize` modes |
 | `tools/fuji_chart_calibrate.py` | Fuji "same-scene comparison chart" verification CLI - `python3 -m tools.fuji_chart_calibrate report` (extracts strips using manifest.json's crop boxes -> prints a real-delta vs preset-delta table) |
 | `tools/denoise.py` | Noise reduction CLI - `python3 -m tools.denoise input.jpg output.jpg [--strength N] [--method nlm\|bilateral]` |
+| `tools/raw_pipeline.py` | RAW -> Log colorspace CLI - `python3 -m tools.raw_pipeline input.raw output.tiff --log-space F-Log2 [--lut looks/x.cube] [--exposure EV] [--auto-expose]` |
 | `tools/highlight_rolloff_signal.py` | Explored whether shoulder_start/clahe_clip could be estimated per brand (conclusion: insufficient evidence, kept the defaults - see `core/engine.py`'s docstring) |
 | `models/yunet.onnx` | Face detection model (OpenCV Zoo, YuNet 2023mar) - used by `tools/analyze.py portrait` |

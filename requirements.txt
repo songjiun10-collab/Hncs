@@ -3,3 +3,4 @@ numpy
 rawpy
 requests
 gdown
+colour-science
