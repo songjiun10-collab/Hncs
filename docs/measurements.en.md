@@ -134,3 +134,51 @@ As of v12/day-night v3 (see `brands/hasselblad.py`'s docstring).
     scraping isn't possible - excluded without attempting to bypass it.
   - **Conclusion**: there is no known path to grow the sample beyond 124 photos right now.
     `apply_hncs`/`apply_hncs_learned`/day-night parameters remain unchanged.
+
+## External review incorporated (2026-07, GitHub issue #4)
+
+An X2D II user reviewed the methodology in detail and raised several points. Every one of
+them checked out against the actual code and data:
+
+- **The 124-photo sample isn't 100% hasselblad.com official**: 99 of 124 are tagged
+  `hasselblad.com (공식)`, 25 are `cameralabs.com (신뢰 서드파티)` - `run_hasselblad()`
+  never filters on the `source` column, it just pools everything. Recomputed from the cached
+  `csv_stats_result.csv`: full pool black-p2 = 11.27 (matches the number already in the docs)
+  vs. official-only = 10.60 - a 0.67 (6%) difference, similar in magnitude to the
+  already-documented "noise-level" cache-vs-original gap (0.6, 5.7%), so not a dramatic
+  distortion - but the docs' "124 official photos" framing was still inaccurate.
+- **`genuine_render_check()` (detects Photoshop/Lightroom/Phocus third-party edits) is wired
+  into the 4 imaging-resource.com brand paths but not into `run_hasselblad()`** - confirmed.
+  Digging further: all 124 cached files have an empty EXIF Software tag - not because they're
+  free of Phocus editing, but because `_hasselblad_download()` strips EXIF entirely via its
+  `cv2.imwrite` resize-and-resave step, so this couldn't have been verified either way with the
+  current cache. Whether Phocus-rendered/edited exports are actually mixed in remains an open
+  question - would need a fresh EXIF-preserving redownload to check. Still unresolved.
+- **Per-generation population was never documented**: `run_hasselblad()` already prints a
+  per-generation (X1D/X2D/907X·CFV) breakdown to the console, but it never made it into the
+  docs. Recomputed from the cache:
+
+  | Generation | n (shadow-valid) | Black p2 | White p99.5 |
+  |---|---|---|---|
+  | X2D line | 74 (63) | 9.7 | 224.8 |
+  | X1D line | 11 (9) | 13.1 | 227.8 |
+  | 907X/CFV | 39 (22) | 14.9 | 221.0 |
+
+  Black-p2 spreads from 9.7 to 14.9 across generations - a real spread. The "design judgment"
+  that pooling across generations is fine may have been more optimistic than this table
+  supports.
+- **All 13 raw+jpeg calibration pairs are X1D/X1D II generation - zero from the X2D line** -
+  confirmed. `apply_hncs` is applied uniformly across the X system on the premise of "one
+  consistent color philosophy across generations," using a curve learned entirely from X1D
+  pairs on a population target that's 62% X2D by photo count - and that premise has never
+  actually been checked against real X2D raw data.
+- **The raw rendering baseline depends on libraw's default demosaic/camera-matrix**
+  (never characterized via a least-squares matrix from a color chart) - a fair point. The
+  "switching to linear gamma made RMSE worse" experiment (recorded above) was itself evidence
+  of this uncertainty, but the cause was never pinned down explicitly as "the raw pipeline
+  itself isn't characterized."
+
+**In progress**: re-verifying Phocus contamination via an EXIF-preserving redownload, and
+recomputing the population excluding cameralabs.com, could both change `apply_hncs`'s actual
+shipped parameters, so whether to proceed is being decided separately. The offer of X2D II
+raw+jpeg pairs is also under separate discussion.
