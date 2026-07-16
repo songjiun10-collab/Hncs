@@ -1,60 +1,61 @@
 # HNCS
 
-*[English README](README.en.md)*
+*[한국어 README](README.md)*
 
 [![tests](https://github.com/songjiun10-collab/Hncs/actions/workflows/tests.yml/badge.svg)](https://github.com/songjiun10-collab/Hncs/actions/workflows/tests.yml)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-카메라/디지털백 제조사별 공식(또는 공식에 준하는) 샘플 이미지를 실측
-분석해서 각 브랜드의 색과학을 코드로 근사하는 프로젝트. 원래 핫셀블라드
-HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법론을
-11개 브랜드로 확장했다.
+A project that measures official (or near-official) sample images from camera/digital-back manufacturers and approximates each brand's color science as code. It originally covered only Hasselblad's HNCS (Hasselblad Natural Colour Solution), and the same methodology has since been extended to 11 more brands.
 
 ## TL;DR
 
-- **12개 브랜드** 색감 근사: Hasselblad/Fujifilm/Leica/Phase One/Pentax/
-  Ricoh GR/Canon/Nikon/Sony/Panasonic/Olympus/Sigma
-- 전부 **공식 샘플 이미지 실측**에 근거 - population-fit 10개 브랜드
-  총 834장 + 핫셀블라드 raw+jpeg 페어 캘리브레이션(124장, RMSE 15.4)
-- 픽셀 단위 **5종 시그니처 분석**(tone/color/texture/gamut/joint
-  distribution)으로 브랜드별 색과학을 데이터로 기록
-- **population 통계 재현성 감사 10/10 일치** - 커밋된 모든 수치가
-  캐시 이미지로 처음부터 재계산해도 그대로 나옴을 확인함(2026-07)
-- `unittest` 테스트 스위트 + GitHub Actions CI로 push/PR마다 자동 검증
+- **12 brands**: Hasselblad/Fujifilm/Leica/Phase One/Pentax/Ricoh GR/
+  Canon/Nikon/Sony/Panasonic/Olympus/Sigma
+- Every brand is grounded in **measurements from official sample images**
+  - 834 photos total across the 10 population-fit brands, plus Hasselblad's
+    raw+jpeg pair calibration (124 photos, RMSE 15.4)
+- Pixel-level **5-part signature analysis** (tone/color/texture/gamut/
+  joint distribution) records each brand's color science as data
+- **Population-statistics reproducibility audit: 10/10 matched** - every
+  committed number reproduces from scratch against the cached images
+  (2026-07)
+- `unittest` test suite + GitHub Actions CI verifies automatically on
+  every push/PR
 
-![Before/After - apply_hncs 적용 예시](docs/images/before_after_hncs.jpg)
+![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
 
-![HNCS 프리셋 데모 - 사진 한 장에 apply_* 25개 전부 적용](docs/images/preset_demo.jpg)
+![HNCS preset demo - all 25 apply_* looks on one photo](docs/images/preset_demo.jpg)
 
-*동일한 소스 사진(Nikon D5300 야경샷, 데모용으로 제공받음) 한 장에
-`brands/*.py`의 `apply_*` 함수 24개(+원본)를 그대로 돌린 결과. 공식
-캘리브레이션 소스 사진이 아니라 단순 데모용 - 실제 population 수치의
-근거는 [지원 브랜드](#지원-브랜드) 표에 링크된 문서를 참고.*
+*All 24 `apply_*` functions from `brands/*.py` (+ the original) run on the
+same source photo (a Nikon D5300 night shot, provided for this demo). Not
+an official calibration source photo - just a demo. See the links in the
+[Supported Brands](#supported-brands) table for the actual population
+evidence behind each brand.*
 
-## 지원 브랜드
+## Supported Brands
 
-| 브랜드 | 검증 방식 | 근거 |
+| Brand | Verification method | Details |
 |---|---|---|
-| ✅ Hasselblad | raw+jpeg 페어 캘리브레이션(그리드서치 + 학습 LUT) | [docs/measurements.md](docs/measurements.md) |
-| ✅ Fujifilm | 필름시뮬레이션 프리셋 10종, population + 동일장면 비교차트 | [docs/brands.md](docs/brands.md#후지필름-brandsfujipy) |
-| ✅ Leica | population-fit (SOOC JPEG 45장) | [docs/brands.md](docs/brands.md#라이카-brandsleicapy) |
-| ✅ Phase One | population-fit (Capture One 렌더링 기준) | [docs/brands.md](docs/brands.md#phase-one-brandsphaseonepy) |
-| ✅ Pentax | population-fit (645Z + K-1, 40장) | [docs/brands.md](docs/brands.md#pentax-brandspentaxpy) |
-| ✅ Ricoh GR | population-fit (GR III/IIIx/II) | [docs/brands.md](docs/brands.md#ricoh-gr-brandsricoh_grpy) |
+| ✅ Hasselblad | raw+jpeg pair calibration (grid search + learned LUT) | [docs/measurements.en.md](docs/measurements.en.md) |
+| ✅ Fujifilm | 10 film-simulation presets, population + same-scene comparison charts | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
+| ✅ Leica | population-fit (45 SOOC JPEGs) | [docs/brands.en.md](docs/brands.en.md#leica-brandsleicapy) |
+| ✅ Phase One | population-fit (Capture One's default rendering) | [docs/brands.en.md](docs/brands.en.md#phase-one-brandsphaseonepy) |
+| ✅ Pentax | population-fit (645Z + K-1, 40 photos) | [docs/brands.en.md](docs/brands.en.md#pentax-brandspentaxpy) |
+| ✅ Ricoh GR | population-fit (GR III/IIIx/II) | [docs/brands.en.md](docs/brands.en.md#ricoh-gr-brandsricoh_grpy) |
 | ✅ Canon | population-fit (EOS R5/R6/R8/R3/R, n=115) | `brands/canon.py` docstring |
 | ✅ Nikon | population-fit (Z6/Z6 II/D780, n=69) | `brands/nikon.py` docstring |
 | ✅ Sony | population-fit (A7/A7R/A7S/A7 III/A7 IV, n=115) | `brands/sony.py` docstring |
 | ✅ Panasonic | population-fit (GH5/GH6/G9/S5/S1, n=120) | `brands/panasonic.py` docstring |
 | ✅ Olympus | population-fit (OM-1/OM-5/E-M1 III/E-M1X/PEN-F, n=122) | `brands/olympus.py` docstring |
-| ✅ Sigma | population-fit (Bayer + Foveon 5바디, n=83) | `brands/sigma.py` docstring |
+| ✅ Sigma | population-fit (Bayer + Foveon, 5 bodies, n=83) | `brands/sigma.py` docstring |
 
-population-fit 방식의 공통 한계(raw 기준선 없음, shoulder_start/
-clahe_clip 등 일부 파라미터 핫셀블라드 값 차용·미검증)는
-[docs/brands.md](docs/brands.md)와 각 `brands/*.py` docstring에 상세히
-기록돼 있다.
+The shared limitations of the population-fit approach (no raw baseline;
+some parameters like shoulder_start/clahe_clip are borrowed from
+Hasselblad's values and unverified) are documented in detail in
+[docs/brands.en.md](docs/brands.en.md) and each `brands/*.py` docstring.
 
-## 빠른 예시
+## Quick Example
 
 ```python
 import cv2
@@ -65,29 +66,21 @@ result = apply_hncs(img)
 cv2.imwrite("photo_hncs.jpg", result)
 ```
 
-`brands/*.py`의 각 `apply_*` 함수는 전부 동일하게 BGR `np.ndarray`를
-받아 BGR `np.ndarray`를 반환한다. 리포 루트에서 실행해야 `core`/`brands`/
-`tools` 임포트 경로가 맞다.
+Every `apply_*` function in `brands/*.py` uniformly takes a BGR
+`np.ndarray` and returns a BGR `np.ndarray`. Run from the repo root so
+the `core`/`brands`/`tools` import paths resolve correctly.
 
-## 설치
+## Installation
 
 ```
 pip install -r requirements.txt
 ```
 
-`.claude/settings.json`은 이 리포에서 Claude Code로 분석 스크립트를 돌릴 때
-`cdn.hasselblad.com`, `live.staticflickr.com` 등으로의 네트워크 접근을
-자동 허용하는 샌드박스 설정입니다.
+`.claude/settings.json` is the sandbox config that auto-allows network access to `cdn.hasselblad.com`, `live.staticflickr.com`, etc. when running analysis scripts in this repo with Claude Code.
 
-## RAW → Log 색공간 파이프라인 (전문가용)
+## RAW -> Log Colorspace Pipeline (Professional)
 
-브랜드별 `apply_*` 엔진과는 목적이 다른 별도 모듈. "이 카메라가 실제로
-찍는 JPEG 색을 근사"하는 게 아니라, **카메라 종류에 무관하게** RAW를
-표준 중간 색공간(ProPhoto RGB Linear)으로 통일한 뒤 원하는 영상 카메라의
-Log 커브/색역(F-Log2, S-Log3, V-Log, ARRI LogC3/4 등)으로 인코딩해서
-그 카메라용 크리에이티브 `.cube` LUT를 RAW 사진에도 색 어긋남 없이 적용할
-수 있게 한다 ([raw-alchemy](https://github.com/shenmintao/raw-alchemy)에서
-아이디어를 참고, `colour-science` 기반으로 재구현).
+A separate module with a different purpose from the per-brand `apply_*` engine. Instead of approximating "the JPEG this specific camera actually produces," it standardizes RAW files - **regardless of camera** - into a common intermediate colorspace (ProPhoto RGB Linear), then encodes into whichever video camera's Log curve/gamut you want (F-Log2, S-Log3, V-Log, ARRI LogC3/4, etc.) so that camera's creative `.cube` LUTs can be applied to RAW photos without color drift ([inspired by raw-alchemy](https://github.com/shenmintao/raw-alchemy), reimplemented here on top of `colour-science`).
 
 ```
 python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3
@@ -95,170 +88,149 @@ python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks
 python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
 ```
 
-![RAW -> Log 색공간 데모 - sRGB 디코드 vs V-Log 인코딩](docs/images/raw_pipeline_demo.jpg)
+![RAW -> Log colorspace demo - sRGB decode vs V-Log encoding](docs/images/raw_pipeline_demo.jpg)
 
-*동일 RAW(Fujifilm X-T1) 한 장을 표준 sRGB로 디코드한 것(왼쪽)과
-`tools.raw_pipeline --log-space V-Log`로 인코딩한 것(오른쪽) 비교. 오른쪽의
-밋밋한 저대비/저채도 모습은 정상 - 그레이딩되지 않은 Log 상태 그대로다.*
+*The same RAW (Fujifilm X-T1) decoded to standard sRGB (left) vs encoded with
+`tools.raw_pipeline --log-space V-Log` (right). The flat, low-contrast/
+low-saturation look on the right is expected - it's the ungraded Log state
+as-is.*
 
-지원 Log 색공간: `core/log_pipeline.py`의 `LOG_SPACES` 참고(F-Log/F-Log2/
-V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log).
-Log 커브-색역 페어링은 `colour-science`가 제공하는 정의를 그대로 쓴
-것으로, 각 제조사 공식 스펙과 전수 대조 검증까지는 안 됐다는 게 이
-프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat.
+Supported Log spaces: see `LOG_SPACES` in `core/log_pipeline.py` (F-Log/F-Log2/V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log). The curve-gamut pairings use `colour-science`'s own definitions as-is - they haven't been cross-checked exhaustively against each manufacturer's official spec, the same kind of "unverified" caveat as the rest of this project's flagged items.
 
-## hybrid_engine/ - EXIF 기반 카메라 간 색감 변환 (V0.1)
+## hybrid_engine/ - EXIF-driven cross-camera color conversion (V0.1)
 
-리포 루트의 `hybrid_engine/`는 위 두 엔진과도 목적이 다른 세 번째 독립
-모듈. "카메라 A로 찍은 완성 JPEG을 카메라 B가 찍은 것처럼 재렌더링"하는
-게 목표 - RAW 입력용(`HybridCameraEngine`, Phase 0 색정제 + Gray World
-정규화 + LAB 톤/채도 커브)과 JPEG 입력용(`preset_inverse`, EXIF로 소스
-브랜드를 인식해서 `brands/*.py`의 population-fit 톤커브를 역산한 뒤
-타깃 브랜드의 실제 `apply_*` 함수를 그대로 재적용) 두 경로가 있다.
+`hybrid_engine/` at the repo root is a third, independent module with yet another purpose: "re-render a finished JPEG shot on camera A as if camera B had shot it." There are two entry points - one for RAW input (`HybridCameraEngine`: Phase 0 color unification + Gray World normalization + LAB tone/saturation curves) and one for JPEG-only input (`preset_inverse`: detects the source brand from EXIF, inverts that brand's population-fit tone curve from `brands/*.py`, then re-applies the real target brand's existing `apply_*` function).
 
 ```
-# JPEG만 있는 경우 - EXIF 자동인식
+# JPEG only - auto-detects the source camera from EXIF
 python3 -m hybrid_engine.convert photo.jpg out.jpg --target hasselblad
 
-# RAW가 있는 경우
+# RAW available
 python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
 ```
 
-![hybrid_engine 데모 - Nikon JPEG을 Hasselblad 룩으로 변환](docs/images/hybrid_engine_demo.jpg)
+![hybrid_engine demo - Nikon JPEG converted to a Hasselblad look](docs/images/hybrid_engine_demo.jpg)
 
-*Nikon D5300으로 찍은 부다페스트 국회의사당 야경 JPEG(왼쪽, 데모용으로
-제공받음 - `docs/images/preset_demo.jpg`/`before_after_hncs.jpg`와 같은
-소스 사진)을 `hybrid_engine.convert --target hasselblad`로 변환한
-결과(오른쪽) - EXIF로 Nikon을 자동인식해서 그 톤커브를 역산해 근사 중립
-상태로 되돌린 뒤 `apply_hncs`를 재적용했다.*
+*A Nikon D5300 JPEG of the Budapest Parliament at night (left, provided for
+this demo - the same source photo as `docs/images/preset_demo.jpg`/
+`before_after_hncs.jpg`) converted with `hybrid_engine.convert --target
+hasselblad` (right) - EXIF auto-detects Nikon, inverts its tone curve back
+toward a neutral baseline, then re-applies `apply_hncs`.*
 
-![hybrid_engine 데모 추가 4장 - 성당 내부/국기/거리 사진](docs/images/hybrid_engine_demo_more.jpg)
+![hybrid_engine demo, 4 more photos - cathedral interior/flag/street](docs/images/hybrid_engine_demo_more.jpg)
 
-*같은 여행에서 찍은 추가 사진 4장(전부 데모용으로 제공받음) - 성당 내부
-2장은 EXIF가 아예 없어(메신저 전송 과정에서 소실로 추정) `--source
-nikon`을 직접 지정했고, 전부 세로 촬영이라 `PIL.ImageOps.exif_transpose()`로
-방향을 먼저 바로잡은 뒤 변환했다.*
+*Four more photos from the same trip (all provided for this demo) - the two
+cathedral-interior shots had no EXIF at all (likely stripped in transit
+through a messaging app), so `--source nikon` was passed explicitly; all
+four were shot in portrait and needed `PIL.ImageOps.exif_transpose()` to
+fix orientation before conversion.*
 
-**알려진 한계** (각 모듈 docstring에도 명시):
-- `core/color_matrix.py`: 카메라 고유 색매트릭스로 정규화해도 센서
-  분광감도가 CIE 표준관측자와 정확히 비례하지 않아(메타메리즘) 완벽한
-  카메라 무관 색공간은 물리적으로 불가능 - 잔차는 ΔE 루프로만 줄일 수 있음
-- `core/preset_inverse.py`: population-fit 브랜드의 L채널 톤커브만
-  역산 가능(닫힌 형태 역함수 존재) - CLAHE(지각보상 대비)는 적응형
-  연산이라 역산 안 함, raw+jpeg 페어가 없는 브랜드(Fuji 등)는 애초에
-  이 구조가 아니라서 지원 대상 자체가 아님
-- `utils/evaluate.py`의 CIEDE2000 ΔE 루프로 profile 파라미터를
-  실측 캘리브레이션하는 건 아직 자동화 안 됨(V0.1은 수동 profile JSON)
+**Known limitations** (also documented in each module's docstring):
+- `core/color_matrix.py`: even with camera-specific color-matrix normalization, sensor spectral sensitivities are never exactly proportional to the CIE standard observer (metamerism), so a physically perfect camera-agnostic colorspace isn't possible - the residual can only be reduced via the ΔE loop, not eliminated
+- `core/preset_inverse.py`: only the L-channel tone curve of population-fit brands can be inverted (it has a closed-form inverse) - CLAHE (perceptual contrast compensation) is an adaptive operation and isn't inverted, and brands without a raw+jpeg pair (e.g. Fuji) simply aren't this kind of curve to begin with, so they're out of scope by design
+- `utils/evaluate.py`'s CIEDE2000 ΔE loop isn't yet wired up to automatically calibrate profile parameters - V0.1 profiles are hand-edited JSON
 
-## 목표 / 철학
+## Goals / Philosophy
 
-- 주관적인 "필감" 묘사가 아니라 population 통계, raw+jpeg 페어,
-  동일장면 비교차트 같은 **실측 데이터**에 근거해서 파라미터를 정한다
-- 검증 안 된 값은 숨기지 않고 **"미검증"이라고 코드·문서에 명시**한다
-  (예: 일부 브랜드의 `shoulder_start`/`clahe_clip`은 핫셀블라드 값을
-  검증 없이 차용했다고 docstring에 그대로 적음)
-- **재현성**: 커밋된 population 수치는 캐시 이미지로 처음부터 다시
-  계산해도 같은 값이 나와야 하고, 정기적으로 감사한다
-- 표본이 작을 땐 RMSE가 더 낮아지더라도 **과적합보다 보수적인 선택**을
-  우선한다(그리드서치로 더 나은 수치가 나와도 표본 부족을 이유로
-  보류한 사례가 여러 브랜드에 기록돼 있음)
-- 실패한 시도(raw 페어를 못 구함, 표본 오염, 사이트 차단 등)도 지우지
-  않고 그대로 문서화한다
+- Parameters are grounded in **measured data** - population statistics,
+  raw+jpeg pairs, same-scene comparison charts - rather than subjective
+  descriptions of "film character"
+- Unverified values are never hidden - they're **explicitly labeled
+  "unverified"** in code and docs (e.g. several brands' `shoulder_start`/
+  `clahe_clip` are documented as borrowed from Hasselblad's values without
+  independent verification)
+- **Reproducibility**: committed population numbers must reproduce from
+  scratch against the cached images, and are periodically audited
+- When the sample is small, **conservative choices are preferred over
+  overfitting**, even when a grid search finds a lower RMSE - several
+  brands document cases where a better-scoring fit was deliberately
+  deferred due to insufficient sample size
+- Failed attempts (couldn't find a raw pair, sample contamination, sites
+  blocking access, etc.) are documented as-is, not erased
 
-## 기능
+## Features
 
-- [x] 핫셀블라드 RAW 기반 파라메트릭/학습 캘리브레이션(`apply_hncs`,
+- [x] Hasselblad raw-based parametric/learned calibration (`apply_hncs`,
       `apply_hncs_learned`)
-- [x] 후지필름 필름시뮬레이션 프리셋 10종
-- [x] 10개 브랜드 population-fit 색감 근사 엔진(`core/engine.py`)
-- [x] 픽셀 단위 5종 시그니처 분석(tone/color/texture/gamut/
+- [x] 10 Fujifilm film-simulation presets
+- [x] Population-fit color-approximation engine shared by 10 brands
+      (`core/engine.py`)
+- [x] Pixel-level 5-part signature analysis (tone/color/texture/gamut/
       joint_distribution)
-- [x] 이미지 무결성 검증 파이프라인(`core/validation.py`, CDN 손상
-      자동 필터링)
-- [x] `unittest` 기반 자동 테스트 스위트
-- [x] GitHub Actions CI(push/PR마다 자동 실행)
-- [x] population 통계 재현성 감사 도구
-- [x] RAW -> Log 색공간(F-Log2/S-Log3/V-Log 등) + `.cube` LUT 적용
-      파이프라인(`tools/raw_pipeline.py`, 브랜드 엔진과 별도)
-- [x] EXIF 기반 카메라 간 색감 변환 엔진 V0.1(`hybrid_engine/`, RAW/JPEG
-      입력 둘 다 지원, 브랜드 톤커브 역산 + ΔE 평가 루프)
+- [x] Image-integrity validation pipeline (`core/validation.py`,
+      automatic CDN-corruption filtering)
+- [x] `unittest`-based automated test suite
+- [x] GitHub Actions CI (runs automatically on every push/PR)
+- [x] Population-statistics reproducibility audit tooling
+- [x] RAW -> Log colorspace (F-Log2/S-Log3/V-Log/etc.) + `.cube` LUT
+      pipeline (`tools/raw_pipeline.py`, separate from the brand engine)
+- [x] EXIF-driven cross-camera color conversion engine V0.1
+      (`hybrid_engine/`, supports both RAW and JPEG input, brand tone-curve
+      inversion + a ΔE evaluation loop)
 
-## 구조
+## Structure
 
 ```
-brands/       브랜드별 색감 근사 함수 (apply_*)
-core/         브랜드 전체가 공유하는 톤커브/LUT/통계/검증 헬퍼
-datasets/     커밋된 참조 CSV (공식 샘플 메타데이터, 스크레이핑한 갤러리 링크)
-tools/        분석(analyze)/다운로드(download)/캘리브레이션(calibrate) 스크립트
-models/       얼굴 검출 등에 쓰는 사전학습 모델
-docs/         상세 문서 (방법론/실측 결론/브랜드별 기록/파일별 설명)
+brands/       Per-brand color-approximation functions (apply_*)
+core/         Tone-curve/LUT/stats/validation helpers shared across all brands
+datasets/     Committed reference CSVs (official sample metadata, scraped gallery links)
+tools/        Analysis (analyze) / download / calibration scripts
+models/       Pretrained models used for e.g. face detection
+docs/         Detailed docs (methodology / measurements / per-brand notes / file map)
 ```
 
-파일별 상세 설명은 [docs/project_structure.md](docs/project_structure.md)
-참고.
+See [docs/project_structure.en.md](docs/project_structure.en.md) for a
+full file-by-file breakdown.
 
-## 테스트
+## Tests
 
-`tests/` 아래 `unittest` 기반 테스트가 있다(pytest 등 외부 의존성 추가
-없이 `requirements.txt` 최소 의존성 원칙 유지). `core/curve.py`(톤커브
-수학, 경계조건/단조성/연속성)/`core/stats.py`(population 통계 계산)/
-`core/validation.py`(무결성 검증, CDN 손상 패턴 재현)/`core/engine.py`
-(population-fit 엔진)/`brands/*.py`(모든 `apply_*` 룩 함수의 shape/dtype
-보존, 후지 프리셋 개수 일치)/`tools/fuji_chart_calibrate.py`(크롭박스
-추출, delta 집계)/`tools/download.py`(imaging-resource.com HTML 파싱·
-필터링·Google Drive URL 분류 - 네트워크 호출은 mock 처리)/
-`datasets/*/texture_signature.json` 전체(sharpening/micro_contrast/noise가
-브랜드 간 합리적 범위 안에 있는지 - Sony 스케일버그 같은 자릿수 오류
-재발 방지 가드레일)/`core/lut.py`/`core/denoise.py`/`tools/iso_noise.py`
-(패치 그리드 off-by-one 회귀 테스트 포함)/`core/log_pipeline.py`(노출
-보정, Log 인코딩, `.cube` LUT 적용, 지원하는 모든 `LOG_SPACES` 검증)/
-`hybrid_engine/`(정규화/톤/색/색매트릭스/파이프라인/ΔE 평가/EXIF 브랜드
-인식·프리셋 역산 전체, 32개 테스트) 커버.
-`.github/workflows/tests.yml`이 push/PR마다 자동으로 이 스위트를 돌린다.
+There's an `unittest`-based test suite under `tests/` (no pytest or other external dependency added, keeping `requirements.txt`'s minimal-dependency principle). Covers `core/curve.py` (tone-curve math, boundary conditions/monotonicity/continuity) / `core/stats.py` (population statistics computation) / `core/validation.py` (integrity validation, reproducing the CDN corruption pattern) / `core/engine.py` (the population-fit engine) / `brands/*.py` (shape/dtype preservation for every `apply_*` look function, Fuji preset count consistency) / `tools/fuji_chart_calibrate.py` (crop-box extraction, delta aggregation) / `tools/download.py` (imaging-resource.com HTML parsing, filtering, Google Drive URL classification - network calls are mocked) / all of `datasets/*/texture_signature.json` (whether sharpening/micro_contrast/noise fall within a sane cross-brand range - a regression guard against a Sony-scale-bug-style order-of-magnitude error) / `core/lut.py` / `core/denoise.py` / `tools/iso_noise.py` (including a regression test for the patch-grid off-by-one bug) / `core/log_pipeline.py` (exposure adjustment, Log encoding, `.cube` LUT application, every supported `LOG_SPACES` entry) / `hybrid_engine/` (normalization/tone/color/color-matrix/pipeline/ΔE evaluation/EXIF brand detection and preset inversion, end to end - 32 tests). `.github/workflows/tests.yml` runs this suite automatically on every push/PR.
 
 ```
 python3 -m unittest discover -s tests -v
 ```
 
-## 실측 재현/재검증
+## Reproducing/re-verifying the measurements
 
 ```
-python3 -m tools.analyze hasselblad       # 핫셀블라드 공식 샘플 전체 population 통계
-python3 -m tools.analyze portrait         # 인물 서브셋 + 피부톤 hue 불변성 검증
-python3 -m tools.analyze leica            # 라이카 imaging-resource.com population
-python3 -m tools.analyze phaseone         # Phase One 〃
-python3 -m tools.analyze pentax           # Pentax 〃
-python3 -m tools.analyze ricoh_gr         # Ricoh GR 〃
-python3 -m tools.analyze fuji_film_modes  # 후지 Film Mode별 population + 프리셋 방향 검증
+python3 -m tools.analyze hasselblad       # Full population statistics over Hasselblad's official samples
+python3 -m tools.analyze portrait         # Portrait subset + skin-tone hue-invariance verification
+python3 -m tools.analyze leica            # Leica imaging-resource.com population
+python3 -m tools.analyze phaseone         # Phase One, same
+python3 -m tools.analyze pentax           # Pentax, same
+python3 -m tools.analyze ricoh_gr         # Ricoh GR, same
+python3 -m tools.analyze fuji_film_modes  # Population per Fuji Film Mode + preset-direction verification
 
-python3 -m tools.download fuji-links      # 후지 RAW/JPEG Google Drive 링크 수집
-python3 -m tools.download fuji-pairs      # 위 링크에서 RAW+JPEG 페어 다운로드 (gdown 필요)
+python3 -m tools.download fuji-links      # Collect Fuji RAW/JPEG Google Drive links
+python3 -m tools.download fuji-pairs      # Download RAW+JPEG pairs from those links (requires gdown)
 
-python3 -m tools.calibrate grid_search    # 핫셀블라드 raw 기반 진짜 전/후 그리드서치 (rawpy 필요, 대용량 다운로드)
-python3 -m tools.calibrate learn_curve    # raw+jpeg 픽셀 대응으로 톤커브 직접 학습 (rawpy 필요)
-python3 -m tools.calibrate regularize     # 학습 LUT 정규화 + leave-one-out 교차검증
+python3 -m tools.calibrate grid_search    # True before/after grid search from Hasselblad raw (requires rawpy, large downloads)
+python3 -m tools.calibrate learn_curve    # Learn a tone curve directly from raw+jpeg pixel correspondence (requires rawpy)
+python3 -m tools.calibrate regularize     # Regularize the learned LUT + leave-one-out cross-validation
 ```
 
-## 더 읽을거리
+## Further Reading
 
-README는 훑어보는 용도로 짧게 유지하고, 자세한 실측 기록은 `docs/`에
-따로 뒀다.
+The README is kept short and skimmable; the detailed measurement history
+lives in `docs/`.
 
-- [docs/methodology.md](docs/methodology.md) - 이미지 신뢰성 정책, 브랜드
-  함수 QA 검증, population 통계 재현성 감사
-- [docs/measurements.md](docs/measurements.md) - 핫셀블라드 실측 결론
-  전체 기록(v8~v12, day/night 히스토리)
-- [docs/brands.md](docs/brands.md) - 후지필름/라이카/Phase One/Pentax/
-  Ricoh GR 브랜드별 상세 방법론
-- [docs/project_structure.md](docs/project_structure.md) - 파일별 역할
-  전체 목록
+- [docs/methodology.en.md](docs/methodology.en.md) - image trustworthiness
+  policy, brand-function QA verification, population-statistics
+  reproducibility audit
+- [docs/measurements.en.md](docs/measurements.en.md) - the full Hasselblad
+  measurement history (v8-v12, day/night)
+- [docs/brands.en.md](docs/brands.en.md) - detailed methodology for
+  Fujifilm/Leica/Phase One/Pentax/Ricoh GR
+- [docs/project_structure.en.md](docs/project_structure.en.md) - full
+  file-by-file breakdown
 
-## 기여
+## Contributing
 
-이슈나 PR은 언제든 환영. 이 프로젝트는 "실측 데이터 없이 파라미터를
-바꾸지 않는다"는 원칙이 있으니, 브랜드 파라미터를 조정하는 PR이라면
-근거가 된 population 수치나 비교 방법을 함께 설명해주면 리뷰가 빠르다.
+Issues and PRs are welcome. This project holds to a "no parameter change
+without measured evidence" principle, so if your PR adjusts a brand's
+parameters, please include the population numbers or comparison method
+that back the change - it'll make review much faster.
 
-## 라이선스
+## License
 
 [MIT](LICENSE)
