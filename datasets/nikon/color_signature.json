@@ -1,0 +1,368 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. population은 tone_signature.json과 동일하게 사진 단위 동일 가중치 per-image 평균. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. 얼굴 검출 기반 인물 subset은 제공하지 않음(다른 imaging-resource.com 브랜드 분석과 동일). 71장 후보 전원이 EXIF 재검증(Make='NIKON CORPORATION', 제3자 편집 Software 부재, is_image_array_usable() 무결성)을 통과해 71장 그대로 사용(Z9/D850 자리표시자 결함 파일이나 타 브랜드 오염 파일은 발견되지 않음 - brands/nikon.py 문서화된 population n=69는 D780/Z6/Z6 II 3바디만의 통계이고, D850 정상 EXIF 2장(94718_Y-D850- 접두어)은 표본 크기가 너무 작아 population fit에서만 제외된 것으로 진위 문제가 아니었음 - 이 시그니처 분석에서는 모아 놓은 데이터를 최대한 두껍게 쓰기 위해 그 2장도 포함해 n=71.",
+  "n_images": 71,
+  "population": {
+    "sat_mean": {
+      "mean": 93.13883778746698,
+      "std": 37.35869952517494,
+      "n": 71
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0081.jpg",
+      "sat_mean": 91.05877685546875,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0094.jpg",
+      "sat_mean": 82.61784362792969,
+      "hue_mean": 84.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0164.jpg",
+      "sat_mean": 126.43836212158203,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0204.jpg",
+      "sat_mean": 142.91876220703125,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0264.jpg",
+      "sat_mean": 43.008419036865234,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0339.jpg",
+      "sat_mean": 63.62297821044922,
+      "hue_mean": 59.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0401.jpg",
+      "sat_mean": 119.55973052978516,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0423.jpg",
+      "sat_mean": 141.39700317382812,
+      "hue_mean": 55.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0513.jpg",
+      "sat_mean": 149.74575805664062,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0545.jpg",
+      "sat_mean": 56.508750915527344,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0573.jpg",
+      "sat_mean": 67.2234878540039,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0579.jpg",
+      "sat_mean": 89.12410736083984,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0818.jpg",
+      "sat_mean": 91.0024185180664,
+      "hue_mean": 95.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0823.jpg",
+      "sat_mean": 182.9461212158203,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0845.jpg",
+      "sat_mean": 100.32553100585938,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0854.jpg",
+      "sat_mean": 100.67231750488281,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0869.jpg",
+      "sat_mean": 126.421875,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0895.jpg",
+      "sat_mean": 106.02809143066406,
+      "hue_mean": 29.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0906.jpg",
+      "sat_mean": 175.1707000732422,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0930.jpg",
+      "sat_mean": 170.92137145996094,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-0947.jpg",
+      "sat_mean": 132.2115020751953,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-1004.jpg",
+      "sat_mean": 85.69517517089844,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Nikon_D780_130999_Y-JG-D780-1022.jpg",
+      "sat_mean": 109.16357421875,
+      "hue_mean": 44.0
+    },
+    {
+      "filename": "Nikon_D850_94718_Y-D850-DSC1692.jpg",
+      "sat_mean": 37.34809875488281,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Nikon_D850_94718_Y-D850-DSC1825-CLOSE-FOCUS-400MM.jpg",
+      "sat_mean": 29.216724395751953,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0272.jpg",
+      "sat_mean": 96.46403503417969,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0275.jpg",
+      "sat_mean": 86.24978637695312,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0320.jpg",
+      "sat_mean": 81.6430435180664,
+      "hue_mean": 33.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0324.jpg",
+      "sat_mean": 63.48861312866211,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0335.jpg",
+      "sat_mean": 86.8430404663086,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0386.jpg",
+      "sat_mean": 93.02819061279297,
+      "hue_mean": 49.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0436.jpg",
+      "sat_mean": 84.28634643554688,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0589.jpg",
+      "sat_mean": 111.95978546142578,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0653.jpg",
+      "sat_mean": 56.36758804321289,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0679.jpg",
+      "sat_mean": 118.03795623779297,
+      "hue_mean": 69.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0696.jpg",
+      "sat_mean": 88.19277954101562,
+      "hue_mean": 96.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0707.jpg",
+      "sat_mean": 95.14862823486328,
+      "hue_mean": 93.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0719.jpg",
+      "sat_mean": 65.34435272216797,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0725.jpg",
+      "sat_mean": 62.78599166870117,
+      "hue_mean": 95.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0757.jpg",
+      "sat_mean": 119.77156829833984,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0797.jpg",
+      "sat_mean": 81.64569091796875,
+      "hue_mean": 100.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0798.jpg",
+      "sat_mean": 71.80973815917969,
+      "hue_mean": 100.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0826.jpg",
+      "sat_mean": 68.62586212158203,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0859.jpg",
+      "sat_mean": 81.059814453125,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0860.jpg",
+      "sat_mean": 152.5010223388672,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-0971.jpg",
+      "sat_mean": 143.40342712402344,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-1052.jpg",
+      "sat_mean": 177.8231658935547,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Nikon_Z6_55447_Y-JG-Z6-1140.jpg",
+      "sat_mean": 128.6604461669922,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0015.jpg",
+      "sat_mean": 97.31776428222656,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0033.jpg",
+      "sat_mean": 94.52870178222656,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0086.jpg",
+      "sat_mean": 121.26676177978516,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0171.jpg",
+      "sat_mean": 125.20646667480469,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0246.jpg",
+      "sat_mean": 92.90181732177734,
+      "hue_mean": 113.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0249.jpg",
+      "sat_mean": 94.45606231689453,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0327.jpg",
+      "sat_mean": 93.64879608154297,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0384.jpg",
+      "sat_mean": 55.505733489990234,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0394.jpg",
+      "sat_mean": 121.52820587158203,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0464.jpg",
+      "sat_mean": 76.33393096923828,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0470.jpg",
+      "sat_mean": 84.68856811523438,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0502.jpg",
+      "sat_mean": 44.024330139160156,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0563.jpg",
+      "sat_mean": 65.64202117919922,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0596.jpg",
+      "sat_mean": 52.22366714477539,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0696.jpg",
+      "sat_mean": 49.11861038208008,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0697.jpg",
+      "sat_mean": 62.144161224365234,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0724.jpg",
+      "sat_mean": 165.88522338867188,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0770.jpg",
+      "sat_mean": 41.55434036254883,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0792.jpg",
+      "sat_mean": 60.14919662475586,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0853.jpg",
+      "sat_mean": 43.48374938964844,
+      "hue_mean": 102.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0871.jpg",
+      "sat_mean": 37.59697341918945,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0895.jpg",
+      "sat_mean": 55.482200622558594,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Nikon_Z6_II_67035_Y-JG-Z6-II-0910.jpg",
+      "sat_mean": 42.681846618652344,
+      "hue_mean": 97.0
+    }
+  ]
+}

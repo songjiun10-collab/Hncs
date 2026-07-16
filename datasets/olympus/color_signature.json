@@ -1,0 +1,628 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. population은 tone_signature.json과 동일하게 사진 단위 동일 가중치 per-image 평균. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. n_images는 위 tone_signature.json과 동일한 dedup 기준(브랜드 docstring의 3쌍 제외, n=123 - docstring의 n=122와 1장 차이나는 이유는 tone_signature.json methodology 참고).",
+  "n_images": 123,
+  "population": {
+    "sat_mean": {
+      "mean": 78.88841517378644,
+      "std": 41.83974507183369,
+      "n": 123
+    }
+  },
+  "per_image": [
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040069.jpg",
+      "sat_mean": 96.36066436767578,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040078.jpg",
+      "sat_mean": 77.06199645996094,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040083.jpg",
+      "sat_mean": 63.84028625488281,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040090.jpg",
+      "sat_mean": 58.23923110961914,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080095-20MP.jpg",
+      "sat_mean": 45.235103607177734,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080097-HH-50MP.jpg",
+      "sat_mean": 43.51932144165039,
+      "hue_mean": 28.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080109-T-80MP.jpg",
+      "sat_mean": 46.02986526489258,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080112.jpg",
+      "sat_mean": 30.722877502441406,
+      "hue_mean": 27.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080117.jpg",
+      "sat_mean": 65.2191390991211,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080120.jpg",
+      "sat_mean": 49.1942138671875,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080171.jpg",
+      "sat_mean": 30.0,
+      "hue_mean": 120.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080174-LIVE-ND-OFF.jpg",
+      "sat_mean": 22.5,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080175-LIVE-ND64.jpg",
+      "sat_mean": 0.0,
+      "hue_mean": 0.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080177.jpg",
+      "sat_mean": 42.05721664428711,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080189.jpg",
+      "sat_mean": 26.0,
+      "hue_mean": 75.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080197-LIVE-ND64.jpg",
+      "sat_mean": 39.15814971923828,
+      "hue_mean": 83.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080212.jpg",
+      "sat_mean": 56.3171501159668,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080229.jpg",
+      "sat_mean": 94.6002197265625,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080236.jpg",
+      "sat_mean": 32.09911346435547,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080353.jpg",
+      "sat_mean": 0.0,
+      "hue_mean": 0.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080375.jpg",
+      "sat_mean": 52.22135925292969,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080394.jpg",
+      "sat_mean": 79.12788391113281,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-090407.jpg",
+      "sat_mean": 76.21878051757812,
+      "hue_mean": 55.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-090415.jpg",
+      "sat_mean": 78.48251342773438,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-090430.jpg",
+      "sat_mean": 44.61223220825195,
+      "hue_mean": 71.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270002.jpg",
+      "sat_mean": 58.01856994628906,
+      "hue_mean": 85.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270006.jpg",
+      "sat_mean": 41.899234771728516,
+      "hue_mean": 132.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270014.jpg",
+      "sat_mean": 47.424461364746094,
+      "hue_mean": 76.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270022.jpg",
+      "sat_mean": 34.16472625732422,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270032.jpg",
+      "sat_mean": 58.38428497314453,
+      "hue_mean": 91.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270034.jpg",
+      "sat_mean": 64.4232177734375,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270039.jpg",
+      "sat_mean": 42.01966094970703,
+      "hue_mean": 62.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270041.jpg",
+      "sat_mean": 74.30047607421875,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB300045.jpg",
+      "sat_mean": 69.64299011230469,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB300051.jpg",
+      "sat_mean": 64.11650085449219,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC010074.jpg",
+      "sat_mean": 59.87697982788086,
+      "hue_mean": 70.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC010082.jpg",
+      "sat_mean": 66.49870300292969,
+      "hue_mean": 80.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020089.jpg",
+      "sat_mean": 73.23332977294922,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020096.jpg",
+      "sat_mean": 84.78147888183594,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020103.jpg",
+      "sat_mean": 72.87702941894531,
+      "hue_mean": 78.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020107.jpg",
+      "sat_mean": 83.90276336669922,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020121.jpg",
+      "sat_mean": 51.52088165283203,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020122.jpg",
+      "sat_mean": 53.54279327392578,
+      "hue_mean": 81.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020124.jpg",
+      "sat_mean": 48.09630584716797,
+      "hue_mean": 55.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020129.jpg",
+      "sat_mean": 53.456233978271484,
+      "hue_mean": 47.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020133.jpg",
+      "sat_mean": 116.54396057128906,
+      "hue_mean": 110.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020145.jpg",
+      "sat_mean": 128.04519653320312,
+      "hue_mean": 100.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020151.jpg",
+      "sat_mean": 92.77738189697266,
+      "hue_mean": 53.0
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-WB-OM5-PA150004.jpg",
+      "sat_mean": 118.13629150390625,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0021.jpg",
+      "sat_mean": 66.34297943115234,
+      "hue_mean": 50.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0050.jpg",
+      "sat_mean": 71.88428497314453,
+      "hue_mean": 51.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0088.jpg",
+      "sat_mean": 72.64787292480469,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0110.jpg",
+      "sat_mean": 59.5152473449707,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0112.jpg",
+      "sat_mean": 61.06686782836914,
+      "hue_mean": 47.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0119.jpg",
+      "sat_mean": 60.345787048339844,
+      "hue_mean": 46.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0125.jpg",
+      "sat_mean": 75.01490020751953,
+      "hue_mean": 54.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0149.jpg",
+      "sat_mean": 75.12067413330078,
+      "hue_mean": 49.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0160.jpg",
+      "sat_mean": 70.20977020263672,
+      "hue_mean": 60.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0172.jpg",
+      "sat_mean": 72.37734985351562,
+      "hue_mean": 49.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0210.jpg",
+      "sat_mean": 76.299560546875,
+      "hue_mean": 59.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0214.jpg",
+      "sat_mean": 78.02526092529297,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130019-HandHighRes.jpg",
+      "sat_mean": 56.045448303222656,
+      "hue_mean": 89.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130044-HandHighRes.jpg",
+      "sat_mean": 66.29705047607422,
+      "hue_mean": 56.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130046.jpg",
+      "sat_mean": 164.74986267089844,
+      "hue_mean": 31.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130047.jpg",
+      "sat_mean": 73.131591796875,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130075.jpg",
+      "sat_mean": 116.96161651611328,
+      "hue_mean": 78.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130103.jpg",
+      "sat_mean": 65.7040023803711,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130129.jpg",
+      "sat_mean": 54.4114990234375,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130184.jpg",
+      "sat_mean": 86.626708984375,
+      "hue_mean": 100.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130243.jpg",
+      "sat_mean": 45.98783874511719,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140154.jpg",
+      "sat_mean": 107.48242950439453,
+      "hue_mean": 60.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140180.jpg",
+      "sat_mean": 89.0124282836914,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140190.jpg",
+      "sat_mean": 40.347328186035156,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140277.jpg",
+      "sat_mean": 107.41543579101562,
+      "hue_mean": 48.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050498.jpg",
+      "sat_mean": 193.0836181640625,
+      "hue_mean": 126.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050510.jpg",
+      "sat_mean": 130.2678985595703,
+      "hue_mean": 50.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050512.jpg",
+      "sat_mean": 145.76507568359375,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050520.jpg",
+      "sat_mean": 201.0019073486328,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050526.jpg",
+      "sat_mean": 90.6529541015625,
+      "hue_mean": 57.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050532.jpg",
+      "sat_mean": 100.92713165283203,
+      "hue_mean": 56.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050537.jpg",
+      "sat_mean": 118.90094757080078,
+      "hue_mean": 55.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050552.jpg",
+      "sat_mean": 144.42271423339844,
+      "hue_mean": 72.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050563.jpg",
+      "sat_mean": 138.55007934570312,
+      "hue_mean": 49.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050574.jpg",
+      "sat_mean": 170.6855010986328,
+      "hue_mean": 47.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050583.jpg",
+      "sat_mean": 121.4546890258789,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050584.jpg",
+      "sat_mean": 122.26397705078125,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050594.jpg",
+      "sat_mean": 126.30428314208984,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060613.jpg",
+      "sat_mean": 99.20790100097656,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060614.jpg",
+      "sat_mean": 127.90192413330078,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060618.jpg",
+      "sat_mean": 218.93101501464844,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060625.jpg",
+      "sat_mean": 159.7710723876953,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060631.jpg",
+      "sat_mean": 128.4464569091797,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060632.jpg",
+      "sat_mean": 131.22010803222656,
+      "hue_mean": 44.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060651.jpg",
+      "sat_mean": 148.51258850097656,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060657.jpg",
+      "sat_mean": 99.01464080810547,
+      "hue_mean": 37.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060662.jpg",
+      "sat_mean": 53.17558670043945,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060663.jpg",
+      "sat_mean": 72.11661529541016,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060671.jpg",
+      "sat_mean": 92.7227783203125,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0792.jpg",
+      "sat_mean": 38.20988082885742,
+      "hue_mean": 64.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0801.jpg",
+      "sat_mean": 60.8440055847168,
+      "hue_mean": 51.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0810.jpg",
+      "sat_mean": 70.78966522216797,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0815.jpg",
+      "sat_mean": 97.96524810791016,
+      "hue_mean": 65.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0833.jpg",
+      "sat_mean": 128.03733825683594,
+      "hue_mean": 129.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0852.jpg",
+      "sat_mean": 47.84866714477539,
+      "hue_mean": 78.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0882.jpg",
+      "sat_mean": 35.91635513305664,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0891.jpg",
+      "sat_mean": 34.206520080566406,
+      "hue_mean": 102.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0894.jpg",
+      "sat_mean": 35.03473663330078,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0931.jpg",
+      "sat_mean": 57.12323760986328,
+      "hue_mean": 85.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0958.jpg",
+      "sat_mean": 82.10846710205078,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0973.jpg",
+      "sat_mean": 47.67738723754883,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0989.jpg",
+      "sat_mean": 36.87245559692383,
+      "hue_mean": 82.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-1108.jpg",
+      "sat_mean": 54.09973907470703,
+      "hue_mean": 62.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-1220.jpg",
+      "sat_mean": 51.98991775512695,
+      "hue_mean": 58.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250071.jpg",
+      "sat_mean": 0.0,
+      "hue_mean": 0.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250074.jpg",
+      "sat_mean": 137.3907470703125,
+      "hue_mean": 51.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250077.jpg",
+      "sat_mean": 0.0,
+      "hue_mean": 0.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250080.jpg",
+      "sat_mean": 156.54652404785156,
+      "hue_mean": 28.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250085-HiResShot.jpg",
+      "sat_mean": 87.3068618774414,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250089.jpg",
+      "sat_mean": 72.41835021972656,
+      "hue_mean": 89.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250094.jpg",
+      "sat_mean": 148.4347381591797,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250100.jpg",
+      "sat_mean": 41.73704147338867,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250120.jpg",
+      "sat_mean": 115.64226531982422,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250123.jpg",
+      "sat_mean": 110.24888610839844,
+      "hue_mean": 23.0
+    }
+  ]
+}

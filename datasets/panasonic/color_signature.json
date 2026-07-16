@@ -1,0 +1,613 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. population은 tone_signature.json과 동일하게 사진 단위 동일 가중치 per-image 평균. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. hue_mean은 S>20 마스크 픽셀의 hue 중앙값(median)을 사용 - Canon과 동일 스타일로 정수값이 나온다. n=120은 brands/panasonic.py에 문서화된 버스트 중복 제거(S1 3쌍, S5 3연속프레임) 적용 후 표본.",
+  "n_images": 120,
+  "population": {
+    "sat_mean": {
+      "mean": 102.37628547350566,
+      "std": 43.10005682494212,
+      "n": 120
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Panasonic_G9_88816_Y-1049765.jpg",
+      "sat_mean": 46.66923904418945,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049770-SHADOWS.jpg",
+      "sat_mean": 84.97451782226562,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049778.jpg",
+      "sat_mean": 43.43718338012695,
+      "hue_mean": 119.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049804.jpg",
+      "sat_mean": 52.90598678588867,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049815.jpg",
+      "sat_mean": 64.70491027832031,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049828.jpg",
+      "sat_mean": 55.58234786987305,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050062.jpg",
+      "sat_mean": 72.91040802001953,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050119.jpg",
+      "sat_mean": 46.45167922973633,
+      "hue_mean": 114.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050186.jpg",
+      "sat_mean": 90.38217163085938,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050195-AUTOFOCUS.jpg",
+      "sat_mean": 55.915184020996094,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050210-AUTOFOCUS.jpg",
+      "sat_mean": 61.33675003051758,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050225.jpg",
+      "sat_mean": 43.09757614135742,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050238.jpg",
+      "sat_mean": 35.49248504638672,
+      "hue_mean": 116.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050256-WHITE-BALANCE.jpg",
+      "sat_mean": 92.05533599853516,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050266-WHITE-BALANCE.jpg",
+      "sat_mean": 117.13687896728516,
+      "hue_mean": 114.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050270.jpg",
+      "sat_mean": 92.79814910888672,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050275.jpg",
+      "sat_mean": 30.810104370117188,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050295.jpg",
+      "sat_mean": 39.64810562133789,
+      "hue_mean": 8.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050317.jpg",
+      "sat_mean": 88.7911605834961,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050336.jpg",
+      "sat_mean": 30.247114181518555,
+      "hue_mean": 8.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050343.jpg",
+      "sat_mean": 79.13807678222656,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050398.jpg",
+      "sat_mean": 34.50954818725586,
+      "hue_mean": 116.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050422.jpg",
+      "sat_mean": 116.81401824951172,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050437.jpg",
+      "sat_mean": 62.05790710449219,
+      "hue_mean": 119.0
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050456.jpg",
+      "sat_mean": 78.17858123779297,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1478.jpg",
+      "sat_mean": 54.081825256347656,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1486.jpg",
+      "sat_mean": 57.179962158203125,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1489.jpg",
+      "sat_mean": 224.18064880371094,
+      "hue_mean": 31.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1492.jpg",
+      "sat_mean": 193.78135681152344,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1493.jpg",
+      "sat_mean": 173.8441619873047,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1497.jpg",
+      "sat_mean": 174.35621643066406,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1499.jpg",
+      "sat_mean": 163.37631225585938,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1500.jpg",
+      "sat_mean": 165.77554321289062,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1520.jpg",
+      "sat_mean": 79.4468002319336,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1524.jpg",
+      "sat_mean": 64.54308319091797,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1536.jpg",
+      "sat_mean": 72.09803771972656,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1539.jpg",
+      "sat_mean": 74.48745727539062,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1542.jpg",
+      "sat_mean": 151.6142578125,
+      "hue_mean": 34.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1298.jpg",
+      "sat_mean": 73.86215209960938,
+      "hue_mean": 96.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1300.jpg",
+      "sat_mean": 70.31195831298828,
+      "hue_mean": 83.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1310.jpg",
+      "sat_mean": 78.68952178955078,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1315.jpg",
+      "sat_mean": 38.741519927978516,
+      "hue_mean": 95.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1316.jpg",
+      "sat_mean": 167.2183380126953,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1317.jpg",
+      "sat_mean": 66.69037628173828,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1364.jpg",
+      "sat_mean": 155.59300231933594,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1393.jpg",
+      "sat_mean": 117.01266479492188,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1413.jpg",
+      "sat_mean": 113.09930419921875,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1425.jpg",
+      "sat_mean": 88.3199462890625,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1433.jpg",
+      "sat_mean": 100.31010437011719,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1442.jpg",
+      "sat_mean": 120.77283477783203,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000007.jpg",
+      "sat_mean": 144.00747680664062,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000009.jpg",
+      "sat_mean": 100.36000061035156,
+      "hue_mean": 80.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000013.jpg",
+      "sat_mean": 72.60570526123047,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000015.jpg",
+      "sat_mean": 58.154823303222656,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000018.jpg",
+      "sat_mean": 58.16718292236328,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000020.jpg",
+      "sat_mean": 55.03604507446289,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000024.jpg",
+      "sat_mean": 113.25990295410156,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000029.jpg",
+      "sat_mean": 162.89352416992188,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000032.jpg",
+      "sat_mean": 124.154541015625,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000052.jpg",
+      "sat_mean": 118.26714324951172,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000055.jpg",
+      "sat_mean": 121.09361267089844,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000059.jpg",
+      "sat_mean": 75.30201721191406,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000061.jpg",
+      "sat_mean": 104.909912109375,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000064.jpg",
+      "sat_mean": 100.38118743896484,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000072.jpg",
+      "sat_mean": 99.27340698242188,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000075.jpg",
+      "sat_mean": 112.04730987548828,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000079.jpg",
+      "sat_mean": 117.12971496582031,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000084.jpg",
+      "sat_mean": 80.11103820800781,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000089.jpg",
+      "sat_mean": 124.11618041992188,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000090.jpg",
+      "sat_mean": 86.66285705566406,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000100.jpg",
+      "sat_mean": 124.99240112304688,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000103.jpg",
+      "sat_mean": 122.97766876220703,
+      "hue_mean": 49.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000108.jpg",
+      "sat_mean": 108.43111419677734,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000109.jpg",
+      "sat_mean": 81.96821594238281,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000119.jpg",
+      "sat_mean": 92.18972778320312,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0156.jpg",
+      "sat_mean": 72.86292266845703,
+      "hue_mean": 75.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0160.jpg",
+      "sat_mean": 82.15437316894531,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0164.jpg",
+      "sat_mean": 86.78679656982422,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0169.jpg",
+      "sat_mean": 80.7947769165039,
+      "hue_mean": 34.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0174.jpg",
+      "sat_mean": 98.99028015136719,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0178.jpg",
+      "sat_mean": 77.43273162841797,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0188.jpg",
+      "sat_mean": 98.90514373779297,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0192.jpg",
+      "sat_mean": 91.65701293945312,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0193.jpg",
+      "sat_mean": 95.43582916259766,
+      "hue_mean": 28.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0196.jpg",
+      "sat_mean": 104.01542663574219,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0203.jpg",
+      "sat_mean": 93.46146392822266,
+      "hue_mean": 122.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0218.jpg",
+      "sat_mean": 122.40040588378906,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0227.jpg",
+      "sat_mean": 67.91317749023438,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0239.jpg",
+      "sat_mean": 78.90743255615234,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0242.jpg",
+      "sat_mean": 107.79344177246094,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9345.jpg",
+      "sat_mean": 151.91615295410156,
+      "hue_mean": 171.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9364.jpg",
+      "sat_mean": 40.78071212768555,
+      "hue_mean": 61.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9379.jpg",
+      "sat_mean": 63.67124938964844,
+      "hue_mean": 62.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9387.jpg",
+      "sat_mean": 85.6088638305664,
+      "hue_mean": 46.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9400.jpg",
+      "sat_mean": 151.33216857910156,
+      "hue_mean": 44.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9406.jpg",
+      "sat_mean": 41.300655364990234,
+      "hue_mean": 44.0
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9448.jpg",
+      "sat_mean": 150.02618408203125,
+      "hue_mean": 33.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0324.jpg",
+      "sat_mean": 79.65680694580078,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0333.jpg",
+      "sat_mean": 138.36402893066406,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0336.jpg",
+      "sat_mean": 127.24830627441406,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0337.jpg",
+      "sat_mean": 135.3140411376953,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0342.jpg",
+      "sat_mean": 127.33268737792969,
+      "hue_mean": 72.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0348.jpg",
+      "sat_mean": 170.63848876953125,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0352.jpg",
+      "sat_mean": 165.7919158935547,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0362.jpg",
+      "sat_mean": 132.54222106933594,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0364.jpg",
+      "sat_mean": 163.55433654785156,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0365.jpg",
+      "sat_mean": 136.52647399902344,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0373.jpg",
+      "sat_mean": 174.8572998046875,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0379.jpg",
+      "sat_mean": 179.7844696044922,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0403.jpg",
+      "sat_mean": 141.6210479736328,
+      "hue_mean": 60.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0409.jpg",
+      "sat_mean": 137.9440155029297,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0411.jpg",
+      "sat_mean": 172.90289306640625,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0416.jpg",
+      "sat_mean": 163.21083068847656,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0426.jpg",
+      "sat_mean": 140.52456665039062,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0428.jpg",
+      "sat_mean": 153.1719512939453,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0438.jpg",
+      "sat_mean": 173.05776977539062,
+      "hue_mean": 33.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0440.jpg",
+      "sat_mean": 172.9513397216797,
+      "hue_mean": 34.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0449.jpg",
+      "sat_mean": 48.557228088378906,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0451.jpg",
+      "sat_mean": 155.10267639160156,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0458.jpg",
+      "sat_mean": 36.426143646240234,
+      "hue_mean": 101.0
+    }
+  ]
+}

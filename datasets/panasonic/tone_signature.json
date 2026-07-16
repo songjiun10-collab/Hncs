@@ -1,0 +1,990 @@
+{
+  "methodology": "population 통계는 사진(이미지) 단위로 동일 가중치를 주는 'per-image 평균' 방식을 썼다(Canon/Leica 등 기존 population-fit 브랜드와 동일 원칙 - 전체 픽셀을 그냥 풀링하면 해상도가 이미지마다 다른 표본이 섞여있을 때 큰 사진 몇 장이 population 특성을 왜곡시킨다는 게 핫셀블라드 population 분석에서 실측 확인됨: 픽셀 풀링시 b2=1.0까지 떨어졌는데 per-image 평균은 b2=18.1, 10배 이상 차이. 그 교훈을 그대로 적용해 이 파일의 population 타깃도 per-image 평균을 신뢰값으로 채택했고, 픽셀 풀링 결과는 joint_distribution.npz에 원본 그대로 남겨뒀다. Panasonic 표본은 imaging-resource.com에서 GH5/GH6/G9/S5/S1 5개 바디 125장을 수집한 뒤 brands/panasonic.py docstring에 문서화된 버스트 연사 중복 제거 기준을 그대로 재적용해 n=120으로 줄였다(S1: 0156/0157, 0178/0180, 9364/9367 각 쌍 중 앞 파일만 유지; S5: 0458/0459/0460 3연속 프레임 중 0458만 유지). sharpening/micro_contrast 공식은 Canon(sharpening=Sobel gradient magnitude std/15, micro_contrast=DoG (sigma1=1,sigma2=2) std, 스케일 없음)과 정확히 동일하게 맞춰 크로스 브랜드 비교가 가능하게 했다.",
+  "n_images": 120,
+  "population": {
+    "b2": {
+      "mean": 25.95,
+      "std": 22.76944224174145,
+      "n": 120
+    },
+    "w995": {
+      "mean": 223.15833333333333,
+      "std": 34.76252671899569,
+      "n": 120
+    },
+    "median": {
+      "mean": 95.71666666666667,
+      "std": 37.24383244989102,
+      "n": 120
+    }
+  },
+  "population_shadow_valid": {
+    "b2": {
+      "mean": 13.426829268292684,
+      "std": 8.654662479229751,
+      "n": 82
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Panasonic_G9_88816_Y-1049765.jpg",
+      "b2": 69.0,
+      "w995": 255.0,
+      "median": 157.0,
+      "dark_pct": 0.620226091360565,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049770-SHADOWS.jpg",
+      "b2": 1.0,
+      "w995": 232.0,
+      "median": 63.0,
+      "dark_pct": 42.7525051360946,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049778.jpg",
+      "b2": 19.0,
+      "w995": 204.0,
+      "median": 119.0,
+      "dark_pct": 6.7020874612609855,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049804.jpg",
+      "b2": 28.0,
+      "w995": 220.0,
+      "median": 139.0,
+      "dark_pct": 3.0355301449855205,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049815.jpg",
+      "b2": 24.0,
+      "w995": 242.0,
+      "median": 149.0,
+      "dark_pct": 8.53984879083473,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1049828.jpg",
+      "b2": 12.0,
+      "w995": 250.0,
+      "median": 119.0,
+      "dark_pct": 17.335420715211093,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050062.jpg",
+      "b2": 19.0,
+      "w995": 229.0,
+      "median": 130.0,
+      "dark_pct": 5.088385281715186,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050119.jpg",
+      "b2": 35.0,
+      "w995": 255.0,
+      "median": 163.0,
+      "dark_pct": 2.8190272856017886,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050186.jpg",
+      "b2": 41.0,
+      "w995": 250.0,
+      "median": 148.0,
+      "dark_pct": 1.876683916641264,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050195-AUTOFOCUS.jpg",
+      "b2": 17.0,
+      "w995": 242.0,
+      "median": 138.0,
+      "dark_pct": 7.9663198810521765,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050210-AUTOFOCUS.jpg",
+      "b2": 57.0,
+      "w995": 251.0,
+      "median": 138.0,
+      "dark_pct": 0.311663499276025,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050225.jpg",
+      "b2": 14.0,
+      "w995": 255.0,
+      "median": 174.0,
+      "dark_pct": 13.709800335314739,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050238.jpg",
+      "b2": 26.0,
+      "w995": 249.0,
+      "median": 148.0,
+      "dark_pct": 6.352965003111823,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050256-WHITE-BALANCE.jpg",
+      "b2": 25.0,
+      "w995": 255.0,
+      "median": 159.0,
+      "dark_pct": 7.071368296880556,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050266-WHITE-BALANCE.jpg",
+      "b2": 21.0,
+      "w995": 197.0,
+      "median": 98.0,
+      "dark_pct": 14.110611195257327,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050270.jpg",
+      "b2": 31.0,
+      "w995": 255.0,
+      "median": 170.0,
+      "dark_pct": 3.4356811318777623,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050275.jpg",
+      "b2": 59.0,
+      "w995": 250.0,
+      "median": 155.0,
+      "dark_pct": 0.7959408579103796,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050295.jpg",
+      "b2": 77.0,
+      "w995": 251.0,
+      "median": 146.0,
+      "dark_pct": 0.5576423420591373,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050317.jpg",
+      "b2": 9.0,
+      "w995": 254.0,
+      "median": 78.0,
+      "dark_pct": 31.051859472641365,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050336.jpg",
+      "b2": 101.0,
+      "w995": 247.0,
+      "median": 150.0,
+      "dark_pct": 0.7217919651475893,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050343.jpg",
+      "b2": 22.0,
+      "w995": 249.0,
+      "median": 106.0,
+      "dark_pct": 7.781525658245695,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050398.jpg",
+      "b2": 33.0,
+      "w995": 233.0,
+      "median": 143.0,
+      "dark_pct": 3.9348527679342578,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050422.jpg",
+      "b2": 21.0,
+      "w995": 210.0,
+      "median": 116.0,
+      "dark_pct": 12.304379890006604,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050437.jpg",
+      "b2": 5.0,
+      "w995": 241.0,
+      "median": 166.0,
+      "dark_pct": 23.30222106322715,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_G9_88816_Y-1050456.jpg",
+      "b2": 47.0,
+      "w995": 249.0,
+      "median": 107.0,
+      "dark_pct": 1.1592828360768175,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1478.jpg",
+      "b2": 35.0,
+      "w995": 255.0,
+      "median": 103.0,
+      "dark_pct": 5.47495181438297,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1486.jpg",
+      "b2": 56.0,
+      "w995": 239.0,
+      "median": 115.0,
+      "dark_pct": 0.949279478166438,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1489.jpg",
+      "b2": 29.0,
+      "w995": 216.0,
+      "median": 80.0,
+      "dark_pct": 14.220953876759133,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1492.jpg",
+      "b2": 55.0,
+      "w995": 183.0,
+      "median": 98.0,
+      "dark_pct": 0.24749704694406338,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1493.jpg",
+      "b2": 20.0,
+      "w995": 225.0,
+      "median": 82.0,
+      "dark_pct": 12.580256439567139,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1497.jpg",
+      "b2": 47.0,
+      "w995": 181.0,
+      "median": 91.0,
+      "dark_pct": 0.9943145734898136,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1499.jpg",
+      "b2": 17.0,
+      "w995": 160.0,
+      "median": 62.0,
+      "dark_pct": 28.833004091411368,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1500.jpg",
+      "b2": 9.0,
+      "w995": 242.0,
+      "median": 63.0,
+      "dark_pct": 33.265872477201135,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1520.jpg",
+      "b2": 34.0,
+      "w995": 253.0,
+      "median": 102.0,
+      "dark_pct": 2.5771416403114364,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1524.jpg",
+      "b2": 72.0,
+      "w995": 214.0,
+      "median": 133.0,
+      "dark_pct": 0.5789666606335416,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1536.jpg",
+      "b2": 45.0,
+      "w995": 199.0,
+      "median": 92.0,
+      "dark_pct": 1.468907178783722,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1539.jpg",
+      "b2": 36.0,
+      "w995": 218.0,
+      "median": 112.0,
+      "dark_pct": 2.375349484644109,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1-4x-1542.jpg",
+      "b2": 15.0,
+      "w995": 149.0,
+      "median": 33.0,
+      "dark_pct": 62.37275365321597,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1298.jpg",
+      "b2": 4.0,
+      "w995": 149.0,
+      "median": 81.0,
+      "dark_pct": 17.786917763742824,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1300.jpg",
+      "b2": 4.0,
+      "w995": 137.0,
+      "median": 73.0,
+      "dark_pct": 11.750453675125742,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1310.jpg",
+      "b2": 3.0,
+      "w995": 127.0,
+      "median": 46.0,
+      "dark_pct": 36.02157179577554,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1315.jpg",
+      "b2": 76.0,
+      "w995": 255.0,
+      "median": 88.0,
+      "dark_pct": 0.014879393067621807,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1316.jpg",
+      "b2": 27.0,
+      "w995": 235.0,
+      "median": 113.0,
+      "dark_pct": 4.703009497408932,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1317.jpg",
+      "b2": 20.0,
+      "w995": 178.0,
+      "median": 86.0,
+      "dark_pct": 8.275046201036428,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1364.jpg",
+      "b2": 45.0,
+      "w995": 194.0,
+      "median": 82.0,
+      "dark_pct": 0.978120395773002,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1393.jpg",
+      "b2": 22.0,
+      "w995": 217.0,
+      "median": 113.0,
+      "dark_pct": 11.530765563874917,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1413.jpg",
+      "b2": 24.0,
+      "w995": 213.0,
+      "median": 122.0,
+      "dark_pct": 5.649867787240257,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1425.jpg",
+      "b2": 57.0,
+      "w995": 220.0,
+      "median": 134.0,
+      "dark_pct": 9.922903012752121e-06,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1433.jpg",
+      "b2": 42.0,
+      "w995": 225.0,
+      "median": 120.0,
+      "dark_pct": 1.1279314240080272,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH5_83502_YC-200mm-1442.jpg",
+      "b2": 18.0,
+      "w995": 227.0,
+      "median": 127.0,
+      "dark_pct": 11.015231060750393,
+      "npix": 20155392
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000007.jpg",
+      "b2": 21.0,
+      "w995": 255.0,
+      "median": 69.0,
+      "dark_pct": 17.13146027971706,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000009.jpg",
+      "b2": 6.0,
+      "w995": 246.0,
+      "median": 117.0,
+      "dark_pct": 32.00928131164968,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000013.jpg",
+      "b2": 7.0,
+      "w995": 254.0,
+      "median": 51.0,
+      "dark_pct": 42.5190387313326,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000015.jpg",
+      "b2": 6.0,
+      "w995": 248.0,
+      "median": 119.0,
+      "dark_pct": 24.40744434279523,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000018.jpg",
+      "b2": 14.0,
+      "w995": 253.0,
+      "median": 123.0,
+      "dark_pct": 8.771727519906777,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000020.jpg",
+      "b2": 26.0,
+      "w995": 252.0,
+      "median": 124.0,
+      "dark_pct": 5.386485207909558,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000024.jpg",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 80.0,
+      "dark_pct": 38.26554210832967,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000029.jpg",
+      "b2": 8.0,
+      "w995": 238.0,
+      "median": 62.0,
+      "dark_pct": 39.668858957027936,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000032.jpg",
+      "b2": 26.0,
+      "w995": 229.0,
+      "median": 78.0,
+      "dark_pct": 12.54439655502857,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000052.jpg",
+      "b2": 3.0,
+      "w995": 238.0,
+      "median": 77.0,
+      "dark_pct": 28.608718414919604,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000055.jpg",
+      "b2": 6.0,
+      "w995": 250.0,
+      "median": 106.0,
+      "dark_pct": 16.374163417015055,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000059.jpg",
+      "b2": 16.0,
+      "w995": 242.0,
+      "median": 116.0,
+      "dark_pct": 8.176440749864563,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000061.jpg",
+      "b2": 4.0,
+      "w995": 210.0,
+      "median": 84.0,
+      "dark_pct": 19.919179822857785,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000064.jpg",
+      "b2": 37.0,
+      "w995": 245.0,
+      "median": 112.0,
+      "dark_pct": 2.3501106180556266,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000072.jpg",
+      "b2": 4.0,
+      "w995": 236.0,
+      "median": 93.0,
+      "dark_pct": 35.94220757607507,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000075.jpg",
+      "b2": 2.0,
+      "w995": 223.0,
+      "median": 48.0,
+      "dark_pct": 46.165597433328905,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000079.jpg",
+      "b2": 2.0,
+      "w995": 223.0,
+      "median": 58.0,
+      "dark_pct": 41.50328436282978,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000084.jpg",
+      "b2": 3.0,
+      "w995": 253.0,
+      "median": 74.0,
+      "dark_pct": 37.239645888062064,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000089.jpg",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 34.0,
+      "dark_pct": 53.85216278582453,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000090.jpg",
+      "b2": 6.0,
+      "w995": 239.0,
+      "median": 88.0,
+      "dark_pct": 20.25015156877677,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000100.jpg",
+      "b2": 10.0,
+      "w995": 222.0,
+      "median": 101.0,
+      "dark_pct": 14.600900564493871,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000103.jpg",
+      "b2": 19.0,
+      "w995": 229.0,
+      "median": 62.0,
+      "dark_pct": 29.49075206861833,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000108.jpg",
+      "b2": 4.0,
+      "w995": 233.0,
+      "median": 86.0,
+      "dark_pct": 36.51392452290174,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000109.jpg",
+      "b2": 11.0,
+      "w995": 227.0,
+      "median": 88.0,
+      "dark_pct": 23.96371836381106,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_GH6_87380_Y-GH6_BETA-P1000119.jpg",
+      "b2": 11.0,
+      "w995": 244.0,
+      "median": 134.0,
+      "dark_pct": 10.375537598000633,
+      "npix": 25044736
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0156.jpg",
+      "b2": 20.0,
+      "w995": 253.0,
+      "median": 111.0,
+      "dark_pct": 8.895531296874244,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0160.jpg",
+      "b2": 5.0,
+      "w995": 239.0,
+      "median": 86.0,
+      "dark_pct": 19.996571375864907,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0164.jpg",
+      "b2": 6.0,
+      "w995": 255.0,
+      "median": 75.0,
+      "dark_pct": 23.70780183988968,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0169.jpg",
+      "b2": 4.0,
+      "w995": 254.0,
+      "median": 74.0,
+      "dark_pct": 32.43744934557507,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0174.jpg",
+      "b2": 11.0,
+      "w995": 252.0,
+      "median": 94.0,
+      "dark_pct": 15.059106909565974,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0178.jpg",
+      "b2": 13.0,
+      "w995": 254.0,
+      "median": 86.0,
+      "dark_pct": 14.966350719141627,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0188.jpg",
+      "b2": 8.0,
+      "w995": 236.0,
+      "median": 100.0,
+      "dark_pct": 14.350322978661634,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0192.jpg",
+      "b2": 9.0,
+      "w995": 238.0,
+      "median": 92.0,
+      "dark_pct": 19.384550627207624,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0193.jpg",
+      "b2": 9.0,
+      "w995": 255.0,
+      "median": 122.0,
+      "dark_pct": 13.99710286930856,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0196.jpg",
+      "b2": 23.0,
+      "w995": 255.0,
+      "median": 97.0,
+      "dark_pct": 4.860981954928147,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0203.jpg",
+      "b2": 14.0,
+      "w995": 227.0,
+      "median": 98.0,
+      "dark_pct": 12.633166324938308,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0218.jpg",
+      "b2": 52.0,
+      "w995": 255.0,
+      "median": 140.0,
+      "dark_pct": 1.2459003937436492,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0227.jpg",
+      "b2": 37.0,
+      "w995": 255.0,
+      "median": 112.0,
+      "dark_pct": 2.256739684642183,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0239.jpg",
+      "b2": 10.0,
+      "w995": 254.0,
+      "median": 113.0,
+      "dark_pct": 12.156976928799535,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-PAN-S1-SIGMA-18-50-0242.jpg",
+      "b2": 61.0,
+      "w995": 229.0,
+      "median": 121.0,
+      "dark_pct": 0.0603411386509895,
+      "npix": 10581504
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9345.jpg",
+      "b2": 27.0,
+      "w995": 196.0,
+      "median": 101.0,
+      "dark_pct": 5.9714375,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9364.jpg",
+      "b2": 87.0,
+      "w995": 255.0,
+      "median": 132.0,
+      "dark_pct": 0.018745833333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9379.jpg",
+      "b2": 87.0,
+      "w995": 252.0,
+      "median": 143.0,
+      "dark_pct": 0.0052541666666666665,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9387.jpg",
+      "b2": 88.0,
+      "w995": 248.0,
+      "median": 144.0,
+      "dark_pct": 0.0025166666666666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9400.jpg",
+      "b2": 31.0,
+      "w995": 245.0,
+      "median": 84.0,
+      "dark_pct": 12.279104166666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9406.jpg",
+      "b2": 76.0,
+      "w995": 255.0,
+      "median": 145.0,
+      "dark_pct": 0.07368333333333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S1_86920_Y-JG-S1-70-200-9448.jpg",
+      "b2": 20.0,
+      "w995": 245.0,
+      "median": 118.0,
+      "dark_pct": 11.342170833333332,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0324.jpg",
+      "b2": 44.0,
+      "w995": 204.0,
+      "median": 99.0,
+      "dark_pct": 1.4651041666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0333.jpg",
+      "b2": 28.0,
+      "w995": 224.0,
+      "median": 65.0,
+      "dark_pct": 8.119608333333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0336.jpg",
+      "b2": 32.0,
+      "w995": 233.0,
+      "median": 75.0,
+      "dark_pct": 4.102875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0337.jpg",
+      "b2": 39.0,
+      "w995": 234.0,
+      "median": 91.0,
+      "dark_pct": 2.1541083333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0342.jpg",
+      "b2": 30.0,
+      "w995": 235.0,
+      "median": 78.0,
+      "dark_pct": 5.254849999999999,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0348.jpg",
+      "b2": 4.0,
+      "w995": 198.0,
+      "median": 23.0,
+      "dark_pct": 76.1171875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0352.jpg",
+      "b2": 2.0,
+      "w995": 129.0,
+      "median": 12.0,
+      "dark_pct": 95.04735,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0362.jpg",
+      "b2": 8.0,
+      "w995": 210.0,
+      "median": 66.0,
+      "dark_pct": 24.20583333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0364.jpg",
+      "b2": 3.0,
+      "w995": 168.0,
+      "median": 23.0,
+      "dark_pct": 74.62354166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0365.jpg",
+      "b2": 9.0,
+      "w995": 190.0,
+      "median": 57.0,
+      "dark_pct": 31.90354166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0373.jpg",
+      "b2": 18.0,
+      "w995": 167.0,
+      "median": 39.0,
+      "dark_pct": 50.604754166666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0379.jpg",
+      "b2": 17.0,
+      "w995": 157.0,
+      "median": 36.0,
+      "dark_pct": 64.48539166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0403.jpg",
+      "b2": 10.0,
+      "w995": 142.0,
+      "median": 30.0,
+      "dark_pct": 79.50246666666668,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0409.jpg",
+      "b2": 15.0,
+      "w995": 142.0,
+      "median": 36.0,
+      "dark_pct": 63.444966666666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0411.jpg",
+      "b2": 18.0,
+      "w995": 153.0,
+      "median": 44.0,
+      "dark_pct": 38.03693333333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0416.jpg",
+      "b2": 6.0,
+      "w995": 148.0,
+      "median": 23.0,
+      "dark_pct": 75.85244583333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0426.jpg",
+      "b2": 7.0,
+      "w995": 156.0,
+      "median": 36.0,
+      "dark_pct": 55.5365875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0428.jpg",
+      "b2": 7.0,
+      "w995": 158.0,
+      "median": 36.0,
+      "dark_pct": 55.783458333333336,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0438.jpg",
+      "b2": 31.0,
+      "w995": 213.0,
+      "median": 54.0,
+      "dark_pct": 13.2351875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0440.jpg",
+      "b2": 20.0,
+      "w995": 209.0,
+      "median": 41.0,
+      "dark_pct": 47.17763333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0449.jpg",
+      "b2": 40.0,
+      "w995": 167.0,
+      "median": 71.0,
+      "dark_pct": 1.9929833333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0451.jpg",
+      "b2": 51.0,
+      "w995": 167.0,
+      "median": 55.0,
+      "dark_pct": 0.6095291666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Panasonic_S5_67011_Y-DP-0458.jpg",
+      "b2": 89.0,
+      "w995": 233.0,
+      "median": 94.0,
+      "dark_pct": 0.25122916666666667,
+      "npix": 24000000
+    }
+  ]
+}

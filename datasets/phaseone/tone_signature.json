@@ -1,0 +1,158 @@
+{
+  "methodology": "population 통계는 사진(이미지) 단위로 동일 가중치를 주는 'per-image 평균' 방식을 썼다 - 핫셀블라드 tone_signature.json에서 실측 확인된 원칙(픽셀 풀링은 해상도 차이가 큰 표본이 섞이면 큰 이미지 몇 장이 population을 왜곡시킴)을 그대로 따른 것. 이번 Phase One 표본은 16장 전부 2560x1920 근처 해상도로 거의 균일해서 그 왜곡 효과 자체는 크지 않지만, 브랜드 간 방법론 일관성을 위해 동일 원칙을 유지했다. 픽셀 풀링 결과(원본 그대로)는 joint_distribution.npz에 남겨뒀고, 이 파일의 population 타깃은 per-image 평균을 신뢰값으로 채택. **표본 규모 경고**: n=16으로 매우 작다 (imaging-resource.com Phase One XF 100MP 갤러리 후보 110장 중 core.validation.is_image_usable() 무결성 검증을 통과한 것만 16장 남음 - brands/phaseone.py docstring 참고, CDN이 이 갤러리 업로드 배치를 통째로 손상시켜 저장하고 있었음). 그림자유효(dark_pct>5) 서브셋은 6장뿐이라 b2 population은 특히 불확실하다. 이미지 한두 장의 이상치가 평균/표준편차를 크게 흔들 수 있으므로 과신하지 말 것.",
+  "n_images": 16,
+  "population": {
+    "b2": {
+      "mean": 43.1875,
+      "std": 29.004781394625265,
+      "n": 16
+    },
+    "w995": {
+      "mean": 226.5,
+      "std": 21.374634499799054,
+      "n": 16
+    },
+    "median": {
+      "mean": 113.375,
+      "std": 53.27860147376243,
+      "n": 16
+    }
+  },
+  "population_shadow_valid": {
+    "b2": {
+      "mean": 12.833333333333334,
+      "std": 10.414999866645328,
+      "n": 6
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006323-WB-scaled.jpg",
+      "b2": 48.0,
+      "w995": 231.0,
+      "median": 103.0,
+      "dark_pct": 0.7090047200520833,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006324-WB-scaled.jpg",
+      "b2": 43.0,
+      "w995": 231.0,
+      "median": 98.0,
+      "dark_pct": 1.19097900390625,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006393-scaled.jpg",
+      "b2": 75.0,
+      "w995": 246.0,
+      "median": 162.0,
+      "dark_pct": 0.0018513997395833335,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006472-scaled.jpg",
+      "b2": 56.0,
+      "w995": 255.0,
+      "median": 124.0,
+      "dark_pct": 0.26153564453125,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006513-scaled.jpg",
+      "b2": 3.0,
+      "w995": 205.0,
+      "median": 9.0,
+      "dark_pct": 84.46856689453125,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006523-scaled.jpg",
+      "b2": 2.0,
+      "w995": 197.0,
+      "median": 9.0,
+      "dark_pct": 85.03411865234375,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006582-scaled.jpg",
+      "b2": 52.0,
+      "w995": 211.0,
+      "median": 123.0,
+      "dark_pct": 0.4603271484375,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006612-scaled.jpg",
+      "b2": 44.0,
+      "w995": 253.0,
+      "median": 118.0,
+      "dark_pct": 1.3716837565104167,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006650-scaled.jpg",
+      "b2": 14.0,
+      "w995": 201.0,
+      "median": 125.0,
+      "dark_pct": 15.1187744140625,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006661-scaled.jpg",
+      "b2": 93.0,
+      "w995": 244.0,
+      "median": 194.0,
+      "dark_pct": 0.0033772786458333335,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006676-scaled.jpg",
+      "b2": 94.0,
+      "w995": 236.0,
+      "median": 168.0,
+      "dark_pct": 0.009012858072916666,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006681-scaled.jpg",
+      "b2": 73.0,
+      "w995": 222.0,
+      "median": 165.0,
+      "dark_pct": 0.7713419596354166,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_Y-TRI-CF006721-scaled.jpg",
+      "b2": 27.0,
+      "w995": 194.0,
+      "median": 63.0,
+      "dark_pct": 11.702799479166668,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_YCF004667-scaled.jpg",
+      "b2": 36.0,
+      "w995": 254.0,
+      "median": 156.0,
+      "dark_pct": 2.71234130859375,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_YCF004669-scaled.jpg",
+      "b2": 26.0,
+      "w995": 243.0,
+      "median": 141.0,
+      "dark_pct": 6.045430501302083,
+      "npix": 4915200
+    },
+    {
+      "filename": "Phase_One_XF_100MP_511456_YCF004670-scaled.jpg",
+      "b2": 5.0,
+      "w995": 201.0,
+      "median": 56.0,
+      "dark_pct": 30.518473307291664,
+      "npix": 4915200
+    }
+  ]
+}
