@@ -1,7 +1,13 @@
+import os
+import subprocess
+import tempfile
 import unittest
 from unittest.mock import patch
 
-from tools.analyze import BRAND_CONFIGS
+import cv2
+import numpy as np
+
+from tools.analyze import BRAND_CONFIGS, _check_genuine_bytes
 from tools.download import list_gallery_images
 
 
@@ -54,6 +60,45 @@ class TestBrandConfigFilters(unittest.TestCase):
             with self.subTest(brand=brand):
                 self.assertTrue(required.issubset(cfg.keys()))
                 self.assertTrue(len(cfg["galleries"]) > 0)
+
+
+class TestCheckGenuineBytes(unittest.TestCase):
+    """GitHub 이슈 #4에서 지적된 문제(genuine_render_check이 run_hasselblad()엔
+    안 걸려있었던 것)의 수정 - EXIF Software 태그로 Photoshop/Lightroom 편집을
+    잡아내는지 회귀 검증. 리사이즈 전 원본 바이트에서 검사해야 하므로 실제
+    exiftool로 Software 태그를 써넣은 JPEG 파일로 테스트한다."""
+
+    def _jpeg_bytes_with_software(self, software):
+        img = np.random.default_rng(0).integers(0, 256, (16, 16, 3), dtype=np.uint8)
+        with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+            path = f.name
+        try:
+            cv2.imwrite(path, img)
+            if software is not None:
+                subprocess.run(["exiftool", "-overwrite_original", f"-Software={software}", path],
+                                capture_output=True, timeout=30, check=True)
+            with open(path, "rb") as f:
+                return f.read()
+        finally:
+            os.remove(path)
+
+    def test_no_software_tag_is_genuine(self):
+        data = self._jpeg_bytes_with_software(None)
+        self.assertTrue(_check_genuine_bytes(data))
+
+    def test_photoshop_software_tag_is_rejected(self):
+        data = self._jpeg_bytes_with_software("Adobe Photoshop 25.0")
+        self.assertFalse(_check_genuine_bytes(data))
+
+    def test_lightroom_software_tag_is_rejected(self):
+        data = self._jpeg_bytes_with_software("Adobe Lightroom Classic 13.0")
+        self.assertFalse(_check_genuine_bytes(data))
+
+    def test_camera_firmware_version_string_is_genuine(self):
+        # explorecams.com 검증에서 확인된 패턴 - 순수 버전 문자열은 편집 도구가
+        # 아니라 카메라/Phocus 자체 렌더러 표시일 가능성이 높음
+        data = self._jpeg_bytes_with_software("3.1.0")
+        self.assertTrue(_check_genuine_bytes(data))
 
 
 if __name__ == "__main__":
