@@ -1,6 +1,6 @@
 # HNCS
 
-*[English README](README.en.md)*
+*[English README](README.md)*
 
 [![tests](https://github.com/songjiun10-collab/Hncs/actions/workflows/tests.yml/badge.svg)](https://github.com/songjiun10-collab/Hncs/actions/workflows/tests.yml)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue)
