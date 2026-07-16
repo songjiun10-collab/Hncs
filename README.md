@@ -101,6 +101,34 @@ Log 커브-색역 페어링은 `colour-science`가 제공하는 정의를 그대
 것으로, 각 제조사 공식 스펙과 전수 대조 검증까지는 안 됐다는 게 이
 프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat.
 
+## hybrid_engine/ - EXIF 기반 카메라 간 색감 변환 (V0.1)
+
+리포 루트의 `hybrid_engine/`는 위 두 엔진과도 목적이 다른 세 번째 독립
+모듈. "카메라 A로 찍은 완성 JPEG을 카메라 B가 찍은 것처럼 재렌더링"하는
+게 목표 - RAW 입력용(`HybridCameraEngine`, Phase 0 색정제 + Gray World
+정규화 + LAB 톤/채도 커브)과 JPEG 입력용(`preset_inverse`, EXIF로 소스
+브랜드를 인식해서 `brands/*.py`의 population-fit 톤커브를 역산한 뒤
+타깃 브랜드의 실제 `apply_*` 함수를 그대로 재적용) 두 경로가 있다.
+
+```
+# JPEG만 있는 경우 - EXIF 자동인식
+python3 -m hybrid_engine.convert photo.jpg out.jpg --target hasselblad
+
+# RAW가 있는 경우
+python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
+```
+
+**알려진 한계** (각 모듈 docstring에도 명시):
+- `core/color_matrix.py`: 카메라 고유 색매트릭스로 정규화해도 센서
+  분광감도가 CIE 표준관측자와 정확히 비례하지 않아(메타메리즘) 완벽한
+  카메라 무관 색공간은 물리적으로 불가능 - 잔차는 ΔE 루프로만 줄일 수 있음
+- `core/preset_inverse.py`: population-fit 브랜드의 L채널 톤커브만
+  역산 가능(닫힌 형태 역함수 존재) - CLAHE(지각보상 대비)는 적응형
+  연산이라 역산 안 함, raw+jpeg 페어가 없는 브랜드(Fuji 등)는 애초에
+  이 구조가 아니라서 지원 대상 자체가 아님
+- `utils/evaluate.py`의 CIEDE2000 ΔE 루프로 profile 파라미터를
+  실측 캘리브레이션하는 건 아직 자동화 안 됨(V0.1은 수동 profile JSON)
+
 ## 목표 / 철학
 
 - 주관적인 "필감" 묘사가 아니라 population 통계, raw+jpeg 페어,

@@ -90,6 +90,23 @@ python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure
 
 Supported Log spaces: see `LOG_SPACES` in `core/log_pipeline.py` (F-Log/F-Log2/V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log). The curve-gamut pairings use `colour-science`'s own definitions as-is - they haven't been cross-checked exhaustively against each manufacturer's official spec, the same kind of "unverified" caveat as the rest of this project's flagged items.
 
+## hybrid_engine/ - EXIF-driven cross-camera color conversion (V0.1)
+
+`hybrid_engine/` at the repo root is a third, independent module with yet another purpose: "re-render a finished JPEG shot on camera A as if camera B had shot it." There are two entry points - one for RAW input (`HybridCameraEngine`: Phase 0 color unification + Gray World normalization + LAB tone/saturation curves) and one for JPEG-only input (`preset_inverse`: detects the source brand from EXIF, inverts that brand's population-fit tone curve from `brands/*.py`, then re-applies the real target brand's existing `apply_*` function).
+
+```
+# JPEG only - auto-detects the source camera from EXIF
+python3 -m hybrid_engine.convert photo.jpg out.jpg --target hasselblad
+
+# RAW available
+python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
+```
+
+**Known limitations** (also documented in each module's docstring):
+- `core/color_matrix.py`: even with camera-specific color-matrix normalization, sensor spectral sensitivities are never exactly proportional to the CIE standard observer (metamerism), so a physically perfect camera-agnostic colorspace isn't possible - the residual can only be reduced via the ΔE loop, not eliminated
+- `core/preset_inverse.py`: only the L-channel tone curve of population-fit brands can be inverted (it has a closed-form inverse) - CLAHE (perceptual contrast compensation) is an adaptive operation and isn't inverted, and brands without a raw+jpeg pair (e.g. Fuji) simply aren't this kind of curve to begin with, so they're out of scope by design
+- `utils/evaluate.py`'s CIEDE2000 ΔE loop isn't yet wired up to automatically calibrate profile parameters - V0.1 profiles are hand-edited JSON
+
 ## Goals / Philosophy
 
 - Parameters are grounded in **measured data** - population statistics,
