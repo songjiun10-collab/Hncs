@@ -23,6 +23,8 @@ A project that measures official (or near-official) sample images from camera/di
 - `unittest` test suite + GitHub Actions CI verifies automatically on
   every push/PR
 
+![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
+
 ![HNCS preset demo - all 25 apply_* looks on one photo](docs/images/preset_demo.jpg)
 
 *All 24 `apply_*` functions from `brands/*.py` (+ the original) run on the

@@ -23,6 +23,8 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
   캐시 이미지로 처음부터 재계산해도 그대로 나옴을 확인함(2026-07)
 - `unittest` 테스트 스위트 + GitHub Actions CI로 push/PR마다 자동 검증
 
+![Before/After - apply_hncs 적용 예시](docs/images/before_after_hncs.jpg)
+
 ![HNCS 프리셋 데모 - 사진 한 장에 apply_* 25개 전부 적용](docs/images/preset_demo.jpg)
 
 *동일한 소스 사진(Nikon D5300 야경샷, 데모용으로 제공받음) 한 장에
