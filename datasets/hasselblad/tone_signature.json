@@ -1,0 +1,1163 @@
+{
+  "methodology": "population 통계는 사진(이미지) 단위로 동일 가중치를 주는 'per-image percentile 평균' 방식을 썼다. 전체 픽셀을 그냥 풀링해서 percentile을 구하는 방식(픽셀 가중)은 해상도가 최대 676배(307K~207M px) 차이나는 표본이 섞여있어 큰 사진 몇 장(특히 어두운 영역이 많은 대형 이미지)이 전체 population 특성을 왜곡시킨다는 걸 실측으로 확인 (픽셀 풀링시 b2=1.0까지 떨어짐, per-image 평균은 b2=18.1 - 두 방법이 10배 이상 차이). 픽셀 풀링 결과는 joint_distribution.npz에 원본 그대로 남겨뒀지만, 이 파일의 population 타깃은 per-image 평균을 신뢰값으로 채택.",
+  "n_images": 124,
+  "population": {
+    "b2": {
+      "mean": 18.080645161290324,
+      "std": 16.575145002135923,
+      "n": 124
+    },
+    "w995": {
+      "mean": 225.56451612903226,
+      "std": 27.30716612063695,
+      "n": 124
+    },
+    "median": {
+      "mean": 91.20967741935483,
+      "std": 45.69009813556847,
+      "n": 124
+    }
+  },
+  "population_shadow_valid": {
+    "b2": {
+      "mean": 10.627659574468085,
+      "std": 7.015156907532571,
+      "n": 94
+    }
+  },
+  "portrait": {
+    "b2": {
+      "mean": 16.16216216216216,
+      "std": 14.177472640079047,
+      "n": 37
+    },
+    "w995": {
+      "mean": 227.02702702702703,
+      "std": 25.19704668074618,
+      "n": 37
+    },
+    "median": {
+      "mean": 82.8108108108108,
+      "std": 48.300768186962564,
+      "n": 37
+    }
+  },
+  "per_image": [
+    {
+      "filename": "orig_0.jpg",
+      "b2": 49.0,
+      "w995": 255.0,
+      "median": 170.0,
+      "dark_pct": 0.6655913821472936,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_1.jpg",
+      "b2": 13.0,
+      "w995": 255.0,
+      "median": 54.0,
+      "dark_pct": 32.38231577783755,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_10.jpg",
+      "b2": 50.0,
+      "w995": 238.0,
+      "median": 188.0,
+      "dark_pct": 0.8890833333333334,
+      "npix": 12000000,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_100.jpg",
+      "b2": 35.0,
+      "w995": 240.0,
+      "median": 186.0,
+      "dark_pct": 2.978393266156315,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_101.jpg",
+      "b2": 7.0,
+      "w995": 238.0,
+      "median": 43.0,
+      "dark_pct": 44.95100197109325,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_102.jpg",
+      "b2": 14.0,
+      "w995": 232.0,
+      "median": 107.0,
+      "dark_pct": 8.668098195325568,
+      "npix": 93027361,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_103.jpg",
+      "b2": 9.0,
+      "w995": 177.0,
+      "median": 98.0,
+      "dark_pct": 15.04793008515129,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_104.jpg",
+      "b2": 13.0,
+      "w995": 159.0,
+      "median": 70.0,
+      "dark_pct": 19.964344889030418,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_105.jpg",
+      "b2": 6.0,
+      "w995": 142.0,
+      "median": 90.0,
+      "dark_pct": 18.041631343270588,
+      "npix": 75799620,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_106.jpg",
+      "b2": 5.0,
+      "w995": 247.0,
+      "median": 56.0,
+      "dark_pct": 33.56363135418102,
+      "npix": 65331000,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_107.jpg",
+      "b2": 31.0,
+      "w995": 215.0,
+      "median": 71.0,
+      "dark_pct": 11.33357788783875,
+      "npix": 101940465,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_108.jpg",
+      "b2": 31.0,
+      "w995": 186.0,
+      "median": 102.0,
+      "dark_pct": 2.8428027038153973,
+      "npix": 98616200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_109.jpg",
+      "b2": 33.0,
+      "w995": 240.0,
+      "median": 178.0,
+      "dark_pct": 2.4260273608248903,
+      "npix": 101888010,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_11.jpg",
+      "b2": 0.0,
+      "w995": 251.0,
+      "median": 14.0,
+      "dark_pct": 73.51085832451264,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_110.jpg",
+      "b2": 42.0,
+      "w995": 234.0,
+      "median": 135.0,
+      "dark_pct": 1.8519841517439324,
+      "npix": 51286400,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_111.jpg",
+      "b2": 23.0,
+      "w995": 231.0,
+      "median": 90.0,
+      "dark_pct": 7.9921987115492605,
+      "npix": 51286400,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_112.jpg",
+      "b2": 30.0,
+      "w995": 221.0,
+      "median": 66.0,
+      "dark_pct": 4.934737084295252,
+      "npix": 51286400,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_113.jpg",
+      "b2": 14.0,
+      "w995": 254.0,
+      "median": 106.0,
+      "dark_pct": 17.671355417412315,
+      "npix": 43407440,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_114.jpg",
+      "b2": 44.0,
+      "w995": 204.0,
+      "median": 162.0,
+      "dark_pct": 0.6834375,
+      "npix": 1920000,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_115.jpg",
+      "b2": 36.0,
+      "w995": 193.0,
+      "median": 130.0,
+      "dark_pct": 3.7201776649746194,
+      "npix": 945600,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_116.jpg",
+      "b2": 10.0,
+      "w995": 231.0,
+      "median": 159.0,
+      "dark_pct": 21.536783854166668,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_117.jpg",
+      "b2": 16.0,
+      "w995": 231.0,
+      "median": 114.0,
+      "dark_pct": 10.185221354166666,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_118.jpg",
+      "b2": 13.0,
+      "w995": 228.0,
+      "median": 88.0,
+      "dark_pct": 12.077473958333334,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_119.jpg",
+      "b2": 34.0,
+      "w995": 254.0,
+      "median": 153.0,
+      "dark_pct": 3.8349609375000004,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_12.jpg",
+      "b2": 21.0,
+      "w995": 255.0,
+      "median": 78.0,
+      "dark_pct": 22.11108750551735,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_120.jpg",
+      "b2": 32.0,
+      "w995": 236.0,
+      "median": 105.0,
+      "dark_pct": 4.073893229166667,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_121.jpg",
+      "b2": 37.0,
+      "w995": 197.0,
+      "median": 116.0,
+      "dark_pct": 2.271484375,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_122.jpg",
+      "b2": 37.0,
+      "w995": 223.0,
+      "median": 98.0,
+      "dark_pct": 2.5257161458333335,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_123.jpg",
+      "b2": 41.0,
+      "w995": 228.0,
+      "median": 113.0,
+      "dark_pct": 1.5384114583333335,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_124.jpg",
+      "b2": 53.0,
+      "w995": 248.0,
+      "median": 131.0,
+      "dark_pct": 0.6031901041666666,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_125.jpg",
+      "b2": 36.0,
+      "w995": 204.0,
+      "median": 152.0,
+      "dark_pct": 3.1240234375,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_126.jpg",
+      "b2": 31.0,
+      "w995": 207.0,
+      "median": 141.0,
+      "dark_pct": 7.2543358714043995,
+      "npix": 945600,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_127.jpg",
+      "b2": 8.0,
+      "w995": 174.0,
+      "median": 111.0,
+      "dark_pct": 18.619791666666664,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_128.jpg",
+      "b2": 47.0,
+      "w995": 203.0,
+      "median": 122.0,
+      "dark_pct": 1.1435546875,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_129.jpg",
+      "b2": 22.0,
+      "w995": 252.0,
+      "median": 118.0,
+      "dark_pct": 6.609700520833334,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_13.jpg",
+      "b2": 2.0,
+      "w995": 231.0,
+      "median": 79.0,
+      "dark_pct": 33.2664793868994,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_130.jpg",
+      "b2": 51.0,
+      "w995": 238.0,
+      "median": 128.0,
+      "dark_pct": 0.705078125,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_131.jpg",
+      "b2": 11.0,
+      "w995": 237.0,
+      "median": 131.0,
+      "dark_pct": 14.259114583333332,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_132.jpg",
+      "b2": 19.0,
+      "w995": 191.0,
+      "median": 73.0,
+      "dark_pct": 12.377278645833334,
+      "npix": 307200,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_133.jpg",
+      "b2": 20.0,
+      "w995": 197.0,
+      "median": 87.0,
+      "dark_pct": 14.058268229166668,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_134.jpg",
+      "b2": 19.0,
+      "w995": 225.0,
+      "median": 92.0,
+      "dark_pct": 14.259440104166668,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_135.jpg",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 83.0,
+      "dark_pct": 29.378255208333332,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_136.jpg",
+      "b2": 10.0,
+      "w995": 254.0,
+      "median": 112.0,
+      "dark_pct": 13.344075520833334,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_137.jpg",
+      "b2": 12.0,
+      "w995": 255.0,
+      "median": 129.0,
+      "dark_pct": 20.887044270833332,
+      "npix": 307200,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_138.jpg",
+      "b2": 32.0,
+      "w995": 255.0,
+      "median": 125.0,
+      "dark_pct": 3.9453125,
+      "npix": 307200,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_14.jpg",
+      "b2": 4.0,
+      "w995": 228.0,
+      "median": 105.0,
+      "dark_pct": 17.970813240445583,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_15.jpg",
+      "b2": 35.0,
+      "w995": 221.0,
+      "median": 114.0,
+      "dark_pct": 3.5573347746484996,
+      "npix": 76641114,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_16.jpg",
+      "b2": 41.0,
+      "w995": 247.0,
+      "median": 155.0,
+      "dark_pct": 1.8083749999999998,
+      "npix": 12000000,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_17.jpg",
+      "b2": 13.0,
+      "w995": 252.0,
+      "median": 37.0,
+      "dark_pct": 55.62843259223808,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_18.jpg",
+      "b2": 5.0,
+      "w995": 227.0,
+      "median": 38.0,
+      "dark_pct": 54.137558771255044,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_19.jpg",
+      "b2": 8.0,
+      "w995": 225.0,
+      "median": 60.0,
+      "dark_pct": 31.415155402192944,
+      "npix": 97264908,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_2.jpg",
+      "b2": 10.0,
+      "w995": 232.0,
+      "median": 111.0,
+      "dark_pct": 28.238880469909382,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_20.jpg",
+      "b2": 6.0,
+      "w995": 235.0,
+      "median": 59.0,
+      "dark_pct": 37.01956172263469,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_21.jpg",
+      "b2": 9.0,
+      "w995": 209.0,
+      "median": 78.0,
+      "dark_pct": 23.29430480767434,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_22.jpg",
+      "b2": 14.0,
+      "w995": 221.0,
+      "median": 117.0,
+      "dark_pct": 7.713449983175126,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_23.jpg",
+      "b2": 8.0,
+      "w995": 222.0,
+      "median": 61.0,
+      "dark_pct": 27.82215581593375,
+      "npix": 92921588,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_24.jpg",
+      "b2": 0.0,
+      "w995": 246.0,
+      "median": 58.0,
+      "dark_pct": 39.90178313043776,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_25.jpg",
+      "b2": 17.0,
+      "w995": 210.0,
+      "median": 92.0,
+      "dark_pct": 18.329471384917156,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_26.jpg",
+      "b2": 7.0,
+      "w995": 240.0,
+      "median": 67.0,
+      "dark_pct": 25.762509093518503,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_27.jpg",
+      "b2": 5.0,
+      "w995": 197.0,
+      "median": 146.0,
+      "dark_pct": 19.98312370152878,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_28.jpg",
+      "b2": 13.0,
+      "w995": 243.0,
+      "median": 151.0,
+      "dark_pct": 7.918908936371201,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_29.jpg",
+      "b2": 9.0,
+      "w995": 248.0,
+      "median": 67.0,
+      "dark_pct": 24.663147261062846,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_3.jpg",
+      "b2": 21.0,
+      "w995": 254.0,
+      "median": 133.0,
+      "dark_pct": 10.034381665079962,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_30.jpg",
+      "b2": 14.0,
+      "w995": 200.0,
+      "median": 82.0,
+      "dark_pct": 18.744409046521916,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_31.jpg",
+      "b2": 21.0,
+      "w995": 211.0,
+      "median": 106.0,
+      "dark_pct": 12.684809619839502,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_32.jpg",
+      "b2": 38.0,
+      "w995": 247.0,
+      "median": 159.0,
+      "dark_pct": 2.168050459547523,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_33.jpg",
+      "b2": 14.0,
+      "w995": 242.0,
+      "median": 124.0,
+      "dark_pct": 13.941811087375747,
+      "npix": 98725165,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_34.jpg",
+      "b2": 4.0,
+      "w995": 230.0,
+      "median": 134.0,
+      "dark_pct": 25.849784636602756,
+      "npix": 98980608,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_35.jpg",
+      "b2": 0.0,
+      "w995": 255.0,
+      "median": 50.0,
+      "dark_pct": 43.482430136732916,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_36.jpg",
+      "b2": 7.0,
+      "w995": 254.0,
+      "median": 80.0,
+      "dark_pct": 31.424461890600792,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_37.jpg",
+      "b2": 11.0,
+      "w995": 222.0,
+      "median": 89.0,
+      "dark_pct": 21.30302319715385,
+      "npix": 101439729,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_38.jpg",
+      "b2": 43.0,
+      "w995": 183.0,
+      "median": 113.0,
+      "dark_pct": 1.415305977520959,
+      "npix": 62522240,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_39.jpg",
+      "b2": 33.0,
+      "w995": 253.0,
+      "median": 190.0,
+      "dark_pct": 3.0836841590397306,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_4.jpg",
+      "b2": 28.0,
+      "w995": 255.0,
+      "median": 161.0,
+      "dark_pct": 3.2940431702867228,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_40.jpg",
+      "b2": 3.0,
+      "w995": 228.0,
+      "median": 55.0,
+      "dark_pct": 42.806113297725865,
+      "npix": 78109070,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_41.jpg",
+      "b2": 13.0,
+      "w995": 223.0,
+      "median": 71.0,
+      "dark_pct": 29.115316649150895,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_42.jpg",
+      "b2": 0.0,
+      "w995": 255.0,
+      "median": 22.0,
+      "dark_pct": 64.65661535511946,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_43.jpg",
+      "b2": 0.0,
+      "w995": 251.0,
+      "median": 9.0,
+      "dark_pct": 70.41629583333334,
+      "npix": 48000000,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_44.jpg",
+      "b2": 8.0,
+      "w995": 191.0,
+      "median": 79.0,
+      "dark_pct": 23.41876216034835,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_45.jpg",
+      "b2": 5.0,
+      "w995": 229.0,
+      "median": 64.0,
+      "dark_pct": 24.61802707901818,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_46.jpg",
+      "b2": 14.0,
+      "w995": 204.0,
+      "median": 50.0,
+      "dark_pct": 30.54331931773263,
+      "npix": 101893837,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_47.jpg",
+      "b2": 0.0,
+      "w995": 192.0,
+      "median": 35.0,
+      "dark_pct": 56.510702658830866,
+      "npix": 90326994,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_48.jpg",
+      "b2": 20.0,
+      "w995": 243.0,
+      "median": 105.0,
+      "dark_pct": 11.052542675746917,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_49.jpg",
+      "b2": 1.0,
+      "w995": 247.0,
+      "median": 21.0,
+      "dark_pct": 59.79923972454,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_5.jpg",
+      "b2": 18.0,
+      "w995": 245.0,
+      "median": 155.0,
+      "dark_pct": 7.120958085101672,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_50.jpg",
+      "b2": 0.0,
+      "w995": 175.0,
+      "median": 7.0,
+      "dark_pct": 90.43247228717271,
+      "npix": 86712192,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_51.jpg",
+      "b2": 5.0,
+      "w995": 255.0,
+      "median": 57.0,
+      "dark_pct": 33.46430572001395,
+      "npix": 78520368,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_52.jpg",
+      "b2": 0.0,
+      "w995": 208.0,
+      "median": 0.0,
+      "dark_pct": 85.79111726740808,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_53.jpg",
+      "b2": 0.0,
+      "w995": 195.0,
+      "median": 31.0,
+      "dark_pct": 54.767540578722276,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_54.jpg",
+      "b2": 14.0,
+      "w995": 222.0,
+      "median": 80.0,
+      "dark_pct": 29.532462355699906,
+      "npix": 50144112,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_55.jpg",
+      "b2": 5.0,
+      "w995": 226.0,
+      "median": 39.0,
+      "dark_pct": 50.30849952901345,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_56.jpg",
+      "b2": 5.0,
+      "w995": 222.0,
+      "median": 35.0,
+      "dark_pct": 56.873399197067066,
+      "npix": 207725444,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_57.jpg",
+      "b2": 12.0,
+      "w995": 181.0,
+      "median": 32.0,
+      "dark_pct": 66.88707345380526,
+      "npix": 101885096,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_58.jpg",
+      "b2": 9.0,
+      "w995": 230.0,
+      "median": 69.0,
+      "dark_pct": 23.339187494415917,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_59.jpg",
+      "b2": 32.0,
+      "w995": 233.0,
+      "median": 121.0,
+      "dark_pct": 3.336834923656277,
+      "npix": 92921588,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_6.jpg",
+      "b2": 10.0,
+      "w995": 237.0,
+      "median": 100.0,
+      "dark_pct": 18.213558956226596,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_60.jpg",
+      "b2": 42.0,
+      "w995": 236.0,
+      "median": 105.0,
+      "dark_pct": 1.5979797028764084,
+      "npix": 77767571,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_61.jpg",
+      "b2": 13.0,
+      "w995": 239.0,
+      "median": 90.0,
+      "dark_pct": 9.555647222222222,
+      "npix": 180000000,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_62.jpg",
+      "b2": 45.0,
+      "w995": 248.0,
+      "median": 145.0,
+      "dark_pct": 1.111218981754537,
+      "npix": 95361132,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_63.jpg",
+      "b2": 20.0,
+      "w995": 231.0,
+      "median": 162.0,
+      "dark_pct": 6.286112044081641,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_64.jpg",
+      "b2": 6.0,
+      "w995": 243.0,
+      "median": 43.0,
+      "dark_pct": 45.88939890841663,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_65.jpg",
+      "b2": 7.0,
+      "w995": 246.0,
+      "median": 52.0,
+      "dark_pct": 38.186473303879204,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_66.jpg",
+      "b2": 3.0,
+      "w995": 255.0,
+      "median": 41.0,
+      "dark_pct": 47.9159914734083,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_67.jpg",
+      "b2": 9.0,
+      "w995": 213.0,
+      "median": 55.0,
+      "dark_pct": 34.27994348632428,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_68.jpg",
+      "b2": 12.0,
+      "w995": 165.0,
+      "median": 20.0,
+      "dark_pct": 74.66907384839901,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_69.jpg",
+      "b2": 11.0,
+      "w995": 197.0,
+      "median": 35.0,
+      "dark_pct": 60.103481650844735,
+      "npix": 74443536,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_7.jpg",
+      "b2": 11.0,
+      "w995": 222.0,
+      "median": 55.0,
+      "dark_pct": 34.89648718145599,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_70.jpg",
+      "b2": 6.0,
+      "w995": 151.0,
+      "median": 52.0,
+      "dark_pct": 33.83285857825969,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_71.jpg",
+      "b2": 8.0,
+      "w995": 120.0,
+      "median": 53.0,
+      "dark_pct": 33.09899612894432,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_72.jpg",
+      "b2": 23.0,
+      "w995": 234.0,
+      "median": 44.0,
+      "dark_pct": 28.274414477902106,
+      "npix": 101896752,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_73.jpg",
+      "b2": 11.0,
+      "w995": 245.0,
+      "median": 107.0,
+      "dark_pct": 18.258385513190802,
+      "npix": 101739450,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_74.jpg",
+      "b2": 24.0,
+      "w995": 248.0,
+      "median": 110.0,
+      "dark_pct": 14.29205793348724,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_75.jpg",
+      "b2": 121.0,
+      "w995": 254.0,
+      "median": 196.0,
+      "dark_pct": 0.2088194921070693,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_76.jpg",
+      "b2": 15.0,
+      "w995": 248.0,
+      "median": 68.0,
+      "dark_pct": 28.807009265614276,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_77.jpg",
+      "b2": 12.0,
+      "w995": 251.0,
+      "median": 63.0,
+      "dark_pct": 27.047733902165096,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_8.jpg",
+      "b2": 23.0,
+      "w995": 250.0,
+      "median": 102.0,
+      "dark_pct": 9.729868524170426,
+      "npix": 101896752,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_81.jpg",
+      "b2": 8.0,
+      "w995": 240.0,
+      "median": 34.0,
+      "dark_pct": 56.100398936170215,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_82.jpg",
+      "b2": 13.0,
+      "w995": 246.0,
+      "median": 99.0,
+      "dark_pct": 15.967878069386257,
+      "npix": 49607230,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_84.jpg",
+      "b2": 35.0,
+      "w995": 231.0,
+      "median": 155.0,
+      "dark_pct": 3.4496299213826664,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_85.jpg",
+      "b2": 0.0,
+      "w995": 188.0,
+      "median": 12.0,
+      "dark_pct": 87.36231437574094,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_86.jpg",
+      "b2": 17.0,
+      "w995": 210.0,
+      "median": 156.0,
+      "dark_pct": 8.148353169651214,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_9.jpg",
+      "b2": 4.0,
+      "w995": 207.0,
+      "median": 35.0,
+      "dark_pct": 52.45572914751897,
+      "npix": 96562970,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_94.jpg",
+      "b2": 14.0,
+      "w995": 255.0,
+      "median": 62.0,
+      "dark_pct": 21.33138609845885,
+      "npix": 51286400,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_95.jpg",
+      "b2": 11.0,
+      "w995": 175.0,
+      "median": 31.0,
+      "dark_pct": 62.13996498096961,
+      "npix": 51286400,
+      "is_portrait": true
+    }
+  ]
+}

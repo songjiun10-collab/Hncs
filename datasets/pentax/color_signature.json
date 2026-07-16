@@ -1,0 +1,253 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. population 통계는 핫셀블라드와 동일하게 이미지 단위 평균/표준편차.",
+  "n_images": 40,
+  "population": {
+    "sat_mean": {
+      "mean": 114.26946458816528,
+      "std": 41.32313679604787,
+      "n": 40
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2263.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 144.7391815185547,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2273.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 140.58938598632812,
+      "hue_mean": 12.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2276.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 152.41946411132812,
+      "hue_mean": 9.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2282.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 154.09791564941406,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2285.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 112.43196105957031,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2295.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 141.06640625,
+      "hue_mean": 12.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2299.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 153.3607177734375,
+      "hue_mean": 12.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2314.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 194.8191680908203,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2374.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 218.25070190429688,
+      "hue_mean": 122.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2417.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 62.736305236816406,
+      "hue_mean": 132.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2420.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 71.08877563476562,
+      "hue_mean": 142.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2427.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 48.16602325439453,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2465.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 74.27040100097656,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2487.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 86.8058853149414,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2505.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 134.92764282226562,
+      "hue_mean": 12.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2506.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 104.5792236328125,
+      "hue_mean": 12.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2519.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 70.24994659423828,
+      "hue_mean": 147.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2535.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 139.588623046875,
+      "hue_mean": 102.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2581.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 222.97714233398438,
+      "hue_mean": 169.0
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2584.jpg",
+      "camera": "Pentax 645Z",
+      "sat_mean": 98.94868469238281,
+      "hue_mean": 161.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0840.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 132.52493286132812,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0857.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 71.36591339111328,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0859.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 132.11346435546875,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0869.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 146.6872100830078,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0871.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 73.6995849609375,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0886.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 167.25180053710938,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0889.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 91.341552734375,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0899.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 63.577266693115234,
+      "hue_mean": 90.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0934.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 74.0404052734375,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0949.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 85.55565643310547,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0985.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 82.72753143310547,
+      "hue_mean": 58.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1039.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 95.9159164428711,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1113.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 102.81378936767578,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1129.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 128.84182739257812,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1174.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 126.42554473876953,
+      "hue_mean": 130.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1254-psr-no-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 93.99523162841797,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1255-psr-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 93.14978790283203,
+      "hue_mean": 99.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1260-psr-no-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 88.09381866455078,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1261-psr-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 86.834228515625,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1265.jpg",
+      "camera": "Pentax K-1",
+      "sat_mean": 107.70956420898438,
+      "hue_mean": 48.0
+    }
+  ]
+}

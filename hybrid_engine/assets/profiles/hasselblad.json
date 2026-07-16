@@ -1,0 +1,14 @@
+{
+  "_comment": "V0.1 시작값 - 미검증. brands/hasselblad.py의 apply_hncs(toe_lift/shoulder_start/white_point/exposure_gamma)는 film_curve라는 다른 수식 위에서 나온 값이라 이 엔진의 파라미터(S-curve n / shadow_lift / max_chroma 등)로 그대로 옮길 수 없음 - 여기 값은 utils/evaluate.py의 ΔE 루프로 실제 캘리브레이션하기 전까지의 임시 seed일 뿐, apply_hncs와 수치적으로 동일하다고 주장하지 않음.",
+  "target_gray": 0.18,
+  "correct_color_cast": true,
+  "shadow_lift": 0.02,
+  "shadow_threshold": 0.1,
+  "contrast_n": 1.1,
+  "highlight_rolloff_start": 0.82,
+  "sat_gain": 0.08,
+  "sat_center": 50.0,
+  "sat_width": 35.0,
+  "max_chroma": 110.0,
+  "use_spatial": false
+}

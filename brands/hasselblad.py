@@ -1,0 +1,114 @@
+"""
+HNCS(Hasselblad Natural Colour Solution) 근사 - X 시스템 통합
+(X1D + X1D II + X2D + X2D II 혼합 풀). ⭐ 공식 Stable - `apply_hncs`
+하나만 담는다. 원래 이 파일 하나에 apply_hncs/apply_hncs_learned/
+apply_hasselblad_day/apply_hasselblad_night 4개 함수가 다 있었는데,
+"공식 채택(파라메트릭)" vs "실험/레거시"를 명확히 가르려고 다시 분리했다:
+  brands/hasselblad.py         - apply_hncs (이 파일, Stable)
+  brands/hasselblad_learned.py - apply_hncs_learned (Experimental)
+  brands/hasselblad_day.py     - apply_hasselblad_day (Legacy)
+  brands/hasselblad_night.py   - apply_hasselblad_night (Legacy)
+day/night가 "Legacy"인 이유: v3 재보정(2026-07) 결과 day/night 타깃 둘 다
+apply_hncs의 전체 population 타깃에 거의 수렴해서, 별도 프리셋으로 유지할
+근거가 계속 약해지는 중이기 때문 (아직 apply_hncs로 통합은 안 함 - 각
+파일 docstring 참고).
+
+문서화된 HNCS 설계 원칙 (hasselblad.com):
+1. "Hasselblad Film Curve" - toe + 리니어 미드 + shoulder의 필름형 톤커브
+2. "정확한 색값만 복원하면 monotonous - 눈은 대비를 강화해 본다"
+   -> 지각 보상: 약한 마이크로 콘트라스트
+3. "rich saturation" - 채도 무조작
+4. 스킨톤이 전 명도 구간에서 부드러움 -> hue/채도 무조작으로 달성
+5. HNCS는 X 시스템 전체(X1D~X2D II)에 걸쳐 일관 적용되는 색철학 -> 바디
+   세대를 섞어서 풀링하는 것이 오히려 "카메라 개체차"를 노이즈로 상쇄시켜
+   "X 시스템 공통 색과학"을 더 안정적으로 드러냄 (설계 판단, 2026-07)
+
+=== apply_hncs 실측 검증 이력 ===
+
+v8 (공식 샘플 19~20장): 인물 6장 서브셋 재검증 결과 타깃 전체(13.5/222.1)
+vs 인물전용(10.0/211.7)이 갈렸지만 피팅 파라미터는 거의 동일(toe_lift
+0.001 동일, white_point 0.92->0.90). 스킨톤 hue 3장 검증 - 전부 완전
+불변(51->51, 9->9, 11->11).
+
+v9 (공식 샘플 풀 확대 124장, CSV 139행 중 다운로드 성공분): 얼굴 검출
+(YuNet)로 인물 서브셋 43장 자동 추출 - 타깃 전체(11.3/223.9) vs 인물전용
+(10.2/226.3), v8과 거의 동일선상. 표준편차 큼(화이트 std~27) - 낮/밤/
+역광 샘플이 안 갈리고 섞여서 그런 것으로 보이나 커브 파라미터를 흔들
+정도는 아니라고 판단해 유지. 스킨톤 hue 43장 자동 검증: 평균 |delta|=
+0.21, 최대 2.0 (hue 0~179 기준) - L채널만 건드리는 구조상 나오는 반올림
+잡음 수준, 실질적 hue 불변 확인.
+
+v10 (rawpy 설치 후 raw+jpeg 페어 10장으로 진짜 전/후 그리드서치, raw를
+카메라WB+오토브라이트끔+표준감마로 중립 렌더링 -> 베이스라인, 같은 행의
+공식 JPEG -> 타깃): RMSE 43.8->37.8로 소폭 개선됐지만 최적값이
+white_point=1.0(탐색범위 상한)에서 잡힘 - 원인은 중립 렌더링이 실제
+그레이딩 결과보다 블랙p2/화이트p99.5가 계통적으로 낮게 나오는데(전역
+노출/감마 리프트 단계가 아예 없는 구조), 그 격차를 그리드서치가
+white_point를 밀어붙여서 메우려 한 것으로 판단 - 채택 안 하고
+toe_lift/shoulder_start/white_point 유지.
+
+v11 (v10 후속): x1d-II-sample-09(오큘러스 실내, 사실상 전체가 흰색이라
+그림자 없음)를 그림자무효로 블랙포인트 피팅에서 제외, exposure_gamma
+파라미터를 그리드서치에 추가. exposure_gamma=0.7, white_point=1.0만 반영
+(toe_lift/shoulder_start는 원안 0.001/0.78 유지) - RMSE 36.3->23.3
+(그림자유효 8장+화이트포인트 10장 기준). shoulder_start를 0.5까지
+낮추면 RMSE 16.5까지 더 떨어지지만 그림자유효 샘플 8장뿐이라 커브 모양
+자체를 바꾸는 건 과적합 위험 커서 채택 안 함.
+
+실험 기록 (음성 결과): calibrate_from_raw.py의 rawpy 베이스라인을
+gamma=(2.222,4.5)(sRGB형) 대신 gamma=(1,1)(linear)로 바꿔서 "디모자이크+
+컬러매트릭스 직후, 톤커브 적용 전" 상태에 더 가깝게 만들어봄(파이프라인상
+이론적으론 더 정확해야 함). 그런데 RMSE 오히려 악화(23.3->28.2) - rawpy의
+디모자이크/컬러매트릭스가 핫셀블라드 자체 파이프라인과 다른 알고리즘이라
+"센서에 더 가깝게" 만든다고 실제 camera profile 출력과 더 비슷해지는 게
+아니었음. gamma=(2.222,4.5) 베이스라인 유지, linear 실험은 되돌림.
+
+v12: raw+jpeg 페어(10장)를 픽셀 단위로 대응시켜 직접 LUT을 학습하는
+데이터기반 버전을 시도, RMSE=15.4로 이 파일의 파라메트릭(23.3)보다
+낮게 나옴 - 별도 파일 `brands/hasselblad_learned.py`의
+apply_hncs_learned()로 분리 제공 (원본이 10장뿐이라 표본이 작다고 판단해
+이 파일의 apply_hncs 기본값은 안 건드리고 나란히 유지, 자세한 이력은
+그 파일 docstring 참고).
+
+재검증(2026-07, brands/core/tools 리팩토링 후): `tools.calibrate
+grid_search`/`learn_curve`로 다시 돌려서 RMSE가 리팩토링 전과 완전히
+동일하게 재현됨을 확인(23.31->16.51 grid_search, 23.31->15.41
+learn_curve) - raw+jpeg 페어가 여전히 10장뿐이라(나머지는 죽은 링크) 더
+재보정할 새 데이터는 없음.
+
+파이프라인 시그니처 분석(2026-07, 공식 샘플 124장 전량 진짜 원본
+재다운로드로 샤프닝/미세대비/노이즈/에지헤일로/JPEG 특성 측정): 어느
+지표도 확실하고 비혼재된 신호가 아니어서 이 파일에 새 파라미터를
+반영하지 않기로 결정 (자세한 근거는 README.md 참고).
+"""
+import cv2
+import numpy as np
+
+from core.curve import film_curve
+
+
+def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
+               white_point=1.0, clahe_clip=1.25, exposure_gamma=0.7):
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    # 0. 전역 노출 리프트 (v10: 중립 렌더링과 그레이딩 결과 사이 밝기
+    #    격차가 toe/shoulder만으론 안 메꿔져서 추가. exposure_gamma=1.0이면
+    #    기존 동작과 동일 - no-op)
+    if exposure_gamma != 1.0:
+        x = np.arange(256, dtype=np.float32) / 255.0
+        exp_lut = np.clip((x ** exposure_gamma) * 255, 0, 255).astype(np.uint8)
+        l = cv2.LUT(l, exp_lut)
+
+    # 1. 지각 보상 대비 (커브보다 먼저 - 순서 중요)
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    # 2. Film Curve (L채널, 색 보존)
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    # 3. 채도/hue 무조작 (rich saturation은 "안 건드림"으로 달성)
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)

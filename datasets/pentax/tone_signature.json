@@ -1,0 +1,426 @@
+{
+  "methodology": "population 통계는 사진(이미지) 단위로 동일 가중치를 주는 'per-image percentile 평균' 방식을 썼다 (핫셀블라드 tone_signature.json에서 실측으로 확인된 방식을 그대로 적용). 전체 픽셀을 그냥 풀링해서 percentile을 구하는 방식(픽셀 가중)은 해상도가 크게 차이나는 표본이 섞여있으면 큰 사진 몇 장이 전체 population 특성을 왜곡시킨다 - Pentax 표본도 645Z(약 51MP)와 K-1(약 36MP) 두 바디가 섞여있고 파일별 실제 해상도 편차가 있어 동일 논리가 적용됨. 픽셀 풀링 결과는 joint_distribution.npz에 원본 그대로 남겨뒀지만, 이 파일의 population 타깃은 per-image 평균을 신뢰값으로 채택. by_camera 키는 645Z(중형포맷)/K-1(풀프레임) 바디별 차이를 비교할 수 있도록 brands/pentax.py 문서화 관례를 따라 별도 유지.",
+  "n_images": 40,
+  "population": {
+    "b2": {
+      "mean": 12.35,
+      "std": 7.960998681070108,
+      "n": 40
+    },
+    "w995": {
+      "mean": 237.275,
+      "std": 22.08957616161976,
+      "n": 40
+    },
+    "median": {
+      "mean": 87.6,
+      "std": 29.825157166392266,
+      "n": 40
+    }
+  },
+  "population_shadow_valid": {
+    "b2": {
+      "mean": 11.157894736842104,
+      "std": 6.170926381830552,
+      "n": 38
+    }
+  },
+  "by_camera": {
+    "Pentax 645Z": {
+      "b2": {
+        "mean": 12.9,
+        "std": 8.671216754296942,
+        "n": 20
+      },
+      "w995": {
+        "mean": 239.75,
+        "std": 25.567313116555678,
+        "n": 20
+      },
+      "median": {
+        "mean": 83.35,
+        "std": 31.870480071690164,
+        "n": 20
+      }
+    },
+    "Pentax K-1": {
+      "b2": {
+        "mean": 11.8,
+        "std": 7.138627319029899,
+        "n": 20
+      },
+      "w995": {
+        "mean": 234.8,
+        "std": 17.60568090134545,
+        "n": 20
+      },
+      "median": {
+        "mean": 91.85,
+        "std": 26.967155949413726,
+        "n": 20
+      }
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2263.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 6.0,
+      "w995": 255.0,
+      "median": 70.0,
+      "dark_pct": 31.220904411543778,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2273.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 8.0,
+      "w995": 255.0,
+      "median": 40.0,
+      "dark_pct": 49.13875962732608,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2276.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 12.0,
+      "w995": 255.0,
+      "median": 69.0,
+      "dark_pct": 24.71226196154578,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2282.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 12.0,
+      "w995": 255.0,
+      "median": 54.0,
+      "dark_pct": 35.02918517955151,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2285.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 13.0,
+      "w995": 255.0,
+      "median": 71.0,
+      "dark_pct": 26.264656555470424,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2295.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 11.0,
+      "w995": 255.0,
+      "median": 93.0,
+      "dark_pct": 20.483765702306552,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2299.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 30.0,
+      "w995": 200.0,
+      "median": 69.0,
+      "dark_pct": 10.627364187724094,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2314.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 11.0,
+      "w995": 247.0,
+      "median": 127.0,
+      "dark_pct": 11.92125130513491,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2374.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 1.0,
+      "w995": 250.0,
+      "median": 13.0,
+      "dark_pct": 71.89985272632354,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2417.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 14.0,
+      "w995": 255.0,
+      "median": 132.0,
+      "dark_pct": 10.115002885693968,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2420.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 9.0,
+      "w995": 251.0,
+      "median": 104.0,
+      "dark_pct": 18.395917603734752,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2427.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 13.0,
+      "w995": 254.0,
+      "median": 75.0,
+      "dark_pct": 23.708125748026962,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2465.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 23.0,
+      "w995": 224.0,
+      "median": 138.0,
+      "dark_pct": 7.289945265709193,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2487.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 16.0,
+      "w995": 175.0,
+      "median": 121.0,
+      "dark_pct": 11.549058988342047,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2505.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 60.0,
+      "dark_pct": 45.29908676549386,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2506.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 5.0,
+      "w995": 255.0,
+      "median": 67.0,
+      "dark_pct": 43.4625729874006,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2519.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 11.0,
+      "w995": 255.0,
+      "median": 119.0,
+      "dark_pct": 12.556084416876992,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2535.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 3.0,
+      "w995": 191.0,
+      "median": 92.0,
+      "dark_pct": 24.13437005488452,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2581.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 19.0,
+      "w995": 199.0,
+      "median": 63.0,
+      "dark_pct": 13.471631077484325,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_645Z_76787_YIMGP2584.jpg",
+      "camera": "Pentax 645Z",
+      "b2": 37.0,
+      "w995": 254.0,
+      "median": 90.0,
+      "dark_pct": 3.0886334486358993,
+      "npix": 51121152
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0840.jpg",
+      "camera": "Pentax K-1",
+      "b2": 11.0,
+      "w995": 233.0,
+      "median": 79.0,
+      "dark_pct": 18.133245667221356,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0857.jpg",
+      "camera": "Pentax K-1",
+      "b2": 9.0,
+      "w995": 248.0,
+      "median": 104.0,
+      "dark_pct": 18.85701387905396,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0859.jpg",
+      "camera": "Pentax K-1",
+      "b2": 18.0,
+      "w995": 247.0,
+      "median": 104.0,
+      "dark_pct": 10.776616825697493,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0869.jpg",
+      "camera": "Pentax K-1",
+      "b2": 6.0,
+      "w995": 212.0,
+      "median": 75.0,
+      "dark_pct": 23.267259196643536,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0871.jpg",
+      "camera": "Pentax K-1",
+      "b2": 5.0,
+      "w995": 255.0,
+      "median": 96.0,
+      "dark_pct": 23.135273199617618,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0886.jpg",
+      "camera": "Pentax K-1",
+      "b2": 33.0,
+      "w995": 203.0,
+      "median": 127.0,
+      "dark_pct": 3.483571732049285,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0889.jpg",
+      "camera": "Pentax K-1",
+      "b2": 20.0,
+      "w995": 254.0,
+      "median": 93.0,
+      "dark_pct": 5.430799461832601,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0899.jpg",
+      "camera": "Pentax K-1",
+      "b2": 8.0,
+      "w995": 230.0,
+      "median": 113.0,
+      "dark_pct": 12.72696192111599,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0934.jpg",
+      "camera": "Pentax K-1",
+      "b2": 5.0,
+      "w995": 220.0,
+      "median": 69.0,
+      "dark_pct": 28.567649323750178,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0949.jpg",
+      "camera": "Pentax K-1",
+      "b2": 8.0,
+      "w995": 231.0,
+      "median": 101.0,
+      "dark_pct": 19.911084544505027,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP0985.jpg",
+      "camera": "Pentax K-1",
+      "b2": 25.0,
+      "w995": 255.0,
+      "median": 94.0,
+      "dark_pct": 9.741208862944342,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1039.jpg",
+      "camera": "Pentax K-1",
+      "b2": 15.0,
+      "w995": 250.0,
+      "median": 82.0,
+      "dark_pct": 28.138075232792804,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1113.jpg",
+      "camera": "Pentax K-1",
+      "b2": 8.0,
+      "w995": 211.0,
+      "median": 63.0,
+      "dark_pct": 38.220841705317945,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1129.jpg",
+      "camera": "Pentax K-1",
+      "b2": 6.0,
+      "w995": 205.0,
+      "median": 45.0,
+      "dark_pct": 43.27787815553746,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1174.jpg",
+      "camera": "Pentax K-1",
+      "b2": 5.0,
+      "w995": 255.0,
+      "median": 25.0,
+      "dark_pct": 64.58471544841382,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1254-psr-no-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "b2": 13.0,
+      "w995": 243.0,
+      "median": 117.0,
+      "dark_pct": 18.986845104269932,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1255-psr-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "b2": 13.0,
+      "w995": 244.0,
+      "median": 114.0,
+      "dark_pct": 19.48103745485767,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1260-psr-no-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "b2": 9.0,
+      "w995": 221.0,
+      "median": 125.0,
+      "dark_pct": 16.73448066403484,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1261-psr-mcomp.jpg",
+      "camera": "Pentax K-1",
+      "b2": 10.0,
+      "w995": 225.0,
+      "median": 131.0,
+      "dark_pct": 14.969628505169238,
+      "npix": 36152320
+    },
+    {
+      "filename": "Pentax_K-1_161019_YIMGP1265.jpg",
+      "camera": "Pentax K-1",
+      "b2": 9.0,
+      "w995": 254.0,
+      "median": 80.0,
+      "dark_pct": 28.8079049975216,
+      "npix": 36152320
+    }
+  ]
+}

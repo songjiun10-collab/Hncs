@@ -1,0 +1,238 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. population은 tone_signature.json과 동일하게 사진 단위 동일 가중치 per-image 평균. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. 핫셀블라드와 달리 인물 subset(skin_hue 등)은 얼굴 검출을 하지 않아 제공하지 않음.",
+  "n_images": 45,
+  "population": {
+    "sat_mean": {
+      "mean": 98.57239685058593,
+      "std": 34.71325009931914,
+      "n": 45
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Leica_M9_221384_YL1000842.jpg",
+      "sat_mean": 94.87445068359375,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000859.jpg",
+      "sat_mean": 108.85999298095703,
+      "hue_mean": 86.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000862.jpg",
+      "sat_mean": 92.48914337158203,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000870.jpg",
+      "sat_mean": 121.93072509765625,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000872.jpg",
+      "sat_mean": 116.67677307128906,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000876.jpg",
+      "sat_mean": 81.36369323730469,
+      "hue_mean": 70.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000880.jpg",
+      "sat_mean": 86.1982421875,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000886.jpg",
+      "sat_mean": 77.4496078491211,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000887.jpg",
+      "sat_mean": 92.65093994140625,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000892.jpg",
+      "sat_mean": 72.08909606933594,
+      "hue_mean": 95.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000896.jpg",
+      "sat_mean": 74.30182647705078,
+      "hue_mean": 79.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000903.jpg",
+      "sat_mean": 106.16714477539062,
+      "hue_mean": 27.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000906.jpg",
+      "sat_mean": 99.31002044677734,
+      "hue_mean": 99.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000920.jpg",
+      "sat_mean": 58.252777099609375,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000925.jpg",
+      "sat_mean": 117.29065704345703,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000007.jpg",
+      "sat_mean": 101.1279525756836,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000047.jpg",
+      "sat_mean": 86.92890930175781,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000048.jpg",
+      "sat_mean": 58.76050567626953,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000054.jpg",
+      "sat_mean": 108.42921447753906,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000066.jpg",
+      "sat_mean": 130.88462829589844,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000083.jpg",
+      "sat_mean": 121.28838348388672,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000090.jpg",
+      "sat_mean": 79.47200775146484,
+      "hue_mean": 101.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000091.jpg",
+      "sat_mean": 113.01165008544922,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000112.jpg",
+      "sat_mean": 74.9191665649414,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000116.jpg",
+      "sat_mean": 56.53913116455078,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000123.jpg",
+      "sat_mean": 77.63924407958984,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000128.jpg",
+      "sat_mean": 67.42377471923828,
+      "hue_mean": 165.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000130.jpg",
+      "sat_mean": 80.60588836669922,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000136.jpg",
+      "sat_mean": 129.74073791503906,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000181.jpg",
+      "sat_mean": 100.55642700195312,
+      "hue_mean": 56.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YISO_6400_L1160685-1.jpg",
+      "sat_mean": 199.7839813232422,
+      "hue_mean": 170.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YISO_6400_L1160701-1.jpg",
+      "sat_mean": 75.57173156738281,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YISO_6400_L1160708-1.jpg",
+      "sat_mean": 79.86927032470703,
+      "hue_mean": 140.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000745-NoSharp-1.jpg",
+      "sat_mean": 170.56919860839844,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000751-NoSharp-1.jpg",
+      "sat_mean": 67.63041687011719,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000776-tele-1.jpg",
+      "sat_mean": 59.513885498046875,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000777-wide-1.jpg",
+      "sat_mean": 72.37982940673828,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160420-1.jpg",
+      "sat_mean": 116.56993103027344,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160435-1.jpg",
+      "sat_mean": 113.9674072265625,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160464-1.jpg",
+      "sat_mean": 98.3658676147461,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160476-1.jpg",
+      "sat_mean": 189.74896240234375,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160518-1.jpg",
+      "sat_mean": 60.20897674560547,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160607-1.jpg",
+      "sat_mean": 192.5014190673828,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160616-1.jpg",
+      "sat_mean": 64.09001159667969,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160633-1.jpg",
+      "sat_mean": 87.75425720214844,
+      "hue_mean": 29.0
+    }
+  ]
+}

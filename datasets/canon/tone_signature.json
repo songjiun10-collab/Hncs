@@ -1,0 +1,950 @@
+{
+  "methodology": "population 통계는 사진(이미지) 단위로 동일 가중치를 주는 'per-image 평균' 방식을 썼다. 전체 픽셀을 그냥 풀링해서 통계를 구하면 해상도가 이미지마다 다른 표본이 섞여있을 때 큰 사진 몇 장이 population 특성을 왜곡시킨다는 걸 핫셀블라드 population 분석에서 실측 확인했음(픽셀 풀링시 b2=1.0까지 떨어졌는데 per-image 평균은 b2=18.1 - 두 방법이 10배 이상 차이, datasets/leica/tone_signature.json 참고). 그 교훈을 그대로 적용해 이 파일의 population 타깃도 per-image 평균을 신뢰값으로 채택. 픽셀 풀링 결과는 joint_distribution.npz에 원본 그대로 남겨뒀다(그 용도로는 픽셀 그대로 모으는 게 맞음). Canon 표본은 imaging-resource.com EOS R5/R6/R8/R3/R 5개 바디에서 바디당 25장씩(총 125장) 수집한 뒤, EOS R3(스포츠/액션 지향) 버스트 연사 중복 프레임(인접 프레임의 w995 차이<=2, 채도 차이<=1.5인 구간을 같은 장면으로 간주해 구간당 1장만 유지)을 제거해 n=115로 줄인 population을 사용한다 - brands/canon.py docstring에 문서화된 것과 동일한 기준을 이 세션에서 재실행해 재현 확인함(R3 8장: 2207/2220, 2230/2231, 2483~2489 7연속 프레임; EOS R 2장: 458A0202/0246, 458A0709/0719 - 문서 기록과 정확히 일치).",
+  "n_images": 115,
+  "population": {
+    "b2": {
+      "mean": 22.695652173913043,
+      "std": 15.713286492670978,
+      "n": 115
+    },
+    "w995": {
+      "mean": 239.0608695652174,
+      "std": 15.001035881055879,
+      "n": 115
+    },
+    "median": {
+      "mean": 110.00869565217391,
+      "std": 35.643767831911354,
+      "n": 115
+    }
+  },
+  "population_shadow_valid": {
+    "b2": {
+      "mean": 15.036585365853659,
+      "std": 6.509739648518453,
+      "n": 82
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A1258.jpg",
+      "b2": 9.0,
+      "w995": 226.0,
+      "median": 111.0,
+      "dark_pct": 30.85257083333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A1280.jpg",
+      "b2": 9.0,
+      "w995": 242.0,
+      "median": 101.0,
+      "dark_pct": 18.281391666666664,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A1685.jpg",
+      "b2": 15.0,
+      "w995": 254.0,
+      "median": 134.0,
+      "dark_pct": 11.845241666666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2009.jpg",
+      "b2": 15.0,
+      "w995": 211.0,
+      "median": 164.0,
+      "dark_pct": 18.028895833333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2207.jpg",
+      "b2": 20.0,
+      "w995": 249.0,
+      "median": 161.0,
+      "dark_pct": 13.224458333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2227.jpg",
+      "b2": 20.0,
+      "w995": 254.0,
+      "median": 177.0,
+      "dark_pct": 7.262925000000001,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2230.jpg",
+      "b2": 22.0,
+      "w995": 251.0,
+      "median": 179.0,
+      "dark_pct": 7.302133333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2472.jpg",
+      "b2": 20.0,
+      "w995": 250.0,
+      "median": 117.0,
+      "dark_pct": 11.572941666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2483.jpg",
+      "b2": 16.0,
+      "w995": 251.0,
+      "median": 153.0,
+      "dark_pct": 13.434370833333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2733.jpg",
+      "b2": 19.0,
+      "w995": 223.0,
+      "median": 126.0,
+      "dark_pct": 10.728333333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2736.jpg",
+      "b2": 18.0,
+      "w995": 227.0,
+      "median": 113.0,
+      "dark_pct": 12.4559125,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2759.jpg",
+      "b2": 4.0,
+      "w995": 216.0,
+      "median": 119.0,
+      "dark_pct": 22.99875833333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2784.jpg",
+      "b2": 27.0,
+      "w995": 255.0,
+      "median": 72.0,
+      "dark_pct": 11.329779166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2786.jpg",
+      "b2": 29.0,
+      "w995": 232.0,
+      "median": 124.0,
+      "dark_pct": 3.8188041666666663,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2791.jpg",
+      "b2": 15.0,
+      "w995": 251.0,
+      "median": 110.0,
+      "dark_pct": 9.2059375,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2887.jpg",
+      "b2": 37.0,
+      "w995": 250.0,
+      "median": 93.0,
+      "dark_pct": 2.3827958333333332,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2917.jpg",
+      "b2": 21.0,
+      "w995": 248.0,
+      "median": 93.0,
+      "dark_pct": 11.200062500000001,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0083.jpg",
+      "b2": 9.0,
+      "w995": 255.0,
+      "median": 125.0,
+      "dark_pct": 7.432120506096725,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0091.jpg",
+      "b2": 21.0,
+      "w995": 255.0,
+      "median": 148.0,
+      "dark_pct": 8.303272252899662,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0101.jpg",
+      "b2": 57.0,
+      "w995": 190.0,
+      "median": 103.0,
+      "dark_pct": 0.05534494603884517,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0111.jpg",
+      "b2": 17.0,
+      "w995": 255.0,
+      "median": 67.0,
+      "dark_pct": 23.50339205338351,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0117.jpg",
+      "b2": 32.0,
+      "w995": 255.0,
+      "median": 100.0,
+      "dark_pct": 4.746401606681232,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0119.jpg",
+      "b2": 23.0,
+      "w995": 245.0,
+      "median": 95.0,
+      "dark_pct": 8.193174392901263,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0122.jpg",
+      "b2": 33.0,
+      "w995": 204.0,
+      "median": 105.0,
+      "dark_pct": 3.1647577467285872,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0130.jpg",
+      "b2": 15.0,
+      "w995": 218.0,
+      "median": 81.0,
+      "dark_pct": 22.80096274692876,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0132.jpg",
+      "b2": 17.0,
+      "w995": 238.0,
+      "median": 103.0,
+      "dark_pct": 11.634377609409317,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0137.jpg",
+      "b2": 5.0,
+      "w995": 245.0,
+      "median": 61.0,
+      "dark_pct": 43.770276540194914,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0142.jpg",
+      "b2": 28.0,
+      "w995": 211.0,
+      "median": 125.0,
+      "dark_pct": 4.23851850964838,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0150.jpg",
+      "b2": 30.0,
+      "w995": 210.0,
+      "median": 94.0,
+      "dark_pct": 4.496030123307101,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0153.jpg",
+      "b2": 30.0,
+      "w995": 213.0,
+      "median": 96.0,
+      "dark_pct": 4.43115234375,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0160.jpg",
+      "b2": 19.0,
+      "w995": 242.0,
+      "median": 102.0,
+      "dark_pct": 10.088570679962023,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0170.jpg",
+      "b2": 8.0,
+      "w995": 241.0,
+      "median": 79.0,
+      "dark_pct": 34.70906471263612,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0175.jpg",
+      "b2": 5.0,
+      "w995": 243.0,
+      "median": 69.0,
+      "dark_pct": 40.76593044387125,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0186.jpg",
+      "b2": 20.0,
+      "w995": 241.0,
+      "median": 143.0,
+      "dark_pct": 3.363168920290767,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0214.jpg",
+      "b2": 13.0,
+      "w995": 247.0,
+      "median": 147.0,
+      "dark_pct": 13.432224882469345,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0221.jpg",
+      "b2": 9.0,
+      "w995": 228.0,
+      "median": 108.0,
+      "dark_pct": 32.3596289705916,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0228.jpg",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 27.0,
+      "dark_pct": 63.190427810870005,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0236.jpg",
+      "b2": 2.0,
+      "w995": 244.0,
+      "median": 39.0,
+      "dark_pct": 50.705536916350205,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0272.jpg",
+      "b2": 36.0,
+      "w995": 255.0,
+      "median": 118.0,
+      "dark_pct": 2.9386707490220076,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0278.jpg",
+      "b2": 24.0,
+      "w995": 255.0,
+      "median": 82.0,
+      "dark_pct": 11.612852216639595,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0292.jpg",
+      "b2": 76.0,
+      "w995": 241.0,
+      "median": 143.0,
+      "dark_pct": 0.04952515899524158,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0331.jpg",
+      "b2": 51.0,
+      "w995": 218.0,
+      "median": 110.0,
+      "dark_pct": 0.009964011598645682,
+      "npix": 44761088
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0007.jpg",
+      "b2": 12.0,
+      "w995": 236.0,
+      "median": 86.0,
+      "dark_pct": 24.056440443213297,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0078.jpg",
+      "b2": 16.0,
+      "w995": 254.0,
+      "median": 105.0,
+      "dark_pct": 14.520804077536678,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0106.jpg",
+      "b2": 13.0,
+      "w995": 228.0,
+      "median": 91.0,
+      "dark_pct": 19.06876795424233,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0148.jpg",
+      "b2": 20.0,
+      "w995": 238.0,
+      "median": 75.0,
+      "dark_pct": 14.6472201783241,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0152.jpg",
+      "b2": 14.0,
+      "w995": 232.0,
+      "median": 61.0,
+      "dark_pct": 27.83593870229301,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0157.jpg",
+      "b2": 14.0,
+      "w995": 240.0,
+      "median": 65.0,
+      "dark_pct": 27.768765589732737,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0161.jpg",
+      "b2": 19.0,
+      "w995": 228.0,
+      "median": 85.0,
+      "dark_pct": 10.795929997691598,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0193.jpg",
+      "b2": 38.0,
+      "w995": 221.0,
+      "median": 108.0,
+      "dark_pct": 2.3951329976531244,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0194.jpg",
+      "b2": 35.0,
+      "w995": 248.0,
+      "median": 120.0,
+      "dark_pct": 4.030296581640505,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0234.jpg",
+      "b2": 10.0,
+      "w995": 227.0,
+      "median": 81.0,
+      "dark_pct": 15.39446532426644,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0238.jpg",
+      "b2": 13.0,
+      "w995": 255.0,
+      "median": 73.0,
+      "dark_pct": 28.894567719554736,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0243.jpg",
+      "b2": 3.0,
+      "w995": 222.0,
+      "median": 50.0,
+      "dark_pct": 39.09174577754694,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0255.jpg",
+      "b2": 19.0,
+      "w995": 247.0,
+      "median": 156.0,
+      "dark_pct": 6.210604865599672,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0263.jpg",
+      "b2": 13.0,
+      "w995": 249.0,
+      "median": 103.0,
+      "dark_pct": 19.019448892928594,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0267.jpg",
+      "b2": 19.0,
+      "w995": 225.0,
+      "median": 110.0,
+      "dark_pct": 13.77931991894942,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0292.jpg",
+      "b2": 20.0,
+      "w995": 246.0,
+      "median": 72.0,
+      "dark_pct": 22.05406651565866,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0305.jpg",
+      "b2": 37.0,
+      "w995": 228.0,
+      "median": 98.0,
+      "dark_pct": 2.6607095051682568,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0321.jpg",
+      "b2": 21.0,
+      "w995": 223.0,
+      "median": 88.0,
+      "dark_pct": 6.682554968836565,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0356.jpg",
+      "b2": 23.0,
+      "w995": 220.0,
+      "median": 89.0,
+      "dark_pct": 9.86161807799836,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0388.jpg",
+      "b2": 107.0,
+      "w995": 255.0,
+      "median": 142.0,
+      "dark_pct": 0.13739704364163333,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0429.jpg",
+      "b2": 8.0,
+      "w995": 253.0,
+      "median": 41.0,
+      "dark_pct": 46.347493940443215,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0437.jpg",
+      "b2": 5.0,
+      "w995": 203.0,
+      "median": 85.0,
+      "dark_pct": 31.714871603121473,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0450.jpg",
+      "b2": 11.0,
+      "w995": 250.0,
+      "median": 74.0,
+      "dark_pct": 33.25381667917051,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0451.jpg",
+      "b2": 20.0,
+      "w995": 227.0,
+      "median": 116.0,
+      "dark_pct": 13.14684866978301,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0488.jpg",
+      "b2": 11.0,
+      "w995": 238.0,
+      "median": 94.0,
+      "dark_pct": 20.265325027893198,
+      "npix": 19961856
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0003.jpg",
+      "b2": 38.0,
+      "w995": 236.0,
+      "median": 92.0,
+      "dark_pct": 2.34045,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0005.jpg",
+      "b2": 57.0,
+      "w995": 232.0,
+      "median": 118.0,
+      "dark_pct": 0.22210416666666669,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0008.jpg",
+      "b2": 31.0,
+      "w995": 255.0,
+      "median": 92.0,
+      "dark_pct": 5.517837500000001,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0010.jpg",
+      "b2": 47.0,
+      "w995": 252.0,
+      "median": 141.0,
+      "dark_pct": 1.2155166666666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0015.jpg",
+      "b2": 39.0,
+      "w995": 255.0,
+      "median": 126.0,
+      "dark_pct": 2.1340874999999997,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0017.jpg",
+      "b2": 40.0,
+      "w995": 220.0,
+      "median": 119.0,
+      "dark_pct": 1.9200875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0021.jpg",
+      "b2": 40.0,
+      "w995": 238.0,
+      "median": 95.0,
+      "dark_pct": 1.9272291666666668,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0025.jpg",
+      "b2": 35.0,
+      "w995": 255.0,
+      "median": 141.0,
+      "dark_pct": 3.4627958333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0028.jpg",
+      "b2": 4.0,
+      "w995": 219.0,
+      "median": 28.0,
+      "dark_pct": 64.30782916666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0063.jpg",
+      "b2": 48.0,
+      "w995": 238.0,
+      "median": 116.0,
+      "dark_pct": 0.9616583333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0073.jpg",
+      "b2": 24.0,
+      "w995": 231.0,
+      "median": 108.0,
+      "dark_pct": 11.618479166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0079.jpg",
+      "b2": 52.0,
+      "w995": 239.0,
+      "median": 113.0,
+      "dark_pct": 0.6238541666666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0110.jpg",
+      "b2": 24.0,
+      "w995": 248.0,
+      "median": 112.0,
+      "dark_pct": 8.400095833333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0121.jpg",
+      "b2": 32.0,
+      "w995": 228.0,
+      "median": 74.0,
+      "dark_pct": 5.0588041666666665,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0140.jpg",
+      "b2": 48.0,
+      "w995": 225.0,
+      "median": 95.0,
+      "dark_pct": 0.4748791666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0149.jpg",
+      "b2": 16.0,
+      "w995": 255.0,
+      "median": 155.0,
+      "dark_pct": 11.427858333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0156.jpg",
+      "b2": 20.0,
+      "w995": 255.0,
+      "median": 62.0,
+      "dark_pct": 13.4012875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0164.jpg",
+      "b2": 13.0,
+      "w995": 255.0,
+      "median": 123.0,
+      "dark_pct": 12.028608333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0166.jpg",
+      "b2": 16.0,
+      "w995": 255.0,
+      "median": 102.0,
+      "dark_pct": 19.671425,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0181.jpg",
+      "b2": 17.0,
+      "w995": 226.0,
+      "median": 93.0,
+      "dark_pct": 10.862195833333335,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0191.jpg",
+      "b2": 22.0,
+      "w995": 222.0,
+      "median": 100.0,
+      "dark_pct": 7.753066666666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0197.jpg",
+      "b2": 26.0,
+      "w995": 227.0,
+      "median": 120.0,
+      "dark_pct": 5.041816666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0243.jpg",
+      "b2": 11.0,
+      "w995": 253.0,
+      "median": 155.0,
+      "dark_pct": 18.376275,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0245.jpg",
+      "b2": 36.0,
+      "w995": 255.0,
+      "median": 181.0,
+      "dark_pct": 2.642570833333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0247.jpg",
+      "b2": 14.0,
+      "w995": 255.0,
+      "median": 170.0,
+      "dark_pct": 11.027354166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0202-EF-ADAPTER-BETA.jpg",
+      "b2": 28.0,
+      "w995": 254.0,
+      "median": 180.0,
+      "dark_pct": 3.532628481079932,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0314-EF-ADAPTER-BETA.jpg",
+      "b2": 39.0,
+      "w995": 255.0,
+      "median": 196.0,
+      "dark_pct": 2.0636526094812924,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0322-EF-ADAPTER-BETA.jpg",
+      "b2": 45.0,
+      "w995": 255.0,
+      "median": 184.0,
+      "dark_pct": 1.6654642325680271,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0342-EF-ADAPTER-BETA.jpg",
+      "b2": 29.0,
+      "w995": 255.0,
+      "median": 169.0,
+      "dark_pct": 4.118695525085034,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0370-EF-ADAPTER-BETA.jpg",
+      "b2": 46.0,
+      "w995": 255.0,
+      "median": 197.0,
+      "dark_pct": 1.4735431281887754,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0403-EF-ADAPTER-BETA.jpg",
+      "b2": 34.0,
+      "w995": 255.0,
+      "median": 174.0,
+      "dark_pct": 2.7325082376700682,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0443-EF-ADAPTER-BETA.jpg",
+      "b2": 15.0,
+      "w995": 255.0,
+      "median": 137.0,
+      "dark_pct": 8.008114769345239,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0495-EF-ADAPTER-BETA.jpg",
+      "b2": 9.0,
+      "w995": 235.0,
+      "median": 117.0,
+      "dark_pct": 17.65228728210034,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0514-EF-ADAPTER-BETA.jpg",
+      "b2": 7.0,
+      "w995": 231.0,
+      "median": 132.0,
+      "dark_pct": 14.10485756802721,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0529-EF-ADAPTER-BETA.jpg",
+      "b2": 11.0,
+      "w995": 245.0,
+      "median": 123.0,
+      "dark_pct": 16.291736421130953,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0544-EF-ADAPTER-BETA.jpg",
+      "b2": 13.0,
+      "w995": 246.0,
+      "median": 124.0,
+      "dark_pct": 14.758370535714285,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0556-EF-ADAPTER-BETA.jpg",
+      "b2": 15.0,
+      "w995": 255.0,
+      "median": 143.0,
+      "dark_pct": 6.009443425807824,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0577-EF-ADAPTER-BETA.jpg",
+      "b2": 25.0,
+      "w995": 255.0,
+      "median": 153.0,
+      "dark_pct": 5.579068346088436,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0693.jpg",
+      "b2": 4.0,
+      "w995": 213.0,
+      "median": 43.0,
+      "dark_pct": 46.64093059098639,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0700.jpg",
+      "b2": 11.0,
+      "w995": 229.0,
+      "median": 97.0,
+      "dark_pct": 22.634881882440478,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0709.jpg",
+      "b2": 14.0,
+      "w995": 255.0,
+      "median": 129.0,
+      "dark_pct": 11.900001992984693,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0724.jpg",
+      "b2": 6.0,
+      "w995": 232.0,
+      "median": 101.0,
+      "dark_pct": 16.515887409651363,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0729.jpg",
+      "b2": 14.0,
+      "w995": 227.0,
+      "median": 101.0,
+      "dark_pct": 13.979834316539117,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0735.jpg",
+      "b2": 21.0,
+      "w995": 248.0,
+      "median": 113.0,
+      "dark_pct": 16.277582908163264,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0746.jpg",
+      "b2": 10.0,
+      "w995": 223.0,
+      "median": 77.0,
+      "dark_pct": 21.00243144132653,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0756.jpg",
+      "b2": 18.0,
+      "w995": 232.0,
+      "median": 76.0,
+      "dark_pct": 24.310729565263607,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0765.jpg",
+      "b2": 11.0,
+      "w995": 233.0,
+      "median": 80.0,
+      "dark_pct": 35.64026958439626,
+      "npix": 30105600
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0767.jpg",
+      "b2": 11.0,
+      "w995": 233.0,
+      "median": 89.0,
+      "dark_pct": 30.470081978103742,
+      "npix": 30105600
+    }
+  ]
+}

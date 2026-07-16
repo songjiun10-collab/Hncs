@@ -1,0 +1,1035 @@
+{
+  "methodology": "2026-07: 기존 datasets/hasselblad/texture_signature.json은 파일명이 orig_N.jpg로만 남아있어 원본 CSV 행 매칭이 순번 기반인데 도중에 스킵된 행이 있어 100% 신뢰 불가(78개 검증 중 3개 불일치 확인) - noise off-by-one 재계산을 위해 datasets/hasselblad/hasselblad_sample_images.csv의 jpeg_url로 원본을 처음부터 다시 받아 파일명이 CSV와 정확히 일치하는 완전히 새로운 세트로 재구축했다(기존 파일은 안 건드리고 이 파일을 별도로 추가). 중앙 2400x2400 크롭에서 sharpening=Sobel gradient magnitude std/15, micro_contrast=DoG(sigma1=1,sigma2=2) std(Canon과 동일 공식 재사용), noise=tools/iso_noise.py의 estimate_noise_flat_patch(patch_size=48, flat_fraction=0.05, off-by-one 수정판), overshoot/undershoot=Canon 방식 재구현(강한 수평엣지 주변 1D 프로파일 로컬 max/min). population은 사진 단위 동일 가중치 평균.",
+  "n_images": 123,
+  "skipped": [
+    {
+      "filename": "mads-selvig-x2d-xcd-28p-2-full-size.jpg",
+      "reason": "corrupted_or_unreadable"
+    },
+    {
+      "filename": "x1d-xcd45-01.jpg",
+      "reason": "download_failed"
+    },
+    {
+      "filename": "x1d-xcd45-03.jpg",
+      "reason": "download_failed"
+    },
+    {
+      "filename": "x1d-xcd45-04.jpg",
+      "reason": "download_failed"
+    }
+  ],
+  "population": {
+    "sharpening": {
+      "mean": 3.431422401082611,
+      "std": 2.162438871508135,
+      "n": 123
+    },
+    "micro_contrast": {
+      "mean": 3.811518652662397,
+      "std": 2.5296032786448963,
+      "n": 123
+    },
+    "noise": {
+      "mean": 0.902215422111396,
+      "std": 1.0614905877380798,
+      "n": 123
+    },
+    "overshoot": {
+      "mean": 223.21439545289988,
+      "std": 182.45095510823302,
+      "n": 123
+    },
+    "undershoot": {
+      "mean": 190.22681096459922,
+      "std": 209.68446887689024,
+      "n": 123
+    }
+  },
+  "per_image": [
+    {
+      "filename": "b_6612.jpg",
+      "sharpening": 3.2892188966864793,
+      "micro_contrast": 3.163596466292419,
+      "noise": 0.005133296718683523,
+      "overshoot": 329.3097319163831,
+      "undershoot": 55.158129004560806
+    },
+    {
+      "filename": "b_0494.jpg",
+      "sharpening": 2.644049814766599,
+      "micro_contrast": 2.535757381168057,
+      "noise": 0.018558841982932735,
+      "overshoot": 78.7024901500478,
+      "undershoot": 131.60626560357932
+    },
+    {
+      "filename": "b_32985.jpg",
+      "sharpening": 2.284633760872266,
+      "micro_contrast": 2.318219993527346,
+      "noise": 0.3193502862488692,
+      "overshoot": 23.300657477178525,
+      "undershoot": 41.45682718616806
+    },
+    {
+      "filename": "b_29667.jpg",
+      "sharpening": 4.12117279963355,
+      "micro_contrast": 5.249540253857873,
+      "noise": 0.37601398464356806,
+      "overshoot": 265.80847952899813,
+      "undershoot": 180.80866666383267
+    },
+    {
+      "filename": "b_5835.jpg",
+      "sharpening": 0.5314353086666812,
+      "micro_contrast": 0.6301848306769391,
+      "noise": 0.21164977240110525,
+      "overshoot": 62.99771809429621,
+      "undershoot": 49.53243461367826
+    },
+    {
+      "filename": "x-system_01_download.jpg",
+      "sharpening": 4.137483800035702,
+      "micro_contrast": 4.837035094490087,
+      "noise": 0.5687100460833803,
+      "overshoot": 147.10566941843265,
+      "undershoot": 138.83168100566763
+    },
+    {
+      "filename": "x-system_02_download.jpg",
+      "sharpening": 2.621289284888449,
+      "micro_contrast": 2.4393929744483804,
+      "noise": 1.483424034454948,
+      "overshoot": 219.35197505299553,
+      "undershoot": 1568.123592823851
+    },
+    {
+      "filename": "x-system_03_download.JPG",
+      "sharpening": 1.830490774791183,
+      "micro_contrast": 2.0649445269849673,
+      "noise": 0.5493614661437269,
+      "overshoot": 181.51664580623293,
+      "undershoot": 225.34959681676955
+    },
+    {
+      "filename": "x-system_04_download.JPG",
+      "sharpening": 4.544010506015058,
+      "micro_contrast": 4.068922927430179,
+      "noise": 0.48983496765591616,
+      "overshoot": 522.9950601216789,
+      "undershoot": 246.4980183874984
+    },
+    {
+      "filename": "x-system_05_download.jpg",
+      "sharpening": 3.0351697272925042,
+      "micro_contrast": 3.2591803347318153,
+      "noise": 1.1364329197208598,
+      "overshoot": 20.949346389608863,
+      "undershoot": 422.61275880303685
+    },
+    {
+      "filename": "x-system_06_download.jpg",
+      "sharpening": 2.777414346029558,
+      "micro_contrast": 3.5567646895476517,
+      "noise": 0.38006139167176084,
+      "overshoot": 160.792371676749,
+      "undershoot": 59.206488427511076
+    },
+    {
+      "filename": "x-system_07_download.jpg",
+      "sharpening": 2.5183161086192314,
+      "micro_contrast": 2.7433367399789494,
+      "noise": 0.6757195392190138,
+      "overshoot": 110.33532848373304,
+      "undershoot": 101.44785318126378
+    },
+    {
+      "filename": "x-system_01_download.jpg",
+      "sharpening": 4.137483800035702,
+      "micro_contrast": 4.837035094490087,
+      "noise": 0.5687100460833803,
+      "overshoot": 147.10566941843265,
+      "undershoot": 138.83168100566763
+    },
+    {
+      "filename": "x-system_02_download.jpg",
+      "sharpening": 2.621289284888449,
+      "micro_contrast": 2.4393929744483804,
+      "noise": 1.483424034454948,
+      "overshoot": 219.35197505299553,
+      "undershoot": 1568.123592823851
+    },
+    {
+      "filename": "x-system_03_download.JPG",
+      "sharpening": 1.830490774791183,
+      "micro_contrast": 2.0649445269849673,
+      "noise": 0.5493614661437269,
+      "overshoot": 181.51664580623293,
+      "undershoot": 225.34959681676955
+    },
+    {
+      "filename": "x-system_04_download.jpg",
+      "sharpening": 0.5933754188562549,
+      "micro_contrast": 0.6799758840685245,
+      "noise": 0.616390475220383,
+      "overshoot": 62.5,
+      "undershoot": 37.5
+    },
+    {
+      "filename": "x-system_05_download.jpg",
+      "sharpening": 3.0351697272925042,
+      "micro_contrast": 3.2591803347318153,
+      "noise": 1.1364329197208598,
+      "overshoot": 20.949346389608863,
+      "undershoot": 422.61275880303685
+    },
+    {
+      "filename": "x-system_06_download.jpg",
+      "sharpening": 2.777414346029558,
+      "micro_contrast": 3.5567646895476517,
+      "noise": 0.38006139167176084,
+      "overshoot": 160.792371676749,
+      "undershoot": 59.206488427511076
+    },
+    {
+      "filename": "x-system_07_download.jpg",
+      "sharpening": 2.5183161086192314,
+      "micro_contrast": 2.7433367399789494,
+      "noise": 0.6757195392190138,
+      "overshoot": 110.33532848373304,
+      "undershoot": 101.44785318126378
+    },
+    {
+      "filename": "x-system_08_.jpg",
+      "sharpening": 2.0380636385448936,
+      "micro_contrast": 2.3533065915140385,
+      "noise": 0.9867775769223173,
+      "overshoot": 214.83153190500374,
+      "undershoot": 188.22125922832453
+    },
+    {
+      "filename": "emanuele-di-mare-x2d-xcd75p-1.jpg",
+      "sharpening": 2.39492387193176,
+      "micro_contrast": 2.6660560704102614,
+      "noise": 2.979187724483655,
+      "overshoot": 330.9190660601723,
+      "undershoot": 285.279271019526
+    },
+    {
+      "filename": "irene-rudnyk-x2d-xcd-75p-1.jpg",
+      "sharpening": 1.257397006929021,
+      "micro_contrast": 1.5762648474402576,
+      "noise": 2.327259041210847,
+      "overshoot": 149.0472957419302,
+      "undershoot": 164.18906568554615
+    },
+    {
+      "filename": "irene-rudnyk-x2d-xcd-75p-4.jpg",
+      "sharpening": 4.810045422766005,
+      "micro_contrast": 6.207871492247649,
+      "noise": 4.311376940226619,
+      "overshoot": 212.4195216421872,
+      "undershoot": 437.1896509393986
+    },
+    {
+      "filename": "ray-cheung-x2d-xcd75p-1.jpg",
+      "sharpening": 0.7529646195363053,
+      "micro_contrast": 0.8569156064259114,
+      "noise": 0.40947913055960106,
+      "overshoot": 90.43990152555628,
+      "undershoot": 84.72243643188823
+    },
+    {
+      "filename": "mark-mcgee-x2d-xcd75p-6.jpg",
+      "sharpening": 4.803488209872296,
+      "micro_contrast": 4.845001013112288,
+      "noise": 0.3448193353531066,
+      "overshoot": 273.71065905004207,
+      "undershoot": 151.07557548828066
+    },
+    {
+      "filename": "jiaze-wang-x2d-xcd75p-1.JPG",
+      "sharpening": 5.129297418518691,
+      "micro_contrast": 5.2040420874712225,
+      "noise": 0.7103692920701276,
+      "overshoot": 337.9888174952155,
+      "undershoot": 414.68621297782875
+    },
+    {
+      "filename": "qianli-zhang-x2d-xcd75p-3.jpg",
+      "sharpening": 2.3412203424549705,
+      "micro_contrast": 2.534223996889526,
+      "noise": 1.2597307582138544,
+      "overshoot": 99.94996670114573,
+      "undershoot": 97.9043721599618
+    },
+    {
+      "filename": "qianli-zhang-x2d-xcd75p-4.jpg",
+      "sharpening": 2.773780473621872,
+      "micro_contrast": 3.09612709093703,
+      "noise": 1.2890497798571046,
+      "overshoot": 109.58271246248515,
+      "undershoot": 439.36429143811466
+    },
+    {
+      "filename": "qianli-zhang-x2d-xcd75p-5.jpg",
+      "sharpening": 2.4776652473831207,
+      "micro_contrast": 2.7028325556679182,
+      "noise": 1.6519343709701935,
+      "overshoot": 276.2595647623418,
+      "undershoot": 69.14331158407181
+    },
+    {
+      "filename": "albrecht-voss-x2d-xcd20-35e-1.jpg",
+      "sharpening": 6.8533546889414,
+      "micro_contrast": 7.449271728415472,
+      "noise": 5.213849990269018,
+      "overshoot": 374.72996038319053,
+      "undershoot": 178.6906188267657
+    },
+    {
+      "filename": "gavin-hardcastle-x2d-xcd20-35e-2.jpg",
+      "sharpening": 0.8958994165287472,
+      "micro_contrast": 0.8612851683982232,
+      "noise": 0.8050391296320025,
+      "overshoot": 127.09105476635303,
+      "undershoot": 65.27981500835315
+    },
+    {
+      "filename": "weimin-chu-x2d-xcd20-35e-2.jpg",
+      "sharpening": 6.504353599729575,
+      "micro_contrast": 7.749993200967958,
+      "noise": 2.0112651412780402,
+      "overshoot": 251.01388970923375,
+      "undershoot": 254.1342222566977
+    },
+    {
+      "filename": "martin-rak-x2d-xcd20-35e-2.jpg",
+      "sharpening": 2.0403929539796115,
+      "micro_contrast": 2.1085685491128308,
+      "noise": 0.9072114777827226,
+      "overshoot": 67.79133550048564,
+      "undershoot": 69.61329681610243
+    },
+    {
+      "filename": "emanuele-di-mare-x2d-xcd20-35e-1.jpg",
+      "sharpening": 2.060627402224296,
+      "micro_contrast": 2.290076050353617,
+      "noise": 0.8312979166929605,
+      "overshoot": 250.6355678913257,
+      "undershoot": 140.39999585410933
+    },
+    {
+      "filename": "emanuele-di-mare-x2d-xcd20-35e-2.jpg",
+      "sharpening": 4.7553706859648575,
+      "micro_contrast": 5.493375947828719,
+      "noise": 0.5287295620244029,
+      "overshoot": 216.45371981182913,
+      "undershoot": 130.1411373758252
+    },
+    {
+      "filename": "mark-mcgee-x2d-xcd20-35e-1.jpg",
+      "sharpening": 3.834637477127877,
+      "micro_contrast": 4.577522501018149,
+      "noise": 2.6657604729101894,
+      "overshoot": 106.264510913463,
+      "undershoot": 139.08446977061936
+    },
+    {
+      "filename": "jiazhe-wang-x2d-xcd20-35e-2.jpg",
+      "sharpening": 6.583123965756086,
+      "micro_contrast": 7.712907239965955,
+      "noise": 0.7659471007743357,
+      "overshoot": 433.9937055851628,
+      "undershoot": 60.060915825176004
+    },
+    {
+      "filename": "gavin-hardcastle-x2d-xcd20-35e-1.jpg",
+      "sharpening": 0.5875356938894086,
+      "micro_contrast": 0.61478164709546,
+      "noise": 0.613527675127271,
+      "overshoot": 30.069015331650654,
+      "undershoot": 39.11513214469077
+    },
+    {
+      "filename": "weimin-chu-x2d-xcd20-35e-1.jpg",
+      "sharpening": 2.7318004108160965,
+      "micro_contrast": 4.084157317448201,
+      "noise": 1.0927011803674598,
+      "overshoot": 79.1925157430973,
+      "undershoot": 489.0410328039592
+    },
+    {
+      "filename": "albrecht-voss-x2d-xcd20-35e-2.jpg",
+      "sharpening": 9.000616861942536,
+      "micro_contrast": 9.900462965934251,
+      "noise": 2.4947822052801922,
+      "overshoot": 387.0340697562435,
+      "undershoot": 346.12209130455796
+    },
+    {
+      "filename": "emanuele-di-mare-x2d-xcd20-35e-3.jpg",
+      "sharpening": 1.7762689069912283,
+      "micro_contrast": 2.011481683163995,
+      "noise": 1.3895439348497935,
+      "overshoot": 200.1565005401345,
+      "undershoot": 169.9048686162206
+    },
+    {
+      "filename": "qianli-zhang-x2d-xcd-25v-1.jpg",
+      "sharpening": 4.514195208465968,
+      "micro_contrast": 4.7895595558269655,
+      "noise": 0.7585433074300806,
+      "overshoot": 200.6331212521391,
+      "undershoot": 125.4240959849375
+    },
+    {
+      "filename": "mark-mcgee-x2d-xcd25v-1.jpg",
+      "sharpening": 5.374102071047014,
+      "micro_contrast": 5.833331068503836,
+      "noise": 0.4478801387051373,
+      "overshoot": 88.41962797813572,
+      "undershoot": 253.1702889142862
+    },
+    {
+      "filename": "mark-mcgee-x2d-xcd25v-2.jpg",
+      "sharpening": 5.970541596118225,
+      "micro_contrast": 6.362192833795853,
+      "noise": 0.0,
+      "overshoot": 109.10013416307706,
+      "undershoot": 135.11967617842595
+    },
+    {
+      "filename": "albrecht-voss-x2d-xcd25v-2.jpg",
+      "sharpening": 3.6196247064688616,
+      "micro_contrast": 4.779784006282139,
+      "noise": 4.301702650256792,
+      "overshoot": 147.0207973463145,
+      "undershoot": 174.16107557914756
+    },
+    {
+      "filename": "chen-ya-x2d-xcd-25v-2.jpg",
+      "sharpening": 4.700748673790688,
+      "micro_contrast": 5.824574435371406,
+      "noise": 6.545446902544442,
+      "overshoot": 956.926295414911,
+      "undershoot": 306.04880981663086
+    },
+    {
+      "filename": "thomas-x2d-xcd-25v-1.jpg",
+      "sharpening": 4.0698511991137165,
+      "micro_contrast": 3.955326883949103,
+      "noise": 1.025869605779984,
+      "overshoot": 482.40924321766704,
+      "undershoot": 143.99822439845465
+    },
+    {
+      "filename": "xu-ning-x2d-xcd-25v-2.jpg",
+      "sharpening": 2.48797805356981,
+      "micro_contrast": 2.826988846985036,
+      "noise": 0.7060257333081645,
+      "overshoot": 205.485519786098,
+      "undershoot": 205.4351569918143
+    },
+    {
+      "filename": "xu-ning-x2d-xcd-25v-3.jpg",
+      "sharpening": 2.279271387720951,
+      "micro_contrast": 2.9189946113490897,
+      "noise": 1.6150141214935083,
+      "overshoot": 549.5582017127574,
+      "undershoot": 99.79767256540069
+    },
+    {
+      "filename": "clarissa-bonet-x2d-xcd-28p-1-full-size.jpg",
+      "sharpening": 3.5884996481493032,
+      "micro_contrast": 3.5760395891769328,
+      "noise": 0.3137234033072353,
+      "overshoot": 384.42198836860183,
+      "undershoot": 61.05940492535949
+    },
+    {
+      "filename": "clarissa-bonet-x2d-xcd-28p-2-full-size.jpg",
+      "sharpening": 1.7780034305777621,
+      "micro_contrast": 1.7099576008217077,
+      "noise": 0.07611099557894223,
+      "overshoot": 376.53496194343404,
+      "undershoot": 53.28863140168443
+    },
+    {
+      "filename": "mads-selvig-x2d-xcd-28p-1-full-size.jpg",
+      "sharpening": 1.4976072320537315,
+      "micro_contrast": 1.358769446508195,
+      "noise": 0.22843170398141674,
+      "overshoot": 21.699655845854394,
+      "undershoot": 144.12259349974786
+    },
+    {
+      "filename": "qianli-zhang-x2d-xcd-28p-1-full-size.jpg",
+      "sharpening": 3.3073524039438476,
+      "micro_contrast": 3.543092439851806,
+      "noise": 0.3126375136167446,
+      "overshoot": 148.95954161373476,
+      "undershoot": 48.01021855797094
+    },
+    {
+      "filename": "qianli-zhang-x2d-xcd-28p-2-full-size.jpg",
+      "sharpening": 0.7679075137060108,
+      "micro_contrast": 0.9342171185198577,
+      "noise": 0.6385031380085582,
+      "overshoot": 46.35165439095382,
+      "undershoot": 31.390312396970405
+    },
+    {
+      "filename": "linus-englund-x2d-xcd-28p-1-full-size.jpg",
+      "sharpening": 1.0255678972148519,
+      "micro_contrast": 1.0120908642970792,
+      "noise": 0.3987189508992836,
+      "overshoot": 150.88723041285132,
+      "undershoot": 47.584152007835506
+    },
+    {
+      "filename": "isabella-tabacchi-x2d-xcd38v-5.jpg",
+      "sharpening": 1.46392204419012,
+      "micro_contrast": 1.8424420953366003,
+      "noise": 0.6664401182275473,
+      "overshoot": 117.29053167958668,
+      "undershoot": 135.9244972283969
+    },
+    {
+      "filename": "jianjun-wang-x2d-xcd38-1.jpg",
+      "sharpening": 4.630212113125754,
+      "micro_contrast": 4.993763195831768,
+      "noise": 0.3490641768704795,
+      "overshoot": 282.2668583807962,
+      "undershoot": 135.17595250856695
+    },
+    {
+      "filename": "donald-michael-chambers-x2d-xcd38v-2.jpg",
+      "sharpening": 3.5774268766771065,
+      "micro_contrast": 4.127289386042461,
+      "noise": 3.1055457975589413,
+      "overshoot": 294.1737515634059,
+      "undershoot": 141.85787170487248
+    },
+    {
+      "filename": "hans-strand-x2d-xcd38v-2.jpg",
+      "sharpening": 7.526633605770875,
+      "micro_contrast": 12.91790547202303,
+      "noise": 4.198740564149352,
+      "overshoot": 206.3614520680542,
+      "undershoot": 298.8917298489198
+    },
+    {
+      "filename": "hans-strand-x2d-xcd38v-1.jpg",
+      "sharpening": 4.027552910684353,
+      "micro_contrast": 5.384853178795084,
+      "noise": 2.0476918045317754,
+      "overshoot": 171.30743422467955,
+      "undershoot": 357.35960653005844
+    },
+    {
+      "filename": "flora-borsi-x2d-xcd55v-7.jpg",
+      "sharpening": 7.433567409811946,
+      "micro_contrast": 10.860180687042613,
+      "noise": 1.120539443341859,
+      "overshoot": 836.4182497868119,
+      "undershoot": 138.7115599922922
+    },
+    {
+      "filename": "donald-michael-chambers-x2d-xcd55v-2.jpg",
+      "sharpening": 0.47251259494156916,
+      "micro_contrast": 0.5428548405293844,
+      "noise": 1.648380550164951,
+      "overshoot": 41.36197869592197,
+      "undershoot": 38.03164141325565
+    },
+    {
+      "filename": "donald-michael-chambers-x2d-xcd55v-4.jpg",
+      "sharpening": 2.329475324615404,
+      "micro_contrast": 2.457973861135235,
+      "noise": 0.9425522513459668,
+      "overshoot": 364.122418895201,
+      "undershoot": 196.03553688587317
+    },
+    {
+      "filename": "linus-englund-x2d-xcd55v-1.jpg",
+      "sharpening": 2.059318570585714,
+      "micro_contrast": 1.9764512045611438,
+      "noise": 0.5986213711941708,
+      "overshoot": 133.6408502366996,
+      "undershoot": 134.18763370522007
+    },
+    {
+      "filename": "linus-englund-x2d-xcd55v-2.jpg",
+      "sharpening": 3.4867355244087586,
+      "micro_contrast": 3.8744516604476784,
+      "noise": 1.2621986893286063,
+      "overshoot": 426.38106420852955,
+      "undershoot": 101.26397308905823
+    },
+    {
+      "filename": "linus-englund-x2d-xcd55v-3.jpg",
+      "sharpening": 4.001529425399117,
+      "micro_contrast": 4.2237030753197295,
+      "noise": 1.7436426911943668,
+      "overshoot": 257.3163952620765,
+      "undershoot": 69.54228118496864
+    },
+    {
+      "filename": "julia-trotti-x2d-xcd90v-1.jpg",
+      "sharpening": 1.5051622594942462,
+      "micro_contrast": 1.6125568225040605,
+      "noise": 0.8851975322391374,
+      "overshoot": 168.14996373763495,
+      "undershoot": 123.29052599961614
+    },
+    {
+      "filename": "julia-trotti-x2d-xcd90v-2.jpg",
+      "sharpening": 1.989947304632532,
+      "micro_contrast": 2.079395662834393,
+      "noise": 0.595956005590239,
+      "overshoot": 196.02332807256795,
+      "undershoot": 253.43270665191315
+    },
+    {
+      "filename": "manny-ortiz-x2d-xcd90v-1.jpg",
+      "sharpening": 3.176255781553146,
+      "micro_contrast": 3.318229934748183,
+      "noise": 0.5359359208794778,
+      "overshoot": 262.8980803002798,
+      "undershoot": 191.0335625868165
+    },
+    {
+      "filename": "linus-englund-x2d-xcd90v-5.jpg",
+      "sharpening": 3.7228647438594944,
+      "micro_contrast": 4.877160832902267,
+      "noise": 1.7007994070422772,
+      "overshoot": 340.4785844158663,
+      "undershoot": 186.83528667629935
+    },
+    {
+      "filename": "linus-englund-x2d-xcd90v-6.jpg",
+      "sharpening": 0.8635127730206578,
+      "micro_contrast": 0.9249202500914011,
+      "noise": 1.538705691425386,
+      "overshoot": 206.6399454562295,
+      "undershoot": 68.48076538699927
+    },
+    {
+      "filename": "haitong-yu-x2d-xcd90v-8.jpg",
+      "sharpening": 0.9951810320425675,
+      "micro_contrast": 1.0030525808931952,
+      "noise": 0.9702917970757758,
+      "overshoot": 56.30654552362247,
+      "undershoot": 31.403692117577954
+    },
+    {
+      "filename": "qiu-zifeng-x2d-xcd90v-1.jpg",
+      "sharpening": 0.9893880344408813,
+      "micro_contrast": 1.048627299501132,
+      "noise": 0.6320865171102038,
+      "overshoot": 27.81170020823116,
+      "undershoot": 26.956604523434557
+    },
+    {
+      "filename": "x1d-II-sample-02.jpg",
+      "sharpening": 5.043455611355528,
+      "micro_contrast": 5.238000792737916,
+      "noise": 0.444425035144485,
+      "overshoot": 177.14536794420258,
+      "undershoot": 170.25692021550947
+    },
+    {
+      "filename": "x1d-II-sample-09.jpg",
+      "sharpening": 2.9892615928749757,
+      "micro_contrast": 2.9328298143319023,
+      "noise": 0.4874657537857545,
+      "overshoot": 129.13976486242476,
+      "undershoot": 330.9110668696406
+    },
+    {
+      "filename": "B0000994.jpg",
+      "sharpening": 9.980359236103874,
+      "micro_contrast": 10.610421012740689,
+      "noise": 2.2767158119807323,
+      "overshoot": 878.7730461492497,
+      "undershoot": 292.7263387097995
+    },
+    {
+      "filename": "B0001395.jpg",
+      "sharpening": 7.096625305414478,
+      "micro_contrast": 7.465090845090756,
+      "noise": 0.3149080102423161,
+      "overshoot": 406.97374830231274,
+      "undershoot": 107.84170652728368
+    },
+    {
+      "filename": "x1d-ii-xcd45p-01.jpg",
+      "sharpening": 1.8749534164129678,
+      "micro_contrast": 2.5031503647144735,
+      "noise": 0.41865983430647735,
+      "overshoot": 43.69762489510825,
+      "undershoot": 71.59466305802175
+    },
+    {
+      "filename": "x1d-ii-xcd45p-02.jpg",
+      "sharpening": 2.2541637298581003,
+      "micro_contrast": 2.550796162602397,
+      "noise": 0.0275421112406289,
+      "overshoot": 158.50563914849465,
+      "undershoot": 289.99916050632004
+    },
+    {
+      "filename": "x1d-II-sample-01.jpg",
+      "sharpening": 2.811017134704362,
+      "micro_contrast": 3.2138494947826066,
+      "noise": 0.4171790756376263,
+      "overshoot": 188.39783146736985,
+      "undershoot": 63.69247686110258
+    },
+    {
+      "filename": "x1d-xcd65-01.jpg",
+      "sharpening": 4.990365554722272,
+      "micro_contrast": 5.147994735471457,
+      "noise": 0.8819398631676653,
+      "overshoot": 1152.2593488980274,
+      "undershoot": 70.16347107132779
+    },
+    {
+      "filename": "x1d-II-sample-06.jpg",
+      "sharpening": 5.102959155597239,
+      "micro_contrast": 5.775961027062901,
+      "noise": 0.9390971477853145,
+      "overshoot": 290.7793610315495,
+      "undershoot": 176.17623596927604
+    },
+    {
+      "filename": "02709.jpg",
+      "sharpening": 1.0603238879849355,
+      "micro_contrast": 1.122385213419916,
+      "noise": 0.5423525417778322,
+      "overshoot": 130.94248334423997,
+      "undershoot": 73.79623243869007
+    },
+    {
+      "filename": "00378.jpg",
+      "sharpening": 0.8754117327882338,
+      "micro_contrast": 1.0622980426835082,
+      "noise": 0.11076074843005601,
+      "overshoot": 121.23251058394217,
+      "undershoot": 34.33434092491212
+    },
+    {
+      "filename": "benjamin-everett-907x-cfv-100c-xcd-38v-1.jpg",
+      "sharpening": 1.8009467497648446,
+      "micro_contrast": 2.502213490872233,
+      "noise": 0.030404911333740865,
+      "overshoot": 147.32724117816124,
+      "undershoot": 118.65544719582344
+    },
+    {
+      "filename": "bart-kuykens-907x-cfv-100c-xcd-28p.jpg",
+      "sharpening": 3.7349396495070737,
+      "micro_contrast": 4.1839813109286705,
+      "noise": 0.46742615313397073,
+      "overshoot": 540.2784647326367,
+      "undershoot": 140.51255789571135
+    },
+    {
+      "filename": "eva-zocher-907x-cfv-100c-xcd-90v.jpg",
+      "sharpening": 3.4630035440535782,
+      "micro_contrast": 3.5673289474256182,
+      "noise": 1.0903319664972984,
+      "overshoot": 567.9971368859384,
+      "undershoot": 127.96826393277937
+    },
+    {
+      "filename": "junsong-he-907x-cfv-100c-xcd-38-2.jpg",
+      "sharpening": 1.2983826769274711,
+      "micro_contrast": 1.875723851622496,
+      "noise": 0.4875644710303446,
+      "overshoot": 49.670475414919785,
+      "undershoot": 74.96783262455186
+    },
+    {
+      "filename": "junsong-he-907x-cfv-100c-xcd-38.jpg",
+      "sharpening": 1.4997067177583139,
+      "micro_contrast": 2.110831650496764,
+      "noise": 0.9316933544410594,
+      "overshoot": 62.415835063846714,
+      "undershoot": 73.07784255628506
+    },
+    {
+      "filename": "matslind-503cw-cfv100c-cfe-80-4.jpg",
+      "sharpening": 1.1771514082061256,
+      "micro_contrast": 1.2888227429311254,
+      "noise": 0.594573964165978,
+      "overshoot": 98.38653911965008,
+      "undershoot": 111.50782614533955
+    },
+    {
+      "filename": "matslind-503cw-cfv100c-cfe-80-1.jpg",
+      "sharpening": 3.625171859541674,
+      "micro_contrast": 4.064565382901044,
+      "noise": 0.4412660833176028,
+      "overshoot": 269.45752474954963,
+      "undershoot": 141.42734478725666
+    },
+    {
+      "filename": "qiyi-chen-flexbody-cfv-100c-cf-50-fle.jpg",
+      "sharpening": 0.5916673245745901,
+      "micro_contrast": 0.6133755598221523,
+      "noise": 1.5367313465335846,
+      "overshoot": 106.0807522912886,
+      "undershoot": 134.11024839584417
+    },
+    {
+      "filename": "qiyi-chen-flexbody-cfv-100c-cf-150.jpg",
+      "sharpening": 0.7610644639851104,
+      "micro_contrast": 0.8445312930671086,
+      "noise": 0.6358377724046264,
+      "overshoot": 135.70962562303112,
+      "undershoot": 84.52134270917384
+    },
+    {
+      "filename": "gunther-egger-fachkamera-und-cfv-100c.jpg",
+      "sharpening": 1.0906127861278243,
+      "micro_contrast": 1.0248493452463783,
+      "noise": 0.16387062601951247,
+      "overshoot": 90.64009777410953,
+      "undershoot": 97.89689010018456
+    },
+    {
+      "filename": "907X_pp201.jpg",
+      "sharpening": 0.877114100613143,
+      "micro_contrast": 1.0365243819201613,
+      "noise": 0.26930064324170483,
+      "overshoot": 73.5036227379121,
+      "undershoot": 216.04979103617464
+    },
+    {
+      "filename": "907X_02.jpg",
+      "sharpening": 1.6052953881628425,
+      "micro_contrast": 1.6745765657956235,
+      "noise": 0.3100708652574028,
+      "overshoot": 18.70898620137451,
+      "undershoot": 50.98198998230455
+    },
+    {
+      "filename": "907X_03.jpg",
+      "sharpening": 1.3535984610272311,
+      "micro_contrast": 1.3772909474460653,
+      "noise": 0.25172897370467273,
+      "overshoot": 157.97021413552986,
+      "undershoot": 92.9802597778893
+    },
+    {
+      "filename": "02445.jpg",
+      "sharpening": 9.707574238793582,
+      "micro_contrast": 12.331970788190857,
+      "noise": 1.3933939073888064,
+      "overshoot": 256.96697606219686,
+      "undershoot": 185.17781047719035
+    },
+    {
+      "filename": "53573257124_365ea7b201_h.jpg",
+      "sharpening": 3.71692691856332,
+      "micro_contrast": 3.7338817272547598,
+      "noise": 0.04600223597897157,
+      "overshoot": 85.9324647352776,
+      "undershoot": 200.50516037382877
+    },
+    {
+      "filename": "53573373405_61c75eb19d_h.jpg",
+      "sharpening": 3.375983304654016,
+      "micro_contrast": 3.390653722300807,
+      "noise": 0.06495594694026458,
+      "overshoot": 108.25003220652195,
+      "undershoot": 222.9508178536612
+    },
+    {
+      "filename": "53572933071_960911b361_z.jpg",
+      "sharpening": 7.372094582276998,
+      "micro_contrast": 6.782137381808331,
+      "noise": 0.08795706492975036,
+      "overshoot": 407.34592421221174,
+      "undershoot": 307.16571347563655
+    },
+    {
+      "filename": "53573255099_dcb652eecf_z.jpg",
+      "sharpening": 5.217394851606086,
+      "micro_contrast": 5.915490696610253,
+      "noise": 0.15617068094148717,
+      "overshoot": 194.49565531054728,
+      "undershoot": 391.35550885750655
+    },
+    {
+      "filename": "53573129773_5c552a29e3_z.jpg",
+      "sharpening": 2.9818227557952257,
+      "micro_contrast": 2.974423252273711,
+      "noise": 0.2659442569256425,
+      "overshoot": 235.94789228583343,
+      "undershoot": 88.53542712681298
+    },
+    {
+      "filename": "53573130718_18deae2fbf_z.jpg",
+      "sharpening": 9.426799776346837,
+      "micro_contrast": 9.567007954015398,
+      "noise": 0.0014314000465559824,
+      "overshoot": 351.53563802045306,
+      "undershoot": 268.2974339310876
+    },
+    {
+      "filename": "53572926096_f84179d68a_z.jpg",
+      "sharpening": 3.044946588013907,
+      "micro_contrast": 3.3592853920609826,
+      "noise": 0.19768128229161067,
+      "overshoot": 182.3709702591738,
+      "undershoot": 49.92802696378444
+    },
+    {
+      "filename": "53573248849_2627de0e9b_z.jpg",
+      "sharpening": 1.6719908529604433,
+      "micro_contrast": 1.6213751495258009,
+      "noise": 0.1936832338857129,
+      "overshoot": 145.05113150046756,
+      "undershoot": 158.0956256273109
+    },
+    {
+      "filename": "53572920551_552b0f1fab_z.jpg",
+      "sharpening": 2.912250072829168,
+      "micro_contrast": 3.0479671521560876,
+      "noise": 0.19027748894735558,
+      "overshoot": 105.31896805565998,
+      "undershoot": 184.22671605120874
+    },
+    {
+      "filename": "53573122663_2f725bdb61_z.jpg",
+      "sharpening": 2.4735547132504876,
+      "micro_contrast": 2.564503179420825,
+      "noise": 0.2357367800810818,
+      "overshoot": 127.0200029907035,
+      "undershoot": 113.89180383271379
+    },
+    {
+      "filename": "53572057032_3fee32d7c6_z.jpg",
+      "sharpening": 3.5545499406634122,
+      "micro_contrast": 3.8786484785323223,
+      "noise": 0.08805578217434043,
+      "overshoot": 183.16074569152644,
+      "undershoot": 105.0321234606872
+    },
+    {
+      "filename": "53573242419_b05d1b5706_z.jpg",
+      "sharpening": 5.8058867764170445,
+      "micro_contrast": 5.208377540970516,
+      "noise": 0.06263609169239798,
+      "overshoot": 260.9841078577244,
+      "undershoot": 375.2243404171803
+    },
+    {
+      "filename": "53572050682_aaccddd9ee_h.jpg",
+      "sharpening": 6.431620552199077,
+      "micro_contrast": 6.334357872209206,
+      "noise": 0.044027891087170215,
+      "overshoot": 250.63526403106533,
+      "undershoot": 462.2503503072353
+    },
+    {
+      "filename": "53573354885_0c4e060f01_z.jpg",
+      "sharpening": 2.847916984393071,
+      "micro_contrast": 2.754065138721098,
+      "noise": 0.06465979520649437,
+      "overshoot": 308.5805077297799,
+      "undershoot": 141.3027427858156
+    },
+    {
+      "filename": "53573235149_959c1b40ce_z.jpg",
+      "sharpening": 2.419059112977342,
+      "micro_contrast": 2.5641652607849927,
+      "noise": 0.24876745636697073,
+      "overshoot": 142.83086210552563,
+      "undershoot": 153.96465397804064
+    },
+    {
+      "filename": "53573354215_ee3e107e75_z.jpg",
+      "sharpening": 6.595483163174444,
+      "micro_contrast": 7.05566762036018,
+      "noise": 0.9903807563498547,
+      "overshoot": 136.1710422982385,
+      "undershoot": 141.87619643327773
+    },
+    {
+      "filename": "53573112028_7893ea3b1a_z.jpg",
+      "sharpening": 3.4357653219079243,
+      "micro_contrast": 3.389535831303269,
+      "noise": 0.21268630346930095,
+      "overshoot": 225.91217514975222,
+      "undershoot": 230.48909408660649
+    },
+    {
+      "filename": "53573230074_2f662bfd6f_z.jpg",
+      "sharpening": 6.444475810523044,
+      "micro_contrast": 7.151643681458485,
+      "noise": 0.3386988661885224,
+      "overshoot": 227.8982704481279,
+      "undershoot": 228.92181476078702
+    },
+    {
+      "filename": "53572044222_8f51ffa406_z.jpg",
+      "sharpening": 2.726024391236469,
+      "micro_contrast": 2.985187442183384,
+      "noise": 0.32053489318394995,
+      "overshoot": 209.33682730917266,
+      "undershoot": 75.32860858014597
+    },
+    {
+      "filename": "53572905331_2863e2beab_z.jpg",
+      "sharpening": 5.977878230318129,
+      "micro_contrast": 6.762781945340486,
+      "noise": 1.270688372363352,
+      "overshoot": 397.07617168351806,
+      "undershoot": 175.91216484954322
+    },
+    {
+      "filename": "53573346970_aea94978c0_z.jpg",
+      "sharpening": 3.4464259861635704,
+      "micro_contrast": 3.407514309426518,
+      "noise": 0.26525323621351204,
+      "overshoot": 281.4419954733844,
+      "undershoot": 255.1684029220631
+    },
+    {
+      "filename": "53573224364_d6c3c69eb6_z.jpg",
+      "sharpening": 3.695319423645742,
+      "micro_contrast": 3.5297108605157734,
+      "noise": 0.15656554991984745,
+      "overshoot": 96.58261193211271,
+      "undershoot": 576.5303319582695
+    },
+    {
+      "filename": "53573223899_4bfdfbb5b7_z.jpg",
+      "sharpening": 6.361055686327321,
+      "micro_contrast": 7.058563006721339,
+      "noise": 0.3269515140823044,
+      "overshoot": 192.07727277401113,
+      "undershoot": 117.13430873350728
+    },
+    {
+      "filename": "53572035547_2a9bd7b39c_z.jpg",
+      "sharpening": 9.025942357460062,
+      "micro_contrast": 9.164863738367686,
+      "noise": 0.2145125724942172,
+      "overshoot": 221.05155538674563,
+      "undershoot": 217.01112912381205
+    },
+    {
+      "filename": "53573220724_0b50c5d8d5_z.jpg",
+      "sharpening": 6.955159197141816,
+      "micro_contrast": 7.6608590278655235,
+      "noise": 0.33800784547639195,
+      "overshoot": 222.75353227702672,
+      "undershoot": 181.37812300244497
+    }
+  ]
+}
