@@ -128,7 +128,7 @@ fix orientation before conversion.*
 **Known limitations** (also documented in each module's docstring):
 - `core/color_matrix.py`: even with camera-specific color-matrix normalization, sensor spectral sensitivities are never exactly proportional to the CIE standard observer (metamerism), so a physically perfect camera-agnostic colorspace isn't possible - the residual can only be reduced via the ΔE loop, not eliminated
 - `core/preset_inverse.py`: only the L-channel tone curve of population-fit brands can be inverted (it has a closed-form inverse) - CLAHE (perceptual contrast compensation) is an adaptive operation and isn't inverted, and brands without a raw+jpeg pair (e.g. Fuji) simply aren't this kind of curve to begin with, so they're out of scope by design
-- `utils/evaluate.py`'s CIEDE2000 ΔE loop isn't yet wired up to automatically calibrate profile parameters - V0.1 profiles are hand-edited JSON
+- `calibrate_profile.py` runs the CIEDE2000 ΔE loop against the 13 real Hasselblad raw+jpeg pairs, in two modes: `--mode parametric` (coordinate descent over the profile parameters, plateaued at ΔE 14.85) and `--mode learned` (a 1D tone LUT learned from pixel correspondence, the `apply_hncs_learned` approach - measured at ΔE 14.12, only +4.9% in-sample, below the adoption bar and therefore **not shipped**; see `hybrid_engine/assets/luts/README.md`). The plateau across both modes is itself the finding: the bottleneck is chroma/hue residual and spatial factors, not the L-channel tone-curve shape
 
 ## Goals / Philosophy
 
