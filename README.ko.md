@@ -147,8 +147,13 @@ nikon`을 직접 지정했고, 전부 세로 촬영이라 `PIL.ImageOps.exif_tra
   역산 가능(닫힌 형태 역함수 존재) - CLAHE(지각보상 대비)는 적응형
   연산이라 역산 안 함, raw+jpeg 페어가 없는 브랜드(Fuji 등)는 애초에
   이 구조가 아니라서 지원 대상 자체가 아님
-- `utils/evaluate.py`의 CIEDE2000 ΔE 루프로 profile 파라미터를
-  실측 캘리브레이션하는 건 아직 자동화 안 됨(V0.1은 수동 profile JSON)
+- `calibrate_profile.py`가 실제 핫셀블라드 raw+jpeg 페어 13쌍으로
+  CIEDE2000 ΔE 루프를 돌린다 - `--mode parametric`(좌표하강, ΔE 14.85에서
+  정체)과 `--mode learned`(픽셀 대응 학습 1D 톤 LUT, `apply_hncs_learned`
+  방식 - 실측 ΔE 14.12, in-sample +4.9%뿐이라 채택 기준 미달로 **미채택**,
+  `hybrid_engine/assets/luts/README.md` 참고). 두 모드 다 비슷한 곳에서
+  정체된다는 것 자체가 발견 - 병목은 L채널 톤커브 모양이 아니라
+  채도/hue 잔차와 공간적 요인
 
 ## 목표 / 철학
 
