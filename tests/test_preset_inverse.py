@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from hybrid_engine.core.preset_inverse import (
-    BRAND_FUNCS, curve_params, remove_camera_signature,
+    BRAND_FUNCS, TARGET_FUNCS, curve_params, remove_camera_signature,
     convert_between_brands, detect_brand_from_exif,
 )
 
@@ -64,6 +64,25 @@ class TestConvertBetweenBrands(unittest.TestCase):
         img = _test_image()
         out = convert_between_brands(img, "nikon", "nikon")
         self.assertEqual(out.shape, img.shape)
+
+    def test_fuji_targets_are_target_only(self):
+        # 후지 프리셋은 타깃으로는 되고 역산 소스로는 안 됨
+        img = _test_image()
+        out = convert_between_brands(img, "nikon", "fuji_astia")
+        self.assertEqual(out.shape, img.shape)
+        self.assertNotIn("fuji_astia", BRAND_FUNCS)
+        with self.assertRaises(ValueError):
+            curve_params("fuji_astia")
+
+    def test_all_fuji_targets_preserve_bgr_contract(self):
+        img = _test_image()
+        for name, func in TARGET_FUNCS.items():
+            if not name.startswith("fuji_"):
+                continue
+            with self.subTest(target=name):
+                out = convert_between_brands(img, "canon", name)
+                self.assertEqual(out.shape, img.shape)
+                self.assertEqual(out.dtype, img.dtype)
 
 
 class TestDetectBrandFromExif(unittest.TestCase):
