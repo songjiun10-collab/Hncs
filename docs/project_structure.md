@@ -48,5 +48,6 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/fuji_chart_calibrate.py` | 후지 "동일 장면 비교차트" 검증 CLI - `python3 -m tools.fuji_chart_calibrate report` (manifest.json의 크롭박스로 스트립 추출 -> 실측 delta vs 프리셋 delta 테이블 출력) |
 | `tools/denoise.py` | 노이즈 제거 CLI - `python3 -m tools.denoise input.jpg output.jpg [--strength N] [--method nlm\|bilateral]` |
 | `tools/raw_pipeline.py` | RAW -> Log 색공간 CLI - `python3 -m tools.raw_pipeline input.raw output.tiff --log-space F-Log2 [--lut looks/x.cube] [--exposure EV] [--auto-expose]` |
+| `tools/verify_contributed_pairs.py` | 기여 데이터셋 자동 검증 CLI(manifest-EXIF 대조, raw/jpeg 동시촬영 확인, 편집 오염 검사) - 규격은 `datasets/hasselblad/contributed/README.md` |
 | `tools/highlight_rolloff_signal.py` | 브랜드별 shoulder_start/clahe_clip 추정 가능성 탐색(결론: 근거 부족, 기본값 유지 - `core/engine.py` docstring 참고) |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
