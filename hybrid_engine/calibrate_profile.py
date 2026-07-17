@@ -110,12 +110,86 @@ def coordinate_descent(dataset, n_passes=2):
     return params, best_loss
 
 
+_LEARNED_LUT_BINS = 256
+_LEARNED_LUT_FILENAME = "hasselblad_tone_learned.npy"
+
+
+def learn_tone_lut(dataset, profile, n_bins=_LEARNED_LUT_BINS):
+    """(정규화된 중립 L, 타깃 L) 픽셀 대응에서 1D 톤 LUT을 직접 학습.
+    apply_hncs_learned와 같은 원리(bin별 타깃 평균) - 커브 모양(S자/toe/
+    shoulder)을 가정하지 않는다. 반환: [0, 1] 균등 도메인에 대한 출력값
+    배열 (엔진의 learned_tone_lut 포맷)."""
+    from hybrid_engine.utils.evaluate import _linear_rgb_to_lab
+
+    engine = HybridCameraEngine(profile=profile)
+    sums = np.zeros(n_bins)
+    counts = np.zeros(n_bins)
+    for linear_small, camera_wb, target_small in dataset:
+        neutral_L = engine.to_normalized_lab(linear_small, camera_whitebalance=camera_wb)[0]
+        target_L = _linear_rgb_to_lab(target_small)[..., 0]
+        x = np.clip(neutral_L.ravel() / 100.0, 0.0, 1.0)
+        y = np.clip(target_L.ravel() / 100.0, 0.0, 1.0)
+        bins = np.minimum((x * n_bins).astype(int), n_bins - 1)
+        np.add.at(sums, bins, y)
+        np.add.at(counts, bins, 1)
+
+    lut = np.zeros(n_bins)
+    filled = counts > 0
+    lut[filled] = sums[filled] / counts[filled]
+    # 표본이 없는 bin은 채워진 bin에서 선형보간 (도메인 양끝은 0/1로 고정)
+    domain = np.linspace(0.0, 1.0, n_bins)
+    if not filled.all():
+        lut = np.interp(domain, np.concatenate(([0.0], domain[filled], [1.0])),
+                         np.concatenate(([0.0], lut[filled], [1.0])))
+    return np.clip(lut, 0.0, 1.0)
+
+
+def run_learned_mode(dataset):
+    """학습 LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 톤
+    단계만 학습 LUT으로 교체하고 ΔE를 파라메트릭과 비교한다. 더 나을
+    때만 채택하라는 게 이 함수를 부르는 쪽(main)의 책임."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        profile = json.load(f)
+    profile.pop("_comment", None)
+    profile.pop("learned_tone_lut", None)  # 학습 도메인은 항상 파라메트릭 전 단계 기준
+
+    parametric_loss = _mean_loss(profile, dataset)
+    print(f"파라메트릭 profile ΔE (기준선): {parametric_loss:.3f}")
+
+    lut = learn_tone_lut(dataset, profile)
+    lut_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "luts", _LEARNED_LUT_FILENAME)
+    np.save(lut_path, lut)
+
+    learned_profile = dict(profile, learned_tone_lut=_LEARNED_LUT_FILENAME)
+    learned_loss = _mean_loss(learned_profile, dataset)
+    print(f"학습 LUT ΔE:                  {learned_loss:.3f}")
+
+    improvement = (parametric_loss - learned_loss) / parametric_loss * 100
+    print(f"개선폭: {improvement:+.1f}%")
+    return parametric_loss, learned_loss, lut_path
+
+
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
+    parser.add_argument("--mode", choices=["parametric", "learned"], default="parametric",
+                         help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
+                              "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교")
+    args = parser.parse_args()
+
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
     dataset = _load_calib_set()
     print(f"총 {len(dataset)}쌍 로드 완료\n")
     if not dataset:
         print("페어를 못 찾음 - raw_calib_cache/ 확인 필요")
+        return
+
+    if args.mode == "learned":
+        run_learned_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)
