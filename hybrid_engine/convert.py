@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cv2
 
 from hybrid_engine.core.preset_inverse import (
-    BRAND_FUNCS, convert_between_brands, detect_brand_from_exif,
+    BRAND_FUNCS, TARGET_FUNCS, convert_between_brands, detect_brand_from_exif,
 )
 
 
@@ -35,8 +35,8 @@ def main():
         description="EXIF 기반 카메라 프리셋 역산 + 타깃 브랜드 재적용")
     parser.add_argument("input", help="입력 JPEG 경로")
     parser.add_argument("output", help="출력 JPEG 경로")
-    parser.add_argument("--target", required=True, choices=sorted(BRAND_FUNCS),
-                         help="재렌더링할 타깃 브랜드")
+    parser.add_argument("--target", required=True, choices=sorted(TARGET_FUNCS),
+                         help="재렌더링할 타깃 브랜드/프리셋 (fuji_*는 타깃 전용 - 역산 소스 불가)")
     parser.add_argument("--source", default=None, choices=sorted(BRAND_FUNCS),
                          help="소스 브랜드를 직접 지정 (생략 시 EXIF Make/Model로 자동인식)")
     args = parser.parse_args()

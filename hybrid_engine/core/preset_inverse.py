@@ -29,13 +29,15 @@ import cv2
 import numpy as np
 
 from core.curve import film_curve
-from brands import canon, leica, nikon, olympus, panasonic, pentax, phaseone, ricoh_gr, sigma, sony
+from brands import canon, fuji, leica, nikon, olympus, panasonic, pentax, phaseone, ricoh_gr, sigma, sony
 from brands.hasselblad import apply_hncs
 
 _LUT_SIZE = 4096
 
 # population-fit 브랜드(핫셀블라드 포함 10종)의 정방향 apply_* 함수 -
 # 타깃 브랜드 재적용 단계에서 그대로 재사용한다(새로 안 만듦).
+# 이 딕셔너리의 브랜드만 *역산 소스*가 될 수 있다(전부 film_curve 구조라
+# 닫힌 역함수가 존재).
 BRAND_FUNCS = {
     "hasselblad": apply_hncs,
     "canon": canon.apply_canon_look,
@@ -49,6 +51,23 @@ BRAND_FUNCS = {
     "sigma": sigma.apply_sigma_look,
     "sony": sony.apply_sony_look,
 }
+
+# *타깃 전용* - 후지 필름시뮬레이션은 film_curve 구조가 아니라(채도 행렬/
+# 커브 조합이 프리셋마다 다름) 역산 소스로는 못 쓰지만, 정방향 적용은
+# 기존 함수 그대로 가능하므로 재렌더링 타깃으로만 추가한다.
+# apply_acros/apply_monochrome은 1채널 그레이스케일을 반환해서 "BGR in,
+# BGR out" 계약이 깨지므로 제외.
+TARGET_FUNCS = dict(BRAND_FUNCS)
+TARGET_FUNCS.update({
+    "fuji_astia": fuji.apply_astia,
+    "fuji_pro_neg_std": fuji.apply_pro_neg_std,
+    "fuji_pro_neg_hi": fuji.apply_pro_neg_hi,
+    "fuji_eterna_cinema": fuji.apply_eterna_cinema,
+    "fuji_eterna_bleach_bypass": fuji.apply_eterna_bleach_bypass,
+    "fuji_nostalgic_neg": fuji.apply_nostalgic_neg,
+    "fuji_reala_ace": fuji.apply_reala_ace,
+    "fuji_classic_negative": fuji.apply_classic_negative,
+})
 
 
 def curve_params(brand):
@@ -92,9 +111,9 @@ def remove_camera_signature(img_bgr, brand):
 def convert_between_brands(img_bgr, source_brand, target_brand):
     """소스 브랜드 시그니처 제거 -> 타깃 브랜드 정방향 apply_* 재적용."""
     neutral = remove_camera_signature(img_bgr, source_brand)
-    if target_brand not in BRAND_FUNCS:
-        raise ValueError(f"알 수 없는 타깃 브랜드: {target_brand} (지원: {sorted(BRAND_FUNCS)})")
-    return BRAND_FUNCS[target_brand](neutral)
+    if target_brand not in TARGET_FUNCS:
+        raise ValueError(f"알 수 없는 타깃 브랜드: {target_brand} (지원: {sorted(TARGET_FUNCS)})")
+    return TARGET_FUNCS[target_brand](neutral)
 
 
 def detect_brand_from_exif(make, model):
