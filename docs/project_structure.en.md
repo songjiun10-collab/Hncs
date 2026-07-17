@@ -48,5 +48,6 @@ docs/         Detailed documentation (this directory)
 | `tools/fuji_chart_calibrate.py` | Fuji "same-scene comparison chart" verification CLI - `python3 -m tools.fuji_chart_calibrate report` (extracts strips using manifest.json's crop boxes -> prints a real-delta vs preset-delta table) |
 | `tools/denoise.py` | Noise reduction CLI - `python3 -m tools.denoise input.jpg output.jpg [--strength N] [--method nlm\|bilateral]` |
 | `tools/raw_pipeline.py` | RAW -> Log colorspace CLI - `python3 -m tools.raw_pipeline input.raw output.tiff --log-space F-Log2 [--lut looks/x.cube] [--exposure EV] [--auto-expose]` |
+| `tools/verify_contributed_pairs.py` | Contributed-dataset verification CLI (manifest-vs-EXIF cross-check, raw/jpeg same-shutter sync, edit-contamination scan) - spec in `datasets/hasselblad/contributed/README.md` |
 | `tools/highlight_rolloff_signal.py` | Explored whether shoulder_start/clahe_clip could be estimated per brand (conclusion: insufficient evidence, kept the defaults - see `core/engine.py`'s docstring) |
 | `models/yunet.onnx` | Face detection model (OpenCV Zoo, YuNet 2023mar) - used by `tools/analyze.py portrait` |
