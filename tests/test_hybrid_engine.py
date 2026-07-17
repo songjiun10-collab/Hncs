@@ -168,5 +168,76 @@ class TestEvaluate(unittest.TestCase):
         self.assertGreater(mean_delta_e(a, b), 0.0)
 
 
+class TestLearnedToneLut(unittest.TestCase):
+    """learned_tone_lut 경로(엔진의 톤 단계를 학습 1D LUT으로 교체) 검증."""
+
+    def _engine_with_lut(self, lut):
+        import os
+        import tempfile
+        fd, path = tempfile.mkstemp(suffix=".npy")
+        os.close(fd)
+        np.save(path, lut)
+        self.addCleanup(os.remove, path)
+        return HybridCameraEngine(profile={"learned_tone_lut": path})
+
+    def test_identity_lut_leaves_L_unchanged(self):
+        lut = np.linspace(0.0, 1.0, 256)
+        engine = self._engine_with_lut(lut)
+        L = np.array([[0.0, 25.0], [50.0, 100.0]])
+        np.testing.assert_allclose(engine._apply_tone(L), L, atol=1e-6)
+
+    def test_constant_lut_maps_everything_to_that_value(self):
+        lut = np.full(64, 0.5)
+        engine = self._engine_with_lut(lut)
+        L = np.array([[10.0, 90.0]])
+        np.testing.assert_allclose(engine._apply_tone(L), 50.0, atol=1e-6)
+
+    def test_no_lut_falls_back_to_parametric(self):
+        engine = HybridCameraEngine()
+        self.assertIsNone(engine._tone_lut)
+        L = np.array([[30.0, 70.0]])
+        expected = apply_tone(L, shadow_lift_amt=engine.params["shadow_lift"],
+                               shadow_threshold=engine.params["shadow_threshold"],
+                               contrast_n=engine.params["contrast_n"],
+                               highlight_rolloff_start=engine.params["highlight_rolloff_start"])
+        np.testing.assert_allclose(engine._apply_tone(L), expected)
+
+    def test_process_runs_end_to_end_with_lut(self):
+        lut = np.linspace(0.0, 1.0, 128) ** 0.9  # 임의의 단조 LUT
+        engine = self._engine_with_lut(lut)
+        rng = np.random.default_rng(9)
+        img = rng.uniform(0.05, 0.9, size=(8, 8, 3))
+        out = engine.process(img)
+        self.assertEqual(out.shape, img.shape)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+
+class TestLearnToneLutFunction(unittest.TestCase):
+    """calibrate_profile.learn_tone_lut - 합성 페어로 학습 로직 자체를 검증
+    (raw 디코드는 필요 없음: dataset 튜플을 직접 구성)."""
+
+    def test_learns_identity_when_target_equals_neutral(self):
+        from hybrid_engine.calibrate_profile import learn_tone_lut
+
+        rng = np.random.default_rng(10)
+        img = rng.uniform(0.1, 0.8, size=(16, 16, 3))
+        # 타깃 = 엔진 정규화 출력 그대로면 학습 LUT은 항등에 수렴해야 함
+        profile = {"correct_color_cast": False, "use_color_unification": False}
+        engine = HybridCameraEngine(profile=profile)
+        L, a, b = engine.to_normalized_lab(img)
+        import colour
+        lab = np.stack([L, a, b], axis=-1)
+        target = np.clip(colour.XYZ_to_RGB(
+            colour.Lab_to_XYZ(lab), colour.RGB_COLOURSPACES["sRGB"],
+            apply_cctf_encoding=False), 0.0, 1.0)
+
+        dataset = [(img, None, target)]
+        lut = learn_tone_lut(dataset, profile, n_bins=64)
+        domain = np.linspace(0.0, 1.0, 64)
+        # 표본이 있는 중간 구간에서 항등에 가까워야 함 (희소 bin 보간 오차 감안)
+        mid = (domain > 0.2) & (domain < 0.8)
+        self.assertLess(float(np.mean(np.abs(lut[mid] - domain[mid]))), 0.05)
+
+
 if __name__ == "__main__":
     unittest.main()
