@@ -33,3 +33,4 @@ sigma_stats_result.csv
 sigma_stats_result_dedup.csv
 downloaded_samples_hasselblad_trueres/
 hybrid_engine/assets/luts/*.npy
+hybrid_engine/assets/luts/*.npz
