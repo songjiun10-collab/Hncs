@@ -12,6 +12,24 @@ python3 -m hybrid_engine.calibrate_profile --mode lab2d
 python3 -m hybrid_engine.calibrate_profile --mode lab3d
 ```
 
+## hue LUT을 v1.2(raw_baseline_matrix) 기준으로 재시도 (2026-07, 다시 기각)
+
+v1.2가 raw_baseline_matrix로 ΔE00을 15.01→9.82까지 낮춘 뒤(EVALUATION.md
+후속 실측 6), "매트릭스가 대부분의 잔차를 치웠으니 hue LUT이 이제는
+통할 수도 있다"는 가설로 hue LUT을 v1.2 기준선에 다시 시도했다
+(`run_hue_mode`에 leave-one-out 교차검증을 새로 추가한 뒤 재실행):
+
+- hue 보정 전 ΔE(v1.2 기준선): 9.687
+- hue 보정 후 ΔE (in-sample): 9.242 (+4.6%)
+- hue 보정 후 ΔE (leave-one-out 교차검증, 13-fold): 9.546 (**+1.4%**)
+
+**채택 안 함.** v1.1 기준으로 시도했을 때의 +2.1%(교차검증 미실시)와
+비슷한 규모로, 교차검증까지 하니 더 작아졌다(+1.4%) - 방향은 양성이라
+2D/3D LUT의 명백한 음성 결과와는 다르지만, 사전 채택 기준(>20%)에는
+한참 못 미친다. 매트릭스가 잔차를 줄였어도 남은 hue 오차 자체가
+이 학습 방식으로 잡히는 크기가 아니라는 뜻 - `hasselblad.json`은
+`learned_hue_lut` 미설정으로 유지.
+
 ## LUT 계열 실험 네 번의 종합 결론 (2026-07)
 
 톤(1D, L만) → hue(1D, hue만) → 3D(L/a/b 결합) → 2D(a/b 결합) 순서로
