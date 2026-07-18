@@ -40,6 +40,17 @@ class TestNormalizer(unittest.TestCase):
         out = normalize(img)
         self.assertEqual(out.shape, img.shape)
 
+    def test_apply_exposure_false_skips_exposure_normalization(self):
+        img = np.full((4, 4, 3), 0.05)
+        out = normalize(img, target_gray=0.18, correct_color_cast=False, apply_exposure=False)
+        # gray world도 꺼져있고 노출 정규화도 꺼져있으니 완전 항등이어야 함
+        np.testing.assert_allclose(out, img)
+
+    def test_apply_exposure_true_is_default_and_hits_target_gray(self):
+        img = np.full((4, 4, 3), 0.05)
+        out = normalize(img, target_gray=0.18, correct_color_cast=False)
+        self.assertAlmostEqual(float(np.mean(out)), 0.18, places=6)
+
 
 class TestToneCore(unittest.TestCase):
     def test_preserves_shape_and_range(self):

@@ -577,7 +577,13 @@ def _find_matrix_and_recalibrate(dataset, n_passes=1):
     파라미터(_SEARCH_SPACE)를 좌표하강으로 재탐색한다. 사용자 지시:
     "삭제하지 않고 Phase 0=매트릭스, Phase1=tone_core 재학습,
     Phase2=color_core 재학습". 반환: (raw_baseline_matrix 포함된 params
-    dict, ΔE)."""
+    dict, ΔE).
+
+    normalize_exposure=False로 강제한다 - 진단 실측 결과, 매트릭스
+    적용 후 모든 사진의 평균 밝기를 target_gray로 강제로 맞추는 노출
+    정규화 단계가 매트릭스의 이득을 거의 다 없앴다(ΔE 8.55 -> 14.62,
+    EVALUATION.md 후속 실측 6). Gray World(색치우침 제거)는 오히려
+    도움이 돼서 correct_color_cast는 그대로 둠."""
     from hybrid_engine.core.raw_baseline import fit_color_matrix
 
     raw_sources = [d[0] for d in dataset]
@@ -586,6 +592,7 @@ def _find_matrix_and_recalibrate(dataset, n_passes=1):
 
     base_params = dict(_DEFAULT_PARAMS)
     base_params["raw_baseline_matrix"] = matrix.tolist()
+    base_params["normalize_exposure"] = False
     params, loss = coordinate_descent(dataset, n_passes=n_passes, base_params=base_params)
     return params, loss
 

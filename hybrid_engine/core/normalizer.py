@@ -31,7 +31,17 @@ def normalize_exposure(img_rgb, target_gray=0.18):
     return img_rgb * (target_gray / mean)
 
 
-def normalize(img_rgb, target_gray=0.18, correct_color_cast=True):
-    """정규화 파이프라인 진입점 - Gray World 색치우침 제거 후 노출 정규화."""
+def normalize(img_rgb, target_gray=0.18, correct_color_cast=True, apply_exposure=True):
+    """정규화 파이프라인 진입점 - Gray World 색치우침 제거 후 노출 정규화.
+
+    apply_exposure=False면 노출 정규화를 건너뛴다 - Phase 0에 raw_baseline_matrix
+    (최소자승으로 적합한 3x3 컬러 매트릭스)가 있을 때 필요해졌다: 매트릭스는
+    각 페어의 실제 밝기 관계를 그대로 보존한 채로 적합됐는데, 모든 사진의
+    평균 밝기를 강제로 target_gray로 맞춰버리면(사진마다 실측 평균이
+    0.03~0.44로 10배 넘게 벌어짐) 매트릭스가 이미 맞춰놓은 결과를 다시
+    망가뜨린다는 게 실측으로 확인됨(ΔE 8.55 -> 14.62, 거의 전부 이 단계
+    때문 - hybrid_engine/EVALUATION.md 후속 실측 6 참고)."""
     out = gray_world_normalize(img_rgb) if correct_color_cast else img_rgb
-    return normalize_exposure(out, target_gray=target_gray)
+    if apply_exposure:
+        out = normalize_exposure(out, target_gray=target_gray)
+    return out
