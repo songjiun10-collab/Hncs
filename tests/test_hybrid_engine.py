@@ -465,5 +465,39 @@ class TestSpatialCoordinateDescent(unittest.TestCase):
         self.assertLessEqual(tuned_loss, baseline_loss + 1e-6)
 
 
+class TestRawBaselineMode(unittest.TestCase):
+    """calibrate_profile.run_raw_baseline_mode - 합성 페어로 통합 동작을
+    검증(raw 디코드/실제 hasselblad.json 캘리브레이션 데이터는 필요 없음 -
+    참고용 hybrid_loss 계산에만 실제 profile.json을 읽고, 3x3 매트릭스
+    적합 자체는 전달한 합성 dataset으로만 함)."""
+
+    def test_recovers_known_linear_transform_with_low_cv_loss(self):
+        from hybrid_engine.calibrate_profile import run_raw_baseline_mode
+
+        rng = np.random.default_rng(19)
+        known_matrix = np.array([
+            [1.1, 0.02, -0.01],
+            [0.01, 0.95, 0.02],
+            [-0.02, 0.01, 1.15],
+        ])
+        dataset = []
+        for _ in range(8):
+            img = rng.uniform(0.05, 0.9, size=(16, 16, 3))
+            target = np.clip(img @ known_matrix, 0.0, 1.0)
+            dataset.append((img, None, target))
+
+        hybrid_loss, no_correction_loss, in_sample_loss, cv_loss, matrix = \
+            run_raw_baseline_mode(dataset, n_folds=4)
+
+        self.assertTrue(np.isfinite(hybrid_loss))
+        self.assertTrue(np.isfinite(no_correction_loss))
+        # 알려진 선형 변환이니 in-sample은 거의 완벽하게 복원돼야 함
+        self.assertLess(in_sample_loss, 0.5)
+        # 페어가 여러 장이고 다 같은 변환을 공유하니 교차검증도 낮아야 함
+        self.assertIsNotNone(cv_loss)
+        self.assertLess(cv_loss, 1.0)
+        np.testing.assert_allclose(matrix, known_matrix, atol=0.05)
+
+
 if __name__ == "__main__":
     unittest.main()
