@@ -1,11 +1,11 @@
 # hybrid_engine 평가 결과 (2026-07)
 
-`evaluate_fidelity.py`(Protocol 1)/`evaluate_generalization.py`(Protocol 2)
+`evaluation/fidelity.py`(Protocol 1)/`evaluation/cross_camera.py`(Protocol 2)
 실측 결과. 재현하려면:
 
 ```
-python3 -m hybrid_engine.evaluate_fidelity --out eval_reports/fidelity_hasselblad.json
-python3 -m hybrid_engine.evaluate_generalization --target hasselblad \
+python3 -m hybrid_engine.evaluation.fidelity --out eval_reports/fidelity_hasselblad.json
+python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad \
     --base-image <아무 인물/풍경 사진> --out eval_reports/generalization_hasselblad.json
 ```
 
@@ -65,7 +65,7 @@ python3 -m hybrid_engine.evaluate_generalization --target hasselblad \
 ### 해석 - 두 가지 실패를 정직하게 인정
 
 1. **합성 소스 3개의 "수렴"(b2 셋 다 정확히 10.0)은 신뢰하면 안 됨.**
-   `evaluate_generalization.py` docstring에 이미 적어뒀듯, sony/nikon/canon
+   `evaluation/cross_camera.py` docstring에 이미 적어뒀듯, sony/nikon/canon
    합성 소스가 전부 같은 base-image에서 나와서, 브랜드 커브 역산이
    그 브랜드 forward 커브의 거의 정확한 역함수라 다시 같은 사진으로
    되돌아간 뒤 같은 타깃 커브를 맞으니 당연히 수렴한다 - 순환 논증.

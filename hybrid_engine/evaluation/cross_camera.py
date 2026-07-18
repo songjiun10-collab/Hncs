@@ -39,7 +39,7 @@ nikon.py docstring), 각 브랜드의 apply_*_look()을 공통 테스트 사진�
 브랜드마다 쓰도록 바꾸면 이 함정을 줄일 수 있으나 아직 미구현 - 지금
 버전의 알려진 한계로만 기록.
 
-  python3 -m hybrid_engine.evaluate_generalization --target hasselblad --base-image photo.jpg
+  python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad --base-image photo.jpg
 """
 import argparse
 import glob
@@ -47,7 +47,7 @@ import json
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import cv2
 import numpy as np
@@ -59,7 +59,7 @@ from hybrid_engine.utils.io import decode_raw
 from core.stats import image_stats
 from tools.iso_noise import estimate_noise_sigma
 
-_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _FUJI_RAW_GLOB = os.path.join(_REPO_ROOT, "raw_calib_cache_fuji", "*", "raw", "*.RAF")
 _SYNTHETIC_SOURCES = ("sony", "nikon", "canon")  # 이 환경에 real RAW가 없는 브랜드
 

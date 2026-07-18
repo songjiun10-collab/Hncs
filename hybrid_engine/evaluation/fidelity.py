@@ -9,15 +9,15 @@
 brands/nikon.py docstring 참고) Protocol 1을 못 돌린다 - 데이터가
 생기기 전까진 정직하게 "미실행"으로 남겨둔다.
 
-  python3 -m hybrid_engine.evaluate_fidelity
-  python3 -m hybrid_engine.evaluate_fidelity --profile hasselblad --out eval_report.json
+  python3 -m hybrid_engine.evaluation.fidelity
+  python3 -m hybrid_engine.evaluation.fidelity --profile hasselblad --out eval_report.json
 """
 import argparse
 import json
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 import numpy as np
 
@@ -25,7 +25,7 @@ from hybrid_engine.calibrate_profile import _find_pairs, _resize_max_dim, CACHE_
 from hybrid_engine.core import color_matrix
 from hybrid_engine.pipeline.engine import HybridCameraEngine
 from hybrid_engine.utils.io import decode_raw, load_image_linear
-from hybrid_engine.utils import metrics
+from hybrid_engine.evaluation import metrics
 
 EVAL_MAX_DIM = 1200  # 캘리브레이션(500px)보다 크게 - 평가는 진단 목적이라 디테일이 더 필요
 

@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from hybrid_engine.utils.metrics import (
+from hybrid_engine.evaluation.metrics import (
     delta_e_stats, delta_e_by_zone, saturation_hue_delta, ssim_L, full_report,
 )
 
