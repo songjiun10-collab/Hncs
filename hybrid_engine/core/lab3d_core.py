@@ -1,5 +1,5 @@
 """
-[Phase 1.6] 3D 잔차 LUT - L/a/b 세 축을 결합(joint)으로 입력받아 보정한다.
+[Phase 2.6] 3D 잔차 LUT - L/a/b 세 축을 결합(joint)으로 입력받아 보정한다.
 tone_core(L만)/color_core(a,b 채도만)/hue_core(hue만)가 각자 독립적으로
 축 하나씩만 고치는 것과 근본적으로 다른 접근이다.
 
