@@ -232,6 +232,105 @@ def run_hue_mode(dataset):
     return baseline_loss, hue_loss, lut_path
 
 
+_LAB2D_GRID_SIZE = 9  # 9^2=81 격자점 - 3D(729)보다 훨씬 적어서 과적합 위험이 낮음.
+                       # 그래도 run_lab2d_mode가 leave-one-out으로 확인(3D에서 in-sample만
+                       # 보면 오판한다는 게 이미 실측으로 확인됐어서).
+_LEARNED_LAB2D_LUT_FILENAME = "hasselblad_lab2d_learned.npz"
+
+
+def learn_lab2d_lut(dataset, profile, grid_size=_LAB2D_GRID_SIZE):
+    """(엔진의 tone+color+hue 적용 후 a/b, 타깃 a/b) 픽셀 대응에서 2D
+    잔차 LUT을 직접 학습. L은 학습 입력에서 제외(3D와 달리 a/b 두 축만
+    결합) - 격자별 타깃 평균, 표본이 없는 cell은 항등(무보정)으로 남긴다
+    (learn_lab3d_lut과 같은 원리). 반환: (table (grid_size,grid_size,2),
+    domain ([[amin,bmin],[amax,bmax]]))."""
+    from hybrid_engine.utils.evaluate import _linear_rgb_to_lab
+
+    engine = HybridCameraEngine(profile=profile)
+    sources, targets = [], []
+    for linear_small, camera_wb, target_small in dataset:
+        _, a2, b2 = engine.to_pre_hue_lab(linear_small, camera_whitebalance=camera_wb)
+        target_lab = _linear_rgb_to_lab(target_small)
+        sources.append(np.stack([a2, b2], axis=-1).reshape(-1, 2))
+        targets.append(target_lab[..., 1:3].reshape(-1, 2))
+    source = np.concatenate(sources, axis=0)
+    target = np.concatenate(targets, axis=0)
+
+    lo = source.min(axis=0)
+    hi = source.max(axis=0)
+    domain = np.stack([lo, hi], axis=0)
+    span = np.clip(hi - lo, 1e-6, None)
+
+    idx = np.clip(np.round((source - lo) / span * (grid_size - 1)).astype(int),
+                  0, grid_size - 1)
+    flat_idx = idx[:, 0] * grid_size + idx[:, 1]
+
+    n_cells = grid_size ** 2
+    sums = np.zeros((n_cells, 2))
+    counts = np.zeros(n_cells)
+    np.add.at(sums, flat_idx, target)
+    np.add.at(counts, flat_idx, 1)
+
+    coords = np.stack(np.meshgrid(
+        np.linspace(lo[0], hi[0], grid_size),
+        np.linspace(lo[1], hi[1], grid_size),
+        indexing="ij"), axis=-1)
+    table = coords.reshape(n_cells, 2).copy()
+
+    filled = counts > 0
+    table[filled] = sums[filled] / counts[filled, None]
+    table = table.reshape(grid_size, grid_size, 2)
+    return table, domain
+
+
+def run_lab2d_mode(dataset, grid_size=_LAB2D_GRID_SIZE):
+    """2D 잔차 LUT 모드: in-sample ΔE와 leave-one-out 교차검증 ΔE를 둘 다
+    낸다(run_lab3d_mode와 같은 이유 - in-sample만으로는 과적합을 못 잡는다는
+    게 3D 실험에서 실측으로 확인됨)."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        profile = json.load(f)
+    profile.pop("_comment", None)
+    profile.pop("learned_lab2d_lut", None)
+
+    baseline_loss = _mean_loss(profile, dataset)
+    print(f"2D LUT 보정 전 ΔE (기준선): {baseline_loss:.3f}")
+
+    table, domain = learn_lab2d_lut(dataset, profile, grid_size=grid_size)
+    lut_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "luts", _LEARNED_LAB2D_LUT_FILENAME)
+    np.savez(lut_path, table=table, domain=domain)
+
+    lab2d_profile = dict(profile, learned_lab2d_lut=_LEARNED_LAB2D_LUT_FILENAME)
+    in_sample_loss = _mean_loss(lab2d_profile, dataset)
+    in_sample_improvement = (baseline_loss - in_sample_loss) / baseline_loss * 100
+    print(f"2D LUT 보정 후 ΔE (in-sample): {in_sample_loss:.3f} "
+          f"({in_sample_improvement:+.1f}%)")
+
+    loo_loss = None
+    if len(dataset) > 1:
+        loo_losses = []
+        for i in range(len(dataset)):
+            train_set = dataset[:i] + dataset[i + 1:]
+            held_out = [dataset[i]]
+            table_i, domain_i = learn_lab2d_lut(train_set, profile, grid_size=grid_size)
+            fold_path = lut_path + f".fold{i}.npz"
+            np.savez(fold_path, table=table_i, domain=domain_i)
+            try:
+                fold_profile = dict(profile, learned_lab2d_lut=fold_path)
+                loo_losses.append(_mean_loss(fold_profile, held_out))
+            finally:
+                os.remove(fold_path)
+        loo_loss = float(np.mean(loo_losses))
+        loo_improvement = (baseline_loss - loo_loss) / baseline_loss * 100
+        print(f"2D LUT 보정 후 ΔE (leave-one-out 교차검증, {len(dataset)}-fold): "
+              f"{loo_loss:.3f} ({loo_improvement:+.1f}%)")
+
+    return baseline_loss, in_sample_loss, loo_loss, lut_path
+
+
 _LAB3D_GRID_SIZE = 9  # 9^3=729 격자점 - 표본 13장(수백만 픽셀)이어도 L/a/b 결합 공간은
                        # 넓어서 과적합 위험이 큼. run_lab3d_mode가 leave-one-out으로 확인.
 _LEARNED_LAB3D_LUT_FILENAME = "hasselblad_lab3d_learned.npz"
@@ -366,10 +465,12 @@ def run_learned_mode(dataset):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
-    parser.add_argument("--mode", choices=["parametric", "learned", "hue", "lab3d"], default="parametric",
+    parser.add_argument("--mode", choices=["parametric", "learned", "hue", "lab2d", "lab3d"],
+                         default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
                               "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교 / "
+                              "lab2d: a/b 결합 2D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
                               "lab3d: L/a/b 결합 3D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교")
     args = parser.parse_args()
 
@@ -386,6 +487,10 @@ def main():
 
     if args.mode == "hue":
         run_hue_mode(dataset)
+        return
+
+    if args.mode == "lab2d":
+        run_lab2d_mode(dataset)
         return
 
     if args.mode == "lab3d":
