@@ -1,11 +1,11 @@
 """
-core/의 개별 모듈(color_matrix/normalizer/tone_core/color_core/spatial_core)을
-하나의 파이프라인으로 조립하는 HybridCameraEngine.
+core/의 개별 모듈(color_matrix/normalizer/tone_core/color_core/hue_core/
+spatial_core)을 하나의 파이프라인으로 조립하는 HybridCameraEngine.
 
 데이터 흐름: Linear RGB -> [Phase 0: 카메라 색정제, camera_whitebalance
 제공 시] -> (Phase 1: Gray World 정규화) -> LAB 분리 -> tone_core(L,
-또는 학습 LUT) -> color_core(a, b) -> spatial_core(V0.1은 bypass) ->
-LAB 복원 -> Linear RGB
+또는 학습 LUT) -> color_core(a, b 채도) -> hue_core(a, b hue 회전, 학습
+LUT이 있을 때만) -> spatial_core(V0.1은 bypass) -> LAB 복원 -> Linear RGB
 
 L채널 톤 단계는 두 모드가 있다:
   - 파라메트릭(기본): tone_core의 S-curve/shadow-lift/highlight-rolloff
@@ -14,13 +14,17 @@ L채널 톤 단계는 두 모드가 있다:
     apply_hncs_learned가 파라메트릭 커브(RMSE 23.3)를 학습 LUT(15.4)으로
     이긴 것과 같은 원리를 hybrid_engine에 이식한 것
     (calibrate_profile.py --mode learned로 생성)
+
+hue 보정 단계는 파라메트릭 모델 자체가 없다(V0.1엔 아예 없던 축) -
+profile의 "learned_hue_lut"에 npy 경로를 주면 순환(circular) 1D LUT을
+적용하고, 없으면 완전히 bypass한다(calibrate_profile.py --mode hue로 생성).
 """
 import os
 
 import numpy as np
 import colour
 
-from hybrid_engine.core import normalizer, tone_core, color_core, spatial_core, color_matrix
+from hybrid_engine.core import normalizer, tone_core, color_core, hue_core, spatial_core, color_matrix
 
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
 _LUTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -41,6 +45,7 @@ _DEFAULT_PARAMS = {
     "sat_width": 35.0,
     "max_chroma": 110.0,
     "learned_tone_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로
+    "learned_hue_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로
     "use_spatial": False,  # Phase 2 예약 - V0.1은 항상 bypass
 }
 
@@ -59,6 +64,12 @@ class HybridCameraEngine:
         if lut_ref:
             path = lut_ref if os.path.isabs(lut_ref) else os.path.join(_LUTS_DIR, lut_ref)
             self._tone_lut = np.load(path)
+
+        self._hue_lut = None
+        hue_lut_ref = self.params.get("learned_hue_lut")
+        if hue_lut_ref:
+            path = hue_lut_ref if os.path.isabs(hue_lut_ref) else os.path.join(_LUTS_DIR, hue_lut_ref)
+            self._hue_lut = np.load(path)
 
     def to_normalized_lab(self, linear_rgb, camera_whitebalance=None):
         """Phase 0(색정제) + Phase 1(정규화)까지만 적용하고 LAB로 분리해서
@@ -103,6 +114,30 @@ class HybridCameraEngine:
             highlight_rolloff_start=p["highlight_rolloff_start"],
         )
 
+    def to_pre_hue_lab(self, linear_rgb, camera_whitebalance=None):
+        """Phase 0+1 정규화 + tone_core(L) + color_core(a, b 채도)까지
+        적용한 뒤, hue 보정 직전의 (L, a, b)를 반환 - calibrate_profile.py의
+        hue 학습 모드가 이 상태를 학습 입력 도메인으로 쓰고, process()도
+        내부적으로 이 메서드를 재사용한다(to_normalized_lab()과 같은 이유)."""
+        p = self.params
+        L, a, b = self.to_normalized_lab(linear_rgb, camera_whitebalance)
+        L2 = self._apply_tone(L)
+        a2, b2 = color_core.apply_color(
+            L2, a, b,
+            sat_gain=p["sat_gain"],
+            sat_center=p["sat_center"],
+            sat_width=p["sat_width"],
+            max_chroma=p["max_chroma"],
+        )
+        return L2, a2, b2
+
+    def _apply_hue(self, a, b):
+        """hue 보정 - 학습 LUT이 로드돼 있으면 적용, 없으면 완전 bypass
+        (a, b를 그대로 반환) - V0.1엔 파라메트릭 hue 모델이 없다."""
+        if self._hue_lut is not None:
+            return hue_core.apply_hue_lut(a, b, self._hue_lut)
+        return a, b
+
     def process(self, linear_rgb, camera_whitebalance=None):
         """RAW에서 디코드된 Linear RGB(float, [0, 1] 근방) -> 가공된
         Linear RGB. 저장은 utils/io.py의 save_tiff16()이 담당(감마 인코딩
@@ -112,24 +147,14 @@ class HybridCameraEngine:
         넘기면 Phase 0(색정제 - core/color_matrix.py)이 촬영 당시 추정
         광원을 D65로 색순응 변환해서 카메라 간 차이를 한 번 더 통일한다.
         생략하면 Phase 0은 건너뛰고 바로 Phase 1(Gray World)부터 시작."""
-        p = self.params
+        L2, a2, b2 = self.to_pre_hue_lab(linear_rgb, camera_whitebalance)
+        a3, b3 = self._apply_hue(a2, b2)
 
-        L, a, b = self.to_normalized_lab(linear_rgb, camera_whitebalance)
-
-        L2 = self._apply_tone(L)
-        a2, b2 = color_core.apply_color(
-            L2, a, b,
-            sat_gain=p["sat_gain"],
-            sat_center=p["sat_center"],
-            sat_width=p["sat_width"],
-            max_chroma=p["max_chroma"],
-        )
-
-        lab2 = np.stack([L2, a2, b2], axis=-1)
+        lab2 = np.stack([L2, a3, b3], axis=-1)
         xyz2 = colour.Lab_to_XYZ(lab2)
         rgb2 = colour.XYZ_to_RGB(xyz2, _SRGB, apply_cctf_encoding=False)
 
-        if p["use_spatial"]:
+        if self.params["use_spatial"]:
             rgb2 = spatial_core.apply_spatial(rgb2)
 
         return np.clip(rgb2, 0.0, None)

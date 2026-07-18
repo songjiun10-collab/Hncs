@@ -212,6 +212,62 @@ class TestLearnedToneLut(unittest.TestCase):
         self.assertTrue(np.all(np.isfinite(out)))
 
 
+class TestLearnedHueLut(unittest.TestCase):
+    """learned_hue_lut 경로(엔진의 hue 보정 단계 - V0.1엔 없던 축) 검증."""
+
+    def _engine_with_hue_lut(self, lut):
+        import os
+        import tempfile
+        fd, path = tempfile.mkstemp(suffix=".npy")
+        os.close(fd)
+        np.save(path, lut)
+        self.addCleanup(os.remove, path)
+        return HybridCameraEngine(profile={"learned_hue_lut": path})
+
+    def test_zero_lut_leaves_ab_unchanged(self):
+        engine = self._engine_with_hue_lut(np.zeros(36))
+        a = np.array([[10.0, -5.0]])
+        b = np.array([[3.0, 8.0]])
+        a2, b2 = engine._apply_hue(a, b)
+        np.testing.assert_allclose(a2, a, atol=1e-6)
+        np.testing.assert_allclose(b2, b, atol=1e-6)
+
+    def test_no_lut_is_identity_passthrough(self):
+        engine = HybridCameraEngine()
+        self.assertIsNone(engine._hue_lut)
+        a = np.array([[10.0]])
+        b = np.array([[5.0]])
+        a2, b2 = engine._apply_hue(a, b)
+        np.testing.assert_allclose(a2, a)
+        np.testing.assert_allclose(b2, b)
+
+    def test_process_runs_end_to_end_with_hue_lut(self):
+        rng = np.random.default_rng(13)
+        lut = rng.uniform(-20, 20, size=36)
+        engine = self._engine_with_hue_lut(lut)
+        img = rng.uniform(0.05, 0.9, size=(8, 8, 3))
+        out = engine.process(img)
+        self.assertEqual(out.shape, img.shape)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+    def test_to_pre_hue_lab_matches_process_input_when_no_hue_lut(self):
+        """hue LUT이 없으면 process()의 최종 a/b가 to_pre_hue_lab()의
+        a/b와 (out-of-gamut 클램핑에 의한 재인코딩 왕복오차 이내로) 같아야
+        함 - bypass 검증. process()의 마지막 np.clip(rgb2, 0, None)이
+        gamut 밖 음수 RGB를 0으로 자르는 게 의도된 동작이라 완전히
+        동일하진 않음 - 큰 편차 없이 근사한지만 확인."""
+        import colour
+        engine = HybridCameraEngine()
+        rng = np.random.default_rng(14)
+        img = rng.uniform(0.05, 0.9, size=(8, 8, 3))
+        L2, a2, b2 = engine.to_pre_hue_lab(img)
+        out = engine.process(img)
+        xyz = colour.RGB_to_XYZ(out, colour.RGB_COLOURSPACES["sRGB"], apply_cctf_decoding=False)
+        lab_out = colour.XYZ_to_Lab(xyz)
+        np.testing.assert_allclose(lab_out[..., 1], a2, atol=1.0)
+        np.testing.assert_allclose(lab_out[..., 2], b2, atol=1.0)
+
+
 class TestLearnToneLutFunction(unittest.TestCase):
     """calibrate_profile.learn_tone_lut - 합성 페어로 학습 로직 자체를 검증
     (raw 디코드는 필요 없음: dataset 튜플을 직접 구성)."""
