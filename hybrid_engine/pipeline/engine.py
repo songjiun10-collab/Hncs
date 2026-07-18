@@ -8,7 +8,8 @@ HybridCameraEngine.
 또는 학습 LUT) -> color_core(a, b 채도) -> hue_core(a, b hue 회전, 학습
 LUT이 있을 때만) -> lab2d_core(a, b 결합 2D 잔차 LUT, 학습 LUT이 있을
 때만) -> lab3d_core(L, a, b 결합 3D 잔차 LUT, 학습 LUT이 있을 때만) ->
-spatial_core(V0.1은 bypass) -> LAB 복원 -> Linear RGB
+spatial_core(L 로컬 콘트라스트, use_spatial=True일 때만) -> LAB 복원 ->
+Linear RGB
 
 L채널 톤 단계는 두 모드가 있다:
   - 파라메트릭(기본): tone_core의 S-curve/shadow-lift/highlight-rolloff
@@ -27,7 +28,16 @@ profile의 "learned_hue_lut"에 npy 경로를 주면 순환(circular) 1D LUT을
 "잔차가 채널별로 분해되지 않는다"는 가설의 다음 시도들. profile의
 "learned_lab2d_lut"(npz, a/b만)/"learned_lab3d_lut"(npz, L/a/b 전부)에
 경로를 주면 적용, 없으면 bypass(calibrate_profile.py --mode lab2d /
---mode lab3d로 생성).
+--mode lab3d로 생성). LUT 계열 네 실험 전부 표본 13장에서는 통하지
+않는다고 결론(교차검증 기준 전부 음성) 난 뒤의 다음 시도가 이 Phase 2다
+- 채널 재조합이 아니라 "이웃 픽셀을 보는" 근본적으로 다른 축.
+
+Phase 2(공간 연산)는 spatial_core.apply_local_contrast로 L채널에 언샤프
+마스크 방식 로컬 콘트라스트를 적용한다. use_spatial=False(기본)면 완전
+bypass, True면 spatial_radius/spatial_amount/spatial_threshold 파라미터로
+동작(calibrate_profile.py --mode spatial로 좌표하강 캘리브레이션 - 파라미터
+3개뿐이라 LUT들과 달리 과적합 위험이 낮음, tone_core 캘리브레이션과 같은
+성격).
 """
 import os
 
@@ -60,7 +70,10 @@ _DEFAULT_PARAMS = {
     "learned_hue_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로
     "learned_lab2d_lut": None,  # npz 파일명(assets/luts/ 기준, table+domain) 또는 절대경로
     "learned_lab3d_lut": None,  # npz 파일명(assets/luts/ 기준, table+domain) 또는 절대경로
-    "use_spatial": False,  # Phase 2 예약 - V0.1은 항상 bypass
+    "use_spatial": False,  # Phase 2 - 캘리브레이션 전까지는 기본 bypass
+    "spatial_radius": 30.0,
+    "spatial_amount": 0.0,  # 0이면 use_spatial=True여도 완전 항등
+    "spatial_threshold": 0.0,
 }
 
 
@@ -184,6 +197,18 @@ class HybridCameraEngine:
             return lab3d_core.apply_lab3d_lut(L, a, b, self._lab3d_table, self._lab3d_domain)
         return L, a, b
 
+    def _apply_spatial(self, L):
+        """Phase 2 로컬 콘트라스트 - use_spatial=False(기본)면 완전
+        bypass. True여도 spatial_amount=0이면 apply_local_contrast 자체가
+        항등이라 이중으로 안전하다."""
+        p = self.params
+        if not p["use_spatial"]:
+            return L
+        return spatial_core.apply_local_contrast(
+            L, radius=p["spatial_radius"], amount=p["spatial_amount"],
+            threshold=p["spatial_threshold"],
+        )
+
     def process(self, linear_rgb, camera_whitebalance=None):
         """RAW에서 디코드된 Linear RGB(float, [0, 1] 근방) -> 가공된
         Linear RGB. 저장은 utils/io.py의 save_tiff16()이 담당(감마 인코딩
@@ -197,12 +222,10 @@ class HybridCameraEngine:
         a3, b3 = self._apply_hue(a2, b2)
         a4, b4 = self._apply_lab2d(a3, b3)
         L5, a5, b5 = self._apply_lab3d(L2, a4, b4)
+        L6 = self._apply_spatial(L5)
 
-        lab2 = np.stack([L5, a5, b5], axis=-1)
+        lab2 = np.stack([L6, a5, b5], axis=-1)
         xyz2 = colour.Lab_to_XYZ(lab2)
         rgb2 = colour.XYZ_to_RGB(xyz2, _SRGB, apply_cctf_encoding=False)
-
-        if self.params["use_spatial"]:
-            rgb2 = spatial_core.apply_spatial(rgb2)
 
         return np.clip(rgb2, 0.0, None)

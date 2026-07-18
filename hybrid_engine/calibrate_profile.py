@@ -433,6 +433,87 @@ def run_lab3d_mode(dataset, grid_size=_LAB3D_GRID_SIZE):
     return baseline_loss, in_sample_loss, loo_loss, lut_path
 
 
+# LUT 계열(톤/hue/2D/3D) 네 실험이 전부 교차검증 기준 음성으로 끝난 뒤의
+# 다음 시도 - 이웃 픽셀을 보는 공간 연산(Phase 2). 파라미터가 3개뿐인
+# 파라메트릭 모델이라 LUT들과 달리 과적합 위험이 원래 낮다 - 그래도
+# in-sample만 믿지 않는 원칙은 동일하게 유지(k-fold 교차검증도 같이 낸다).
+_SPATIAL_SEARCH_SPACE = {
+    "spatial_radius": [10.0, 20.0, 30.0, 50.0, 80.0],
+    "spatial_amount": [0.0, 0.1, 0.2, 0.3, 0.5, 0.8, 1.2],
+    "spatial_threshold": [0.0, 0.5, 1.0, 2.0],
+}
+
+
+def _spatial_coordinate_descent(dataset, base_profile, n_passes=1, search_space=None):
+    """base_profile(이미 캘리브레이션된 톤/채도 파라미터) 위에 spatial_*
+    3개만 좌표하강으로 탐색 - 나머지 파라미터는 고정."""
+    search_space = search_space or _SPATIAL_SEARCH_SPACE
+    params = dict(base_profile)
+    params["use_spatial"] = True
+    params.setdefault("spatial_radius", _DEFAULT_PARAMS["spatial_radius"])
+    params.setdefault("spatial_amount", _DEFAULT_PARAMS["spatial_amount"])
+    params.setdefault("spatial_threshold", _DEFAULT_PARAMS["spatial_threshold"])
+    best_loss = _mean_loss(params, dataset)
+
+    for _ in range(n_passes):
+        for key, candidates in search_space.items():
+            best_val = params[key]
+            for val in candidates:
+                trial = dict(params)
+                trial[key] = val
+                loss = _mean_loss(trial, dataset)
+                if loss < best_loss:
+                    best_loss = loss
+                    best_val = val
+            params[key] = best_val
+
+    return params, best_loss
+
+
+def run_spatial_mode(dataset, n_folds=4, seed=0):
+    """Phase 2(로컬 콘트라스트) 모드: base profile(hasselblad.json) 위에
+    spatial_* 파라미터만 좌표하강으로 탐색하고, in-sample ΔE와 k-fold
+    교차검증 ΔE(기본 4-fold - LUT 실험들의 leave-one-out보다 폴드당 비용이
+    큰 좌표하강을 13번이 아니라 4번만 반복해서 계산량을 절충)를 둘 다
+    낸다. 채택 여부는 교차검증 기준."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        base_profile = json.load(f)
+    base_profile.pop("_comment", None)
+    base_profile["use_spatial"] = False
+
+    baseline_loss = _mean_loss(base_profile, dataset)
+    print(f"공간 연산 보정 전 ΔE (기준선): {baseline_loss:.3f}")
+
+    tuned_params, in_sample_loss = _spatial_coordinate_descent(dataset, base_profile)
+    in_sample_improvement = (baseline_loss - in_sample_loss) / baseline_loss * 100
+    print(f"공간 연산 보정 후 ΔE (in-sample): {in_sample_loss:.3f} "
+          f"({in_sample_improvement:+.1f}%)  "
+          f"radius={tuned_params['spatial_radius']} amount={tuned_params['spatial_amount']} "
+          f"threshold={tuned_params['spatial_threshold']}")
+
+    cv_loss = None
+    if len(dataset) >= n_folds:
+        rng = np.random.default_rng(seed)
+        order = rng.permutation(len(dataset))
+        folds = np.array_split(order, n_folds)
+        fold_losses = []
+        for fold_idx in folds:
+            fold_idx_set = set(fold_idx.tolist())
+            train_set = [d for i, d in enumerate(dataset) if i not in fold_idx_set]
+            held_out = [dataset[i] for i in fold_idx]
+            fold_params, _ = _spatial_coordinate_descent(train_set, base_profile)
+            fold_losses.append(_mean_loss(fold_params, held_out))
+        cv_loss = float(np.mean(fold_losses))
+        cv_improvement = (baseline_loss - cv_loss) / baseline_loss * 100
+        print(f"공간 연산 보정 후 ΔE ({n_folds}-fold 교차검증): {cv_loss:.3f} "
+              f"({cv_improvement:+.1f}%)")
+
+    return baseline_loss, in_sample_loss, cv_loss, tuned_params
+
+
 def run_learned_mode(dataset):
     """학습 LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 톤
     단계만 학습 LUT으로 교체하고 ΔE를 파라메트릭과 비교한다. 더 나을
@@ -465,13 +546,14 @@ def run_learned_mode(dataset):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
-    parser.add_argument("--mode", choices=["parametric", "learned", "hue", "lab2d", "lab3d"],
+    parser.add_argument("--mode", choices=["parametric", "learned", "hue", "lab2d", "lab3d", "spatial"],
                          default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
                               "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교 / "
                               "lab2d: a/b 결합 2D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
-                              "lab3d: L/a/b 결합 3D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교")
+                              "lab3d: L/a/b 결합 3D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
+                              "spatial: Phase 2 로컬 콘트라스트 파라미터를 좌표하강으로 탐색하고 in-sample+k-fold ΔE 비교")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -495,6 +577,10 @@ def main():
 
     if args.mode == "lab3d":
         run_lab3d_mode(dataset)
+        return
+
+    if args.mode == "spatial":
+        run_spatial_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)
