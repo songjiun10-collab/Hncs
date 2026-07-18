@@ -1,14 +1,53 @@
 # 학습/잔차 LUT 보관소
 
-`calibrate_profile.py --mode learned`(톤)/`--mode hue`(hue)/`--mode lab3d`
-(3D 잔차)가 만드는 학습 LUT(npy/npz)이 여기 저장된다. 파일 자체는
-커밋하지 않음(재현 가능한 산출물이라) - 아래 명령으로 재생성.
+`calibrate_profile.py --mode learned`(톤)/`--mode hue`(hue)/`--mode lab2d`
+(2D 잔차)/`--mode lab3d`(3D 잔차)가 만드는 학습 LUT(npy/npz)이 여기
+저장된다. 파일 자체는 커밋하지 않음(재현 가능한 산출물이라) - 아래
+명령으로 재생성.
 
 ```
 python3 -m hybrid_engine.calibrate_profile --mode learned
 python3 -m hybrid_engine.calibrate_profile --mode hue
+python3 -m hybrid_engine.calibrate_profile --mode lab2d
 python3 -m hybrid_engine.calibrate_profile --mode lab3d
 ```
+
+## LUT 계열 실험 네 번의 종합 결론 (2026-07)
+
+톤(1D, L만) → hue(1D, hue만) → 3D(L/a/b 결합) → 2D(a/b 결합) 순서로
+네 가지 학습 LUT을 다 시도했고 **넷 다 기각**했다. 교차검증까지 한
+결과만 놓고 보면:
+
+| 실험 | 격자/bin 수 | in-sample | leave-one-out |
+|---|---|---|---|
+| 톤 LUT (1D, L) | 256 | +4.9% | 교차검증 안 함(이후 실험부터 필수화) |
+| hue LUT (1D, hue) | 36 | +2.1% | 교차검증 안 함(위와 동일한 이유) |
+| 3D LUT (L,a,b) | 729 | **+11.1%** | **-5.7%** |
+| 2D LUT (a,b) | 81 | +1.4% | **-2.7%** |
+
+격자가 클수록(3D) in-sample은 더 좋아 보이지만 교차검증에서 더 심하게
+무너진다는 게 명확한 패턴 - 전형적인 과적합 곡선이다. 격자를 줄여도
+(2D) 교차검증은 여전히 기준선보다 나쁘다(-2.7%) - 표본 13장으로는
+"조합으로 학습"하는 접근 자체가 크기와 무관하게 안 통한다는 뜻으로
+읽는 게 정확함. **LUT 계열 접근은 이 데이터셋 규모에서는 막다른
+길로 결론짓는다** - 이슈 #4의 X2D II 데이터로 표본이 실질적으로
+늘어나기 전까진 재시도하지 않음. 다음 후보는 Phase 2(공간 연산)나
+raw 베이스라인 자체 특성화.
+
+## 2D 잔차 LUT 실측 결과 (2026-07, 음성 결과로 기각)
+
+3D LUT의 과적합이 격자 크기(729격자) 때문일 수 있다는 가설로, a/b
+두 축만 결합한 더 작은 격자(9^2=81, 이중선형 보간)를 시도했다. L은
+빼고 hue LUT이 못 담던 "채도별로 다른 hue 보정"만 표현하게 한 절충안:
+
+- 2D LUT 보정 전 ΔE(기준선): 14.85
+- 2D LUT 보정 후 ΔE (in-sample): 14.63 (+1.4%)
+- 2D LUT 보정 후 ΔE (leave-one-out 교차검증): 15.26 (**-2.7%**)
+
+**채택 안 함.** 격자를 729→81로 10분의 1 넘게 줄였는데도 교차검증은
+여전히 마이너스다. 3D처럼 극적으로 뒤집히진 않았지만(in-sample부터
+이미 +1.4%로 소박했음), 결론은 같다 - 표본 13장에서는 "격자 학습"
+자체가 안 통한다. 위 종합 결론 절 참고.
 
 ## 3D 잔차 LUT 실측 결과 (2026-07, 음성 결과로 기각 - in-sample과 교차검증이 반대 방향)
 
