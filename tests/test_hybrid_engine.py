@@ -268,6 +268,43 @@ class TestLearnedHueLut(unittest.TestCase):
         np.testing.assert_allclose(lab_out[..., 2], b2, atol=1.0)
 
 
+class TestSpatialStage(unittest.TestCase):
+    """엔진의 Phase 2(공간 연산, spatial_core.apply_local_contrast) 단계 검증."""
+
+    def test_use_spatial_false_is_identity_passthrough(self):
+        engine = HybridCameraEngine()  # use_spatial 기본값 False
+        L = np.array([[10.0, 90.0], [50.0, 30.0]])
+        out = engine._apply_spatial(L)
+        np.testing.assert_allclose(out, L)
+
+    def test_use_spatial_true_zero_amount_is_still_identity(self):
+        engine = HybridCameraEngine(profile={"use_spatial": True, "spatial_amount": 0.0})
+        L = np.array([[10.0, 90.0], [50.0, 30.0]])
+        out = engine._apply_spatial(L)
+        np.testing.assert_allclose(out, L)
+
+    def test_use_spatial_true_nonzero_amount_changes_L(self):
+        engine = HybridCameraEngine(profile={
+            "use_spatial": True, "spatial_radius": 5.0,
+            "spatial_amount": 1.0, "spatial_threshold": 0.0,
+        })
+        L = np.zeros((20, 20))
+        L[:, 10:] = 80.0
+        out = engine._apply_spatial(L)
+        self.assertFalse(np.allclose(out, L))
+
+    def test_process_runs_end_to_end_with_spatial_enabled(self):
+        engine = HybridCameraEngine(profile={
+            "use_spatial": True, "spatial_radius": 20.0,
+            "spatial_amount": 0.3, "spatial_threshold": 0.5,
+        })
+        rng = np.random.default_rng(17)
+        img = rng.uniform(0.05, 0.9, size=(16, 16, 3))
+        out = engine.process(img)
+        self.assertEqual(out.shape, img.shape)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+
 class TestLearnedLab2dLut(unittest.TestCase):
     """learned_lab2d_lut 경로(엔진의 a/b 결합 2D 잔차 LUT 단계) 검증."""
 
@@ -398,6 +435,34 @@ class TestLearnToneLutFunction(unittest.TestCase):
         # 표본이 있는 중간 구간에서 항등에 가까워야 함 (희소 bin 보간 오차 감안)
         mid = (domain > 0.2) & (domain < 0.8)
         self.assertLess(float(np.mean(np.abs(lut[mid] - domain[mid]))), 0.05)
+
+
+class TestSpatialCoordinateDescent(unittest.TestCase):
+    """calibrate_profile._spatial_coordinate_descent - 합성 페어로 좌표하강
+    로직 자체를 검증(raw 디코드는 필요 없음: dataset 튜플을 직접 구성)."""
+
+    def test_runs_and_does_not_worsen_loss_when_target_equals_source(self):
+        from hybrid_engine.calibrate_profile import _spatial_coordinate_descent, _mean_loss
+
+        rng = np.random.default_rng(18)
+        img = rng.uniform(0.1, 0.8, size=(16, 16, 3))
+        base_profile = {"correct_color_cast": False, "use_color_unification": False}
+        engine = HybridCameraEngine(profile=base_profile)
+        target = engine.process(img)  # 타깃 = use_spatial=False 결과 그대로
+
+        dataset = [(img, None, target)]
+        baseline_loss = _mean_loss(base_profile, dataset)
+        small_search_space = {
+            "spatial_radius": [10.0, 30.0],
+            "spatial_amount": [0.0, 0.2],
+            "spatial_threshold": [0.0],
+        }
+        tuned_params, tuned_loss = _spatial_coordinate_descent(
+            dataset, base_profile, n_passes=1, search_space=small_search_space)
+        self.assertTrue(np.isfinite(tuned_loss))
+        # 타깃이 이미 무보정 결과와 같으니 좌표하강이 그보다 나쁜 조합을
+        # 채택하면 안 됨(0을 항상 후보로 포함시켜뒀으니 최소 동률 이상)
+        self.assertLessEqual(tuned_loss, baseline_loss + 1e-6)
 
 
 if __name__ == "__main__":
