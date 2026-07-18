@@ -144,6 +144,94 @@ def learn_tone_lut(dataset, profile, n_bins=_LEARNED_LUT_BINS):
     return np.clip(lut, 0.0, 1.0)
 
 
+_LEARNED_HUE_LUT_BINS = 36  # 10도 간격 - 표본 13장으로 tone(256bin)만큼 세분화하면 과적합
+_LEARNED_HUE_LUT_FILENAME = "hasselblad_hue_learned.npy"
+
+
+def learn_hue_lut(dataset, profile, n_bins=_LEARNED_HUE_LUT_BINS):
+    """(엔진의 tone+color 적용 후 a/b, 타깃 a/b) 픽셀 대응에서 순환(circular)
+    1D hue LUT을 직접 학습. 입력 hue를 n_bins개 구간으로 나누고, 구간별로
+    "타깃 hue가 입력 hue에서 얼마나(도, circular) 벗어났는지"를 chroma
+    가중 순환평균으로 구한다. 반환: bin별 hue 보정량(도) 배열
+    (엔진의 learned_hue_lut 포맷, hue_core.apply_hue_lut이 소비)."""
+    from hybrid_engine.utils.evaluate import _linear_rgb_to_lab
+
+    engine = HybridCameraEngine(profile=profile)
+    bin_width = 360.0 / n_bins
+    sum_re = np.zeros(n_bins)
+    sum_im = np.zeros(n_bins)
+    weight_sum = np.zeros(n_bins)
+
+    for linear_small, camera_wb, target_small in dataset:
+        _, a2, b2 = engine.to_pre_hue_lab(linear_small, camera_whitebalance=camera_wb)
+        target_lab = _linear_rgb_to_lab(target_small)
+        target_a, target_b = target_lab[..., 1], target_lab[..., 2]
+
+        source_hue = np.degrees(np.arctan2(b2, a2)) % 360.0
+        target_hue = np.degrees(np.arctan2(target_b, target_a)) % 360.0
+        delta = (target_hue - source_hue + 180.0) % 360.0 - 180.0
+
+        chroma_source = np.hypot(a2, b2)
+        chroma_target = np.hypot(target_a, target_b)
+        weight = np.clip((chroma_source + chroma_target) / 2.0, 0.0, None)
+
+        bins = np.minimum((source_hue.ravel() / bin_width).astype(int), n_bins - 1)
+        w = weight.ravel()
+        delta_rad = np.radians(delta.ravel())
+        np.add.at(sum_re, bins, w * np.cos(delta_rad))
+        np.add.at(sum_im, bins, w * np.sin(delta_rad))
+        np.add.at(weight_sum, bins, w)
+
+    lut = np.zeros(n_bins)
+    filled = weight_sum > 1e-6
+    # 순환평균: 가중 delta를 단위원 위 벡터 합으로 누적한 뒤 각도만 추출
+    # (일반 산술평균은 -179도/+179도가 섞이면 0도로 잘못 수렴하는 wraparound
+    # 문제가 있어서 못 씀)
+    lut[filled] = np.degrees(np.arctan2(sum_im[filled], sum_re[filled]))
+
+    if filled.any() and not filled.all():
+        centers = (np.arange(n_bins) + 0.5) * bin_width
+        src_centers = centers[filled]
+        src_vals = lut[filled]
+        domain = np.concatenate([src_centers - 360.0, src_centers, src_centers + 360.0])
+        values = np.tile(src_vals, 3)
+        order = np.argsort(domain)
+        lut = np.interp(centers, domain[order], values[order])
+    # filled가 전부 False면(표본이 아예 없으면) 무보정(전부 0)으로 남긴다 -
+    # 안 겪어본 hue를 추측해서 왜곡시키지 않기 위함
+    return lut
+
+
+def run_hue_mode(dataset):
+    """학습 hue LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 hue
+    보정 단계를 추가하고 ΔE를 비교한다. 더 나을 때만 채택하라는 게 이
+    함수를 부르는 쪽(main)의 책임 - B1(학습 톤 LUT)이 +4.9%로 기각됐던
+    선례와 같은 기준으로 판단."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        profile = json.load(f)
+    profile.pop("_comment", None)
+    profile.pop("learned_hue_lut", None)  # 학습 도메인은 항상 hue 보정 전 단계 기준
+
+    baseline_loss = _mean_loss(profile, dataset)
+    print(f"hue 보정 전 ΔE (기준선): {baseline_loss:.3f}")
+
+    lut = learn_hue_lut(dataset, profile)
+    lut_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "luts", _LEARNED_HUE_LUT_FILENAME)
+    np.save(lut_path, lut)
+
+    hue_profile = dict(profile, learned_hue_lut=_LEARNED_HUE_LUT_FILENAME)
+    hue_loss = _mean_loss(hue_profile, dataset)
+    print(f"hue 보정 후 ΔE:          {hue_loss:.3f}")
+
+    improvement = (baseline_loss - hue_loss) / baseline_loss * 100
+    print(f"개선폭: {improvement:+.1f}%")
+    return baseline_loss, hue_loss, lut_path
+
+
 def run_learned_mode(dataset):
     """학습 LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 톤
     단계만 학습 LUT으로 교체하고 ΔE를 파라메트릭과 비교한다. 더 나을
@@ -176,9 +264,10 @@ def run_learned_mode(dataset):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
-    parser.add_argument("--mode", choices=["parametric", "learned"], default="parametric",
+    parser.add_argument("--mode", choices=["parametric", "learned", "hue"], default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
-                              "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교")
+                              "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
+                              "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -190,6 +279,10 @@ def main():
 
     if args.mode == "learned":
         run_learned_mode(dataset)
+        return
+
+    if args.mode == "hue":
+        run_hue_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)
