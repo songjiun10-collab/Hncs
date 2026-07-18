@@ -149,6 +149,59 @@ class TestHybridCameraEngine(unittest.TestCase):
         self.assertEqual(out.shape, img.shape)
 
 
+class TestRawBaselineMatrixStage(unittest.TestCase):
+    """Phase 0의 raw_baseline_matrix 단계(엔진에 통합된 core/raw_baseline.py) 검증."""
+
+    def test_no_matrix_is_identity_passthrough(self):
+        engine = HybridCameraEngine()
+        self.assertIsNone(engine._raw_baseline_matrix)
+        rng = np.random.default_rng(20)
+        img = rng.uniform(0.05, 0.9, size=(6, 6, 3))
+        out = engine._apply_raw_baseline_matrix(img)
+        np.testing.assert_allclose(out, img)
+
+    def test_identity_matrix_param_is_noop(self):
+        engine = HybridCameraEngine(profile={"raw_baseline_matrix": np.eye(3).tolist()})
+        rng = np.random.default_rng(21)
+        img = rng.uniform(0.05, 0.9, size=(6, 6, 3))
+        out = engine._apply_raw_baseline_matrix(img)
+        np.testing.assert_allclose(out, img, atol=1e-10)
+
+    def test_nonidentity_matrix_changes_rgb(self):
+        matrix = [[1.2, 0.0, 0.0], [0.0, 0.9, 0.0], [0.0, 0.0, 1.1]]
+        engine = HybridCameraEngine(profile={"raw_baseline_matrix": matrix})
+        rng = np.random.default_rng(22)
+        img = rng.uniform(0.05, 0.9, size=(6, 6, 3))
+        out = engine._apply_raw_baseline_matrix(img)
+        self.assertFalse(np.allclose(out, img))
+        np.testing.assert_allclose(out, img @ np.array(matrix), atol=1e-10)
+
+    def test_process_runs_end_to_end_with_matrix(self):
+        matrix = [[1.1, 0.02, -0.01], [0.01, 0.95, 0.02], [-0.02, 0.01, 1.05]]
+        engine = HybridCameraEngine(profile={"raw_baseline_matrix": matrix})
+        rng = np.random.default_rng(23)
+        img = rng.uniform(0.05, 0.9, size=(8, 8, 3))
+        out = engine.process(img)
+        self.assertEqual(out.shape, img.shape)
+        self.assertTrue(np.all(np.isfinite(out)))
+        self.assertTrue(np.all(out >= 0.0))
+
+    def test_matrix_applied_before_whitebalance_unification(self):
+        """raw_baseline_matrix가 색정제(Phase 0의 나머지)보다 먼저
+        적용되는지 - to_normalized_lab의 결과가 매트릭스 유무에 따라
+        달라지는지로 간접 확인."""
+        rng = np.random.default_rng(24)
+        img = rng.uniform(0.05, 0.9, size=(8, 8, 3))
+        matrix = [[1.3, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.7]]
+
+        engine_no_matrix = HybridCameraEngine()
+        engine_with_matrix = HybridCameraEngine(profile={"raw_baseline_matrix": matrix})
+
+        L1, a1, b1 = engine_no_matrix.to_normalized_lab(img, camera_whitebalance=[2.0, 1.0, 1.5, 0.0])
+        L2, a2, b2 = engine_with_matrix.to_normalized_lab(img, camera_whitebalance=[2.0, 1.0, 1.5, 0.0])
+        self.assertFalse(np.allclose(L1, L2))
+
+
 class TestEvaluate(unittest.TestCase):
     def test_self_comparison_is_zero(self):
         rng = np.random.default_rng(8)
@@ -497,6 +550,57 @@ class TestRawBaselineMode(unittest.TestCase):
         self.assertIsNotNone(cv_loss)
         self.assertLess(cv_loss, 1.0)
         np.testing.assert_allclose(matrix, known_matrix, atol=0.05)
+
+
+class TestRawBaselinePipelineMode(unittest.TestCase):
+    """calibrate_profile.run_raw_baseline_pipeline_mode /
+    _find_matrix_and_recalibrate - 합성 페어로 통합 동작을 검증(raw
+    베이스라인 참고선 계산에만 실제 hasselblad.json을 읽음)."""
+
+    def test_recalibration_runs_and_returns_matrix_in_params(self):
+        from hybrid_engine.calibrate_profile import _find_matrix_and_recalibrate
+
+        rng = np.random.default_rng(25)
+        known_matrix = np.array([
+            [1.15, 0.0, 0.0],
+            [0.0, 0.9, 0.0],
+            [0.0, 0.0, 1.05],
+        ])
+        dataset = []
+        for _ in range(4):
+            img = rng.uniform(0.05, 0.9, size=(12, 12, 3))
+            target = np.clip(img @ known_matrix, 0.0, 1.0)
+            dataset.append((img, None, target))
+
+        params, loss = _find_matrix_and_recalibrate(dataset, n_passes=1)
+        self.assertIn("raw_baseline_matrix", params)
+        self.assertIsNotNone(params["raw_baseline_matrix"])
+        self.assertTrue(np.isfinite(loss))
+        np.testing.assert_allclose(
+            np.array(params["raw_baseline_matrix"]), known_matrix, atol=0.05)
+
+    def test_pipeline_mode_runs_end_to_end(self):
+        from hybrid_engine.calibrate_profile import run_raw_baseline_pipeline_mode
+
+        rng = np.random.default_rng(26)
+        known_matrix = np.array([
+            [1.1, 0.01, -0.01],
+            [0.01, 0.95, 0.01],
+            [-0.01, 0.01, 1.08],
+        ])
+        dataset = []
+        for _ in range(8):
+            img = rng.uniform(0.05, 0.9, size=(10, 10, 3))
+            target = np.clip(img @ known_matrix, 0.0, 1.0)
+            dataset.append((img, None, target))
+
+        old_loss, in_sample_loss, cv_loss, new_params = run_raw_baseline_pipeline_mode(
+            dataset, n_folds=4, n_passes=1)
+        self.assertTrue(np.isfinite(old_loss))
+        self.assertTrue(np.isfinite(in_sample_loss))
+        self.assertIsNotNone(cv_loss)
+        self.assertTrue(np.isfinite(cv_loss))
+        self.assertIn("raw_baseline_matrix", new_params)
 
 
 if __name__ == "__main__":

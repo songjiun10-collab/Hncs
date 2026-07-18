@@ -88,10 +88,13 @@ _SEARCH_SPACE = {
 }
 
 
-def coordinate_descent(dataset, n_passes=2):
-    params = dict(_DEFAULT_PARAMS)
+def coordinate_descent(dataset, n_passes=2, base_params=None):
+    """base_params를 주면 그 값을 시작점으로 5개 파라미터(_SEARCH_SPACE)만
+    좌표하강 - 그 외 키(raw_baseline_matrix 등)는 그대로 유지된다. 생략
+    시 V0.1 기본값(_DEFAULT_PARAMS)에서 시작(기존 동작)."""
+    params = dict(base_params) if base_params is not None else dict(_DEFAULT_PARAMS)
     best_loss = _mean_loss(params, dataset)
-    print(f"시작 ΔE (V0.1 기본값): {best_loss:.3f}")
+    print(f"시작 ΔE ({'주어진 base_params' if base_params is not None else 'V0.1 기본값'}): {best_loss:.3f}")
 
     for p in range(n_passes):
         print(f"\n=== pass {p + 1}/{n_passes} ===")
@@ -568,6 +571,67 @@ def run_raw_baseline_mode(dataset, n_folds=4, seed=0):
     return hybrid_loss, no_correction_loss, in_sample_loss, cv_loss, matrix
 
 
+def _find_matrix_and_recalibrate(dataset, n_passes=1):
+    """Phase 0(raw_baseline_matrix)을 dataset으로 먼저 최소자승 적합한
+    뒤, 그 매트릭스를 고정하고 Phase 1(tone_core)/Phase 2(color_core)
+    파라미터(_SEARCH_SPACE)를 좌표하강으로 재탐색한다. 사용자 지시:
+    "삭제하지 않고 Phase 0=매트릭스, Phase1=tone_core 재학습,
+    Phase2=color_core 재학습". 반환: (raw_baseline_matrix 포함된 params
+    dict, ΔE)."""
+    from hybrid_engine.core.raw_baseline import fit_color_matrix
+
+    raw_sources = [d[0] for d in dataset]
+    targets = [d[2] for d in dataset]
+    matrix = fit_color_matrix(raw_sources, targets)
+
+    base_params = dict(_DEFAULT_PARAMS)
+    base_params["raw_baseline_matrix"] = matrix.tolist()
+    params, loss = coordinate_descent(dataset, n_passes=n_passes, base_params=base_params)
+    return params, loss
+
+
+def run_raw_baseline_pipeline_mode(dataset, n_folds=4, seed=0, n_passes=1):
+    """Phase 0(3x3 raw_baseline 매트릭스) 위에 Phase 1(tone_core)/Phase 2
+    (color_core)을 재캘리브레이션하는 전체 파이프라인 모드 - 후속 실측 5
+    (raw_baseline 단독 32.6% 개선)에 대한 실제 통합. 기존
+    hasselblad.json(파라메트릭 profile)을 참고선으로 두고 비교한다.
+    교차검증은 폴드마다 매트릭스 적합부터 좌표하강까지 전부 그 폴드의
+    학습 데이터만으로 다시 하는 완전한 nested CV(매트릭스만 고정하고
+    파라미터만 재탐색하면 매트릭스 쪽에서 데이터 유출이 생기므로)."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        old_profile = json.load(f)
+    old_profile.pop("_comment", None)
+    old_loss = _mean_loss(old_profile, dataset)
+    print(f"기존 파이프라인 ΔE (현재 hasselblad.json): {old_loss:.3f}")
+
+    new_params, in_sample_loss = _find_matrix_and_recalibrate(dataset, n_passes=n_passes)
+    in_sample_improvement = (old_loss - in_sample_loss) / old_loss * 100
+    print(f"\n신규 파이프라인 ΔE (in-sample, 매트릭스+재학습 톤/채도): "
+          f"{in_sample_loss:.3f} ({in_sample_improvement:+.1f}%)")
+
+    cv_loss = None
+    if len(dataset) >= n_folds:
+        rng = np.random.default_rng(seed)
+        order = rng.permutation(len(dataset))
+        folds = np.array_split(order, n_folds)
+        fold_losses = []
+        for fold_idx in folds:
+            fold_idx_set = set(fold_idx.tolist())
+            train_set = [d for i, d in enumerate(dataset) if i not in fold_idx_set]
+            held_out = [dataset[i] for i in fold_idx]
+            fold_params, _ = _find_matrix_and_recalibrate(train_set, n_passes=n_passes)
+            fold_losses.append(_mean_loss(fold_params, held_out))
+        cv_loss = float(np.mean(fold_losses))
+        cv_improvement = (old_loss - cv_loss) / old_loss * 100
+        print(f"신규 파이프라인 ΔE ({n_folds}-fold 교차검증): {cv_loss:.3f} "
+              f"({cv_improvement:+.1f}%)")
+
+    return old_loss, in_sample_loss, cv_loss, new_params
+
+
 def run_learned_mode(dataset):
     """학습 LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 톤
     단계만 학습 LUT으로 교체하고 ΔE를 파라메트릭과 비교한다. 더 나을
@@ -601,15 +665,17 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
     parser.add_argument("--mode",
-                         choices=["parametric", "learned", "hue", "lab2d", "lab3d", "spatial", "raw_baseline"],
+                         choices=["parametric", "learned", "hue", "lab2d", "lab3d", "spatial",
+                                  "raw_baseline", "raw_baseline_pipeline"],
                          default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
                               "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교 / "
                               "lab2d: a/b 결합 2D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
                               "lab3d: L/a/b 결합 3D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
-                              "spatial: Phase 2 로컬 콘트라스트 파라미터를 좌표하강으로 탐색하고 in-sample+k-fold ΔE 비교 / "
-                              "raw_baseline: hybrid_engine을 거치지 않은 순수 raw 디코드에 3x3 매트릭스만 맞춰서 이론적 최선 ΔE 측정(이슈 #4)")
+                              "spatial: Phase 3 로컬 콘트라스트 파라미터를 좌표하강으로 탐색하고 in-sample+k-fold ΔE 비교 / "
+                              "raw_baseline: hybrid_engine을 거치지 않은 순수 raw 디코드에 3x3 매트릭스만 맞춰서 이론적 최선 ΔE 측정(이슈 #4) / "
+                              "raw_baseline_pipeline: Phase 0 매트릭스 위에 Phase 1(tone)/Phase 2(color)를 재캘리브레이션한 전체 파이프라인 ΔE 비교(nested CV)")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -641,6 +707,10 @@ def main():
 
     if args.mode == "raw_baseline":
         run_raw_baseline_mode(dataset)
+        return
+
+    if args.mode == "raw_baseline_pipeline":
+        run_raw_baseline_pipeline_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)

@@ -1,5 +1,5 @@
 """
-[Phase 2] 공간(spatial) 연산 - 주변 픽셀을 참조하는 로컬 콘트라스트
+[Phase 3] 공간(spatial) 연산 - 주변 픽셀을 참조하는 로컬 콘트라스트
 ("Clarity") 보정. tone_core/color_core/hue_core/lab2d_core/lab3d_core는
 전부 픽셀별(pointwise) 연산이라 이웃 픽셀 정보를 못 쓰는데, evaluate_fidelity의
 SSIM(L) 0.74가 절대색만이 아니라 구조/대비 자체도 실제 카메라 JPEG와
