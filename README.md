@@ -139,7 +139,23 @@ fix orientation before conversion.*
 **Known limitations** (also documented in each module's docstring):
 - `core/color_matrix.py`: even with camera-specific color-matrix normalization, sensor spectral sensitivities are never exactly proportional to the CIE standard observer (metamerism), so a physically perfect camera-agnostic colorspace isn't possible - the residual can only be reduced via the ΔE loop, not eliminated
 - `core/preset_inverse.py`: only the L-channel tone curve of population-fit brands can be inverted (it has a closed-form inverse) - CLAHE (perceptual contrast compensation) is an adaptive operation and isn't inverted, and brands without a raw+jpeg pair (e.g. Fuji) simply aren't this kind of curve to begin with, so they're out of scope by design
-- `calibrate_profile.py` runs the CIEDE2000 ΔE loop against the 13 real Hasselblad raw+jpeg pairs. The v1.1 parametric-only profile plateaued at ΔE00 15.01, and five follow-up experiments (a learned tone LUT, a learned hue LUT, 2D/3D residual LUTs, and a local-contrast spatial stage) all failed to beat it once measured under proper cross-validation - see `hybrid_engine/assets/luts/README.md` for the full negative-result writeup. What did work: `--mode raw_baseline` fits a plain global 3x3 color matrix directly from raw decode to target JPEG (no color chart, GitHub issue #4's ask) and beat the old pipeline by 32.6% under CV on its own - the catch was that the existing pipeline's forced exposure normalization was silently destroying most of that gain once the matrix was wired in, a bug found by isolating each pipeline stage's contribution. With that fixed and tone/color re-calibrated on top of the matrix (`--mode raw_baseline_pipeline`, nested CV), the shipped **v1.2** profile now measures ΔE00 15.01 → 9.82 (-34.6%, CIE 2000 tier upgrade from "completely different colors" to "different at a glance")
+- `calibrate_profile.py` runs the CIEDE2000 ΔE loop against the 13 real Hasselblad raw+jpeg pairs. Every experiment below is judged by cross-validated ΔE, not in-sample - several looked good in-sample and then failed (or reversed sign) once properly validated, which is itself a recurring finding worth reading the table with in mind:
+
+  | Experiment | Method | In-sample | Cross-validated | Verdict |
+  |---|---|---|---|---|
+  | v1.1 baseline | coordinate descent over `tone_core`/`color_core` params | ΔE00 15.01 | - | starting point |
+  | Learned tone LUT | 1D LUT, 256 bins, on L | +4.9% | not run (added CV after this) | rejected, below bar |
+  | Learned hue LUT (v1.1) | 1D circular LUT, 36 bins | +2.1% | not run | rejected, below bar |
+  | 3D residual LUT | joint L/a/b grid, 729 cells | +11.1% | **-5.7%** | rejected, pure overfitting |
+  | 2D residual LUT | joint a/b grid, 81 cells | +1.4% | -2.7% | rejected |
+  | Spatial/local contrast (v1.1) | unsharp-mask L-channel clarity | +0.0% | +2.0% (noise) | rejected, null result |
+  | **Raw-baseline 3x3 matrix (standalone)** | global least-squares color matrix, no color chart (GitHub issue #4) | +42.4% | **+32.6%** | first real win |
+  | Matrix wired into the pipeline (1st attempt) | matrix + existing Phase 0/1/2 | - | +0.0% | bug: forced exposure normalization was erasing the matrix's gain |
+  | Matrix + retrained tone/color (fixed) | `--mode raw_baseline_pipeline`, nested CV | +34.8% | **+29.7%** | **shipped as v1.2** |
+  | Hue LUT retried on v1.2 | same 1D circular LUT, new baseline | +4.6% | +1.4% | rejected, below bar |
+  | Spatial retried on v1.2 | same local-contrast stage, new baseline | +0.3% | -1.6% | rejected |
+
+  The shipped v1.2 profile measures ΔE00 15.01 → **9.82** on the official evaluation harness (-34.6%, a CIE 2000 tier upgrade from "completely different colors" to "different at a glance"). Full methodology, the failed-then-diagnosed-then-fixed integration story, and remaining limitations (midtone residual, hue barely moved) are in `hybrid_engine/EVALUATION.md`; the rejected LUT experiments have their own detailed writeup in `hybrid_engine/assets/luts/README.md`
 
 ## Goals / Philosophy
 
