@@ -268,6 +268,56 @@ class TestLearnedHueLut(unittest.TestCase):
         np.testing.assert_allclose(lab_out[..., 2], b2, atol=1.0)
 
 
+class TestLearnedLab2dLut(unittest.TestCase):
+    """learned_lab2d_lut 경로(엔진의 a/b 결합 2D 잔차 LUT 단계) 검증."""
+
+    def _engine_with_lab2d_lut(self, table, domain):
+        import os
+        import tempfile
+        fd, path = tempfile.mkstemp(suffix=".npz")
+        os.close(fd)
+        np.savez(path, table=table, domain=domain)
+        self.addCleanup(os.remove, path)
+        return HybridCameraEngine(profile={"learned_lab2d_lut": path})
+
+    def _identity_table(self, grid_size, domain):
+        lo, hi = domain
+        coords = np.stack(np.meshgrid(
+            np.linspace(lo[0], hi[0], grid_size),
+            np.linspace(lo[1], hi[1], grid_size),
+            indexing="ij"), axis=-1)
+        return coords
+
+    def test_identity_table_leaves_ab_unchanged(self):
+        domain = np.array([[-50.0, -50.0], [50.0, 50.0]])
+        table = self._identity_table(5, domain)
+        engine = self._engine_with_lab2d_lut(table, domain)
+        a = np.array([[10.0]])
+        b = np.array([[-10.0]])
+        a2, b2 = engine._apply_lab2d(a, b)
+        np.testing.assert_allclose(a2, a, atol=1e-6)
+        np.testing.assert_allclose(b2, b, atol=1e-6)
+
+    def test_no_lut_is_identity_passthrough(self):
+        engine = HybridCameraEngine()
+        self.assertIsNone(engine._lab2d_table)
+        a = np.array([[10.0]])
+        b = np.array([[-10.0]])
+        a2, b2 = engine._apply_lab2d(a, b)
+        np.testing.assert_allclose(a2, a)
+        np.testing.assert_allclose(b2, b)
+
+    def test_process_runs_end_to_end_with_lab2d_lut(self):
+        domain = np.array([[-60.0, -60.0], [60.0, 60.0]])
+        rng = np.random.default_rng(16)
+        table = self._identity_table(4, domain) + rng.uniform(-3, 3, size=(4, 4, 2))
+        engine = self._engine_with_lab2d_lut(table, domain)
+        img = rng.uniform(0.05, 0.9, size=(8, 8, 3))
+        out = engine.process(img)
+        self.assertEqual(out.shape, img.shape)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+
 class TestLearnedLab3dLut(unittest.TestCase):
     """learned_lab3d_lut 경로(엔진의 L/a/b 결합 3D 잔차 LUT 단계) 검증."""
 

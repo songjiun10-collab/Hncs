@@ -1,13 +1,14 @@
 """
 core/의 개별 모듈(color_matrix/normalizer/tone_core/color_core/hue_core/
-lab3d_core/spatial_core)을 하나의 파이프라인으로 조립하는
+lab2d_core/lab3d_core/spatial_core)을 하나의 파이프라인으로 조립하는
 HybridCameraEngine.
 
 데이터 흐름: Linear RGB -> [Phase 0: 카메라 색정제, camera_whitebalance
 제공 시] -> (Phase 1: Gray World 정규화) -> LAB 분리 -> tone_core(L,
 또는 학습 LUT) -> color_core(a, b 채도) -> hue_core(a, b hue 회전, 학습
-LUT이 있을 때만) -> lab3d_core(L, a, b 결합 3D 잔차 LUT, 학습 LUT이
-있을 때만) -> spatial_core(V0.1은 bypass) -> LAB 복원 -> Linear RGB
+LUT이 있을 때만) -> lab2d_core(a, b 결합 2D 잔차 LUT, 학습 LUT이 있을
+때만) -> lab3d_core(L, a, b 결합 3D 잔차 LUT, 학습 LUT이 있을 때만) ->
+spatial_core(V0.1은 bypass) -> LAB 복원 -> Linear RGB
 
 L채널 톤 단계는 두 모드가 있다:
   - 파라메트릭(기본): tone_core의 S-curve/shadow-lift/highlight-rolloff
@@ -21,11 +22,12 @@ hue 보정 단계는 파라메트릭 모델 자체가 없다(V0.1엔 아예 없�
 profile의 "learned_hue_lut"에 npy 경로를 주면 순환(circular) 1D LUT을
 적용하고, 없으면 완전히 bypass한다(calibrate_profile.py --mode hue로 생성).
 
-3D 잔차 LUT도 파라메트릭 모델이 없다 - 톤/hue를 각각 독립적으로 고치는
-1D LUT 두 개가 전부 개선폭 5% 미만에서 막힌 뒤(assets/luts/README.md)
-"잔차가 채널별로 분해되지 않는다"는 가설의 다음 시도. profile의
-"learned_lab3d_lut"에 npz 경로(table+domain)를 주면 적용, 없으면 bypass
-(calibrate_profile.py --mode lab3d로 생성).
+2D/3D 잔차 LUT도 파라메트릭 모델이 없다 - 톤/hue를 각각 독립적으로
+고치는 1D LUT 두 개가 전부 개선폭 5% 미만에서 막힌 뒤(assets/luts/README.md)
+"잔차가 채널별로 분해되지 않는다"는 가설의 다음 시도들. profile의
+"learned_lab2d_lut"(npz, a/b만)/"learned_lab3d_lut"(npz, L/a/b 전부)에
+경로를 주면 적용, 없으면 bypass(calibrate_profile.py --mode lab2d /
+--mode lab3d로 생성).
 """
 import os
 
@@ -33,7 +35,7 @@ import numpy as np
 import colour
 
 from hybrid_engine.core import (
-    normalizer, tone_core, color_core, hue_core, lab3d_core, spatial_core, color_matrix,
+    normalizer, tone_core, color_core, hue_core, lab2d_core, lab3d_core, spatial_core, color_matrix,
 )
 
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
@@ -56,6 +58,7 @@ _DEFAULT_PARAMS = {
     "max_chroma": 110.0,
     "learned_tone_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로
     "learned_hue_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로
+    "learned_lab2d_lut": None,  # npz 파일명(assets/luts/ 기준, table+domain) 또는 절대경로
     "learned_lab3d_lut": None,  # npz 파일명(assets/luts/ 기준, table+domain) 또는 절대경로
     "use_spatial": False,  # Phase 2 예약 - V0.1은 항상 bypass
 }
@@ -81,6 +84,15 @@ class HybridCameraEngine:
         if hue_lut_ref:
             path = hue_lut_ref if os.path.isabs(hue_lut_ref) else os.path.join(_LUTS_DIR, hue_lut_ref)
             self._hue_lut = np.load(path)
+
+        self._lab2d_table = None
+        self._lab2d_domain = None
+        lab2d_ref = self.params.get("learned_lab2d_lut")
+        if lab2d_ref:
+            path = lab2d_ref if os.path.isabs(lab2d_ref) else os.path.join(_LUTS_DIR, lab2d_ref)
+            data = np.load(path)
+            self._lab2d_table = data["table"]
+            self._lab2d_domain = data["domain"]
 
         self._lab3d_table = None
         self._lab3d_domain = None
@@ -158,6 +170,13 @@ class HybridCameraEngine:
             return hue_core.apply_hue_lut(a, b, self._hue_lut)
         return a, b
 
+    def _apply_lab2d(self, a, b):
+        """2D 잔차 LUT 적용 - 학습 LUT(table+domain)이 로드돼 있으면
+        a/b를 결합으로 보정(L은 안 건드림), 없으면 완전 bypass."""
+        if self._lab2d_table is not None:
+            return lab2d_core.apply_lab2d_lut(a, b, self._lab2d_table, self._lab2d_domain)
+        return a, b
+
     def _apply_lab3d(self, L, a, b):
         """3D 잔차 LUT 적용 - 학습 LUT(table+domain)이 로드돼 있으면
         L/a/b를 결합으로 보정, 없으면 완전 bypass."""
@@ -176,9 +195,10 @@ class HybridCameraEngine:
         생략하면 Phase 0은 건너뛰고 바로 Phase 1(Gray World)부터 시작."""
         L2, a2, b2 = self.to_pre_hue_lab(linear_rgb, camera_whitebalance)
         a3, b3 = self._apply_hue(a2, b2)
-        L4, a4, b4 = self._apply_lab3d(L2, a3, b3)
+        a4, b4 = self._apply_lab2d(a3, b3)
+        L5, a5, b5 = self._apply_lab3d(L2, a4, b4)
 
-        lab2 = np.stack([L4, a4, b4], axis=-1)
+        lab2 = np.stack([L5, a5, b5], axis=-1)
         xyz2 = colour.Lab_to_XYZ(lab2)
         rgb2 = colour.XYZ_to_RGB(xyz2, _SRGB, apply_cctf_encoding=False)
 
