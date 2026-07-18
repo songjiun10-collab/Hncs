@@ -268,6 +268,61 @@ class TestLearnedHueLut(unittest.TestCase):
         np.testing.assert_allclose(lab_out[..., 2], b2, atol=1.0)
 
 
+class TestLearnedLab3dLut(unittest.TestCase):
+    """learned_lab3d_lut 경로(엔진의 L/a/b 결합 3D 잔차 LUT 단계) 검증."""
+
+    def _engine_with_lab3d_lut(self, table, domain):
+        import os
+        import tempfile
+        fd, path = tempfile.mkstemp(suffix=".npz")
+        os.close(fd)
+        np.savez(path, table=table, domain=domain)
+        self.addCleanup(os.remove, path)
+        return HybridCameraEngine(profile={"learned_lab3d_lut": path})
+
+    def _identity_table(self, grid_size, domain):
+        lo, hi = domain
+        coords = np.stack(np.meshgrid(
+            np.linspace(lo[0], hi[0], grid_size),
+            np.linspace(lo[1], hi[1], grid_size),
+            np.linspace(lo[2], hi[2], grid_size),
+            indexing="ij"), axis=-1)
+        return coords
+
+    def test_identity_table_leaves_lab_unchanged(self):
+        domain = np.array([[0.0, -50.0, -50.0], [100.0, 50.0, 50.0]])
+        table = self._identity_table(5, domain)
+        engine = self._engine_with_lab3d_lut(table, domain)
+        L = np.array([[50.0]])
+        a = np.array([[10.0]])
+        b = np.array([[-10.0]])
+        L2, a2, b2 = engine._apply_lab3d(L, a, b)
+        np.testing.assert_allclose(L2, L, atol=1e-6)
+        np.testing.assert_allclose(a2, a, atol=1e-6)
+        np.testing.assert_allclose(b2, b, atol=1e-6)
+
+    def test_no_lut_is_identity_passthrough(self):
+        engine = HybridCameraEngine()
+        self.assertIsNone(engine._lab3d_table)
+        L = np.array([[50.0]])
+        a = np.array([[10.0]])
+        b = np.array([[-10.0]])
+        L2, a2, b2 = engine._apply_lab3d(L, a, b)
+        np.testing.assert_allclose(L2, L)
+        np.testing.assert_allclose(a2, a)
+        np.testing.assert_allclose(b2, b)
+
+    def test_process_runs_end_to_end_with_lab3d_lut(self):
+        domain = np.array([[0.0, -60.0, -60.0], [100.0, 60.0, 60.0]])
+        rng = np.random.default_rng(15)
+        table = self._identity_table(4, domain) + rng.uniform(-3, 3, size=(4, 4, 4, 3))
+        engine = self._engine_with_lab3d_lut(table, domain)
+        img = rng.uniform(0.05, 0.9, size=(8, 8, 3))
+        out = engine.process(img)
+        self.assertEqual(out.shape, img.shape)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+
 class TestLearnToneLutFunction(unittest.TestCase):
     """calibrate_profile.learn_tone_lut - 합성 페어로 학습 로직 자체를 검증
     (raw 디코드는 필요 없음: dataset 튜플을 직접 구성)."""

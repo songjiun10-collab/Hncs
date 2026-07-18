@@ -232,6 +232,108 @@ def run_hue_mode(dataset):
     return baseline_loss, hue_loss, lut_path
 
 
+_LAB3D_GRID_SIZE = 9  # 9^3=729 격자점 - 표본 13장(수백만 픽셀)이어도 L/a/b 결합 공간은
+                       # 넓어서 과적합 위험이 큼. run_lab3d_mode가 leave-one-out으로 확인.
+_LEARNED_LAB3D_LUT_FILENAME = "hasselblad_lab3d_learned.npz"
+
+
+def learn_lab3d_lut(dataset, profile, grid_size=_LAB3D_GRID_SIZE):
+    """(엔진의 tone+color+hue 적용 후 L/a/b, 타깃 L/a/b) 픽셀 대응에서
+    3D 잔차 LUT을 직접 학습. 톤/hue LUT과 달리 세 축을 "조합"으로 보고
+    격자(cell)별 타깃 평균을 구한다 - 표본이 없는 cell은 그 격자점 자체
+    좌표(항등, 즉 무보정)로 남긴다(외삽으로 잘못된 보정을 추측하지 않기
+    위함). 반환: (table (grid_size,grid_size,grid_size,3), domain
+    ([[Lmin,amin,bmin],[Lmax,amax,bmax]]))."""
+    from hybrid_engine.utils.evaluate import _linear_rgb_to_lab
+
+    engine = HybridCameraEngine(profile=profile)
+    sources, targets = [], []
+    for linear_small, camera_wb, target_small in dataset:
+        L2, a2, b2 = engine.to_pre_hue_lab(linear_small, camera_whitebalance=camera_wb)
+        target_lab = _linear_rgb_to_lab(target_small)
+        sources.append(np.stack([L2, a2, b2], axis=-1).reshape(-1, 3))
+        targets.append(target_lab.reshape(-1, 3))
+    source = np.concatenate(sources, axis=0)
+    target = np.concatenate(targets, axis=0)
+
+    lo = source.min(axis=0)
+    hi = source.max(axis=0)
+    domain = np.stack([lo, hi], axis=0)
+    span = np.clip(hi - lo, 1e-6, None)
+
+    idx = np.clip(np.round((source - lo) / span * (grid_size - 1)).astype(int),
+                  0, grid_size - 1)
+    flat_idx = (idx[:, 0] * grid_size + idx[:, 1]) * grid_size + idx[:, 2]
+
+    n_cells = grid_size ** 3
+    sums = np.zeros((n_cells, 3))
+    counts = np.zeros(n_cells)
+    np.add.at(sums, flat_idx, target)
+    np.add.at(counts, flat_idx, 1)
+
+    coords = np.stack(np.meshgrid(
+        np.linspace(lo[0], hi[0], grid_size),
+        np.linspace(lo[1], hi[1], grid_size),
+        np.linspace(lo[2], hi[2], grid_size),
+        indexing="ij"), axis=-1)
+    table = coords.reshape(n_cells, 3).copy()
+
+    filled = counts > 0
+    table[filled] = sums[filled] / counts[filled, None]
+    table = table.reshape(grid_size, grid_size, grid_size, 3)
+    return table, domain
+
+
+def run_lab3d_mode(dataset, grid_size=_LAB3D_GRID_SIZE):
+    """3D 잔차 LUT 모드: in-sample ΔE(참고용, 과적합 위험 큼 - 729개
+    격자점을 13장에서 학습하니 톤/hue LUT보다도 과적합 위험이 훨씬 큼)와
+    leave-one-out 교차검증 ΔE(13-fold, 매번 12장으로 학습해서 나머지
+    1장에서 평가)를 둘 다 낸다. 실제 채택 여부 판단은 교차검증 수치
+    기준이어야 한다는 게 이 함수를 부르는 쪽(main)의 책임."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        profile = json.load(f)
+    profile.pop("_comment", None)
+    profile.pop("learned_lab3d_lut", None)
+
+    baseline_loss = _mean_loss(profile, dataset)
+    print(f"3D LUT 보정 전 ΔE (기준선): {baseline_loss:.3f}")
+
+    table, domain = learn_lab3d_lut(dataset, profile, grid_size=grid_size)
+    lut_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "luts", _LEARNED_LAB3D_LUT_FILENAME)
+    np.savez(lut_path, table=table, domain=domain)
+
+    lab3d_profile = dict(profile, learned_lab3d_lut=_LEARNED_LAB3D_LUT_FILENAME)
+    in_sample_loss = _mean_loss(lab3d_profile, dataset)
+    in_sample_improvement = (baseline_loss - in_sample_loss) / baseline_loss * 100
+    print(f"3D LUT 보정 후 ΔE (in-sample, 과적합 위험 큼): {in_sample_loss:.3f} "
+          f"({in_sample_improvement:+.1f}%)")
+
+    loo_loss = None
+    if len(dataset) > 1:
+        loo_losses = []
+        for i in range(len(dataset)):
+            train_set = dataset[:i] + dataset[i + 1:]
+            held_out = [dataset[i]]
+            table_i, domain_i = learn_lab3d_lut(train_set, profile, grid_size=grid_size)
+            fold_path = lut_path + f".fold{i}.npz"
+            np.savez(fold_path, table=table_i, domain=domain_i)
+            try:
+                fold_profile = dict(profile, learned_lab3d_lut=fold_path)
+                loo_losses.append(_mean_loss(fold_profile, held_out))
+            finally:
+                os.remove(fold_path)
+        loo_loss = float(np.mean(loo_losses))
+        loo_improvement = (baseline_loss - loo_loss) / baseline_loss * 100
+        print(f"3D LUT 보정 후 ΔE (leave-one-out 교차검증, {len(dataset)}-fold): "
+              f"{loo_loss:.3f} ({loo_improvement:+.1f}%)")
+
+    return baseline_loss, in_sample_loss, loo_loss, lut_path
+
+
 def run_learned_mode(dataset):
     """학습 LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 톤
     단계만 학습 LUT으로 교체하고 ΔE를 파라메트릭과 비교한다. 더 나을
@@ -264,10 +366,11 @@ def run_learned_mode(dataset):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
-    parser.add_argument("--mode", choices=["parametric", "learned", "hue"], default="parametric",
+    parser.add_argument("--mode", choices=["parametric", "learned", "hue", "lab3d"], default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
-                              "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교")
+                              "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교 / "
+                              "lab3d: L/a/b 결합 3D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -283,6 +386,10 @@ def main():
 
     if args.mode == "hue":
         run_hue_mode(dataset)
+        return
+
+    if args.mode == "lab3d":
+        run_lab3d_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)
