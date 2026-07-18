@@ -210,9 +210,10 @@ def learn_hue_lut(dataset, profile, n_bins=_LEARNED_HUE_LUT_BINS):
 
 def run_hue_mode(dataset):
     """학습 hue LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 hue
-    보정 단계를 추가하고 ΔE를 비교한다. 더 나을 때만 채택하라는 게 이
-    함수를 부르는 쪽(main)의 책임 - B1(학습 톤 LUT)이 +4.9%로 기각됐던
-    선례와 같은 기준으로 판단."""
+    보정 단계를 추가하고 in-sample ΔE와 leave-one-out 교차검증 ΔE를 둘 다
+    낸다(lab2d/lab3d와 같은 이유 - in-sample만으로는 과적합을 못 잡는다는
+    게 3D LUT 실험에서 실측으로 확인됨). 채택 여부는 교차검증 기준이어야
+    한다는 게 이 함수를 부르는 쪽(main)의 책임."""
     import json
     profile_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
@@ -230,12 +231,30 @@ def run_hue_mode(dataset):
     np.save(lut_path, lut)
 
     hue_profile = dict(profile, learned_hue_lut=_LEARNED_HUE_LUT_FILENAME)
-    hue_loss = _mean_loss(hue_profile, dataset)
-    print(f"hue 보정 후 ΔE:          {hue_loss:.3f}")
+    in_sample_loss = _mean_loss(hue_profile, dataset)
+    in_sample_improvement = (baseline_loss - in_sample_loss) / baseline_loss * 100
+    print(f"hue 보정 후 ΔE (in-sample): {in_sample_loss:.3f} ({in_sample_improvement:+.1f}%)")
 
-    improvement = (baseline_loss - hue_loss) / baseline_loss * 100
-    print(f"개선폭: {improvement:+.1f}%")
-    return baseline_loss, hue_loss, lut_path
+    loo_loss = None
+    if len(dataset) > 1:
+        loo_losses = []
+        for i in range(len(dataset)):
+            train_set = dataset[:i] + dataset[i + 1:]
+            held_out = [dataset[i]]
+            fold_lut = learn_hue_lut(train_set, profile)
+            fold_path = lut_path + f".fold{i}.npy"
+            np.save(fold_path, fold_lut)
+            try:
+                fold_profile = dict(profile, learned_hue_lut=fold_path)
+                loo_losses.append(_mean_loss(fold_profile, held_out))
+            finally:
+                os.remove(fold_path)
+        loo_loss = float(np.mean(loo_losses))
+        loo_improvement = (baseline_loss - loo_loss) / baseline_loss * 100
+        print(f"hue 보정 후 ΔE (leave-one-out 교차검증, {len(dataset)}-fold): "
+              f"{loo_loss:.3f} ({loo_improvement:+.1f}%)")
+
+    return baseline_loss, in_sample_loss, loo_loss, lut_path
 
 
 _LAB2D_GRID_SIZE = 9  # 9^2=81 격자점 - 3D(729)보다 훨씬 적어서 과적합 위험이 낮음.
