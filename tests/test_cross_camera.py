@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from hybrid_engine.evaluate_generalization import run_generalization, _convergence_summary
+from hybrid_engine.evaluation.cross_camera import run_generalization, _convergence_summary
 
 
 def _test_image(seed=0, shape=(24, 24, 3)):
@@ -58,7 +58,7 @@ class TestRunGeneralizationSyntheticOnly(unittest.TestCase):
         import cv2
         with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
             cv2.imwrite(f.name, _test_image())
-            with patch("hybrid_engine.evaluate_generalization.glob.glob", return_value=[]):
+            with patch("hybrid_engine.evaluation.cross_camera.glob.glob", return_value=[]):
                 results = run_generalization("hasselblad", f.name)
 
         self.assertNotIn("fuji", results)
