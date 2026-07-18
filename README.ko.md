@@ -107,6 +107,25 @@ Log 커브-색역 페어링은 `colour-science`가 제공하는 정의를 그대
 것으로, 각 제조사 공식 스펙과 전수 대조 검증까지는 안 됐다는 게 이
 프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat.
 
+## 렌즈 왜곡 보정
+
+위의 색감 렌더링 엔진들과 무관한 순수 기하 연산 도구 - [lensfun](https://lensfun.github.io/)에
+번들된 카메라+렌즈 프로파일 DB(`lensfunpy` 경유, 카메라 948종/렌즈 1304종,
+`pip install -r requirements.txt` 외에 별도 시스템 패키지 불필요)로 배럴/핀쿠션
+왜곡을 되돌린다. EXIF(`exiftool`)에서 Make/Model/LensModel/FocalLength/FNumber를
+읽어 자동으로 매칭되는 프로파일을 찾고, RAW와 이미 렌더링된 JPEG/TIFF/PNG
+입력 둘 다 받는다.
+
+```
+python3 -m tools.lens_correction photo.RAF corrected.jpg
+python3 -m tools.lens_correction photo.jpg corrected.jpg --lens "XF10-24mmF4 R OIS" --focal-length 10 --aperture 8
+```
+
+DB에 카메라/렌즈가 없거나 매칭된 렌즈 프로파일에 왜곡 보정 데이터가 없으면
+조용히 원본을 그대로 통과시키지 않고 명확하게 실패한다(`camera_not_found`
+/ `lens_not_found` / `no_distortion_data`) - `core/lens_correction.py`의
+`correct_from_exif()` 참고. 비네팅/색수차 보정은 지금 범위 밖(`ModifyFlags.DISTORTION`만 적용).
+
 ## hybrid_engine/ - EXIF 기반 카메라 간 색감 변환 (V0.1)
 
 리포 루트의 `hybrid_engine/`는 위 두 엔진과도 목적이 다른 세 번째 독립

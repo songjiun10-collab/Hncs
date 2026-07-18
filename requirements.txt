@@ -4,3 +4,4 @@ rawpy
 requests
 gdown
 colour-science
+lensfunpy

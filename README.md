@@ -97,6 +97,17 @@ as-is.*
 
 Supported Log spaces: see `LOG_SPACES` in `core/log_pipeline.py` (F-Log/F-Log2/V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log). The curve-gamut pairings use `colour-science`'s own definitions as-is - they haven't been cross-checked exhaustively against each manufacturer's official spec, the same kind of "unverified" caveat as the rest of this project's flagged items.
 
+## Lens distortion correction
+
+A purely geometric tool, independent of the color-rendering engines above - undoes barrel/pincushion distortion using the camera+lens profile database bundled with [lensfun](https://lensfun.github.io/) (via `lensfunpy`, 948 cameras / 1304 lenses, no extra system package needed beyond `pip install -r requirements.txt`). Reads Make/Model/LensModel/FocalLength/FNumber from EXIF (`exiftool`) and looks up the matching profile automatically; accepts both RAW and already-rendered JPEG/TIFF/PNG input.
+
+```
+python3 -m tools.lens_correction photo.RAF corrected.jpg
+python3 -m tools.lens_correction photo.jpg corrected.jpg --lens "XF10-24mmF4 R OIS" --focal-length 10 --aperture 8
+```
+
+If the camera or lens isn't in the database, or the matched lens profile has no distortion calibration data, the tool fails loudly (`camera_not_found` / `lens_not_found` / `no_distortion_data`) instead of silently passing the image through uncorrected - see `core/lens_correction.py`'s `correct_from_exif()`. Vignetting and chromatic-aberration correction are out of scope for now (only `ModifyFlags.DISTORTION` is applied).
+
 ## hybrid_engine/ - EXIF-driven cross-camera color conversion (V0.1)
 
 `hybrid_engine/` at the repo root is a third, independent module with yet another purpose: "re-render a finished JPEG shot on camera A as if camera B had shot it." There are two entry points - one for RAW input (`HybridCameraEngine`: Phase 0 color unification + Gray World normalization + LAB tone/saturation curves) and one for JPEG-only input (`preset_inverse`: detects the source brand from EXIF, inverts that brand's population-fit tone curve from `brands/*.py`, then re-applies the real target brand's existing `apply_*` function).
