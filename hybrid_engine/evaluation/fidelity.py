@@ -33,7 +33,7 @@ EVAL_MAX_DIM = 1200  # 캘리브레이션(500px)보다 크게 - 평가는 진단
 def _load_profile(name):
     if name is None:
         return None
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                          "assets", "profiles", f"{name}.json")
     with open(path, encoding="utf-8") as f:
         profile = json.load(f)
