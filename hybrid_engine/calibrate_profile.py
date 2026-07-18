@@ -514,6 +514,60 @@ def run_spatial_mode(dataset, n_folds=4, seed=0):
     return baseline_loss, in_sample_loss, cv_loss, tuned_params
 
 
+def run_raw_baseline_mode(dataset, n_folds=4, seed=0):
+    """GitHub 이슈 #4 대응: hybrid_engine의 Phase 0-2를 전혀 안 거친
+    순수 rawpy 디코드(_load_calib_set()이 만든 linear_small 그대로)에
+    전역 3x3 선형 컬러 매트릭스 하나만 최소자승으로 맞춰서, "이론상
+    최선의 선형 보정만"의 ΔE가 hybrid_engine 현재 ΔE와 비교해 어느
+    수준인지 잰다. 병목이 색 매트릭스(raw 베이스라인) 자체 때문인지,
+    그 이후의 비선형 처리(톤/채도/hue/공간) 때문인지 분리하는 게
+    목적 - core/raw_baseline.py 참고."""
+    from hybrid_engine.core.raw_baseline import fit_color_matrix, apply_color_matrix
+    from hybrid_engine.utils.evaluate import mean_delta_e
+
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        profile = json.load(f)
+    profile.pop("_comment", None)
+
+    hybrid_loss = _mean_loss(profile, dataset)
+    print(f"hybrid_engine 현재 ΔE (파라메트릭 profile, 참고용): {hybrid_loss:.3f}")
+
+    raw_sources = [d[0] for d in dataset]
+    targets = [d[2] for d in dataset]
+
+    no_correction_loss = float(np.mean(
+        [mean_delta_e(s, t) for s, t in zip(raw_sources, targets)]))
+    print(f"raw 디코드 자체(무보정) ΔE: {no_correction_loss:.3f}")
+
+    matrix = fit_color_matrix(raw_sources, targets)
+    in_sample_loss = float(np.mean(
+        [mean_delta_e(apply_color_matrix(s, matrix), t) for s, t in zip(raw_sources, targets)]))
+    print(f"3x3 매트릭스 보정 ΔE (in-sample): {in_sample_loss:.3f}")
+
+    cv_loss = None
+    if len(dataset) >= n_folds:
+        rng = np.random.default_rng(seed)
+        order = rng.permutation(len(dataset))
+        folds = np.array_split(order, n_folds)
+        fold_losses = []
+        for fold_idx in folds:
+            fold_idx_set = set(fold_idx.tolist())
+            train_sources = [raw_sources[i] for i in range(len(dataset)) if i not in fold_idx_set]
+            train_targets = [targets[i] for i in range(len(dataset)) if i not in fold_idx_set]
+            fold_matrix = fit_color_matrix(train_sources, train_targets)
+            for i in fold_idx:
+                fold_losses.append(mean_delta_e(
+                    apply_color_matrix(raw_sources[i], fold_matrix), targets[i]))
+        cv_loss = float(np.mean(fold_losses))
+        print(f"3x3 매트릭스 보정 ΔE ({n_folds}-fold 교차검증): {cv_loss:.3f}")
+
+    print(f"\n적합된 3x3 매트릭스:\n{matrix}")
+    return hybrid_loss, no_correction_loss, in_sample_loss, cv_loss, matrix
+
+
 def run_learned_mode(dataset):
     """학습 LUT 모드: 캘리브레이션된 파라메트릭 profile을 베이스로 톤
     단계만 학습 LUT으로 교체하고 ΔE를 파라메트릭과 비교한다. 더 나을
@@ -546,14 +600,16 @@ def run_learned_mode(dataset):
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
-    parser.add_argument("--mode", choices=["parametric", "learned", "hue", "lab2d", "lab3d", "spatial"],
+    parser.add_argument("--mode",
+                         choices=["parametric", "learned", "hue", "lab2d", "lab3d", "spatial", "raw_baseline"],
                          default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
                               "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교 / "
                               "lab2d: a/b 결합 2D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
                               "lab3d: L/a/b 결합 3D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
-                              "spatial: Phase 2 로컬 콘트라스트 파라미터를 좌표하강으로 탐색하고 in-sample+k-fold ΔE 비교")
+                              "spatial: Phase 2 로컬 콘트라스트 파라미터를 좌표하강으로 탐색하고 in-sample+k-fold ΔE 비교 / "
+                              "raw_baseline: hybrid_engine을 거치지 않은 순수 raw 디코드에 3x3 매트릭스만 맞춰서 이론적 최선 ΔE 측정(이슈 #4)")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -581,6 +637,10 @@ def main():
 
     if args.mode == "spatial":
         run_spatial_mode(dataset)
+        return
+
+    if args.mode == "raw_baseline":
+        run_raw_baseline_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)
