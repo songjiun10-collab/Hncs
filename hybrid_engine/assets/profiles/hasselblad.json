@@ -1,14 +1,20 @@
 {
-  "_comment": "v1.1 - 13쌍의 실제 핫셀블라드 raw+jpeg 페어(raw_calib_cache/)로 hybrid_engine.calibrate_profile의 좌표하강 ΔE 루프를 돌려서 캘리브레이션함. 최종 평균 ΔE(CIEDE2000)=14.85. brands/hasselblad.py의 apply_hncs와는 여전히 다른 커브 수식이라 그쪽 파라미터와 직접 비교는 안 됨 - 이 profile 자체의 실측 기반 최적값이라는 의미.",
+  "_comment": "v1.2 - GitHub 이슈 #4 대응(raw 베이스라인 특성화) 후 재캘리브레이션. Phase 0에 13쌍 raw+jpeg 페어(raw_calib_cache/)로 색차트 없이 최소자승 적합한 3x3 컬러 매트릭스(raw_baseline_matrix)를 추가하고, 그 위에서 Phase 1(tone_core)/Phase 2(color_core) 파라미터를 좌표하강으로 재학습함(calibrate_profile.py --mode raw_baseline_pipeline). normalize_exposure=false는 필수 - 매트릭스가 이미 맞춰놓은 밝기 관계를 노출 강제 정규화가 다시 망가뜨린다는 게 실측으로 확인됨(hybrid_engine/EVALUATION.md 후속 실측 6). 캘리브레이션 기준(calibrate_profile.py, 500px) ΔE(CIEDE2000): in-sample 9.69(v1.1 14.85 대비 +34.8%), 4-fold nested 교차검증 10.43(+29.7%). 공식 평가 하네스(evaluation/fidelity.py, 1200px, 전체 지표) 기준 ΔE00 평균: v1.1 15.01 -> v1.2 9.82(-34.6%, CIE 등급이 \"완전히 다른 색\"에서 \"한눈에 다름\"으로 바뀜), SSIM(L) 0.7481->0.8191도 함께 개선. 여전히 완전한 매치는 아니고(미드톤이 세 구간 중 최악, |Δhue| 36도로 거의 안 바뀜) - 자세한 실측 과정과 잔여 한계는 EVALUATION.md 참고.",
+  "raw_baseline_matrix": [
+    [1.344678713706991, -0.01489533534024521, -0.5133023501731413],
+    [-0.03083663177127588, 1.3693799138002056, 0.9655547802258129],
+    [0.2811203006926001, 0.24619012433265253, 1.1815212861811402]
+  ],
+  "normalize_exposure": false,
   "target_gray": 0.18,
   "shadow_lift": 0.0,
   "shadow_threshold": 0.1,
-  "contrast_n": 1.3,
-  "highlight_rolloff_start": 0.7,
-  "sat_gain": 0.2,
+  "contrast_n": 1.15,
+  "highlight_rolloff_start": 0.8,
+  "sat_gain": 0.3,
   "sat_center": 50.0,
   "sat_width": 35.0,
-  "max_chroma": 90.0,
+  "max_chroma": 70.0,
   "correct_color_cast": true,
   "use_color_unification": true,
   "use_spatial": false
