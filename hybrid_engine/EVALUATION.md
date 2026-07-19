@@ -279,6 +279,49 @@ spatial_amount가 또 탐색 범위 최솟값(0.1) 근처에 수렴 - 매트릭�
 중 어느 것으로도 안 잡힌다 - 표본을 실질적으로 늘리는 것(이슈 #4의
 X2D II 데이터) 외에는 뚜렷한 다음 수가 안 보이는 상태.
 
+**후속 실측 9(2026-07-19): 이슈 #4 4번 지적("raw 베이스라인이 색차트
+최소자승 매트릭스로 특성화된 적이 없다") 최종 해소.** GitHub 이슈 #4에서
+kmichels(Reddit Big_Rip4015)가 제공한 X2D II 100C ColorChecker Classic
+차트 raw 10장(`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/`,
+동일 설정 XCD 90V/f9.5/ISO50, 94초 사이 연속 촬영)으로 raw 베이스라인
+자체의 진짜 색채측정 오차를 처음으로 측정했다. `core/chart_baseline.py`가
+`cv2.mcc`(OpenCV Macbeth ColorChecker Detector)로 24패치를 자동 검출하고,
+`colour-science`의 공식 `ColorChecker24 - After November 2014`(Calibrite/
+X-Rite 분광측정) 참조값과 직접 비교한다 - `tools/analyze_colorchecker_matrix.py`
+로 실행, 결과는 `datasets/hasselblad/contributed/kmichels-x2dii-2026-07/colorchecker_matrix_report.json`.
+
+| 방식 | 참조값 대비 ΔE00(24패치 평균) |
+|---|---|
+| 보정 없음(rawpy/libraw 기본 매트릭스) | **7.58** |
+| 기존 `raw_baseline_matrix`(X1D 실사진 유래, hasselblad.json Phase 0) 적용 | 10.87 (더 나빠짐) |
+| 차트 최소자승 매트릭스, in-sample(10장 pooled) | 2.69 |
+| **차트 최소자승 매트릭스, leave-one-image-out 교차검증** | **2.78 (-63.3%)** |
+
+세 가지를 확인했다:
+
+1. **raw 베이스라인 불확실성이 정량화됐다** - rawpy 기본 디코드(libraw
+   내장 카메라 매트릭스)는 진짜 색과 ΔE00 7.58만큼 떨어져 있다. 이 프로젝트
+   전체 지표(9.82, raw→**Hasselblad 자체 JPEG 렌더링**과의 차이)와는 비교
+   대상이 다르다는 점에 주의 - 이건 "카메라가 의도한 스타일"이 아니라
+   "객관적으로 측정 가능한 진짜 색"과의 차이다.
+2. **차트로 직접 피팅하면 그 오차의 63%를 줄일 수 있고(2.78), in-sample과
+   교차검증이 거의 같다(2.69 vs 2.78)** - 자유도 9개짜리 선형 매트릭스가
+   24패치 x 10장 = 240 표본으로 매우 안정적으로 피팅된다는 뜻(과적합 거의
+   없음).
+3. **기존 `raw_baseline_matrix`(X1D 실사진 페어로 피팅된 Phase 0 매트릭스)를
+   이 X2D 차트 raw에 적용하면 오히려 더 나빠진다(7.58 -> 10.87)** - 놀라운
+   결과가 아니다. 그 매트릭스는 애초에 "진짜 색"이 아니라 "Hasselblad가
+   의도적으로 만드는 JPEG 룩(채도 부스트 등)"을 근사하도록 X1D 세대에서
+   학습된 것이고, 여기에 세대차(X1D->X2D)까지 겹쳤다. 즉 이 프로젝트의
+   `raw_baseline_matrix`는 색채측정학적 보정기가 아니라 렌더링 의도 근사기라는
+   걸 실측으로 재확인한 것 - 애초 목표(카메라 JPEG 근사)와 정확히 일치하는
+   동작이라 `hasselblad.json`의 Phase 0을 이 결과로 바꾸지는 않는다.
+
+`tests/test_chart_baseline.py`에서 합성 차트(참조값 24색을 표준 4x6 배치로
+직접 렌더링)로 `detect_and_sample()`이 원본 색을 ΔE00 <1로 복원하는지
+검증(실측: 0.14) - 실제 raw 파일 없이도 검출+샘플링 로직 자체의 정확성을
+CI에서 확인할 수 있다.
+
 원본 JSON 리포트는 이 문서 상단의 두 커맨드로 재현 가능한 산출물이라
 커밋하지 않았다(리포지토리에 없음) - 필요하면 위 커맨드를 그대로
 실행해서 원하는 경로에 새로 생성하면 된다.

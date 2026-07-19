@@ -34,3 +34,7 @@ sigma_stats_result_dedup.csv
 downloaded_samples_hasselblad_trueres/
 hybrid_engine/assets/luts/*.npy
 hybrid_engine/assets/luts/*.npz
+datasets/hasselblad/contributed/*/raw/
+datasets/hasselblad/contributed/*/jpeg/
+datasets/hasselblad/contributed/*/phocus_tiff/
+datasets/hasselblad/contributed/*/chart/
