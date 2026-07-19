@@ -59,4 +59,13 @@ manifest에 기록) - manifest.csv와 검증 결과만 커밋.
    필요 (이슈 #4 3번 지적의 해소)
 2. **camera-to-XYZ 최소자승 매트릭스**: ColorChecker 프레임 + 측정
    광원으로 libraw 기본 매트릭스 대비 특성화된 매트릭스를 구해서 raw
-   베이스라인 불확실성을 정량화 (이슈 #4 4번 지적의 해소)
+   베이스라인 불확실성을 정량화 (이슈 #4 4번 지적의 해소) - **완료**,
+   `kmichels-x2dii-2026-07/`(ColorChecker Classic 차트 10장)로 실행함.
+   `hybrid_engine/core/chart_baseline.py` +
+   `tools/analyze_colorchecker_matrix.py`, 결과는
+   `hybrid_engine/EVALUATION.md` 후속 실측 9 참고 - 요약: 보정 없는
+   raw 베이스라인 ΔE00 7.58, 차트 매트릭스로 교차검증 기준 2.78(-63.3%).
+
+1번(세대 간 pooling 판정)은 이 데이터가 다양한 실사진이 아니라
+ColorChecker 차트 반복 촬영이라 아직 미실행 - 실사진 X2D II raw+jpeg
+페어가 따로 확보되면 그때 실행.
