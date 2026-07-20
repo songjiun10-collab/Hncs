@@ -85,6 +85,7 @@ _DEFAULT_PARAMS = {
     "max_chroma": 110.0,
     "learned_tone_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로
     "learned_hue_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로
+    "learned_hue_chroma_lut": None,  # npy 파일명(assets/luts/ 기준) 또는 절대경로 - hue별 chroma 배율
     "learned_lab2d_lut": None,  # npz 파일명(assets/luts/ 기준, table+domain) 또는 절대경로
     "learned_lab3d_lut": None,  # npz 파일명(assets/luts/ 기준, table+domain) 또는 절대경로
     "use_spatial": False,  # Phase 3 - 캘리브레이션 전까지는 기본 bypass
@@ -120,6 +121,12 @@ class HybridCameraEngine:
         if hue_lut_ref:
             path = hue_lut_ref if os.path.isabs(hue_lut_ref) else os.path.join(_LUTS_DIR, hue_lut_ref)
             self._hue_lut = np.load(path)
+
+        self._hue_chroma_lut = None
+        hue_chroma_ref = self.params.get("learned_hue_chroma_lut")
+        if hue_chroma_ref:
+            path = hue_chroma_ref if os.path.isabs(hue_chroma_ref) else os.path.join(_LUTS_DIR, hue_chroma_ref)
+            self._hue_chroma_lut = np.load(path)
 
         self._lab2d_table = None
         self._lab2d_domain = None
@@ -216,6 +223,15 @@ class HybridCameraEngine:
             return hue_core.apply_hue_lut(a, b, self._hue_lut)
         return a, b
 
+    def _apply_hue_chroma(self, a, b):
+        """hue별 chroma 배율 적용 - 학습 LUT이 로드돼 있으면 적용, 없으면
+        완전 bypass. _apply_hue(회전만)와 축이 분리된 자매 단계 - hue별로
+        따로 켜고 끌 수 있어야 각자의 교차검증 개선폭을 독립적으로
+        판단할 수 있다."""
+        if self._hue_chroma_lut is not None:
+            return hue_core.apply_hue_chroma_lut(a, b, self._hue_chroma_lut)
+        return a, b
+
     def _apply_lab2d(self, a, b):
         """2D 잔차 LUT 적용 - 학습 LUT(table+domain)이 로드돼 있으면
         a/b를 결합으로 보정(L은 안 건드림), 없으면 완전 bypass."""
@@ -255,6 +271,7 @@ class HybridCameraEngine:
         먼저 적용된다."""
         L2, a2, b2 = self.to_pre_hue_lab(linear_rgb, camera_whitebalance)
         a3, b3 = self._apply_hue(a2, b2)
+        a3, b3 = self._apply_hue_chroma(a3, b3)
         a4, b4 = self._apply_lab2d(a3, b3)
         L5, a5, b5 = self._apply_lab3d(L2, a4, b4)
         L6 = self._apply_spatial(L5)

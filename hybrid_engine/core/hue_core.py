@@ -34,3 +34,27 @@ def apply_hue_lut(a, b, hue_lut):
 
     hue_out = np.radians(hue_in + delta_deg)
     return chroma * np.cos(hue_out), chroma * np.sin(hue_out)
+
+
+def apply_hue_chroma_lut(a, b, chroma_lut):
+    """apply_hue_lut의 자매 함수 - hue(방향)는 그대로 두고 chroma(크기)만
+    hue별 배율로 스케일한다. EVALUATION.md 후속 실측 10에서 확인된
+    "특정 hue 대역(피부톤 등)만 채도/따뜻함이 부족하다"는 국소적 문제를
+    겨냥한 것 - 기존 apply_hue_lut(회전만)과 color_core의 채도 부스트
+    (L에만 의존, hue 무관)가 못 채우는 축.
+
+    chroma_lut: calibrate_profile.learn_hue_chroma_lut()이 만든 (n_bins,)
+    배열 - 입력 hue(bin 중심 기준)별 chroma 배율(1.0=무보정)."""
+    n_bins = len(chroma_lut)
+    chroma = np.hypot(a, b)
+    hue_in = np.degrees(np.arctan2(b, a)) % 360.0
+
+    bin_width = 360.0 / n_bins
+    centers = (np.arange(n_bins) + 0.5) * bin_width
+    domain = np.concatenate([centers - 360.0, centers, centers + 360.0])
+    values = np.tile(chroma_lut, 3)
+    gain = np.interp(hue_in.ravel(), domain, values).reshape(hue_in.shape)
+
+    new_chroma = np.clip(chroma * gain, 0.0, None)
+    hue_rad = np.radians(hue_in)
+    return new_chroma * np.cos(hue_rad), new_chroma * np.sin(hue_rad)

@@ -257,6 +257,107 @@ def run_hue_mode(dataset):
     return baseline_loss, in_sample_loss, loo_loss, lut_path
 
 
+_LEARNED_HUE_CHROMA_LUT_BINS = 36  # hue LUT과 동일한 세분화 - 표본 13장 기준 과적합 균형점
+_LEARNED_HUE_CHROMA_LUT_FILENAME = "hasselblad_hue_chroma_learned.npy"
+
+
+def learn_hue_chroma_lut(dataset, profile, n_bins=_LEARNED_HUE_CHROMA_LUT_BINS):
+    """(엔진의 tone+color 적용 후 a/b, 타깃 a/b) 픽셀 대응에서 순환 1D
+    hue-chroma LUT을 학습한다 - learn_hue_lut의 자매 함수, hue 회전 대신
+    chroma(채도) 배율을 구한다는 것만 다르다. EVALUATION.md 후속 실측
+    10에서 확인된 "옐로우오렌지(피부톤) hue 대역만 유독 실측보다 채도가
+    낮다"는 국소 문제를 겨냥.
+
+    bin별 배율은 픽셀별 비율(target/source)의 평균이 아니라 **에너지
+    비율**로 추정한다 - sum(target chroma) / sum(source chroma). 픽셀별
+    비율은 source chroma가 0에 가까우면 발산하는데, 에너지 비율은
+    그 픽셀들이 분자/분모 양쪽에서 자연히 거의 기여하지 않게 만들어서
+    안정적이다. 반환: bin별 chroma 배율(1.0=무보정) 배열
+    (엔진의 learned_hue_chroma_lut 포맷, hue_core.apply_hue_chroma_lut이
+    소비)."""
+    from hybrid_engine.utils.evaluate import _linear_rgb_to_lab
+
+    engine = HybridCameraEngine(profile=profile)
+    bin_width = 360.0 / n_bins
+    sum_source = np.zeros(n_bins)
+    sum_target = np.zeros(n_bins)
+
+    for linear_small, camera_wb, target_small in dataset:
+        _, a2, b2 = engine.to_pre_hue_lab(linear_small, camera_whitebalance=camera_wb)
+        target_lab = _linear_rgb_to_lab(target_small)
+        target_a, target_b = target_lab[..., 1], target_lab[..., 2]
+
+        source_hue = np.degrees(np.arctan2(b2, a2)) % 360.0
+        chroma_source = np.hypot(a2, b2)
+        chroma_target = np.hypot(target_a, target_b)
+
+        bins = np.minimum((source_hue.ravel() / bin_width).astype(int), n_bins - 1)
+        np.add.at(sum_source, bins, chroma_source.ravel())
+        np.add.at(sum_target, bins, chroma_target.ravel())
+
+    lut = np.ones(n_bins)
+    filled = sum_source > 1e-6
+    lut[filled] = sum_target[filled] / sum_source[filled]
+
+    if filled.any() and not filled.all():
+        centers = (np.arange(n_bins) + 0.5) * bin_width
+        src_centers = centers[filled]
+        src_vals = lut[filled]
+        domain = np.concatenate([src_centers - 360.0, src_centers, src_centers + 360.0])
+        values = np.tile(src_vals, 3)
+        order = np.argsort(domain)
+        lut = np.interp(centers, domain[order], values[order])
+    # filled가 전부 False면(표본이 아예 없으면) 무보정(전부 1.0)으로 남긴다
+    return lut
+
+
+def run_hue_chroma_mode(dataset):
+    """학습 hue-chroma LUT 모드: run_hue_mode와 같은 구조로 in-sample ΔE와
+    leave-one-out 교차검증 ΔE를 둘 다 낸다. 채택 여부는 교차검증 기준."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        profile = json.load(f)
+    profile.pop("_comment", None)
+    profile.pop("learned_hue_chroma_lut", None)
+
+    baseline_loss = _mean_loss(profile, dataset)
+    print(f"hue-chroma 보정 전 ΔE (기준선): {baseline_loss:.3f}")
+
+    lut = learn_hue_chroma_lut(dataset, profile)
+    lut_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "luts",
+        _LEARNED_HUE_CHROMA_LUT_FILENAME)
+    np.save(lut_path, lut)
+
+    chroma_profile = dict(profile, learned_hue_chroma_lut=_LEARNED_HUE_CHROMA_LUT_FILENAME)
+    in_sample_loss = _mean_loss(chroma_profile, dataset)
+    in_sample_improvement = (baseline_loss - in_sample_loss) / baseline_loss * 100
+    print(f"hue-chroma 보정 후 ΔE (in-sample): {in_sample_loss:.3f} ({in_sample_improvement:+.1f}%)")
+
+    loo_loss = None
+    if len(dataset) > 1:
+        loo_losses = []
+        for i in range(len(dataset)):
+            train_set = dataset[:i] + dataset[i + 1:]
+            held_out = [dataset[i]]
+            fold_lut = learn_hue_chroma_lut(train_set, profile)
+            fold_path = lut_path + f".fold{i}.npy"
+            np.save(fold_path, fold_lut)
+            try:
+                fold_profile = dict(profile, learned_hue_chroma_lut=fold_path)
+                loo_losses.append(_mean_loss(fold_profile, held_out))
+            finally:
+                os.remove(fold_path)
+        loo_loss = float(np.mean(loo_losses))
+        loo_improvement = (baseline_loss - loo_loss) / baseline_loss * 100
+        print(f"hue-chroma 보정 후 ΔE (leave-one-out 교차검증, {len(dataset)}-fold): "
+              f"{loo_loss:.3f} ({loo_improvement:+.1f}%)")
+
+    return baseline_loss, in_sample_loss, loo_loss, lut_path
+
+
 _LAB2D_GRID_SIZE = 9  # 9^2=81 격자점 - 3D(729)보다 훨씬 적어서 과적합 위험이 낮음.
                        # 그래도 run_lab2d_mode가 leave-one-out으로 확인(3D에서 in-sample만
                        # 보면 오판한다는 게 이미 실측으로 확인됐어서).
@@ -753,12 +854,13 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
     parser.add_argument("--mode",
-                         choices=["parametric", "learned", "hue", "lab2d", "lab3d", "spatial",
-                                  "raw_baseline", "raw_baseline_pipeline", "gray_world"],
+                         choices=["parametric", "learned", "hue", "hue_chroma", "lab2d", "lab3d",
+                                  "spatial", "raw_baseline", "raw_baseline_pipeline", "gray_world"],
                          default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
                               "hue: hue 보정 단계(V0.1엔 없던 축)를 학습 순환 LUT으로 추가하고 ΔE 비교 / "
+                              "hue_chroma: hue별 chroma 배율(피부톤 등 특정 hue의 국소 채도 부족)을 학습 순환 LUT으로 추가하고 ΔE 비교 / "
                               "lab2d: a/b 결합 2D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
                               "lab3d: L/a/b 결합 3D 잔차 LUT을 추가하고 in-sample+leave-one-out ΔE 비교 / "
                               "spatial: Phase 3 로컬 콘트라스트 파라미터를 좌표하강으로 탐색하고 in-sample+k-fold ΔE 비교 / "
@@ -780,6 +882,10 @@ def main():
 
     if args.mode == "hue":
         run_hue_mode(dataset)
+        return
+
+    if args.mode == "hue_chroma":
+        run_hue_chroma_mode(dataset)
         return
 
     if args.mode == "lab2d":
