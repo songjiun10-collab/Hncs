@@ -169,7 +169,12 @@ nikon`을 직접 지정했고, 전부 세로 촬영이라 `PIL.ImageOps.exif_tra
 - `calibrate_profile.py`가 실제 핫셀블라드 raw+jpeg 페어 13쌍으로
   CIEDE2000 ΔE 루프를 돌린다. 아래 실험 전부 **교차검증 ΔE 기준으로
   판단**했다(in-sample만으로는 안 됨) - 몇몇은 in-sample에서 좋아 보였다가
-  교차검증에서 뒤집혔는데, 그 자체가 반복되는 발견이라 표로 같이 남긴다:
+  교차검증에서 뒤집혔는데, 그 자체가 반복되는 발견이라 표로 같이 남긴다.
+  `recalibrate.py`는 v1.2를 배포할 때 썼던 절차(매트릭스 재적합 + 톤/채도
+  재학습 + nested 교차검증, 실제로 개선될 때만 갱신)를 명령 하나로 묶은
+  것(`python3 -m hybrid_engine.recalibrate --write`, 기본은 dry-run,
+  `--cache-dir`로 다른 raw+jpeg 페어 디렉토리 지정 가능) - 이슈 #4의
+  실사진 X2D 페어처럼 표본이 늘어난 데이터셋이 생겼을 때 쓰면 된다:
 
   | 실험 | 방법 | in-sample | 교차검증 | 결론 |
   |---|---|---|---|---|
