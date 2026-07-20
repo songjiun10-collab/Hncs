@@ -154,8 +154,12 @@ fix orientation before conversion.*
   | Matrix + retrained tone/color (fixed) | `--mode raw_baseline_pipeline`, nested CV | +34.8% | **+29.7%** | **shipped as v1.2** |
   | Hue LUT retried on v1.2 | same 1D circular LUT, new baseline | +4.6% | +1.4% | rejected, below bar |
   | Spatial retried on v1.2 | same local-contrast stage, new baseline | +0.3% | -1.6% | rejected |
+  | Robust (percentile) Gray World | exclude high-saturation pixels from the neutral-cast estimate | +0.0% (best candidate = off) | -3.4% | rejected, targeted night-scene sky over-correction but didn't help |
+  | Hue-conditional chroma LUT | 36-bin circular chroma gain, orthogonal to the hue-rotation LUT | **-2.0%** | -4.0% | rejected - first LUT experiment negative even in-sample |
+  | Gray World removed entirely | rely only on camera as-shot WB (`unify_to_d65`), no pixel-content neutral-cast estimate | - | **-90.3%** (ΔE00 9.69 → 18.43) | rejected hard - Gray World is load-bearing on all 13 pairs, not just noise |
+  | Zoned Gray World (2-5 luma zones) | independent neutral-cast estimate per brightness zone, Gaussian-blended | +0.0% (best = 1 zone) | +0.0%, monotonically worse past 1 zone, all 13 LOO folds picked the baseline | rejected - more degrees of freedom just adds noise at this sample size |
 
-  The shipped v1.2 profile measures ΔE00 15.01 → **9.82** on the official evaluation harness (-34.6%, a CIE 2000 tier upgrade from "completely different colors" to "different at a glance"). Full methodology, the failed-then-diagnosed-then-fixed integration story, and remaining limitations (midtone residual, hue barely moved) are in `hybrid_engine/EVALUATION.md`; the rejected LUT experiments have their own detailed writeup in `hybrid_engine/assets/luts/README.md`
+  The shipped v1.2 profile measures ΔE00 15.01 → **9.82** on the official evaluation harness (-34.6%, a CIE 2000 tier upgrade from "completely different colors" to "different at a glance"). Full methodology, the failed-then-diagnosed-then-fixed integration story, and remaining limitations (midtone residual, hue barely moved) are in `hybrid_engine/EVALUATION.md`; the rejected LUT experiments have their own detailed writeup in `hybrid_engine/assets/luts/README.md`. Pixel-level diagnosis (`EVALUATION.md` follow-up 10) pinned the worst remaining failure mode to a specific mechanism: Gray World's single global scale factor can't satisfy a night scene's sky and street-light-dominated foreground at the same time - three different fixes for that (above) were all tried and rejected on cross-validation, so it stays a documented, unresolved limitation rather than a shipped workaround.
 
 ## Goals / Philosophy
 

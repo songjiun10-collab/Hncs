@@ -41,6 +41,58 @@ def gray_world_normalize(img_rgb, saturation_percentile=100.0):
     return img_rgb * scale
 
 
+def gray_world_normalize_zoned(img_rgb, n_zones=3, blend_sigma=0.15):
+    """Gray World를 밝기(luma) 구간별로 따로 추정해서 부드럽게 섞는다.
+
+    후속 실측 10/11에서 확인된 근본 문제: 전역 스칼라 하나짜리 Gray World는
+    하늘(밝고 중성/파랑)과 도로·광원(어둡고 따뜻함)처럼 밝기 구간마다 색
+    성질이 완전히 다른 장면(야경 등)을 동시에 만족시킬 수 없다 -
+    saturation_percentile로 "오염 픽셀을 빼는" 방식(후속 실측 11)은
+    스칼라 하나라는 구조 자체는 그대로라 기각됐다. 이 함수는 반대로
+    **밝기 구간마다 독립적인 색치우침 추정치**를 쓴다 - 하늘(밝은 구간)과
+    도로(어두운 구간)가 서로 다른 보정을 받을 수 있게.
+
+    구간은 이미지 자체의 luma(R+G+B 평균) 퍼센타일로 정의(절대 밝기가
+    아니라 "이 사진에서 상대적으로 밝은/어두운 픽셀") - normalize()가
+    아직 톤 커브 적용 전(raw 선형 RGB) 단계에서 호출되기 때문에, Lab L처럼
+    지각적으로 정의된 구간을 쓰려면 별도 변환이 필요해서 여기선 안 쓴다
+    (numpy만 쓴다는 이 모듈의 의존성 원칙 참고).
+
+    n_zones개의 구간 중심에 가우시안 가중치로 각 픽셀을 배분해서 구간별
+    Gray World 평균을 구하고(np.average와 동일한 가중평균), 각 픽셀의
+    최종 스케일은 그 픽셀이 속한 정도(가중치)에 비례해 구간별 스케일을
+    섞어서 만든다 - 그래서 구간 경계에서 계단식 밴딩 없이 부드럽게
+    이어진다. n_zones=1이면 기존 gray_world_normalize()와 완전히 동일."""
+    if n_zones <= 1:
+        return gray_world_normalize(img_rgb)
+
+    flat = img_rgb.reshape(-1, 3)
+    luma = flat.mean(axis=1)
+    lo, hi = np.percentile(luma, 1), np.percentile(luma, 99)
+    luma_norm = np.clip((luma - lo) / max(hi - lo, 1e-8), 0.0, 1.0)
+
+    zone_centers = (np.arange(n_zones) + 0.5) / n_zones
+    weights = np.stack(
+        [np.exp(-0.5 * ((luma_norm - c) / blend_sigma) ** 2) for c in zone_centers], axis=1
+    )  # (N, n_zones)
+    weight_sums = weights.sum(axis=0)  # (n_zones,)
+
+    zone_scales = np.ones((n_zones, 3))
+    for i in range(n_zones):
+        if weight_sums[i] < 1e-6:
+            continue
+        zone_mean = (flat * weights[:, i:i + 1]).sum(axis=0) / weight_sums[i]
+        zone_mean_safe = np.clip(zone_mean, 1e-6, None)
+        gray_mean = zone_mean.mean()
+        zone_scales[i] = gray_mean / zone_mean_safe
+
+    pixel_weight_sum = np.clip(weights.sum(axis=1, keepdims=True), 1e-6, None)
+    blend = weights / pixel_weight_sum  # (N, n_zones)
+    pixel_scale = blend @ zone_scales  # (N, 3)
+
+    return (flat * pixel_scale).reshape(img_rgb.shape)
+
+
 def normalize_exposure(img_rgb, target_gray=0.18):
     """전체 평균 밝기를 target_gray(기본 18% 미드그레이)로 맞춘다."""
     mean = float(np.mean(img_rgb))
@@ -50,7 +102,7 @@ def normalize_exposure(img_rgb, target_gray=0.18):
 
 
 def normalize(img_rgb, target_gray=0.18, correct_color_cast=True, apply_exposure=True,
-              gray_world_saturation_percentile=100.0):
+              gray_world_saturation_percentile=100.0, gray_world_zones=1):
     """정규화 파이프라인 진입점 - Gray World 색치우침 제거 후 노출 정규화.
 
     apply_exposure=False면 노출 정규화를 건너뛴다 - Phase 0에 raw_baseline_matrix
@@ -59,9 +111,18 @@ def normalize(img_rgb, target_gray=0.18, correct_color_cast=True, apply_exposure
     평균 밝기를 강제로 target_gray로 맞춰버리면(사진마다 실측 평균이
     0.03~0.44로 10배 넘게 벌어짐) 매트릭스가 이미 맞춰놓은 결과를 다시
     망가뜨린다는 게 실측으로 확인됨(ΔE 8.55 -> 14.62, 거의 전부 이 단계
-    때문 - hybrid_engine/EVALUATION.md 후속 실측 6 참고)."""
-    out = (gray_world_normalize(img_rgb, saturation_percentile=gray_world_saturation_percentile)
-           if correct_color_cast else img_rgb)
+    때문 - hybrid_engine/EVALUATION.md 후속 실측 6 참고).
+
+    gray_world_zones > 1이면 gray_world_normalize_zoned()(밝기 구간별
+    독립 추정, 후속 실측 10/11 대응)를 쓴다 - gray_world_saturation_percentile
+    과는 서로 다른 축이라 동시에는 안 쓴다(zones>1이면 saturation_percentile
+    무시)."""
+    if not correct_color_cast:
+        out = img_rgb
+    elif gray_world_zones > 1:
+        out = gray_world_normalize_zoned(img_rgb, n_zones=gray_world_zones)
+    else:
+        out = gray_world_normalize(img_rgb, saturation_percentile=gray_world_saturation_percentile)
     if apply_exposure:
         out = normalize_exposure(out, target_gray=target_gray)
     return out

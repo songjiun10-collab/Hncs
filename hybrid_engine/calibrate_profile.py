@@ -699,6 +699,62 @@ def run_gray_world_mode(dataset):
     return baseline_loss, in_sample_loss, loo_loss, candidates[in_sample_idx]
 
 
+_GRAY_WORLD_ZONES_CANDIDATES = [1, 2, 3, 4, 5]
+
+
+def run_gray_world_zoned_mode(dataset):
+    """zoned gray world(EVALUATION.md 후속 실측 10/11 - 야경 하늘 과보정을
+    밝기 구간별 독립 추정으로 겨냥) 모드: `gray_world_zones`를 후보
+    격자에서 탐색한다. run_gray_world_mode와 동일한 구조(후보 x 페어
+    손실 행렬 -> 정확한 leave-one-out) - zones=1이 기존 동작(기준선)."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        base_profile = json.load(f)
+    base_profile.pop("_comment", None)
+
+    candidates = _GRAY_WORLD_ZONES_CANDIDATES
+    n = len(dataset)
+    loss_matrix = np.zeros((len(candidates), n))
+    for ci, nz in enumerate(candidates):
+        params = dict(base_profile)
+        params["gray_world_zones"] = nz
+        engine = HybridCameraEngine(profile=params)
+        for pi, (linear_small, camera_wb, target_small) in enumerate(dataset):
+            result = engine.process(linear_small, camera_whitebalance=camera_wb)
+            loss_matrix[ci, pi] = mean_delta_e(result, target_small)
+        print(f"  zones={nz}: 평균 ΔE {loss_matrix[ci].mean():.3f}")
+
+    baseline_idx = candidates.index(1)
+    baseline_loss = float(loss_matrix[baseline_idx].mean())
+    in_sample_idx = int(np.argmin(loss_matrix.mean(axis=1)))
+    in_sample_loss = float(loss_matrix[in_sample_idx].mean())
+    print(f"\n기준선(zones=1, 기존 gray world) ΔE: {baseline_loss:.3f}")
+    print(f"in-sample 최선: zones={candidates[in_sample_idx]} "
+          f"ΔE {in_sample_loss:.3f} "
+          f"({(baseline_loss - in_sample_loss) / baseline_loss * 100:+.1f}%)")
+
+    loo_losses = []
+    chosen = []
+    for held_out in range(n):
+        train_mean = np.delete(loss_matrix, held_out, axis=1).mean(axis=1)
+        best_ci = int(np.argmin(train_mean))
+        chosen.append(candidates[best_ci])
+        loo_losses.append(loss_matrix[best_ci, held_out])
+    loo_loss = float(np.mean(loo_losses))
+    print(f"leave-one-out 교차검증 ΔE: {loo_loss:.3f} "
+          f"({(baseline_loss - loo_loss) / baseline_loss * 100:+.1f}%)  "
+          f"fold별 선택: {chosen}")
+
+    print("\n페어별 ΔE (기준선 -> in-sample 최선 후보):")
+    for pi, (linear_small, camera_wb, target_small) in enumerate(dataset):
+        print(f"  pair {pi}: {loss_matrix[baseline_idx, pi]:6.2f} -> "
+              f"{loss_matrix[in_sample_idx, pi]:6.2f}")
+
+    return baseline_loss, in_sample_loss, loo_loss, candidates[in_sample_idx]
+
+
 def run_raw_baseline_mode(dataset, n_folds=4, seed=0):
     """GitHub 이슈 #4 대응: hybrid_engine의 Phase 0-2를 전혀 안 거친
     순수 rawpy 디코드(_load_calib_set()이 만든 linear_small 그대로)에
@@ -855,7 +911,8 @@ def main():
     parser = argparse.ArgumentParser(description="hybrid_engine profile 캘리브레이션")
     parser.add_argument("--mode",
                          choices=["parametric", "learned", "hue", "hue_chroma", "lab2d", "lab3d",
-                                  "spatial", "raw_baseline", "raw_baseline_pipeline", "gray_world"],
+                                  "spatial", "raw_baseline", "raw_baseline_pipeline", "gray_world",
+                                  "gray_world_zoned"],
                          default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
@@ -866,7 +923,8 @@ def main():
                               "spatial: Phase 3 로컬 콘트라스트 파라미터를 좌표하강으로 탐색하고 in-sample+k-fold ΔE 비교 / "
                               "raw_baseline: hybrid_engine을 거치지 않은 순수 raw 디코드에 3x3 매트릭스만 맞춰서 이론적 최선 ΔE 측정(이슈 #4) / "
                               "raw_baseline_pipeline: Phase 0 매트릭스 위에 Phase 1(tone)/Phase 2(color)를 재캘리브레이션한 전체 파이프라인 ΔE 비교(nested CV) / "
-                              "gray_world: robust gray world의 saturation percentile을 탐색하고 in-sample+LOO ΔE 비교(후속 실측 10 대응)")
+                              "gray_world: robust gray world의 saturation percentile을 탐색하고 in-sample+LOO ΔE 비교(후속 실측 10 대응) / "
+                              "gray_world_zoned: 밝기 구간별 독립 gray world의 zones 수를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 10/11 대응)")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -910,6 +968,10 @@ def main():
 
     if args.mode == "gray_world":
         run_gray_world_mode(dataset)
+        return
+
+    if args.mode == "gray_world_zoned":
+        run_gray_world_zoned_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)
