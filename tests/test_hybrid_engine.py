@@ -54,6 +54,37 @@ class TestNormalizer(unittest.TestCase):
         # robust는 배경을 거의 완전히 중성화해야 함
         self.assertLess(bg_imbalance(robust), 0.005)
 
+    def test_gray_world_strength_one_matches_default(self):
+        img = np.random.default_rng(5).uniform(0.05, 0.9, size=(8, 8, 3))
+        np.testing.assert_allclose(gray_world_normalize(img, strength=1.0),
+                                    gray_world_normalize(img), atol=1e-12)
+
+    def test_gray_world_strength_zero_is_identity(self):
+        img = np.random.default_rng(6).uniform(0.05, 0.9, size=(8, 8, 3))
+        np.testing.assert_allclose(gray_world_normalize(img, strength=0.0), img, atol=1e-12)
+
+    def test_gray_world_strength_half_is_between(self):
+        img = np.zeros((8, 8, 3))
+        img[..., 0] = 0.5
+        img[..., 1] = 0.2
+        img[..., 2] = 0.2
+        full = gray_world_normalize(img, strength=1.0)
+        half = gray_world_normalize(img, strength=0.5)
+        none = gray_world_normalize(img, strength=0.0)
+        # half는 R채널 기준으로 무보정과 완전보정의 정확히 중간이어야 함
+        r_full, r_half, r_none = full[0, 0, 0], half[0, 0, 0], none[0, 0, 0]
+        self.assertAlmostEqual(r_half, (r_full + r_none) / 2.0, places=6)
+
+    def test_gray_world_strength_above_one_overcorrects(self):
+        img = np.zeros((8, 8, 3))
+        img[..., 0] = 0.5
+        img[..., 1] = 0.2
+        img[..., 2] = 0.2
+        full = gray_world_normalize(img, strength=1.0)
+        over = gray_world_normalize(img, strength=1.5)
+        # strength>1이면 R을 무보정 대비 더 많이 깎아야 함(과보정)
+        self.assertLess(over[0, 0, 0], full[0, 0, 0])
+
     def test_zoned_gray_world_one_zone_matches_plain(self):
         img = np.random.default_rng(3).uniform(0.05, 0.9, size=(12, 12, 3))
         np.testing.assert_allclose(gray_world_normalize_zoned(img, n_zones=1),
