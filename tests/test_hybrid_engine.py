@@ -25,6 +25,40 @@ class TestNormalizer(unittest.TestCase):
         self.assertAlmostEqual(means[0], means[1], places=6)
         self.assertAlmostEqual(means[1], means[2], places=6)
 
+    def test_robust_gray_world_default_percentile_matches_plain(self):
+        img = np.random.default_rng(1).uniform(0.05, 0.9, size=(8, 8, 3))
+        np.testing.assert_allclose(gray_world_normalize(img, saturation_percentile=100.0),
+                                    gray_world_normalize(img), atol=1e-12)
+
+    def test_robust_gray_world_ignores_saturated_minority(self):
+        # 장면: 대부분은 살짝 파란기가 도는 중성 회색, 소수의 픽셀만 강한
+        # 주황색 광원(야경 가로등 상황의 축소판). robust 추정은 주황 광원을
+        # 제외하고 회색 픽셀들의 파란기만 보정해야 한다.
+        rng = np.random.default_rng(2)
+        img = np.empty((10, 10, 3))
+        img[..., 0] = 0.28
+        img[..., 1] = 0.30
+        img[..., 2] = 0.34   # 중성이지만 B로 살짝 치우친 배경
+        img[:2, :5] = [0.9, 0.45, 0.05]  # 강한 주황 광원 10%
+
+        plain = gray_world_normalize(img)
+        robust = gray_world_normalize(img, saturation_percentile=50.0)
+
+        # 배경(회색이어야 하는 영역)의 채널 균형: robust가 plain보다
+        # 훨씬 중성에 가까워야 한다.
+        def bg_imbalance(out):
+            means = out[5:, :].reshape(-1, 3).mean(axis=0)
+            return float(means.max() - means.min())
+
+        self.assertLess(bg_imbalance(robust), bg_imbalance(plain))
+        # robust는 배경을 거의 완전히 중성화해야 함
+        self.assertLess(bg_imbalance(robust), 0.005)
+
+    def test_robust_gray_world_all_neutral_is_near_noop(self):
+        img = np.full((6, 6, 3), 0.4)
+        out = gray_world_normalize(img, saturation_percentile=50.0)
+        np.testing.assert_allclose(out, img, atol=1e-9)
+
     def test_normalize_exposure_hits_target_gray(self):
         img = np.full((4, 4, 3), 0.05)
         out = normalize_exposure(img, target_gray=0.18)
