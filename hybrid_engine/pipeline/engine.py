@@ -74,6 +74,7 @@ _DEFAULT_PARAMS = {
     "target_gray": 0.18,
     "correct_color_cast": True,
     "gray_world_saturation_percentile": 100.0,  # Phase 0 - <100이면 저채도 픽셀만으로 색치우침 추정(robust gray world)
+    "gray_world_zones": 1,  # Phase 0 - >1이면 밝기 구간별 독립 Gray World(zoned), saturation_percentile과 배타적
     "normalize_exposure": True,  # Phase 0 - raw_baseline_matrix가 있으면 False 권장(EVALUATION.md 후속 실측 6)
     "shadow_lift": 0.02,
     "shadow_threshold": 0.1,
@@ -174,6 +175,7 @@ class HybridCameraEngine:
             correct_color_cast=p["correct_color_cast"],
             apply_exposure=p["normalize_exposure"],
             gray_world_saturation_percentile=p["gray_world_saturation_percentile"],
+            gray_world_zones=p["gray_world_zones"],
         )
 
         xyz = colour.RGB_to_XYZ(normalized, _SRGB, apply_cctf_decoding=False)

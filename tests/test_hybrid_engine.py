@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 
 from hybrid_engine.core.normalizer import (
-    gray_world_normalize, normalize_exposure, normalize,
+    gray_world_normalize, gray_world_normalize_zoned, normalize_exposure, normalize,
 )
 from hybrid_engine.core.tone_core import apply_tone
 from hybrid_engine.core.color_core import (
@@ -53,6 +53,37 @@ class TestNormalizer(unittest.TestCase):
         self.assertLess(bg_imbalance(robust), bg_imbalance(plain))
         # robust는 배경을 거의 완전히 중성화해야 함
         self.assertLess(bg_imbalance(robust), 0.005)
+
+    def test_zoned_gray_world_one_zone_matches_plain(self):
+        img = np.random.default_rng(3).uniform(0.05, 0.9, size=(12, 12, 3))
+        np.testing.assert_allclose(gray_world_normalize_zoned(img, n_zones=1),
+                                    gray_world_normalize(img), atol=1e-12)
+
+    def test_zoned_gray_world_shape_preserved(self):
+        img = np.random.default_rng(4).uniform(0.05, 0.9, size=(10, 14, 3))
+        out = gray_world_normalize_zoned(img, n_zones=3)
+        self.assertEqual(out.shape, img.shape)
+
+    def test_zoned_gray_world_handles_opposite_casts_by_brightness(self):
+        # 야경 축소판: 위쪽(밝은 영역, 하늘)은 살짝 파란기, 아래쪽(어두운
+        # 영역, 도로/광원)은 강한 주황기. 전역 Gray World는 스칼라 하나로
+        # 두 방향이 반대인 색치우침을 동시에 못 잡는다 - zoned는 밝기
+        # 구간별로 따로 추정해서 두 구간 모두 개선해야 한다.
+        img = np.empty((20, 10, 3))
+        img[:10] = [0.35, 0.4, 0.55]    # 밝은 구간 - 파란 쪽으로 치우침
+        img[10:] = [0.35, 0.22, 0.12]   # 어두운 구간 - 주황 쪽으로 치우침
+
+        def imbalance(region):
+            m = region.reshape(-1, 3).mean(axis=0)
+            return float(m.max() - m.min())
+
+        plain = gray_world_normalize(img)
+        zoned = gray_world_normalize_zoned(img, n_zones=2, blend_sigma=0.05)
+
+        plain_worst = max(imbalance(plain[:10]), imbalance(plain[10:]))
+        zoned_worst = max(imbalance(zoned[:10]), imbalance(zoned[10:]))
+        self.assertLess(zoned_worst, plain_worst)
+        self.assertLess(zoned_worst, 0.01)
 
     def test_robust_gray_world_all_neutral_is_near_noop(self):
         img = np.full((6, 6, 3), 0.4)
