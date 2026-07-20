@@ -71,14 +71,14 @@ _LUTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file_
 _DEFAULT_PARAMS = {
     "raw_baseline_matrix": None,  # Phase 0 - 3x3 중첩 리스트, 없으면 bypass
     "use_color_unification": True,  # Phase 0 - camera_whitebalance가 없으면 자동 skip
-    "target_gray": 0.18,
+    "target_gray": 0.18,  # normalize_exposure=False(v1.2 기본값)면 완전히 죽은 파라미터 - normalize_exposure() 안에서만 쓰임(실측으로 확인, 0.01/0.9 다 ΔE 완전 동일)
     "correct_color_cast": True,
     "gray_world_saturation_percentile": 100.0,  # Phase 0 - <100이면 저채도 픽셀만으로 색치우침 추정(robust gray world)
     "gray_world_zones": 1,  # Phase 0 - >1이면 밝기 구간별 독립 Gray World(zoned), saturation_percentile과 배타적
     "gray_world_strength": 1.0,  # Phase 0 - 추정된 색치우침 보정을 항등과 섞는 배율(zones=1일 때만), 1.0=기존 동작
     "normalize_exposure": True,  # Phase 0 - raw_baseline_matrix가 있으면 False 권장(EVALUATION.md 후속 실측 6)
     "shadow_lift": 0.02,
-    "shadow_threshold": 0.1,
+    "shadow_threshold": 0.1,  # shadow_lift=0.0(v1.2 기본값)이면 완전히 죽은 파라미터 - 적용 범위를 정하는 값인데 적용량 자체가 0(실측으로 확인, 0.9로 바꿔도 ΔE 완전 동일)
     "contrast_n": 1.15,
     "highlight_rolloff_start": 0.8,
     "sat_gain": 0.15,
