@@ -9,7 +9,7 @@ numpy만 쓰고, 다른 core 모듈(정규화 이후 단계)에 의존하지 않
 import numpy as np
 
 
-def gray_world_normalize(img_rgb, saturation_percentile=100.0):
+def gray_world_normalize(img_rgb, saturation_percentile=100.0, strength=1.0):
     """Gray World 알고리즘 - 채널별 평균이 전체 평균(무채색 가정)에
     수렴하도록 R/G/B를 각각 스케일링해서 색치우침을 제거한다.
 
@@ -24,7 +24,14 @@ def gray_world_normalize(img_rgb, saturation_percentile=100.0):
     (가로등, 네온, 꽃밭 등 "원래 유채색인 피사체")이 무채색 가정을
     오염시키지 못하게 하고, 스케일 자체는 기존과 동일하게 화면 전체에
     적용한다. 100.0(기본값)이면 모든 픽셀을 쓰는 기존 동작과 완전히
-    동일하다."""
+    동일하다.
+
+    strength는 추정된 스케일과 항등(무보정) 사이를 선형 보간하는 자유도
+    1개짜리 미세조정 축(후속 실측 11/12/13 - percentile/hue-chroma/zoned
+    전부 자유도를 늘리는 방향이라 기각됐다는 데서 반대로 자유도를 최소로
+    줄여본 것) - 1.0(기본값)이 기존 동작, 0.0이면 완전 제거(후속 실측
+    13에서 -90.3%로 대참사였던 그 상태)와 같고, 0~1 사이거나 1을 넘는
+    값(과보정)도 허용한다."""
     flat = img_rgb.reshape(-1, 3)
     if saturation_percentile < 100.0:
         mx = flat.max(axis=1)
@@ -38,7 +45,8 @@ def gray_world_normalize(img_rgb, saturation_percentile=100.0):
     means_safe = np.clip(means, 1e-6, None)
     gray_mean = means.mean()
     scale = gray_mean / means_safe
-    return img_rgb * scale
+    blended_scale = 1.0 + strength * (scale - 1.0)
+    return img_rgb * blended_scale
 
 
 def gray_world_normalize_zoned(img_rgb, n_zones=3, blend_sigma=0.15):
@@ -102,7 +110,7 @@ def normalize_exposure(img_rgb, target_gray=0.18):
 
 
 def normalize(img_rgb, target_gray=0.18, correct_color_cast=True, apply_exposure=True,
-              gray_world_saturation_percentile=100.0, gray_world_zones=1):
+              gray_world_saturation_percentile=100.0, gray_world_zones=1, gray_world_strength=1.0):
     """정규화 파이프라인 진입점 - Gray World 색치우침 제거 후 노출 정규화.
 
     apply_exposure=False면 노출 정규화를 건너뛴다 - Phase 0에 raw_baseline_matrix
@@ -116,13 +124,15 @@ def normalize(img_rgb, target_gray=0.18, correct_color_cast=True, apply_exposure
     gray_world_zones > 1이면 gray_world_normalize_zoned()(밝기 구간별
     독립 추정, 후속 실측 10/11 대응)를 쓴다 - gray_world_saturation_percentile
     과는 서로 다른 축이라 동시에는 안 쓴다(zones>1이면 saturation_percentile
-    무시)."""
+    무시). gray_world_strength는 zones=1일 때만 적용되는 미세조정 축
+    (후속 실측 14)."""
     if not correct_color_cast:
         out = img_rgb
     elif gray_world_zones > 1:
         out = gray_world_normalize_zoned(img_rgb, n_zones=gray_world_zones)
     else:
-        out = gray_world_normalize(img_rgb, saturation_percentile=gray_world_saturation_percentile)
+        out = gray_world_normalize(img_rgb, saturation_percentile=gray_world_saturation_percentile,
+                                    strength=gray_world_strength)
     if apply_exposure:
         out = normalize_exposure(out, target_gray=target_gray)
     return out
