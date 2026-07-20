@@ -430,3 +430,29 @@ in-sample조차 100(기존 동작)이 최선이고, 백분위를 낮출수록 �
 `gray_world_saturation_percentile` 파라미터와 단위 테스트는 코드에
 남긴다(기본값 100.0이라 배포 동작 변화 없음) - 실험 재현과 후속
 연구용. `hasselblad.json`은 변경 없음.
+
+**후속 실측 12(2026-07-20): 후속 실측 10의 ② 가설(피부톤 hue 대역
+국소 chroma 보정)도 실측했다 - 기각.** `hue_core.py`에 `apply_hue_chroma_lut`
+(hue는 유지하고 chroma만 hue별로 배율 조정 - 기존 hue 회전 LUT과
+축이 분리된 자매 함수)을 새로 만들고, `calibrate_profile.py --mode
+hue_chroma`로 13쌍에서 순환 36-bin LUT을 학습했다(bin별 배율은
+"sum(타깃 chroma)/sum(소스 chroma)" 에너지 비율로 추정 - 픽셀별 비율
+평균은 소스 chroma가 0에 가까우면 발산해서 못 씀).
+
+- hue-chroma 보정 전 ΔE(v1.2 기준선): 9.687
+- hue-chroma 보정 후 ΔE (in-sample): 9.877 (**-2.0%**)
+- hue-chroma 보정 후 ΔE (leave-one-out 교차검증, 13-fold): 10.078 (**-4.0%**)
+
+**채택 안 함 - 이번엔 in-sample부터 이미 마이너스다.** 지금까지의
+LUT 실험(3D/2D/hue 재시도) 전부 in-sample은 양성이었다가 교차검증에서
+무너지는 패턴이었는데, 이건 그 단계조차 못 넘었다. 원인으로 의심되는
+건 페어 간 평균 밝기/채도 스프레드(후속 실측 6에서 확인된 노출
+10배 차이와 같은 문제) - 13장을 그대로 pooling해서 에너지 비율을
+추정하면 특정 hue bin의 배율이 소수의 극단적인 페어(노출이 유난히
+높거나 낮은 페어)에 의해 왜곡될 수 있다. 결과적으로 후속 실측 10에서
+짚은 두 가설(① Gray World 과보정, ② hue별 chroma 국소 보정) 모두
+직접 검증해봤고 둘 다 이 데이터셋 규모에서는 기각됐다 - v1.2의 남은
+잔차(미드톤, 옐로우오렌지/블루 hue 대역)는 지금까지 시도한 어떤
+방식으로도 아직 못 줄였다는 뜻. `learned_hue_chroma_lut` 파라미터와
+테스트는 코드에 남긴다(기본값 None이라 배포 동작 변화 없음).
+`hasselblad.json`은 변경 없음.

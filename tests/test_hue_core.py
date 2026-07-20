@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from hybrid_engine.core.hue_core import apply_hue_lut
+from hybrid_engine.core.hue_core import apply_hue_lut, apply_hue_chroma_lut
 
 
 class TestApplyHueLut(unittest.TestCase):
@@ -47,6 +47,104 @@ class TestApplyHueLut(unittest.TestCase):
         # 발산(NaN/inf)이나 급격한 불연속 없이 유한한 값이면 충분
         self.assertTrue(np.all(np.isfinite(a2)))
         self.assertTrue(np.all(np.isfinite(b2)))
+
+
+class TestApplyHueChromaLut(unittest.TestCase):
+    def test_unity_lut_leaves_chroma_unchanged(self):
+        rng = np.random.default_rng(20)
+        a = rng.uniform(-50, 50, size=(8, 8))
+        b = rng.uniform(-50, 50, size=(8, 8))
+        lut = np.ones(36)
+        a2, b2 = apply_hue_chroma_lut(a, b, lut)
+        np.testing.assert_allclose(a2, a, atol=1e-6)
+        np.testing.assert_allclose(b2, b, atol=1e-6)
+
+    def test_hue_is_preserved(self):
+        rng = np.random.default_rng(21)
+        a = rng.uniform(-50, 50, size=(8, 8))
+        b = rng.uniform(-50, 50, size=(8, 8))
+        lut = rng.uniform(0.5, 1.5, size=36)
+        a2, b2 = apply_hue_chroma_lut(a, b, lut)
+        hue_before = np.degrees(np.arctan2(b, a)) % 360.0
+        hue_after = np.degrees(np.arctan2(b2, a2)) % 360.0
+        np.testing.assert_allclose(hue_after, hue_before, atol=1e-4)
+
+    def test_constant_gain_scales_chroma_uniformly(self):
+        a = np.array([[10.0, 0.0]])
+        b = np.array([[0.0, 10.0]])
+        lut = np.full(36, 2.0)
+        a2, b2 = apply_hue_chroma_lut(a, b, lut)
+        np.testing.assert_allclose(np.hypot(a2, b2), np.hypot(a, b) * 2.0, atol=1e-6)
+
+    def test_zero_gain_zeroes_chroma(self):
+        a = np.array([[10.0]])
+        b = np.array([[5.0]])
+        lut = np.zeros(36)
+        a2, b2 = apply_hue_chroma_lut(a, b, lut)
+        np.testing.assert_allclose(a2, 0.0, atol=1e-9)
+        np.testing.assert_allclose(b2, 0.0, atol=1e-9)
+
+
+class TestLearnHueChromaLutFunction(unittest.TestCase):
+    """calibrate_profile.learn_hue_chroma_lut - learn_hue_lut 테스트와
+    같은 패턴, 회전 대신 배율을 검증."""
+
+    def test_learns_near_unity_when_target_equals_source(self):
+        from hybrid_engine.calibrate_profile import learn_hue_chroma_lut
+        from hybrid_engine.pipeline.engine import HybridCameraEngine
+        import colour
+
+        rng = np.random.default_rng(22)
+        img = rng.uniform(0.1, 0.8, size=(16, 16, 3))
+        profile = {"correct_color_cast": False, "use_color_unification": False}
+        engine = HybridCameraEngine(profile=profile)
+        L2, a2, b2 = engine.to_pre_hue_lab(img)
+        lab = np.stack([L2, a2, b2], axis=-1)
+        target = np.clip(colour.XYZ_to_RGB(
+            colour.Lab_to_XYZ(lab), colour.RGB_COLOURSPACES["sRGB"],
+            apply_cctf_encoding=False), 0.0, 1.0)
+
+        dataset = [(img, None, target)]
+        lut = learn_hue_chroma_lut(dataset, profile, n_bins=36)
+        np.testing.assert_allclose(lut, 1.0, atol=0.05)
+
+    def test_constant_chroma_scale_is_recovered(self):
+        from hybrid_engine.calibrate_profile import learn_hue_chroma_lut
+
+        n_bins = 36
+        rng = np.random.default_rng(23)
+        # 채도를 작게(±15) 잡아서 1.4배 스케일해도 sRGB gamut 클리핑에
+        # 안 걸리게 한다 - 클리핑되면 왕복(Lab->RGB->Lab)에서 타깃 chroma가
+        # 깎여서 학습값이 체계적으로 과소평가된다(hue에 따라 gamut
+        # 경계가 다르므로 특정 hue 구간에서만 벌어짐, 실제로 관찰됨).
+        a = rng.uniform(-15, 15, size=(80, 80))
+        b = rng.uniform(-15, 15, size=(80, 80))
+        chroma = np.hypot(a, b)
+        hue = np.arctan2(b, a)
+
+        gain = 1.4
+        target_a = chroma * gain * np.cos(hue)
+        target_b = chroma * gain * np.sin(hue)
+
+        import colour
+        L = np.full_like(a, 50.0)
+        lab_source = np.stack([L, a, b], axis=-1)
+        source_linear = np.clip(colour.XYZ_to_RGB(
+            colour.Lab_to_XYZ(lab_source), colour.RGB_COLOURSPACES["sRGB"],
+            apply_cctf_encoding=False), 0.0, 1.0)
+        lab_target = np.stack([L, target_a, target_b], axis=-1)
+        target_linear = np.clip(colour.XYZ_to_RGB(
+            colour.Lab_to_XYZ(lab_target), colour.RGB_COLOURSPACES["sRGB"],
+            apply_cctf_encoding=False), 0.0, 1.0)
+
+        profile = {"correct_color_cast": False, "use_color_unification": False,
+                   "sat_gain": 0.0, "shadow_lift": 0.0, "contrast_n": 1.0,
+                   "highlight_rolloff_start": 1.0}
+        dataset = [(source_linear, None, target_linear)]
+        lut = learn_hue_chroma_lut(dataset, profile, n_bins=n_bins)
+        filled = lut != 1.0
+        self.assertTrue(filled.any())
+        np.testing.assert_allclose(lut[filled], gain, atol=0.15)
 
 
 class TestLearnHueLutFunction(unittest.TestCase):

@@ -12,6 +12,29 @@ python3 -m hybrid_engine.calibrate_profile --mode lab2d
 python3 -m hybrid_engine.calibrate_profile --mode lab3d
 ```
 
+## hue별 chroma 배율 LUT (2026-07, 기각)
+
+`EVALUATION.md` 후속 실측 10의 픽셀 단위 진단에서 옐로우오렌지(피부톤)
+hue 대역이 유독 채도/따뜻함이 부족하다는 게 나온 뒤, `hue_core.py`에
+`apply_hue_chroma_lut`(hue는 그대로 두고 chroma만 hue별로 배율 조정 -
+기존 `apply_hue_lut`의 회전과 축이 분리된 자매 함수)을 새로 만들어서
+`--mode hue_chroma`로 13쌍에서 시도했다. 후속 실측 11(robust gray
+world)이 기각된 직후 곧바로 시도한 두 번째 대응책:
+
+- hue-chroma 보정 전 ΔE(v1.2 기준선): 9.687
+- hue-chroma 보정 후 ΔE (in-sample): 9.877 (**-2.0%**)
+- hue-chroma 보정 후 ΔE (leave-one-out 교차검증, 13-fold): 10.078 (**-4.0%**)
+
+**채택 안 함 - 그것도 in-sample부터 이미 마이너스.** 지금까지의 LUT
+실험 중 in-sample조차 기준선보다 나쁜 첫 사례(3D/2D/hue 재시도는 전부
+in-sample은 양성이었다가 교차검증에서 무너졌음). bin별 배율을 "sum(타깃
+chroma)/sum(소스 chroma)" 에너지 비율로 추정하는데, 13장을 그대로
+pooling하면 페어마다 평균 밝기/채도가 크게 다른 것(후속 실측 6에서
+확인된 노출 10배 스프레드와 같은 문제)이 특정 hue bin의 추정치를
+소수의 극단적인 페어가 지배하게 만드는 것으로 보인다. `hasselblad.json`
+은 `learned_hue_chroma_lut` 미설정 유지 - 코드/테스트는 남김(재현 및
+후속 연구용).
+
 ## hue LUT을 v1.2(raw_baseline_matrix) 기준으로 재시도 (2026-07, 다시 기각)
 
 v1.2가 raw_baseline_matrix로 ΔE00을 15.01→9.82까지 낮춘 뒤(EVALUATION.md
