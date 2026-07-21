@@ -263,6 +263,17 @@ without measured evidence" principle, so if your PR adjusts a brand's
 parameters, please include the population numbers or comparison method
 that back the change - it'll make review much faster.
 
+## Acknowledgments
+
+Thanks to GitHub user **kmichels** (Reddit: Big_Rip4015), who read the
+project closely enough to file [issue #4](https://github.com/songjiun10-collab/Hncs/issues/4)
+with methodology feedback that directly led to real fixes (an edited-photo
+filter bug, a properly characterized raw baseline) - and then followed up
+by shooting and contributing 10 Hasselblad X2D II 100C ColorChecker
+Classic captures, which made the chart-based raw-baseline characterization
+in `hybrid_engine/EVALUATION.md` possible. Real external review and real
+data, credited where they landed.
+
 ## License
 
 [MIT](LICENSE)
