@@ -139,8 +139,11 @@ DB에 카메라/렌즈가 없거나 매칭된 렌즈 프로파일에 왜곡 보�
 # JPEG만 있는 경우 - EXIF 자동인식
 python3 -m hybrid_engine.convert photo.jpg out.jpg --target hasselblad
 
-# RAW가 있는 경우
-python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
+# RAW가 있는 경우 - 전체 파이프라인(매트릭스 + WB통일 + Gray World +
+# 톤/색 커브)을 한 번에 실행. 카메라도 EXIF로 자동인식해서 맞는 프로필을
+# 고른다 - --profile은 강제로 지정할 때만 필요
+python3 -m hybrid_engine.main photo.3FR out.jpg
+python3 -m hybrid_engine.main photo.3FR out.tiff --profile hasselblad  # 후속 편집용 16비트
 ```
 
 ![hybrid_engine 데모 - Nikon JPEG을 Hasselblad 룩으로 변환](docs/images/hybrid_engine_demo.jpg)

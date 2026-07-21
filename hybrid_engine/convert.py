@@ -9,9 +9,7 @@ core/preset_inverse.py(EXIF 기반 프리셋 역산) 전용.
 """
 import argparse
 import os
-import subprocess
 import sys
-import json
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -20,14 +18,7 @@ import cv2
 from hybrid_engine.core.preset_inverse import (
     BRAND_FUNCS, TARGET_FUNCS, convert_between_brands, detect_brand_from_exif,
 )
-
-
-def _read_exif_make_model(path):
-    out = subprocess.run(["exiftool", "-json", "-Make", "-Model", path],
-                          capture_output=True, text=True, timeout=30)
-    data = json.loads(out.stdout) if out.stdout.strip() else [{}]
-    d = data[0] if data else {}
-    return d.get("Make"), d.get("Model")
+from hybrid_engine.utils.exif import read_make_model as _read_exif_make_model
 
 
 def main():

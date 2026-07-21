@@ -4,7 +4,6 @@
 색차를 계산한다. 인간 눈이 구별하기 힘든 수준은 대략 ΔE < 2.0.
 """
 import numpy as np
-import cv2
 import colour
 
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
@@ -39,16 +38,19 @@ def delta_e_map(rgb_a_linear, rgb_b_linear, method="CIE 2000"):
 def load_image_linear_for_evaluate(target_path, result_shape, resize_to_match=True):
     """타깃 이미지를 읽어서 result_shape((H, W, 3))에 맞춘 Linear RGB로
     반환. resize_to_match=True(기본)면 shape이 다를 때 같은 장면/구도라는
-    전제 하에 리사이즈해서 맞춘다."""
+    전제 하에 리사이즈해서 맞춘다 - 아직 정수인 상태에서 먼저 리사이즈
+    하고 나서 float64/cctf_decoding으로 변환한다(load_image_linear의
+    resize_to 참고) - 큰 타깃을 원본 해상도로 먼저 부풀렸다가 버리면
+    다운샘플된 엔진 출력과 비교하는 경우에도 불필요하게 OOM 위험이
+    생긴다."""
     from hybrid_engine.utils.io import load_image_linear
 
-    target = load_image_linear(target_path)
-    if target.shape != result_shape:
-        if not resize_to_match:
+    if not resize_to_match:
+        target = load_image_linear(target_path)
+        if target.shape != result_shape:
             raise ValueError(f"shape mismatch: {result_shape} vs {target.shape}")
-        target = cv2.resize(target, (result_shape[1], result_shape[0]),
-                             interpolation=cv2.INTER_AREA)
-    return target
+        return target
+    return load_image_linear(target_path, resize_to=result_shape[:2])
 
 
 def evaluate(engine, raw_path, target_path, resize_to_match=True):
