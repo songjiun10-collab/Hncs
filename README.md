@@ -116,8 +116,11 @@ If the camera or lens isn't in the database, or the matched lens profile has no 
 # JPEG only - auto-detects the source camera from EXIF
 python3 -m hybrid_engine.convert photo.jpg out.jpg --target hasselblad
 
-# RAW available
-python3 -m hybrid_engine.main photo.CR3 out.tiff --profile hasselblad
+# RAW available - full pipeline (matrix + WB unification + Gray World +
+# tone/color curves), also auto-detects the camera from EXIF and picks the
+# matching profile; --profile only needed to override that
+python3 -m hybrid_engine.main photo.3FR out.jpg
+python3 -m hybrid_engine.main photo.3FR out.tiff --profile hasselblad  # 16-bit for further editing
 ```
 
 ![hybrid_engine demo - Nikon JPEG converted to a Hasselblad look](docs/images/hybrid_engine_demo.jpg)

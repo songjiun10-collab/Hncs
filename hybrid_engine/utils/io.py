@@ -40,14 +40,33 @@ def save_tiff16(rgb_linear, path, apply_srgb_encoding=True):
     cv2.imwrite(path, bgr)
 
 
-def load_image_linear(path):
+def save_jpeg8(rgb_linear, path, quality=95):
+    """Linear RGB -> sRGB 감마 인코딩 8비트 JPEG 저장. 바로 보고 공유할 수
+    있는 "완성본" 출력용 - 후속 편집/재파이프라인 입력이 필요하면
+    save_tiff16(apply_srgb_encoding=False)을 대신 쓴다."""
+    clipped = np.clip(rgb_linear, 0.0, 1.0)
+    encoded = colour.cctf_encoding(clipped, function="sRGB")
+    u8 = (np.clip(encoded, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
+    bgr = u8[:, :, ::-1]
+    cv2.imwrite(path, bgr, [cv2.IMWRITE_JPEG_QUALITY, quality])
+
+
+def load_image_linear(path, resize_to=None):
     """일반 이미지 파일(JPEG/TIFF/PNG 등, 이미 sRGB 감마 인코딩된
     "완성본")을 읽어서 Linear RGB float64 [0, 1]로 되돌린다. ΔE 평가에서
     타깃 이미지(예: 실제 카메라 JPEG)를 엔진 출력과 같은 도메인으로
-    맞추기 위한 용도."""
+    맞추기 위한 용도.
+
+    resize_to=(H, W)를 주면 아직 8/16비트 정수인 상태에서(즉 float64
+    변환+cctf_decoding으로 몇 배 부풀기 전에) 먼저 리사이즈한다 - 큰
+    타깃 이미지를 다운샘플된 엔진 출력과 비교할 때 원본 전체 해상도로
+    float64 변환하는 순간의 메모리 스파이크(실측: 105MP에서 OOM)를
+    피하기 위함. 호출부가 이미 축소된 크기를 알고 있을 때만 쓴다."""
     bgr = cv2.imread(path, cv2.IMREAD_UNCHANGED)
     if bgr is None:
         raise FileNotFoundError(path)
+    if resize_to is not None and bgr.shape[:2] != tuple(resize_to):
+        bgr = cv2.resize(bgr, (resize_to[1], resize_to[0]), interpolation=cv2.INTER_AREA)
     if bgr.dtype == np.uint16:
         rgb = bgr[:, :, ::-1].astype(np.float64) / 65535.0
     else:
