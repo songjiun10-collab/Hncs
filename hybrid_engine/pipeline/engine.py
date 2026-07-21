@@ -76,6 +76,10 @@ _DEFAULT_PARAMS = {
     "gray_world_saturation_percentile": 100.0,  # Phase 0 - <100이면 저채도 픽셀만으로 색치우침 추정(robust gray world)
     "gray_world_zones": 1,  # Phase 0 - >1이면 밝기 구간별 독립 Gray World(zoned), saturation_percentile과 배타적
     "gray_world_strength": 1.0,  # Phase 0 - 추정된 색치우침 보정을 항등과 섞는 배율(zones=1일 때만), 1.0=기존 동작
+    "color_cast_algorithm": "gray_world",  # Phase 0 - "gray_world"/"white_patch"/"shades_of_gray"/"gray_edge" 중 선택(후속 실측 17)
+    "white_patch_percentile": 100.0,  # color_cast_algorithm="white_patch"일 때만 적용
+    "shades_of_gray_p": 6.0,  # color_cast_algorithm="shades_of_gray"일 때만 적용
+    "gray_edge_p": 1.0,  # color_cast_algorithm="gray_edge"일 때만 적용
     "normalize_exposure": True,  # Phase 0 - raw_baseline_matrix가 있으면 False 권장(EVALUATION.md 후속 실측 6)
     "shadow_lift": 0.02,
     "shadow_threshold": 0.1,  # shadow_lift=0.0(v1.2 기본값)이면 완전히 죽은 파라미터 - 적용 범위를 정하는 값인데 적용량 자체가 0(실측으로 확인, 0.9로 바꿔도 ΔE 완전 동일)
@@ -178,6 +182,10 @@ class HybridCameraEngine:
             gray_world_saturation_percentile=p["gray_world_saturation_percentile"],
             gray_world_zones=p["gray_world_zones"],
             gray_world_strength=p["gray_world_strength"],
+            color_cast_algorithm=p["color_cast_algorithm"],
+            white_patch_percentile=p["white_patch_percentile"],
+            shades_of_gray_p=p["shades_of_gray_p"],
+            gray_edge_p=p["gray_edge_p"],
         )
 
         xyz = colour.RGB_to_XYZ(normalized, _SRGB, apply_cctf_decoding=False)
