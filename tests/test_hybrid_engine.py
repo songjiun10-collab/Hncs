@@ -4,6 +4,7 @@ import numpy as np
 
 from hybrid_engine.core.normalizer import (
     gray_world_normalize, gray_world_normalize_zoned, normalize_exposure, normalize,
+    white_patch_normalize, shades_of_gray_normalize, gray_edge_normalize,
 )
 from hybrid_engine.core.tone_core import apply_tone
 from hybrid_engine.core.color_core import (
@@ -146,6 +147,98 @@ class TestNormalizer(unittest.TestCase):
         img = np.full((4, 4, 3), 0.05)
         out = normalize(img, target_gray=0.18, correct_color_cast=False)
         self.assertAlmostEqual(float(np.mean(out)), 0.18, places=6)
+
+
+class TestAlternativeColorCastAlgorithms(unittest.TestCase):
+    """후속 실측 17 - Gray World 외 고전 조명추정 알고리즘들."""
+
+    def test_white_patch_removes_channel_bias(self):
+        img = np.zeros((8, 8, 3))
+        img[..., 0] = 0.5
+        img[..., 1] = 0.2
+        img[..., 2] = 0.2
+        out = white_patch_normalize(img)
+        means = out.reshape(-1, 3).mean(axis=0)
+        self.assertAlmostEqual(means[0], means[1], places=5)
+        self.assertAlmostEqual(means[1], means[2], places=5)
+
+    def test_white_patch_brightest_channel_unchanged(self):
+        img = np.zeros((8, 8, 3))
+        img[..., 0] = 0.5
+        img[..., 1] = 0.2
+        img[..., 2] = 0.1
+        out = white_patch_normalize(img)
+        self.assertAlmostEqual(out[..., 0].max(), 0.5, places=5)
+
+    def test_white_patch_percentile_below_100_ignores_outlier(self):
+        img = np.full((20, 20, 3), 0.3)
+        img[0, 0] = [1.0, 0.3, 0.3]  # R채널만 극단적 outlier 한 픽셀
+        out_full = white_patch_normalize(img, percentile=100.0)
+        out_robust = white_patch_normalize(img, percentile=90.0)
+        # 100%면 R의 outlier(1.0)가 기준이 돼서 G/B가 3.33배로 끌어올려짐;
+        # outlier를 뺀 90%면 R/G/B 전부 0.3으로 같아서 스케일이 항등(1.0)
+        self.assertGreater(out_full[5, 5, 1], out_robust[5, 5, 1])
+        self.assertAlmostEqual(out_robust[5, 5, 1], 0.3, places=5)
+
+    def test_shades_of_gray_p1_matches_gray_world(self):
+        img = np.random.default_rng(2).uniform(0.05, 0.5, size=(8, 8, 3))
+        out_sog = shades_of_gray_normalize(img, p=1.0)
+        out_gw = gray_world_normalize(img)
+        np.testing.assert_allclose(out_sog, out_gw, rtol=1e-10)
+
+    def test_shades_of_gray_removes_channel_bias(self):
+        img = np.zeros((8, 8, 3))
+        img[..., 0] = 0.5
+        img[..., 1] = 0.2
+        img[..., 2] = 0.2
+        out = shades_of_gray_normalize(img, p=6.0)
+        means = out.reshape(-1, 3).mean(axis=0)
+        self.assertAlmostEqual(means[0], means[1], places=5)
+
+    def test_gray_edge_preserves_shape(self):
+        img = np.random.default_rng(3).uniform(0.05, 0.5, size=(8, 8, 3))
+        out = gray_edge_normalize(img)
+        self.assertEqual(out.shape, img.shape)
+
+    def test_gray_edge_flat_image_is_noop(self):
+        # 균일한 이미지는 그래디언트가 전부 0이라 조명 추정이 불가능(illum=0
+        # -> clip으로 1e-6 처리) - 항등에 가까워야 하고, 최소한 NaN/inf는
+        # 나오면 안 된다.
+        img = np.full((6, 6, 3), 0.3)
+        out = gray_edge_normalize(img)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+    def test_normalize_dispatches_to_white_patch(self):
+        img = np.zeros((8, 8, 3))
+        img[..., 0] = 0.5
+        img[..., 1] = 0.2
+        img[..., 2] = 0.2
+        out_direct = white_patch_normalize(img, percentile=95.0)
+        out_via_normalize = normalize(img, correct_color_cast=True, apply_exposure=False,
+                                       color_cast_algorithm="white_patch",
+                                       white_patch_percentile=95.0)
+        np.testing.assert_allclose(out_direct, out_via_normalize)
+
+    def test_normalize_dispatches_to_shades_of_gray(self):
+        img = np.random.default_rng(4).uniform(0.05, 0.5, size=(8, 8, 3))
+        out_direct = shades_of_gray_normalize(img, p=4.0)
+        out_via_normalize = normalize(img, correct_color_cast=True, apply_exposure=False,
+                                       color_cast_algorithm="shades_of_gray", shades_of_gray_p=4.0)
+        np.testing.assert_allclose(out_direct, out_via_normalize)
+
+    def test_normalize_dispatches_to_gray_edge(self):
+        img = np.random.default_rng(5).uniform(0.05, 0.5, size=(8, 8, 3))
+        out_direct = gray_edge_normalize(img, p=2.0)
+        out_via_normalize = normalize(img, correct_color_cast=True, apply_exposure=False,
+                                       color_cast_algorithm="gray_edge", gray_edge_p=2.0)
+        np.testing.assert_allclose(out_direct, out_via_normalize)
+
+    def test_normalize_default_algorithm_is_gray_world_unchanged(self):
+        img = np.random.default_rng(6).uniform(0.05, 0.5, size=(8, 8, 3))
+        out_default = normalize(img, correct_color_cast=True, apply_exposure=False)
+        out_explicit = normalize(img, correct_color_cast=True, apply_exposure=False,
+                                  color_cast_algorithm="gray_world")
+        np.testing.assert_allclose(out_default, out_explicit)
 
 
 class TestToneCore(unittest.TestCase):

@@ -49,6 +49,73 @@ def gray_world_normalize(img_rgb, saturation_percentile=100.0, strength=1.0):
     return img_rgb * blended_scale
 
 
+def white_patch_normalize(img_rgb, percentile=100.0):
+    """White Patch(Max-RGB) 알고리즘 - Gray World와 반대 가정: "장면에서
+    가장 밝은 지점은 원래 흰색/무채색이었을 것"이라고 보고, 채널별
+    최댓값이 서로 같아지도록(가장 밝은 채널은 그대로 두고 나머지를
+    끌어올려) 스케일링한다. Gray World는 "평균이 회색"을 가정하고
+    White Patch는 "최댓값이 흰색"을 가정한다는 점에서 서로 독립적인
+    축 - 하이라이트에 실제 무채색 물체(흰 벽, 구름, 반사광)가 있는
+    장면에서는 Gray World보다 나을 수 있지만, 채도 높은 물체가 화면에서
+    가장 밝은 경우(네온사인, 조명이 켜진 유채색 광원) 그 색으로
+    전체를 물들이는 게 알려진 약점.
+
+    percentile < 100이면 진짜 최댓값 대신 그 퍼센타일 값을 써서 센서
+    노이즈/스펙큘러 하이라이트 한두 픽셀에 전체가 휘둘리지 않게 한다
+    (100.0이 고전적인 순수 White Patch와 동일)."""
+    flat = img_rgb.reshape(-1, 3)
+    if percentile >= 100.0:
+        max_per_channel = flat.max(axis=0)
+    else:
+        max_per_channel = np.percentile(flat, percentile, axis=0)
+    max_safe = np.clip(max_per_channel, 1e-6, None)
+    target = max_per_channel.max()
+    scale = target / max_safe
+    return img_rgb * scale
+
+
+def shades_of_gray_normalize(img_rgb, p=6.0):
+    """Shades of Gray(Minkowski p-norm) 알고리즘 - Gray World(산술평균,
+    p=1과 동일)와 White Patch(p->무한대에 가까울수록 최댓값에 수렴)를
+    하나의 식으로 잇는 일반화. 채널별로 (mean(pixel^p))^(1/p)를 조명
+    추정치로 쓰고, 그 추정치들의 평균에 맞춰 스케일링한다. van de Weijer
+    등의 논문에서 p=6 안팎이 실전에서 무난하다고 알려진 절충값이라
+    기본값으로 둠 - Gray World보다 밝은/채도 높은 픽셀에 더 가중치를
+    줘서 극단적인 저채도 편향을 줄이면서도 White Patch만큼 하이라이트
+    한 점에 휘둘리진 않는다는 게 이론적 동기."""
+    flat = np.clip(img_rgb.reshape(-1, 3), 0.0, None)
+    illum = np.power(np.mean(np.power(flat, p), axis=0), 1.0 / p)
+    illum_safe = np.clip(illum, 1e-6, None)
+    target = illum.mean()
+    scale = target / illum_safe
+    return img_rgb * scale
+
+
+def gray_edge_normalize(img_rgb, p=1.0):
+    """Gray Edge 알고리즘(van de Weijer 2007) - 픽셀값이 아니라 공간
+    미분(엣지)의 평균이 무채색이라는 가정. Gray World/Shades of
+    Gray/White Patch는 전부 "픽셀 강도 자체"의 통계를 쓰는데, 이 방식은
+    "인접 픽셀 간 색 변화량"의 통계를 쓴다는 점에서 이 모듈의 다른
+    알고리즘들과 근본적으로 다른 축 - 장면 전체가 하나의 색으로 뒤덮인
+    경우(예: 녹색 숲 전체를 채우는 나뭇잎)에도 엣지(잎과 그림자 사이
+    경계 등)의 색 자체는 여전히 다양해서 Gray World보다 덜 흔들릴
+    수 있다는 게 이론적 동기.
+
+    1차 미분(np.diff, 상하좌우)의 크기를 채널별로 구해서 Shades of
+    Gray와 같은 방식(p-norm 평균)으로 조명을 추정한다. 가우시안
+    스무딩은 안 함(이 모듈의 numpy-only 의존성 원칙, 원 논문의 sigma=0
+    설정에 해당)."""
+    grad_x = np.diff(img_rgb, axis=1, prepend=img_rgb[:, :1, :])
+    grad_y = np.diff(img_rgb, axis=0, prepend=img_rgb[:1, :, :])
+    grad_mag = np.hypot(grad_x, grad_y)
+    flat_grad = grad_mag.reshape(-1, 3)
+    illum = np.power(np.mean(np.power(flat_grad, p), axis=0), 1.0 / p)
+    illum_safe = np.clip(illum, 1e-6, None)
+    target = illum.mean()
+    scale = target / illum_safe
+    return img_rgb * scale
+
+
 def gray_world_normalize_zoned(img_rgb, n_zones=3, blend_sigma=0.15):
     """Gray World를 밝기(luma) 구간별로 따로 추정해서 부드럽게 섞는다.
 
@@ -110,8 +177,10 @@ def normalize_exposure(img_rgb, target_gray=0.18):
 
 
 def normalize(img_rgb, target_gray=0.18, correct_color_cast=True, apply_exposure=True,
-              gray_world_saturation_percentile=100.0, gray_world_zones=1, gray_world_strength=1.0):
-    """정규화 파이프라인 진입점 - Gray World 색치우침 제거 후 노출 정규화.
+              gray_world_saturation_percentile=100.0, gray_world_zones=1, gray_world_strength=1.0,
+              color_cast_algorithm="gray_world", white_patch_percentile=100.0,
+              shades_of_gray_p=6.0, gray_edge_p=1.0):
+    """정규화 파이프라인 진입점 - 색치우침 제거 후 노출 정규화.
 
     apply_exposure=False면 노출 정규화를 건너뛴다 - Phase 0에 raw_baseline_matrix
     (최소자승으로 적합한 3x3 컬러 매트릭스)가 있을 때 필요해졌다: 매트릭스는
@@ -121,13 +190,18 @@ def normalize(img_rgb, target_gray=0.18, correct_color_cast=True, apply_exposure
     망가뜨린다는 게 실측으로 확인됨(ΔE 8.55 -> 14.62, 거의 전부 이 단계
     때문 - hybrid_engine/EVALUATION.md 후속 실측 6 참고).
 
-    gray_world_zones > 1이면 gray_world_normalize_zoned()(밝기 구간별
-    독립 추정, 후속 실측 10/11 대응)를 쓴다 - gray_world_saturation_percentile
-    과는 서로 다른 축이라 동시에는 안 쓴다(zones>1이면 saturation_percentile
-    무시). gray_world_strength는 zones=1일 때만 적용되는 미세조정 축
-    (후속 실측 14)."""
+    color_cast_algorithm으로 색치우침 추정 알고리즘 자체를 바꿀 수 있다
+    ("gray_world"(기본, 이하 3개 파라미터 적용) / "white_patch" /
+    "shades_of_gray" / "gray_edge") - gray_world가 아니면 gray_world_*
+    3개 파라미터는 전부 무시된다."""
     if not correct_color_cast:
         out = img_rgb
+    elif color_cast_algorithm == "white_patch":
+        out = white_patch_normalize(img_rgb, percentile=white_patch_percentile)
+    elif color_cast_algorithm == "shades_of_gray":
+        out = shades_of_gray_normalize(img_rgb, p=shades_of_gray_p)
+    elif color_cast_algorithm == "gray_edge":
+        out = gray_edge_normalize(img_rgb, p=gray_edge_p)
     elif gray_world_zones > 1:
         out = gray_world_normalize_zoned(img_rgb, n_zones=gray_world_zones)
     else:
