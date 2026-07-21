@@ -316,6 +316,18 @@ README는 훑어보는 용도로 짧게 유지하고, 자세한 실측 기록은
 바꾸지 않는다"는 원칙이 있으니, 브랜드 파라미터를 조정하는 PR이라면
 근거가 된 population 수치나 비교 방법을 함께 설명해주면 리뷰가 빠르다.
 
+## 감사의 말
+
+GitHub 사용자 **kmichels** (Reddit: Big_Rip4015) 님께 감사드립니다.
+프로젝트를 꼼꼼히 읽고 방법론 관련 피드백과 함께
+[이슈 #4](https://github.com/songjiun10-collab/Hncs/issues/4)를
+제보해주셨고, 그 피드백이 실제 버그 수정(편집된 사진을 필터에 넣었던
+문제)과 raw 베이스라인의 정확한 특성화로 이어졌습니다. 이후에는 직접
+핫셀블라드 X2D II 100C로 ColorChecker Classic을 10장 촬영해서
+제공해주셨고, 이 데이터 덕분에 `hybrid_engine/EVALUATION.md`의
+차트 기반 raw 베이스라인 특성화가 가능했습니다. 진짜 외부 리뷰와 진짜
+데이터, 그 공로를 정확히 기록합니다.
+
 ## 라이선스
 
 [MIT](LICENSE)
