@@ -51,16 +51,18 @@ def _resize_max_dim(img, max_dim):
 
 
 def _load_calib_set():
-    """(작은 linear RGB, camera_whitebalance, 작은 타깃 linear RGB) 튜플 리스트."""
+    """(작은 linear RGB, camera_whitebalance, 작은 타깃 linear RGB) 튜플 리스트.
+
+    target은 load_image_linear(..., resize_to=...)로 원본 해상도 그대로
+    float64 변환하기 전에 먼저 축소한다 - 100MP대 타깃 JPEG(X2D II 등)을
+    원본 그대로 cctf_decoding했다가 버리면 그 순간 OOM(실측 확인)."""
     dataset = []
     for raw_path, target_path in _find_pairs():
         print(f"  로드 중: {os.path.basename(raw_path)}")
         linear = decode_raw(raw_path)
         linear_small = _resize_max_dim(linear, CALIB_MAX_DIM)
         camera_wb = color_matrix.extract_camera_metadata(raw_path)["camera_whitebalance"]
-        target = load_image_linear(target_path)
-        target_small = cv2.resize(target, (linear_small.shape[1], linear_small.shape[0]),
-                                   interpolation=cv2.INTER_AREA)
+        target_small = load_image_linear(target_path, resize_to=linear_small.shape[:2])
         dataset.append((linear_small, camera_wb, target_small))
     return dataset
 
