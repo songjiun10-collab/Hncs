@@ -814,6 +814,74 @@ def run_gray_world_strength_mode(dataset):
     return baseline_loss, in_sample_loss, loo_loss, candidates[in_sample_idx]
 
 
+_COLOR_CAST_ALGORITHM_CANDIDATES = [
+    ("gray_world", None, None),  # 기준선(현재 shipped 알고리즘) - 후보군에 포함해서 같은 표로 비교
+    ("white_patch", "white_patch_percentile", [80.0, 90.0, 95.0, 99.0, 100.0]),
+    ("shades_of_gray", "shades_of_gray_p", [1.0, 2.0, 4.0, 6.0, 8.0, 12.0, 20.0]),
+    ("gray_edge", "gray_edge_p", [1.0, 2.0, 4.0, 6.0]),
+]
+
+
+def run_color_cast_algorithm_mode(dataset):
+    """Phase 0 색치우침 추정을 Gray World 대신 다른 고전 알고리즘으로
+    바꿔보는 모드(후속 실측 17) - White Patch(Max-RGB, "가장 밝은 지점이
+    흰색"), Shades of Gray(Minkowski p-norm, Gray World(p=1)와 White
+    Patch(p->무한대)를 잇는 일반화), Gray Edge(픽셀값이 아니라 공간
+    미분/엣지의 평균이 무채색이라는 가정 - 이 셋 중 유일하게 픽셀
+    강도가 아닌 축을 씀). gray_world_* 모드들과 같은 패턴(매트릭스/톤/
+    채도는 shipped profile 그대로 두고 색치우침 알고리즘만 후보군에서
+    탐색, 후보별 손실이 페어 독립이라 근사 없는 LOO 교차검증)."""
+    import json
+    profile_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
+    with open(profile_path, encoding="utf-8") as f:
+        base_profile = json.load(f)
+    base_profile.pop("_comment", None)
+
+    n = len(dataset)
+    rows = []  # (label, algo, param_name, value)
+    for algo, param_name, candidates in _COLOR_CAST_ALGORITHM_CANDIDATES:
+        if candidates is None:
+            rows.append((f"{algo}(기준선)", algo, None, None))
+        else:
+            for val in candidates:
+                rows.append((f"{algo} {param_name}={val}", algo, param_name, val))
+
+    loss_matrix = np.zeros((len(rows), n))
+    for ri, (label, algo, param_name, val) in enumerate(rows):
+        params = dict(base_profile)
+        params["color_cast_algorithm"] = algo
+        if param_name is not None:
+            params[param_name] = val
+        engine = HybridCameraEngine(profile=params)
+        for pi, (linear_small, camera_wb, target_small) in enumerate(dataset):
+            result = engine.process(linear_small, camera_whitebalance=camera_wb)
+            loss_matrix[ri, pi] = mean_delta_e(result, target_small)
+        print(f"  {label}: 평균 ΔE {loss_matrix[ri].mean():.3f}")
+
+    baseline_idx = next(i for i, (_, algo, pn, _) in enumerate(rows) if algo == "gray_world")
+    baseline_loss = float(loss_matrix[baseline_idx].mean())
+    in_sample_idx = int(np.argmin(loss_matrix.mean(axis=1)))
+    in_sample_loss = float(loss_matrix[in_sample_idx].mean())
+    print(f"\n기준선(gray_world) ΔE: {baseline_loss:.3f}")
+    print(f"in-sample 최선: {rows[in_sample_idx][0]} ΔE {in_sample_loss:.3f} "
+          f"({(baseline_loss - in_sample_loss) / baseline_loss * 100:+.1f}%)")
+
+    loo_losses = []
+    chosen = []
+    for held_out in range(n):
+        train_mean = np.delete(loss_matrix, held_out, axis=1).mean(axis=1)
+        best_ri = int(np.argmin(train_mean))
+        chosen.append(rows[best_ri][0])
+        loo_losses.append(loss_matrix[best_ri, held_out])
+    loo_loss = float(np.mean(loo_losses))
+    print(f"leave-one-out 교차검증 ΔE: {loo_loss:.3f} "
+          f"({(baseline_loss - loo_loss) / baseline_loss * 100:+.1f}%)  "
+          f"fold별 선택: {chosen}")
+
+    return baseline_loss, in_sample_loss, loo_loss, rows[in_sample_idx]
+
+
 def run_raw_baseline_mode(dataset, n_folds=4, seed=0):
     """GitHub 이슈 #4 대응: hybrid_engine의 Phase 0-2를 전혀 안 거친
     순수 rawpy 디코드(_load_calib_set()이 만든 linear_small 그대로)에
@@ -868,7 +936,7 @@ def run_raw_baseline_mode(dataset, n_folds=4, seed=0):
     return hybrid_loss, no_correction_loss, in_sample_loss, cv_loss, matrix
 
 
-def _find_matrix_and_recalibrate(dataset, n_passes=1):
+def _find_matrix_and_recalibrate(dataset, n_passes=1, fixed_overrides=None):
     """Phase 0(raw_baseline_matrix)을 dataset으로 먼저 최소자승 적합한
     뒤, 그 매트릭스를 고정하고 Phase 1(tone_core)/Phase 2(color_core)
     파라미터(_SEARCH_SPACE)를 좌표하강으로 재탐색한다. 사용자 지시:
@@ -880,7 +948,12 @@ def _find_matrix_and_recalibrate(dataset, n_passes=1):
     적용 후 모든 사진의 평균 밝기를 target_gray로 강제로 맞추는 노출
     정규화 단계가 매트릭스의 이득을 거의 다 없앴다(ΔE 8.55 -> 14.62,
     EVALUATION.md 후속 실측 6). Gray World(색치우침 제거)는 오히려
-    도움이 돼서 correct_color_cast는 그대로 둠."""
+    도움이 돼서 correct_color_cast는 그대로 둠.
+
+    fixed_overrides는 좌표하강 대상이 아닌 파라미터를 강제로 고정하고
+    싶을 때 쓴다(예: color_cast_algorithm="gray_edge") - 후속 실측 17
+    (색치우침 알고리즘)과 pooled 데이터셋(후속 실측 16)을 동시에 검증할
+    때 필요해짐."""
     from hybrid_engine.core.raw_baseline import fit_color_matrix
 
     raw_sources = [d[0] for d in dataset]
@@ -890,6 +963,8 @@ def _find_matrix_and_recalibrate(dataset, n_passes=1):
     base_params = dict(_DEFAULT_PARAMS)
     base_params["raw_baseline_matrix"] = matrix.tolist()
     base_params["normalize_exposure"] = False
+    if fixed_overrides:
+        base_params.update(fixed_overrides)
     params, loss = coordinate_descent(dataset, n_passes=n_passes, base_params=base_params)
     return params, loss
 
@@ -971,7 +1046,7 @@ def main():
     parser.add_argument("--mode",
                          choices=["parametric", "learned", "hue", "hue_chroma", "lab2d", "lab3d",
                                   "spatial", "raw_baseline", "raw_baseline_pipeline", "gray_world",
-                                  "gray_world_zoned", "gray_world_strength"],
+                                  "gray_world_zoned", "gray_world_strength", "color_cast_algorithm"],
                          default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
@@ -984,7 +1059,8 @@ def main():
                               "raw_baseline_pipeline: Phase 0 매트릭스 위에 Phase 1(tone)/Phase 2(color)를 재캘리브레이션한 전체 파이프라인 ΔE 비교(nested CV) / "
                               "gray_world: robust gray world의 saturation percentile을 탐색하고 in-sample+LOO ΔE 비교(후속 실측 10 대응) / "
                               "gray_world_zoned: 밝기 구간별 독립 gray world의 zones 수를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 10/11 대응) / "
-                              "gray_world_strength: gray world 보정 강도(자유도 1개, 0~1.4 촘촘한 격자)를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 14)")
+                              "gray_world_strength: gray world 보정 강도(자유도 1개, 0~1.4 촘촘한 격자)를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 14) / "
+                              "color_cast_algorithm: Gray World 대신 White Patch/Shades of Gray/Gray Edge를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 17)")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -1036,6 +1112,10 @@ def main():
 
     if args.mode == "gray_world_strength":
         run_gray_world_strength_mode(dataset)
+        return
+
+    if args.mode == "color_cast_algorithm":
+        run_color_cast_algorithm_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)
