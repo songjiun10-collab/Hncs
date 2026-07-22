@@ -66,6 +66,16 @@ manifest에 기록) - manifest.csv와 검증 결과만 커밋.
    `hybrid_engine/EVALUATION.md` 후속 실측 9 참고 - 요약: 보정 없는
    raw 베이스라인 ΔE00 7.58, 차트 매트릭스로 교차검증 기준 2.78(-63.3%).
 
-1번(세대 간 pooling 판정)은 이 데이터가 다양한 실사진이 아니라
-ColorChecker 차트 반복 촬영이라 아직 미실행 - 실사진 X2D II raw+jpeg
-페어가 따로 확보되면 그때 실행.
+1번(세대 간 pooling 판정, `apply_hncs` 커브를 X2D II에 그대로 적용했을
+때 RMSE 동급 여부)은 이 데이터가 다양한 실사진이 아니라 ColorChecker
+차트 반복 촬영이라 아직 미실행 - 실사진 X2D II raw+jpeg 페어가 따로
+확보되면 그때 실행.
+
+별개로, **hybrid_engine 자체 캘리브레이션 데이터셋에 챠트 페어를
+직접 pooling하는 실험은 실행했고 실제로 배포까지 됐다** - 챠트 10장
+중 버스트 중복을 피해 대표 2장만 골라 X1D 13쌍에 합쳐서(15쌍) 매트릭스
++톤/채도를 재학습, Gray World를 Gray Edge로 바꾸는 것과 결합해서
+13-fold 교차검증 +11.1% 개선을 얻어 `hasselblad.json` v1.3으로
+배포됐다(`hybrid_engine/EVALUATION.md` 후속 실측 16/17/18). 나머지
+챠트 7장은 같은 버스트(94초 내 10샷)라 정보량이 거의 없다고 판단해
+제외했다.
