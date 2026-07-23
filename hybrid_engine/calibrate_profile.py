@@ -936,6 +936,107 @@ def run_raw_baseline_mode(dataset, n_folds=4, seed=0):
     return hybrid_loss, no_correction_loss, in_sample_loss, cv_loss, matrix
 
 
+def run_matrix_features_mode(dataset, n_folds=4, seed=0):
+    """raw_baseline 3x3 매트릭스를 root-polynomial feature/가중 최소자승
+    (WLS)으로 확장한 버전들을 그리드서치+교차검증으로 비교한다(스펙:
+    docs/superpowers/specs/2026-07-23-matrix-features-design.md, 후속
+    실측 20). run_raw_baseline_mode와 같은 범위(Phase 0 매트릭스만 -
+    전체 파이프라인의 tone_core/color_core 재학습은 안 함) - 그래서
+    이 함수의 ΔE 숫자는 hasselblad.json의 8.976(파이프라인 전체)과
+    직접 비교 대상이 아니라, run_raw_baseline_mode의 매트릭스-단독
+    ΔE와 비교해야 공정하다.
+
+    1단계: feature_set x weight_scheme x ridge 그리드를 n_folds-fold
+    CV로 스크리닝(매트릭스 피팅은 closed-form이라 빠름). 가중치는 매
+    fold마다 그 fold의 학습 데이터에서만 다시 계산한다(데이터 누출
+    방지 - density_weights는 pooled 분포를 쓰므로 특히 중요).
+    2단계: 스크리닝 1등 조합만 leave-one-out(fold 수 = len(dataset))
+    으로 확정 검증한다."""
+    from hybrid_engine.core.raw_baseline import (
+        fit_color_matrix, apply_color_matrix, root_polynomial_features,
+        chroma_weights, density_weights,
+    )
+    from hybrid_engine.utils.evaluate import mean_delta_e
+
+    raw_sources = [d[0] for d in dataset]
+    targets = [d[2] for d in dataset]
+    n = len(dataset)
+
+    feature_sets = [("linear", None), ("root_polynomial", root_polynomial_features)]
+    weight_schemes = [
+        ("none", None, None),
+        ("density", "density", None),
+        ("chroma_p0.5", "chroma", 0.5),
+        ("chroma_p1", "chroma", 1.0),
+        ("chroma_p2", "chroma", 2.0),
+    ]
+    ridge_candidates = [0.0, 1e-4, 1e-3, 1e-2, 1e-1]
+
+    def compute_weights(kind, param, sources):
+        if kind is None:
+            return None
+        if kind == "density":
+            return density_weights(sources)
+        return chroma_weights(sources, p=param)
+
+    baseline_matrix = fit_color_matrix(raw_sources, targets)
+    baseline_loss = float(np.mean(
+        [mean_delta_e(apply_color_matrix(s, baseline_matrix), t)
+         for s, t in zip(raw_sources, targets)]))
+    print(f"기준선(선형, 가중치 없음, ridge=0) in-sample ΔE: {baseline_loss:.3f}")
+
+    combos = []
+    for feat_label, feat_fn in feature_sets:
+        for weight_label, weight_kind, weight_param in weight_schemes:
+            for ridge in ridge_candidates:
+                combos.append((feat_label, feat_fn, weight_label, weight_kind, weight_param, ridge))
+
+    rng = np.random.default_rng(seed)
+    order = rng.permutation(n)
+    folds = np.array_split(order, min(n_folds, n))
+
+    results = []
+    for feat_label, feat_fn, weight_label, weight_kind, weight_param, ridge in combos:
+        fold_losses = []
+        for fold_idx in folds:
+            fold_idx_set = set(fold_idx.tolist())
+            train_sources = [raw_sources[i] for i in range(n) if i not in fold_idx_set]
+            train_targets = [targets[i] for i in range(n) if i not in fold_idx_set]
+            train_weights = compute_weights(weight_kind, weight_param, train_sources)
+            fold_matrix = fit_color_matrix(
+                train_sources, train_targets, feature_fn=feat_fn,
+                weights=train_weights, ridge=ridge)
+            for i in fold_idx:
+                pred = apply_color_matrix(raw_sources[i], fold_matrix, feature_fn=feat_fn)
+                fold_losses.append(mean_delta_e(pred, targets[i]))
+        cv_loss = float(np.mean(fold_losses))
+        label = f"{feat_label} / {weight_label} / ridge={ridge}"
+        improvement = (baseline_loss - cv_loss) / baseline_loss * 100
+        results.append((label, feat_label, feat_fn, weight_kind, weight_param, ridge, cv_loss, improvement))
+        print(f"  {label}: {n_folds}-fold CV ΔE {cv_loss:.3f} ({improvement:+.1f}%)")
+
+    results.sort(key=lambda r: r[6])
+    (best_label, best_feat_label, best_feat_fn, best_weight_kind,
+     best_weight_param, best_ridge, best_cv, best_improve) = results[0]
+    print(f"\n{n_folds}-fold 스크리닝 1등: {best_label} (CV ΔE {best_cv:.3f}, {best_improve:+.1f}%)")
+
+    loo_losses = []
+    for held_out in range(n):
+        train_sources = [raw_sources[i] for i in range(n) if i != held_out]
+        train_targets = [targets[i] for i in range(n) if i != held_out]
+        train_weights = compute_weights(best_weight_kind, best_weight_param, train_sources)
+        fold_matrix = fit_color_matrix(
+            train_sources, train_targets, feature_fn=best_feat_fn,
+            weights=train_weights, ridge=best_ridge)
+        pred = apply_color_matrix(raw_sources[held_out], fold_matrix, feature_fn=best_feat_fn)
+        loo_losses.append(mean_delta_e(pred, targets[held_out]))
+    loo_loss = float(np.mean(loo_losses))
+    loo_improvement = (baseline_loss - loo_loss) / baseline_loss * 100
+    print(f"{best_label} leave-one-out 교차검증 ΔE: {loo_loss:.3f} ({loo_improvement:+.1f}%)")
+
+    return baseline_loss, results, (best_label, loo_loss, loo_improvement)
+
+
 def _find_matrix_and_recalibrate(dataset, n_passes=1, fixed_overrides=None):
     """Phase 0(raw_baseline_matrix)을 dataset으로 먼저 최소자승 적합한
     뒤, 그 매트릭스를 고정하고 Phase 1(tone_core)/Phase 2(color_core)
@@ -1046,7 +1147,8 @@ def main():
     parser.add_argument("--mode",
                          choices=["parametric", "learned", "hue", "hue_chroma", "lab2d", "lab3d",
                                   "spatial", "raw_baseline", "raw_baseline_pipeline", "gray_world",
-                                  "gray_world_zoned", "gray_world_strength", "color_cast_algorithm"],
+                                  "gray_world_zoned", "gray_world_strength", "color_cast_algorithm",
+                                  "matrix_features"],
                          default="parametric",
                          help="parametric: 좌표하강으로 profile 파라미터 탐색(기본) / "
                               "learned: 톤 단계를 픽셀 대응 학습 1D LUT으로 교체하고 ΔE 비교 / "
@@ -1060,7 +1162,8 @@ def main():
                               "gray_world: robust gray world의 saturation percentile을 탐색하고 in-sample+LOO ΔE 비교(후속 실측 10 대응) / "
                               "gray_world_zoned: 밝기 구간별 독립 gray world의 zones 수를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 10/11 대응) / "
                               "gray_world_strength: gray world 보정 강도(자유도 1개, 0~1.4 촘촘한 격자)를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 14) / "
-                              "color_cast_algorithm: Gray World 대신 White Patch/Shades of Gray/Gray Edge를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 17)")
+                              "color_cast_algorithm: Gray World 대신 White Patch/Shades of Gray/Gray Edge를 탐색하고 in-sample+LOO ΔE 비교(후속 실측 17) / "
+                              "matrix_features: raw_baseline 매트릭스를 root-polynomial feature/가중 최소자승(WLS)/ridge로 확장해서 그리드서치+교차검증(후속 실측 20)")
     args = parser.parse_args()
 
     print("raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
@@ -1116,6 +1219,10 @@ def main():
 
     if args.mode == "color_cast_algorithm":
         run_color_cast_algorithm_mode(dataset)
+        return
+
+    if args.mode == "matrix_features":
+        run_matrix_features_mode(dataset)
         return
 
     params, final_loss = coordinate_descent(dataset)

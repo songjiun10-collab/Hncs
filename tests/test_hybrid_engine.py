@@ -805,5 +805,38 @@ class TestRawBaselinePipelineMode(unittest.TestCase):
         self.assertIn("raw_baseline_matrix", new_params)
 
 
+class TestMatrixFeaturesMode(unittest.TestCase):
+    """calibrate_profile.run_matrix_features_mode - 합성 페어로 그리드서치
+    +교차검증 파이프라인 전체가 끝까지 도는지, 알려진 선형 변환을
+    낮은 오차로 복원하는지 검증(raw 디코드/실제 hasselblad.json은
+    필요 없음 - 순수 매트릭스 그리드서치라 참고용 profile도 안 읽음)."""
+
+    def test_recovers_known_linear_transform_with_low_loo_loss(self):
+        from hybrid_engine.calibrate_profile import run_matrix_features_mode
+
+        rng = np.random.default_rng(27)
+        known_matrix = np.array([
+            [1.1, 0.02, -0.01],
+            [0.01, 0.95, 0.02],
+            [-0.02, 0.01, 1.15],
+        ])
+        dataset = []
+        for _ in range(8):
+            img = rng.uniform(0.05, 0.9, size=(14, 14, 3))
+            target = np.clip(img @ known_matrix, 0.0, 1.0)
+            dataset.append((img, None, target))
+
+        baseline_loss, results, (best_label, loo_loss, loo_improvement) = \
+            run_matrix_features_mode(dataset, n_folds=4)
+
+        self.assertTrue(np.isfinite(baseline_loss))
+        self.assertGreater(len(results), 0)
+        self.assertIsInstance(best_label, str)
+        self.assertTrue(np.isfinite(loo_loss))
+        # 여러 페어가 전부 같은 선형 변환을 공유하니 최선 조합의
+        # leave-one-out 오차는 낮아야 한다.
+        self.assertLess(loo_loss, 1.0)
+
+
 if __name__ == "__main__":
     unittest.main()
