@@ -823,3 +823,38 @@ boosting, RBF)에서 일관되게 재현된 셈 - 우연이 아니라 이 데이
 부분을 이미 반영했다는 방증에 가깝다. "9→7"(나아가 "7→6")은 여전히
 달성 못 했고, 다음으로 남은 현실적인 경로는 이슈 #4가 계속 요청 중인
 진짜 다양한 실사진 X2D 페어뿐이다.
+
+**후속 실측 20(2026-07, docs/superpowers/specs/2026-07-23-matrix-features-design.md):
+root-polynomial feature + 가중 최소자승(WLS)/ridge 확장 - 기각.**
+`fit_color_matrix()`를 확장해서 (1) root-polynomial feature(Finlayson
+2015, [r,g,b,sqrt(rg),sqrt(rb),sqrt(gb)] 6항, 노출 불변) (2) 밀도
+기반/채도 기반 WLS (3) ridge 정규화를 지원하게 만들고, `feature_set x
+weight_scheme x ridge` 50개 조합을 `calibrate_profile.py --mode
+matrix_features`로 4-fold 스크리닝 후 1등만 15-fold leave-one-out으로
+확정 검증했다(Phase 0 매트릭스 단독 비교 - 전체 파이프라인 재학습은
+안 함).
+
+| 조합 | LOO 교차검증 ΔE00 | 변화 |
+|---|---|---|
+| 기준선(선형, 가중치 없음, ridge=0, in-sample) | 8.284 | - |
+| **1등: linear / none / ridge=0.0** | 8.713 | -5.2% |
+
+5% 배포 기준을 못 넘겨서(오히려 기준선 in-sample 대비 -5.2%로 더
+나쁘다) `hasselblad.json`은 바꾸지 않는다. 50개 조합 중 4-fold
+스크리닝 1등이 하필 `linear / none / ridge=0.0` - 즉 root-polynomial도
+WLS도 ridge도 전혀 적용하지 않은, 사실상 기존 매트릭스와 동일한
+설정이었다는 점 자체가 결론을 말해준다: 픽셀 가중치(density/chroma_p0.5
+/chroma_p1/chroma_p2)는 예외 없이 걸수록 더 나빴고(-5.7% → -7.2% →
+-9.7% → -14.3%/-14.8%, chroma는 p가 커질수록 단조 악화, density가
+가장 나쁨), root-polynomial 6항 확장도 같은 weight_scheme 기준으로
+매번 linear보다 나빴다(예: none 기준 -5.7% vs -8.9%, chroma_p2 기준
+-14.8% vs -22.5%) - ridge 값(0.0001~0.1)은 어느 조합에서도 CV ΔE를
+유의미하게 바꾸지 못했다(9개 자유도짜리 3x3 행렬이 15쌍 데이터로 이미
+잘 조건화돼 있어 정규화가 할 일이 없었던 것으로 보임). 결국 이번
+그리드서치의 두 축(feature 확장, 재가중치) 모두 이 데이터 규모(15쌍)
+에서는 신호보다 잡음을 더 많이 끌어들였다는 결론이고, 이는 후속
+실측 19의 RBF/Huber/gradient-boosting 기각 패턴("유연한 모델을
+15장 규모에 그대로 적용하면 손해")과 궤를 같이한다.
+`fit_color_matrix()`의 확장 자체(feature_fn/weights/ridge 인자)는
+코드에 남겨둔다 - 향후 issue #4의 새 데이터가 들어왔을 때 재시도할 수
+있는 도구로 남기는 것이 이 프로젝트의 문서화 철학과 일치한다.
