@@ -107,3 +107,57 @@ def apply_color_matrix(rgb_linear, matrix, feature_fn=None):
     features = rgb_linear if feature_fn is None else feature_fn(rgb_linear)
     out = features @ matrix
     return np.clip(out, 0.0, None)
+
+
+def chroma_weights(sources, p=1.0):
+    """sources: (H, W, 3) linear RGB 소스 리스트. 반환: 각 소스와 같은
+    (H, W) shape의 가중치 리스트 - weight = chroma^p, chroma =
+    max(r,g,b) - min(r,g,b)(채널 간 최대-최소). 무채색에 가까운
+    픽셀일수록 색 매트릭스 피팅에 정보량이 적다는 직관(회색은 어떤
+    매트릭스를 곱해도 그레이축 근처에 남는다)을 반영. p=0이면 균등
+    가중치(1)와 동일해서 자연스러운 기준선 역할을 한다."""
+    result = []
+    for s in sources:
+        chroma = np.clip(s.max(axis=-1) - s.min(axis=-1), 0.0, None)
+        if p == 0:
+            result.append(np.ones_like(chroma))
+        else:
+            result.append(np.power(chroma, p))
+    return result
+
+
+def density_weights(sources, n_bins=16):
+    """sources: (H, W, 3) linear RGB 소스 리스트. pooled 전체(모든
+    source를 합친) 기준으로 RGB 공간에 성긴 3D 히스토그램(축마다
+    n_bins개)을 만들고, weight = 1/sqrt(count_in_bin)으로 과대표집된
+    색 영역(같은 챠트를 여러 장 찍은 버스트, 야경의 균일한 하늘처럼
+    비슷한 색이 반복되는 큰 영역)을 다운웨이트한다. 반환: 각 소스와
+    같은 (H, W) shape의 가중치 리스트.
+
+    교차검증에서 쓸 때는 반드시 그 fold의 학습 데이터(sources)만으로
+    새로 호출해야 한다 - held-out 데이터의 분포가 히스토그램에 섞이면
+    데이터 누출이다."""
+    all_flat = np.concatenate([s.reshape(-1, 3) for s in sources], axis=0)
+    lo = all_flat.min(axis=0)
+    hi = all_flat.max(axis=0)
+    edges = [np.linspace(lo[c], max(hi[c], lo[c] + 1e-6), n_bins + 1) for c in range(3)]
+
+    def bin_indices(flat):
+        return np.stack([
+            np.clip(np.searchsorted(edges[c], flat[:, c], side="right") - 1, 0, n_bins - 1)
+            for c in range(3)
+        ], axis=-1)
+
+    all_idx = bin_indices(all_flat)
+    all_flat_bin = (all_idx[:, 0] * n_bins + all_idx[:, 1]) * n_bins + all_idx[:, 2]
+    counts_per_bin = np.bincount(all_flat_bin, minlength=n_bins ** 3)
+
+    result = []
+    for s in sources:
+        flat = s.reshape(-1, 3)
+        idx = bin_indices(flat)
+        flat_bin = (idx[:, 0] * n_bins + idx[:, 1]) * n_bins + idx[:, 2]
+        counts = counts_per_bin[flat_bin]
+        w = 1.0 / np.sqrt(np.clip(counts, 1.0, None))
+        result.append(w.reshape(s.shape[:2]))
+    return result
