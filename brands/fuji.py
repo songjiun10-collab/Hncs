@@ -82,6 +82,33 @@ population 방식(서로 다른 사진들을 필름모드별로 모아 통계 �
 - Velvia는 이 프로젝트에 대응하는 apply_* 함수가 없어 비교 제외(raw
   실측 delta만 기록: n=5, 채도 +15.2 - 향후 프리셋 추가 시 참고).
 - Reala Ace는 8장의 비교차트 어디에도 라벨이 없어 이번엔 검증 못 함.
+
+DCP 카메라 프로필 교차검증(2026-07, `abpy/FujifilmCameraProfiles` 레포
+리서치): 이 레포는 Adobe DCP(DNG Camera Profile) 형식으로 8개 필름
+시뮬레이션(Provia/Velvia/Astia/Classic Chrome/Eterna/Pro Neg Std/Pro Neg
+Hi/Reala Ace)의 LookTable(72 hue x 12 sat x 16 value 격자, 노드별
+HueShift/SatScale/ValScale)과 128점 ToneCurve를 XML로 제공 - population/
+동일장면차트와는 완전히 다른, Adobe가 카메라 자체를 분석해서 만든
+독립적인 세 번째 소스. 이 프로젝트의 실측(Provia 대비 delta)과 같은
+기준으로 보려고 SatScale을 Provia 기준 상대값으로 환산해서 비교:
+
+| 프리셋 | DCP SatScale(Provia 대비) | 이 프로젝트 실측/코드 | 방향 일치? |
+|---|---|---|---|
+| Velvia | +8.4% | (미구현, raw delta +15.2 참고용) | 방향 일치(둘 다 증가) |
+| Astia | +2.3% | 챠트 n=5: +6.6 / population: -12.9(모순, 27행) / 코드: a·b×0.85(감소) | 챠트와는 일치, population/코드와는 불일치 - **population vs 챠트 모순에 DCP가 챠트 쪽에 한 표 추가** |
+| Pro Neg Std | -8.7% | population: -19.4 / 코드: HSV sat×0.85(감소) | 방향 일치 |
+| Pro Neg Hi | -8.1% | 챠트 n=3: +5.8 / 코드: sat_mult=1.10(증가) | **불일치** - DCP는 감소, 챠트+코드는 증가. 새로운 모순 발견, 표본 더 필요 |
+| Eterna | -11.7% | 챠트 n=1: -12.8 / 코드: sat_mult=0.55(큰 폭 감소) | 방향+대략적 크기 일치(단위가 달라 직접 비교는 아님) |
+| Classic Chrome | -15.8%(8개 중 가장 저채도) | population n=2뿐이라 미구현 | (비교 대상 코드 없음 - 향후 프리셋 추가 시 참고 자료로 남김) |
+
+DCP LookTable은 Adobe가 카메라 JPEG 엔진과 별개로 만드는 "Look" 보정이라
+실제 SOOC JPEG 렌더링과 철학이 다를 수 있다는 캐비어트가 있다(이 프로젝트
+다른 곳의 "미검증" 라벨과 같은 성격) - 그래서 이 표만으로 기존 코드를
+바로 고치지는 않았다. 다만 Astia는 이제 독립적인 두 소스(챠트+DCP)가
+"더 채도 높음" 쪽을 가리키는데 코드는 population 쪽(채도 감소)을
+따르고 있어 재검토 우선순위가 높아졌고, Pro Neg Hi는 반대로 챠트+코드가
+"더 채도 높음"인데 DCP가 "더 낮음"이라는 새로운 모순이 생겼다 - 둘 다
+표본이 늘어나면 우선 재확인할 항목으로 남긴다.
 """
 import cv2
 import numpy as np
