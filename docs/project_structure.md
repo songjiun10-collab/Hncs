@@ -36,7 +36,7 @@ docs/         상세 문서 (이 디렉토리)
 | `core/validation.py` | "진짜 미가공 SOOC인가" EXIF 검증, "실제로 온전히 디코드되는가" 무결성 검증(`is_image_usable`), hue 측정 헬퍼 |
 | `core/denoise.py` | 노이즈 제거 (`denoise()`: nlm/bilateral) - 고ISO 샘플을 브랜드 룩 적용 전에 정리할 때 씀 |
 | `core/log_pipeline.py` | 브랜드 엔진과 별개인 RAW -> Log 색공간 파이프라인 - RAW를 ProPhoto RGB Linear로 통일한 뒤 F-Log2/S-Log3/V-Log 등 영상 카메라 Log 커브/색역으로 인코딩, 선택적으로 `.cube` LUT 적용 ([raw-alchemy](https://github.com/shenmintao/raw-alchemy) 아이디어 참고, `colour-science` 기반) |
-| `core/lut_export.py` | "포토샵 프리셋" 내보내기 - `brands/*.py`의 임의 `apply_*` 함수를 identity 격자 전체에 한 번에 통과시켜 표준 Adobe `.cube` 3D LUT으로 굽는다(`build_identity_grid`/`bake_lut_from_function`/`write_cube_file`). CLAHE 기반 함수는 지역 적응성을 LUT이 구조적으로 담을 수 없다는 한계가 모듈 docstring에 명시돼 있음 |
+| `core/lut_export.py` | "포토샵/라이트룸 프리셋" 내보내기 - `brands/*.py`의 임의 `apply_*` 함수를 identity 격자 전체에 한 번에 통과시켜 표준 Adobe `.cube` 3D LUT으로 굽는다(`build_identity_grid`/`bake_lut_from_function`/`write_cube_file`), `install_lightroom_profile()`로 Lightroom Classic/Camera Raw의 LUT Profiles 폴더에 바로 설치도 가능. CLAHE 기반 함수는 지역 적응성을 LUT이 구조적으로 담을 수 없다는 한계가 모듈 docstring에 명시돼 있음 |
 | `datasets/hasselblad/hasselblad_sample_images.csv` | 핫셀블라드 공식 샘플 메타데이터 (카메라/렌즈/작가/jpeg_url/raw_url) |
 | `datasets/hasselblad/texture_signature_recomputed.json` | 기존 `texture_signature.json`은 파일명이 `orig_N.jpg`뿐이라 CSV 행 매칭이 불확실(순번 추정, 78개 검증 중 3개 불일치) - CSV의 jpeg_url로 원본을 처음부터 다시 받아 파일명이 정확히 일치하는 새 세트로 재구축(n=123, noise off-by-one 수정 반영). 기존 파일은 원본 기록 보존 목적으로 그대로 둠 |
 | `datasets/fuji/fuji_sample_pages.csv` | mirrorlesscomparison.com 후지 갤러리의 RAW/JPEG Google Drive 링크 |
@@ -49,7 +49,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/fuji_chart_calibrate.py` | 후지 "동일 장면 비교차트" 검증 CLI - `python3 -m tools.fuji_chart_calibrate report` (manifest.json의 크롭박스로 스트립 추출 -> 실측 delta vs 프리셋 delta 테이블 출력) |
 | `tools/denoise.py` | 노이즈 제거 CLI - `python3 -m tools.denoise input.jpg output.jpg [--strength N] [--method nlm\|bilateral]` |
 | `tools/raw_pipeline.py` | RAW -> Log 색공간 CLI - `python3 -m tools.raw_pipeline input.raw output.tiff\|.exr --log-space F-Log2 [--lut looks/x.cube] [--exposure EV] [--auto-expose-mode average\|highlight_safe\|matrix]` |
-| `tools/export_lut.py` | 포토샵/DaVinci Resolve용 `.cube` 3D LUT 내보내기 CLI - `python3 -m tools.export_lut --list` / `python3 -m tools.export_lut hasselblad out.cube [--size 33]` (`hybrid_engine.core.preset_inverse.TARGET_FUNCS` 레지스트리 재사용) |
+| `tools/export_lut.py` | 포토샵/DaVinci Resolve/Lightroom용 `.cube` 3D LUT 내보내기 CLI - `python3 -m tools.export_lut --list` / `python3 -m tools.export_lut hasselblad out.cube [--size 33] [--install-lightroom [--group NAME]]` (`hybrid_engine.core.preset_inverse.TARGET_FUNCS` 레지스트리 재사용) |
 | `tools/verify_contributed_pairs.py` | 기여 데이터셋 자동 검증 CLI(manifest-EXIF 대조, raw/jpeg 동시촬영 확인, 편집 오염 검사) - 규격은 `datasets/hasselblad/contributed/README.md` |
 | `tools/highlight_rolloff_signal.py` | 브랜드별 shoulder_start/clahe_clip 추정 가능성 탐색(결론: 근거 부족, 기본값 유지 - `core/engine.py` docstring 참고) |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |

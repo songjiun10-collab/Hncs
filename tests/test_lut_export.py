@@ -1,10 +1,14 @@
 import os
 import tempfile
 import unittest
+from unittest import mock
 
 import numpy as np
 
-from core.lut_export import build_identity_grid, bake_lut_from_function, write_cube_file
+from core.lut_export import (
+    build_identity_grid, bake_lut_from_function, write_cube_file,
+    lightroom_lut_profiles_dir, install_lightroom_profile,
+)
 
 
 class TestBuildIdentityGrid(unittest.TestCase):
@@ -106,6 +110,55 @@ class TestWriteCubeFile(unittest.TestCase):
                 content = f.read()
             self.assertNotIn("5.000000", content)
             self.assertIn("1.000000", content)
+
+
+class TestLightroomLutProfilesDir(unittest.TestCase):
+    def test_macos_path(self):
+        with mock.patch("platform.system", return_value="Darwin"):
+            path = lightroom_lut_profiles_dir()
+        self.assertTrue(path.endswith("Adobe/CameraRaw/LUT Profiles"))
+        self.assertIn("Library/Application Support", path)
+
+    def test_windows_path_uses_appdata_env(self):
+        with mock.patch("platform.system", return_value="Windows"), \
+             mock.patch.dict(os.environ, {"APPDATA": "C:\\Users\\test\\AppData\\Roaming"}):
+            path = lightroom_lut_profiles_dir()
+        self.assertEqual(path, os.path.join("C:\\Users\\test\\AppData\\Roaming", "Adobe", "CameraRaw", "LUT Profiles"))
+
+    def test_linux_raises(self):
+        with mock.patch("platform.system", return_value="Linux"):
+            with self.assertRaises(OSError):
+                lightroom_lut_profiles_dir()
+
+
+class TestInstallLightroomProfile(unittest.TestCase):
+    def test_copies_into_platform_dir(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "src.cube")
+            lut = build_identity_grid(size=3)
+            write_cube_file(lut, src, title="test")
+
+            fake_dest_root = os.path.join(tmp, "LUT Profiles")
+            with mock.patch("core.lut_export.lightroom_lut_profiles_dir", return_value=fake_dest_root):
+                result = install_lightroom_profile(src)
+
+            expected = os.path.join(fake_dest_root, "src.cube")
+            self.assertEqual(result, expected)
+            self.assertTrue(os.path.isfile(expected))
+            with open(src, encoding="utf-8") as f1, open(expected, encoding="utf-8") as f2:
+                self.assertEqual(f1.read(), f2.read())
+
+    def test_group_creates_subfolder(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            src = os.path.join(tmp, "src.cube")
+            write_cube_file(build_identity_grid(size=3), src)
+
+            fake_dest_root = os.path.join(tmp, "LUT Profiles")
+            with mock.patch("core.lut_export.lightroom_lut_profiles_dir", return_value=fake_dest_root):
+                result = install_lightroom_profile(src, group="Hncs")
+
+            self.assertEqual(result, os.path.join(fake_dest_root, "Hncs", "src.cube"))
+            self.assertTrue(os.path.isfile(result))
 
 
 if __name__ == "__main__":

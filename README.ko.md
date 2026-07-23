@@ -255,6 +255,7 @@ Effects도 마찬가지다.
 python3 -m tools.export_lut --list                            # 사용 가능한 preset 전체 목록
 python3 -m tools.export_lut hasselblad hasselblad.cube
 python3 -m tools.export_lut fuji_astia fuji_astia.cube --size 33   # 33은 Adobe 표준 격자 크기
+python3 -m tools.export_lut hasselblad hasselblad.cube --install-lightroom  # Lightroom/ACR의 LUT Profiles 폴더로 바로 복사
 ```
 
 **알려진 한계**: CLAHE(적응형 지역 대비, 예: `fuji.apply_pro_neg_hi`) 기반
@@ -267,6 +268,16 @@ CLAHE가 최소한 안정적인(격자 구조에 의존하는) 결과를 내게�
 포맷 자체의 구조적 한계지 코드의 버그가 아니며, `core/lut_export.py`
 모듈 docstring에 이 프로젝트의 "미검증/근사" 라벨링 관례대로 명시돼
 있다.
+
+**Lightroom Classic / Adobe Camera Raw**: 별도 변환이 필요 없다 - ACR
+12.3/Lightroom Classic 9.3부터 Adobe가 고정 경로의 "LUT Profiles" 폴더
+(macOS `~/Library/Application Support/Adobe/CameraRaw/LUT Profiles`,
+Windows `%APPDATA%\Adobe\CameraRaw\LUT Profiles`)에 있는 원본 `.cube`
+파일을 그대로 읽어서 Develop 모듈 Profile Browser에 Profile로 띄워준다 -
+Color Lookup 조정 레이어를 수동으로 얹어야 하는 Photoshop과 다른 점.
+`--install-lightroom`이 방금 구운 `.cube`를 그 폴더로 복사해준다
+(`--group`으로 Profile Browser 하위 폴더 이름 지정, 기본값 `Hncs`) -
+Adobe 앱 자체가 Linux를 지원 안 해서 macOS/Windows에서만 동작.
 
 ## 목표 / 철학
 
