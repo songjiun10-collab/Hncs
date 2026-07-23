@@ -839,8 +839,14 @@ matrix_features`로 4-fold 스크리닝 후 1등만 15-fold leave-one-out으로
 | 기준선(선형, 가중치 없음, ridge=0, in-sample) | 8.284 | - |
 | **1등: linear / none / ridge=0.0** | 8.713 | -5.2% |
 
-5% 배포 기준을 못 넘겨서(오히려 기준선 in-sample 대비 -5.2%로 더
-나쁘다) `hasselblad.json`은 바꾸지 않는다. 50개 조합 중 4-fold
+5% 배포 기준을 못 넘겨서 `hasselblad.json`은 바꾸지 않는다. 표의
+-5.2%는 새 feature/가중치가 손해를 냈다는 뜻이 아니라는 점을 짚어야
+한다 - 1등 조합 자체가 기존과 동일한 `linear/none/ridge=0` 설정이라,
+이 -5.2%는 "같은 모델의 in-sample vs LOO 일반화 격차"일 뿐이다(공정한
+"새 축이 도움이 됐는가"는 각 조합의 CV 손실끼리 비교해야 하고, 그
+기준으로는 1등 조합이 기준 대비 ~0%). 새 축 두 개(feature 확장,
+재가중치) 자체가 전부 CV 기준으로 기준선보다 나빴다는 게 진짜
+기각 근거다(아래). 50개 조합 중 4-fold
 스크리닝 1등이 하필 `linear / none / ridge=0.0` - 즉 root-polynomial도
 WLS도 ridge도 전혀 적용하지 않은, 사실상 기존 매트릭스와 동일한
 설정이었다는 점 자체가 결론을 말해준다: 픽셀 가중치(density/chroma_p0.5
