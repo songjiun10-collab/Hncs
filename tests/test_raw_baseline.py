@@ -4,6 +4,7 @@ import numpy as np
 
 from hybrid_engine.core.raw_baseline import (
     fit_color_matrix, apply_color_matrix, root_polynomial_features,
+    chroma_weights, density_weights,
 )
 
 
@@ -140,6 +141,44 @@ class TestApplyColorMatrixWithFeatureFn(unittest.TestCase):
             root_polynomial_features(img).reshape(-1, 6) @ matrix, 0.0, None
         ).reshape(img.shape)
         np.testing.assert_allclose(out, expected, atol=1e-10)
+
+
+class TestChromaWeights(unittest.TestCase):
+    def test_gray_pixel_gets_zero_weight(self):
+        img = np.full((3, 3, 3), 0.5)
+        w = chroma_weights([img], p=1.0)[0]
+        np.testing.assert_allclose(w, np.zeros((3, 3)), atol=1e-10)
+
+    def test_saturated_pixel_gets_higher_weight_than_gray_pixel(self):
+        img = np.zeros((1, 2, 3))
+        img[0, 0] = [0.5, 0.5, 0.5]
+        img[0, 1] = [0.9, 0.1, 0.5]
+        w = chroma_weights([img], p=1.0)[0]
+        self.assertGreater(w[0, 1], w[0, 0])
+
+    def test_p_zero_gives_uniform_weight(self):
+        rng = np.random.default_rng(18)
+        img = rng.uniform(0.0, 1.0, size=(4, 4, 3))
+        w = chroma_weights([img], p=0.0)[0]
+        np.testing.assert_allclose(w, np.ones((4, 4)))
+
+
+class TestDensityWeights(unittest.TestCase):
+    def test_output_shapes_match_sources(self):
+        rng = np.random.default_rng(20)
+        imgs = [rng.uniform(0.0, 1.0, size=(6, 6, 3)) for _ in range(3)]
+        weights = density_weights(imgs, n_bins=4)
+        self.assertEqual(len(weights), 3)
+        for w, img in zip(weights, imgs):
+            self.assertEqual(w.shape, img.shape[:2])
+
+    def test_overrepresented_color_gets_lower_weight_than_rare_color(self):
+        common = np.full((20, 20, 3), 0.3)
+        rare = np.full((1, 1, 3), 0.9)
+        weights = density_weights([common, rare], n_bins=8)
+        common_w = weights[0][0, 0]
+        rare_w = weights[1][0, 0]
+        self.assertGreater(rare_w, common_w)
 
 
 if __name__ == "__main__":
