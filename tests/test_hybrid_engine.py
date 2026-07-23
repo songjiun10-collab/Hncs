@@ -195,6 +195,23 @@ class TestAlternativeColorCastAlgorithms(unittest.TestCase):
         means = out.reshape(-1, 3).mean(axis=0)
         self.assertAlmostEqual(means[0], means[1], places=5)
 
+    def test_shades_of_gray_near_black_uniform_is_noop(self):
+        # gray_edge_normalize에서 발견된 것과 같은 버그 패턴(target을
+        # clip 안 된 illum에서 계산하면 스케일이 왜곡됨)이 없는지 확인 -
+        # 채널값이 전부 clip 임계값(1e-6) 아래인 균일한 이미지는 이미
+        # 무채색이라 보정이 필요 없으므로 항등에 가까워야 한다.
+        img = np.full((6, 6, 3), 1e-8)
+        out = shades_of_gray_normalize(img, p=6.0)
+        self.assertTrue(np.all(np.isfinite(out)))
+        np.testing.assert_allclose(out, img, rtol=1e-3)
+
+    def test_white_patch_near_black_uniform_is_noop(self):
+        # 같은 버그 패턴이 white_patch_normalize에도 없는지 확인.
+        img = np.full((6, 6, 3), 1e-8)
+        out = white_patch_normalize(img)
+        self.assertTrue(np.all(np.isfinite(out)))
+        np.testing.assert_allclose(out, img, rtol=1e-3)
+
     def test_gray_edge_preserves_shape(self):
         img = np.random.default_rng(3).uniform(0.05, 0.5, size=(8, 8, 3))
         out = gray_edge_normalize(img)

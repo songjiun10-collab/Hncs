@@ -69,7 +69,7 @@ def white_patch_normalize(img_rgb, percentile=100.0):
     else:
         max_per_channel = np.percentile(flat, percentile, axis=0)
     max_safe = np.clip(max_per_channel, 1e-6, None)
-    target = max_per_channel.max()
+    target = max_safe.max()
     scale = target / max_safe
     return img_rgb * scale
 
@@ -86,7 +86,7 @@ def shades_of_gray_normalize(img_rgb, p=6.0):
     flat = np.clip(img_rgb.reshape(-1, 3), 0.0, None)
     illum = np.power(np.mean(np.power(flat, p), axis=0), 1.0 / p)
     illum_safe = np.clip(illum, 1e-6, None)
-    target = illum.mean()
+    target = illum_safe.mean()
     scale = target / illum_safe
     return img_rgb * scale
 
