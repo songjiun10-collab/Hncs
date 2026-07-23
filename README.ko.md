@@ -91,8 +91,11 @@ Log 커브/색역(F-Log2, S-Log3, V-Log, ARRI LogC3/4 등)으로 인코딩해서
 
 ```
 python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3
+python3 -m tools.raw_pipeline photo.CR3 photo.exr --log-space S-Log3   # 32비트 float OpenEXR, 씬 참조
 python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks/my_look.cube
 python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode highlight_safe
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode matrix
 ```
 
 ![RAW -> Log 색공간 데모 - sRGB 디코드 vs V-Log 인코딩](docs/images/raw_pipeline_demo.jpg)
@@ -100,6 +103,19 @@ python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure
 *동일 RAW(Fujifilm X-T1) 한 장을 표준 sRGB로 디코드한 것(왼쪽)과
 `tools.raw_pipeline --log-space V-Log`로 인코딩한 것(오른쪽) 비교. 오른쪽의
 밋밋한 저대비/저채도 모습은 정상 - 그레이딩되지 않은 Log 상태 그대로다.*
+
+출력 형식은 확장자로 정한다 - `.tif`/`.tiff`는 16비트 정수(뷰어 호환성
+가장 좋음), `.exr`는 32비트 float OpenEXR(Log/그레이딩 워크플로우의
+실제 업계 표준 - DaVinci Resolve/Nuke 등이 직접 읽고, float라서 정수
+포맷처럼 클리핑 여유가 깎이지 않는다).
+
+자동노출 측광 모드 3종(`--auto-expose-mode`): `average`(전체 화면
+평균을 미드그레이로 - 원래 있던 가장 단순한 모드), `highlight_safe`(상위
+백분위수, 기본 99.5, 를 클리핑 아래 목표값, 기본 0.9, 에 고정 - 그림자
+디테일을 희생해서 하이라이트를 지킴, 콘트라스트 큰 장면에 유용),
+`matrix`(카메라의 다분할 평가측광을 흉내낸 중앙 가중 존 평균 - 순수
+평균보다 화면 가장자리의 극단적 밝기에 덜 휘둘림). 이 모듈 docstring에
+처음부터 "아직 없음"으로 명시돼 있던 갭을 채운 것.
 
 지원 Log 색공간: `core/log_pipeline.py`의 `LOG_SPACES` 참고(F-Log/F-Log2/
 V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log).

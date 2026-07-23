@@ -5,8 +5,8 @@ import unittest
 import numpy as np
 
 from core.log_pipeline import (
-    LOG_SPACES, apply_exposure, auto_exposure_average, to_log_space,
-    apply_cube_lut, to_16bit_bgr,
+    LOG_SPACES, apply_exposure, auto_exposure_average, auto_exposure_highlight_safe,
+    auto_exposure_matrix, to_log_space, apply_cube_lut, to_16bit_bgr, write_exr,
 )
 
 _IDENTITY_CUBE = """TITLE "Identity"
@@ -48,6 +48,62 @@ class TestAutoExposureAverage(unittest.TestCase):
     def test_all_zero_image_is_unchanged(self):
         img = np.zeros((4, 4, 3))
         out = auto_exposure_average(img)
+        np.testing.assert_array_equal(out, img)
+
+
+class TestAutoExposureHighlightSafe(unittest.TestCase):
+    def test_scales_percentile_to_target(self):
+        rng = np.random.default_rng(0)
+        img = np.zeros((20, 20, 3))
+        img[..., :] = rng.uniform(0.05, 0.3, size=(20, 20, 1))
+        img[0, 0] = 0.9  # 스펙큘러 하이라이트 한 픽셀 (400픽셀 중 1개 = 99.75 백분위)
+        out = auto_exposure_highlight_safe(img, percentile=99.5, target=0.9)
+        luma = out.mean(axis=-1)
+        p = np.percentile(luma, 99.5)
+        self.assertAlmostEqual(p, 0.9, places=2)
+
+    def test_bright_highlight_darkens_more_than_average_metering(self):
+        # 어두운 배경 + 밝은 창문(하이라이트, 전체의 9%) - percentile을
+        # 하이라이트 비중보다 낮게 잡아야(95 < 100-9) 측광이 실제로 그
+        # 하이라이트를 "보고" 지킨다 - highlight-safe는 하이라이트를
+        # 지키느라 average보다 더 어둡게 노출을 잡아야 함.
+        img = np.full((20, 20, 3), 0.1)
+        img[:6, :6] = 1.0  # 36/400 = 9% 픽셀이 밝은 하이라이트
+        out_avg = auto_exposure_average(img, target_gray=0.18)
+        out_hs = auto_exposure_highlight_safe(img, percentile=95.0, target=0.9)
+        self.assertLess(float(np.mean(out_hs)), float(np.mean(out_avg)))
+
+    def test_all_zero_image_is_unchanged(self):
+        img = np.zeros((4, 4, 3))
+        out = auto_exposure_highlight_safe(img)
+        np.testing.assert_array_equal(out, img)
+
+
+class TestAutoExposureMatrix(unittest.TestCase):
+    def test_uniform_image_scales_to_target_gray(self):
+        img = np.full((10, 10, 3), 0.09)
+        out = auto_exposure_matrix(img, target_gray=0.18)
+        self.assertAlmostEqual(float(np.mean(out)), 0.18, places=2)
+
+    def test_center_weighting_ignores_bright_corners(self):
+        # 중앙은 어둡고 가장자리(구석)만 밝은 이미지 - 매트릭스 측광은
+        # 중앙에 가중치를 주므로, 순수 average metering보다 덜 어둡게
+        # (덜 보정) 노출을 잡아야 함(가장자리의 밝기에 덜 휘둘림).
+        img = np.full((20, 20, 3), 0.05)
+        img[:4, :4] = 0.9
+        img[:4, -4:] = 0.9
+        img[-4:, :4] = 0.9
+        img[-4:, -4:] = 0.9
+        out_avg = auto_exposure_average(img, target_gray=0.18)
+        out_matrix = auto_exposure_matrix(img, target_gray=0.18, center_weight=5.0)
+        # average는 밝은 구석들 때문에 전체 평균이 이미 높아서 덜 끌어올림
+        # (스케일이 1에 더 가까움) -> matrix는 중앙(어두운 값) 기준으로
+        # 맞추므로 더 많이 밝게 끌어올려야(스케일이 더 커야) 함.
+        self.assertGreater(float(np.mean(out_matrix)), float(np.mean(out_avg)))
+
+    def test_all_zero_image_is_unchanged(self):
+        img = np.zeros((10, 10, 3))
+        out = auto_exposure_matrix(img)
         np.testing.assert_array_equal(out, img)
 
 
@@ -106,6 +162,25 @@ class TestTo16BitBgr(unittest.TestCase):
         out = to_16bit_bgr(img)
         self.assertEqual(out[0, 0, 2], 0)      # R=-0.5 -> clipped to 0 (index 2 in BGR)
         self.assertEqual(out[0, 0, 1], 65535)  # G=1.5 -> clipped to 1.0 (index 1 in BGR)
+
+
+class TestWriteExr(unittest.TestCase):
+    def test_round_trips_float_values(self):
+        import OpenEXR
+        img = np.array([[[0.18, 0.5, 1.4]]], dtype=np.float64)  # 1.4: Log/HDR라 1.0 넘는 값도 그대로
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "out.exr")
+            write_exr(img, path)
+            self.assertTrue(os.path.exists(path))
+            readback = OpenEXR.File(path).channels()["RGB"].pixels
+            np.testing.assert_allclose(readback, img, atol=1e-5)
+
+    def test_unknown_compression_raises(self):
+        img = np.zeros((2, 2, 3))
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "out.exr")
+            with self.assertRaises(ValueError):
+                write_exr(img, path, compression="not-a-real-codec")
 
 
 if __name__ == "__main__":
