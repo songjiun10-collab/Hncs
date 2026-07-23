@@ -84,8 +84,11 @@ A separate module with a different purpose from the per-brand `apply_*` engine. 
 
 ```
 python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3
+python3 -m tools.raw_pipeline photo.CR3 photo.exr --log-space S-Log3   # 32-bit float OpenEXR, scene-referred
 python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks/my_look.cube
 python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode highlight_safe
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode matrix
 ```
 
 ![RAW -> Log colorspace demo - sRGB decode vs V-Log encoding](docs/images/raw_pipeline_demo.jpg)
@@ -94,6 +97,10 @@ python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure
 `tools.raw_pipeline --log-space V-Log` (right). The flat, low-contrast/
 low-saturation look on the right is expected - it's the ungraded Log state
 as-is.*
+
+Output format is chosen by extension - `.tif`/`.tiff` for a 16-bit integer file (broadest viewer compatibility), `.exr` for 32-bit float OpenEXR (the actual industry-standard scene-referred format for Log/grading workflows - DaVinci Resolve, Nuke, etc. read it directly, and float means no clipping headroom is lost the way it can be with an integer format).
+
+Three auto-exposure metering modes (`--auto-expose-mode`): `average` (whole-frame mean to middle gray - the original, simplest mode), `highlight_safe` (pins a high percentile, default 99.5th, to a target below clipping, default 0.9 - protects highlights at the cost of shadow detail, useful for high-contrast scenes), and `matrix` (center-weighted zone average, mimicking a camera's multi-zone evaluative metering - less swayed by extreme brightness at the frame edges than plain averaging). These fill a gap flagged directly in the module's own docstring since it was first written.
 
 Supported Log spaces: see `LOG_SPACES` in `core/log_pipeline.py` (F-Log/F-Log2/V-Log/N-Log/Canon Log 2·3/S-Log3/S-Log3.Cine/Arri LogC3·4/Log3G10/D-Log). The curve-gamut pairings use `colour-science`'s own definitions as-is - they haven't been cross-checked exhaustively against each manufacturer's official spec, the same kind of "unverified" caveat as the rest of this project's flagged items.
 

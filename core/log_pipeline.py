@@ -60,12 +60,62 @@ def apply_exposure(linear_rgb, ev=0.0):
 
 def auto_exposure_average(linear_rgb, target_gray=0.18):
     """전체 평균 밝기를 middle gray로 맞추는 가장 단순한 자동노출
-    (raw-alchemy의 average metering과 동급 - matrix/highlight-safe 같은
-    정교한 모드는 아직 없음)."""
+    (raw-alchemy의 average metering과 동급)."""
     mean = float(np.mean(linear_rgb))
     if mean <= 0:
         return linear_rgb
     return linear_rgb * (target_gray / mean)
+
+
+def auto_exposure_highlight_safe(linear_rgb, percentile=99.5, target=0.9):
+    """하이라이트 세이프 측광 - 화면에서 percentile 백분위수(기본
+    99.5, 극소수 스펙큘러 하이라이트/센서 노이즈 한두 픽셀은 무시)에
+    해당하는 밝기가 target(기본 0.9, 클리핑 전 여유를 둠)에 오도록
+    노출을 맞춘다. average metering(전체 평균을 미드그레이로)과 달리
+    하이라이트를 절대 태우지 않는 게 목표라, 콘트라스트가 큰 장면
+    (창밖 하늘이 보이는 실내, 역광 등)에서 average metering이 하이라이트를
+    날려버리는 걸 피할 수 있다 - 대신 전체적으로 더 어둡게 나올 수 있음
+    (그림자 디테일을 희생해서 하이라이트를 지키는 전형적인 트레이드오프)."""
+    luma = linear_rgb.mean(axis=-1) if linear_rgb.ndim == 3 else linear_rgb
+    p = float(np.percentile(luma, percentile))
+    if p <= 0:
+        return linear_rgb
+    return linear_rgb * (target / p)
+
+
+def auto_exposure_matrix(linear_rgb, target_gray=0.18, center_weight=3.0, n_zones=5):
+    """매트릭스(평가) 측광 - 카메라의 다분할 측광을 흉내내서, 화면을
+    n_zones x n_zones 격자로 나누고 중앙 영역에 center_weight배 가중치를
+    준 가중평균을 middle gray에 맞춘다. average metering(순수 전체
+    평균)은 가장자리의 극단적인 밝기(창밖 하늘, 어두운 구석)에 쉽게
+    휘둘리는데, 이 모드는 보통 피사체가 있는 중앙을 우선시해서 그 영향을
+    줄인다 - 실제 카메라의 "평가측광"/"멀티존 측광"과 같은 발상."""
+    luma = linear_rgb.mean(axis=-1) if linear_rgb.ndim == 3 else linear_rgb
+    h, w = luma.shape
+    row_edges = np.linspace(0, h, n_zones + 1).astype(int)
+    col_edges = np.linspace(0, w, n_zones + 1).astype(int)
+    center_idx = (n_zones - 1) / 2.0
+
+    weighted_sum = 0.0
+    weight_total = 0.0
+    for i in range(n_zones):
+        for j in range(n_zones):
+            zone = luma[row_edges[i]:row_edges[i + 1], col_edges[j]:col_edges[j + 1]]
+            if zone.size == 0:
+                continue
+            dist_from_center = np.hypot(i - center_idx, j - center_idx)
+            max_dist = np.hypot(center_idx, center_idx)
+            proximity = 1.0 - (dist_from_center / max_dist if max_dist > 0 else 0.0)
+            weight = 1.0 + (center_weight - 1.0) * proximity
+            weighted_sum += float(zone.mean()) * weight
+            weight_total += weight
+
+    if weight_total <= 0:
+        return linear_rgb
+    weighted_mean = weighted_sum / weight_total
+    if weighted_mean <= 0:
+        return linear_rgb
+    return linear_rgb * (target_gray / weighted_mean)
 
 
 def to_log_space(linear_prophoto_rgb, log_space):
@@ -94,3 +144,33 @@ def to_16bit_bgr(rgb_float):
     clipped = np.clip(rgb_float, 0.0, 1.0)
     u16 = (clipped * 65535.0 + 0.5).astype(np.uint16)
     return u16[:, :, ::-1]  # RGB -> BGR
+
+
+def write_exr(rgb_float, path, compression="zip"):
+    """32비트 float OpenEXR 저장 - Log/씬 참조(scene-referred) 워크플로우의
+    실제 업계 표준 포맷. 16비트 정수 TIFF와 달리 클리핑이 필요 없다(Log
+    인코딩된 값도, 그 이전의 linear 값도 있는 그대로 float으로 저장되고
+    DaVinci Resolve/Nuke 등 컬러 그레이딩 툴이 직접 읽는다). compression은
+    "none"/"rle"/"zips"/"zip"/"piz"/"pxr24"/"b44"/"b44a"/"dwaa"/"dwab" 중
+    선택(OpenEXR 표준 압축 방식, 기본 zip이 무손실+합리적 속도로 무난)."""
+    import OpenEXR
+
+    compression_map = {
+        "none": OpenEXR.NO_COMPRESSION,
+        "rle": OpenEXR.RLE_COMPRESSION,
+        "zips": OpenEXR.ZIPS_COMPRESSION,
+        "zip": OpenEXR.ZIP_COMPRESSION,
+        "piz": OpenEXR.PIZ_COMPRESSION,
+        "pxr24": OpenEXR.PXR24_COMPRESSION,
+        "b44": OpenEXR.B44_COMPRESSION,
+        "b44a": OpenEXR.B44A_COMPRESSION,
+        "dwaa": OpenEXR.DWAA_COMPRESSION,
+        "dwab": OpenEXR.DWAB_COMPRESSION,
+    }
+    if compression not in compression_map:
+        raise ValueError(f"지원하지 않는 compression: {compression!r} "
+                          f"(지원: {sorted(compression_map)})")
+
+    header = {"compression": compression_map[compression], "type": OpenEXR.scanlineimage}
+    channels = {"RGB": rgb_float.astype(np.float32)}
+    OpenEXR.File(header, channels).write(path)
