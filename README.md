@@ -177,6 +177,18 @@ fix orientation before conversion.*
 
   The shipped v1.2 profile (superseded by v1.3 above) measured ΔE00 15.01 → **9.82** on the official evaluation harness (-34.6%, a CIE 2000 tier upgrade from "completely different colors" to "different at a glance"). Full methodology, the failed-then-diagnosed-then-fixed integration story, and remaining limitations (midtone residual, hue barely moved) are in `hybrid_engine/EVALUATION.md`; the rejected LUT experiments have their own detailed writeup in `hybrid_engine/assets/luts/README.md`. Pixel-level diagnosis (`EVALUATION.md` follow-up 10) pinned the worst remaining failure mode to a specific mechanism: Gray World's single global scale factor can't satisfy a night scene's sky and street-light-dominated foreground at the same time - four different fixes for that (above), spanning from "more degrees of freedom" to "fewer," were all tried and rejected on cross-validation, so it stays a documented, unresolved limitation rather than a shipped workaround.
 
+## Photoshop / DaVinci Resolve preset export (.cube LUT)
+
+Bakes any of the `apply_*` brand/film-simulation functions already registered in `hybrid_engine/core/preset_inverse.py`'s `TARGET_FUNCS` registry into a standard Adobe `.cube` 3D LUT file (`core/lut_export.py`). Unlike a parametric ACR/`.xmp` preset, a `.cube` file just stores "input color -> output color" - it doesn't matter whether the source function's internals are an HSV rotation, a Lab curve, or CLAHE, so it can carry over a brand's look exactly as-is. Photoshop's Color Lookup adjustment layer reads `.cube` directly, and so do DaVinci Resolve, Premiere, and After Effects.
+
+```
+python3 -m tools.export_lut --list                            # list all available presets
+python3 -m tools.export_lut hasselblad hasselblad.cube
+python3 -m tools.export_lut fuji_astia fuji_astia.cube --size 33   # 33 is the Adobe-standard grid size
+```
+
+**Known limitation**: functions built on CLAHE (adaptive local contrast, e.g. `fuji.apply_pro_neg_hi`) produce output that depends on the surrounding pixel distribution, not just the input color alone - a 3D LUT is by definition a context-free per-pixel mapping (same input color always -> same output color), so this local adaptivity can't be represented exactly. `bake_lut_from_function()` passes the entire identity grid through as one synthetic image in a single call, so CLAHE at least produces a stable, grid-structure-dependent result instead of a meaningless per-point one - but the result still won't exactly match applying the same function to a real photo. This is a structural limitation of the `.cube` format itself, not a bug, and is flagged in `core/lut_export.py`'s module docstring following the project's "unverified/approximate" labeling convention.
+
 ## Goals / Philosophy
 
 - Parameters are grounded in **measured data** - population statistics,

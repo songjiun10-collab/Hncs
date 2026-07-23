@@ -240,6 +240,34 @@ nikon`을 직접 지정했고, 전부 세로 촬영이라 `PIL.ImageOps.exif_tra
   쪽부터 줄이는 쪽까지) 모두 교차검증에서 기각돼서, 배포판에 우회
   처리를 넣지 않고 문서화된 미해결 한계로 남겨뒀다.
 
+## 포토샵 / DaVinci Resolve 프리셋 내보내기 (.cube LUT)
+
+`hybrid_engine/core/preset_inverse.py`의 `TARGET_FUNCS` 레지스트리에
+이미 등록된 `apply_*` 브랜드/필름시뮬레이션 함수를 표준 Adobe `.cube`
+3D LUT 파일로 구워내는 도구(`core/lut_export.py`). 파라메트릭 ACR/
+`.xmp` 프리셋과 달리 `.cube` 파일은 "입력 색 -> 출력 색" 대응만
+저장하기 때문에, 소스 함수 내부가 HSV 회전이든 Lab 커브든 CLAHE든
+상관없이 브랜드 룩을 그대로 옮길 수 있다. Photoshop의 Color Lookup
+조정 레이어가 `.cube`를 직접 읽고, DaVinci Resolve/Premiere/After
+Effects도 마찬가지다.
+
+```
+python3 -m tools.export_lut --list                            # 사용 가능한 preset 전체 목록
+python3 -m tools.export_lut hasselblad hasselblad.cube
+python3 -m tools.export_lut fuji_astia fuji_astia.cube --size 33   # 33은 Adobe 표준 격자 크기
+```
+
+**알려진 한계**: CLAHE(적응형 지역 대비, 예: `fuji.apply_pro_neg_hi`) 기반
+함수는 결과가 입력 색 하나만이 아니라 주변 픽셀 분포에도 좌우되는데,
+3D LUT은 정의상 픽셀별 독립 매핑(같은 입력 색은 항상 같은 출력 색)이라
+이 지역 적응성을 정확히 담을 수 없다. `bake_lut_from_function()`은
+identity 격자 전체를 하나의 합성 이미지로 만들어 한 번에 통과시켜서
+CLAHE가 최소한 안정적인(격자 구조에 의존하는) 결과를 내게는 하지만,
+실제 사진에 같은 함수를 적용했을 때와 완전히 같지는 않다. 이건 `.cube`
+포맷 자체의 구조적 한계지 코드의 버그가 아니며, `core/lut_export.py`
+모듈 docstring에 이 프로젝트의 "미검증/근사" 라벨링 관례대로 명시돼
+있다.
+
 ## 목표 / 철학
 
 - 주관적인 "필감" 묘사가 아니라 population 통계, raw+jpeg 페어,
