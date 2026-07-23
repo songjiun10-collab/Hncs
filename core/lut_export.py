@@ -6,6 +6,14 @@
 브랜드 룩을 그대로 옮길 수 있다(DaVinci Resolve/Premiere/After Effects도
 같은 .cube를 읽음).
 
+Lightroom Classic/Adobe Camera Raw(ACR 12.3, Lightroom Classic 9.3 이후)도
+새 파일 포맷 없이 같은 .cube를 그대로 쓸 수 있다 - Adobe가 공식 지원하는
+"LUT Profiles" 폴더(플랫폼별 고정 경로, `lightroom_lut_profiles_dir()`)에
+.cube 파일을 넣어두기만 하면 Develop 모듈의 Profile Browser에 자동으로
+나타난다(Color Lookup 조정 레이어를 수동으로 얹는 Photoshop과 달리,
+Lightroom/ACR 쪽은 Profile 자체로 인식됨). `install_lightroom_profile()`이
+이 복사를 대신해준다.
+
 한계: apply_* 함수 중 CLAHE(적응형 지역 대비, 예: fuji.apply_pro_neg_hi)를
 쓰는 것들은 결과가 "이 픽셀 값"뿐 아니라 "주변 픽셀 분포"에도 좌우되는데,
 3D LUT은 정의상 픽셀별 독립 매핑(같은 입력 색은 항상 같은 출력 색)이라
@@ -14,6 +22,10 @@
 이미지로 만들어 한 번에 통과"시켜서 CLAHE가 최소한 안정적인(격자 구조에
 의존하는) 결과를 내게는 하지만, 실제 사진에 적용했을 때와 완전히
 같지는 않다."""
+import os
+import platform
+import shutil
+
 import numpy as np
 
 
@@ -67,3 +79,31 @@ def write_cube_file(lut_rgb, path, title=None):
                 lines.append(f"{rr:.6f} {gg:.6f} {bb:.6f}")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
+
+
+def lightroom_lut_profiles_dir():
+    """Adobe Camera Raw/Lightroom Classic이 공유하는 "LUT Profiles" 폴더
+    경로(플랫폼 고정 경로, Adobe 공식 문서 기준). 여기 놓인 .cube는 별도
+    변환 없이 두 프로그램 모두의 Profile Browser에 자동으로 뜬다.
+    macOS/Windows만 지원(Adobe 제품 자체가 Linux를 지원 안 함)."""
+    system = platform.system()
+    if system == "Darwin":
+        return os.path.expanduser("~/Library/Application Support/Adobe/CameraRaw/LUT Profiles")
+    if system == "Windows":
+        appdata = os.environ.get("APPDATA", os.path.expanduser("~\\AppData\\Roaming"))
+        return os.path.join(appdata, "Adobe", "CameraRaw", "LUT Profiles")
+    raise OSError(f"Lightroom Classic/Camera Raw는 macOS/Windows 전용이라 '{system}'에는 LUT Profiles 폴더가 없음")
+
+
+def install_lightroom_profile(cube_path, group=None):
+    """이미 구운 .cube 파일을 lightroom_lut_profiles_dir()로 복사해서
+    Lightroom Classic/Camera Raw가 재시작 후 바로 인식하게 한다. group을
+    주면 그 이름의 하위 폴더에 넣어서 Profile Browser에서 카테고리로
+    묶여 표시된다. 복사된 최종 경로를 반환."""
+    dest_dir = lightroom_lut_profiles_dir()
+    if group:
+        dest_dir = os.path.join(dest_dir, group)
+    os.makedirs(dest_dir, exist_ok=True)
+    dest_path = os.path.join(dest_dir, os.path.basename(cube_path))
+    shutil.copyfile(cube_path, dest_path)
+    return dest_path

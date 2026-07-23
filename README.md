@@ -185,9 +185,12 @@ Bakes any of the `apply_*` brand/film-simulation functions already registered in
 python3 -m tools.export_lut --list                            # list all available presets
 python3 -m tools.export_lut hasselblad hasselblad.cube
 python3 -m tools.export_lut fuji_astia fuji_astia.cube --size 33   # 33 is the Adobe-standard grid size
+python3 -m tools.export_lut hasselblad hasselblad.cube --install-lightroom  # also copy into Lightroom/ACR's LUT Profiles folder
 ```
 
 **Known limitation**: functions built on CLAHE (adaptive local contrast, e.g. `fuji.apply_pro_neg_hi`) produce output that depends on the surrounding pixel distribution, not just the input color alone - a 3D LUT is by definition a context-free per-pixel mapping (same input color always -> same output color), so this local adaptivity can't be represented exactly. `bake_lut_from_function()` passes the entire identity grid through as one synthetic image in a single call, so CLAHE at least produces a stable, grid-structure-dependent result instead of a meaningless per-point one - but the result still won't exactly match applying the same function to a real photo. This is a structural limitation of the `.cube` format itself, not a bug, and is flagged in `core/lut_export.py`'s module docstring following the project's "unverified/approximate" labeling convention.
+
+**Lightroom Classic / Adobe Camera Raw**: no separate export path needed - since ACR 12.3 / Lightroom Classic 9.3, Adobe reads raw `.cube` files directly out of a fixed "LUT Profiles" folder (`~/Library/Application Support/Adobe/CameraRaw/LUT Profiles` on macOS, `%APPDATA%\Adobe\CameraRaw\LUT Profiles` on Windows) and lists them as Profiles in the Develop module's Profile Browser - unlike Photoshop, which needs a manual Color Lookup adjustment layer. `--install-lightroom` copies the just-baked `.cube` there for you (`--group` picks the Profile Browser subfolder, default `Hncs`); macOS/Windows only, since Adobe's own apps don't ship for Linux.
 
 ## Goals / Philosophy
 

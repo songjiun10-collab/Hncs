@@ -11,7 +11,7 @@ brands/*.py의 apply_* 함수(hybrid_engine.core.preset_inverse.TARGET_FUNCS
 import argparse
 import sys
 
-from core.lut_export import bake_lut_from_function, write_cube_file
+from core.lut_export import bake_lut_from_function, write_cube_file, install_lightroom_profile
 from hybrid_engine.core.preset_inverse import TARGET_FUNCS
 
 
@@ -21,6 +21,10 @@ def main():
     parser.add_argument("output", nargs="?", help="출력 .cube 파일 경로")
     parser.add_argument("--size", type=int, default=33, help="LUT 격자 한 변 크기 (기본 33, Adobe 표준)")
     parser.add_argument("--list", action="store_true", help="사용 가능한 preset 이름 목록 출력")
+    parser.add_argument("--install-lightroom", action="store_true",
+                         help="구운 .cube를 Lightroom Classic/Camera Raw의 LUT Profiles 폴더로 바로 복사(macOS/Windows만 지원)")
+    parser.add_argument("--group", default="Hncs",
+                         help="--install-lightroom 사용 시 Profile Browser에 묶여 표시될 하위 폴더 이름 (기본 'Hncs')")
     args = parser.parse_args()
 
     if args.list or not args.preset:
@@ -38,6 +42,10 @@ def main():
     lut = bake_lut_from_function(TARGET_FUNCS[args.preset], size=args.size)
     write_cube_file(lut, args.output, title=args.preset)
     print(f"저장됨: {args.output} (LUT_3D_SIZE {args.size}, preset={args.preset})")
+
+    if args.install_lightroom:
+        installed_path = install_lightroom_profile(args.output, group=args.group)
+        print(f"Lightroom Classic/Camera Raw에 설치됨: {installed_path} (프로그램 재시작 후 Profile Browser의 '{args.group}' 카테고리에서 확인)")
 
 
 if __name__ == "__main__":
