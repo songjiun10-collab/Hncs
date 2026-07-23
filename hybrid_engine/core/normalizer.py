@@ -111,7 +111,7 @@ def gray_edge_normalize(img_rgb, p=1.0):
     flat_grad = grad_mag.reshape(-1, 3)
     illum = np.power(np.mean(np.power(flat_grad, p), axis=0), 1.0 / p)
     illum_safe = np.clip(illum, 1e-6, None)
-    target = illum.mean()
+    target = illum_safe.mean()
     scale = target / illum_safe
     return img_rgb * scale
 
