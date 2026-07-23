@@ -202,11 +202,13 @@ class TestAlternativeColorCastAlgorithms(unittest.TestCase):
 
     def test_gray_edge_flat_image_is_noop(self):
         # 균일한 이미지는 그래디언트가 전부 0이라 조명 추정이 불가능(illum=0
-        # -> clip으로 1e-6 처리) - 항등에 가까워야 하고, 최소한 NaN/inf는
-        # 나오면 안 된다.
+        # -> clip으로 1e-6 처리) - 항등에 가까워야 한다. target을 clip 안 된
+        # illum에서 계산하면 scale이 전부 0이 되어 이미지가 통째로 검은색이
+        # 되는 회귀가 있었다(target은 반드시 illum_safe에서 계산해야 함).
         img = np.full((6, 6, 3), 0.3)
         out = gray_edge_normalize(img)
         self.assertTrue(np.all(np.isfinite(out)))
+        np.testing.assert_allclose(out, img, atol=1e-6)
 
     def test_normalize_dispatches_to_white_patch(self):
         img = np.zeros((8, 8, 3))
