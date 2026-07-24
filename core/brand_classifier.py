@@ -83,3 +83,44 @@ def extract_features(records, feature_set="tone_color_gamut"):
         rows.append(values)
     X = np.array(rows, dtype=np.float64).reshape(-1, len(feature_names))
     return X, feature_names
+
+
+def standardize(train_X, vector):
+    """train_X의 열별 평균/표준편차로 vector를 z-score 표준화. 표준편차가
+    0인 열(분산 없는 피처)은 나눗셈 대신 0을 반환 - 판별에 기여할 정보가
+    없는 피처로 취급."""
+    mean = train_X.mean(axis=0)
+    std = train_X.std(axis=0)
+    std_safe = np.where(std == 0, 1.0, std)
+    z = (vector - mean) / std_safe
+    return np.where(std == 0, 0.0, z)
+
+
+def nearest_centroid_loo(X, y):
+    """leave-one-out 표준화 거리 nearest-centroid 분류. 매 폴드마다
+    held-out 샘플 i를 표준화 기준 통계와 자기 브랜드 centroid 양쪽에서
+    완전히 제외한다(리키지 방지 - test_excludes_held_out_sample_from_own_
+    brand_centroid 참고)."""
+    y = np.asarray(y)
+    n = X.shape[0]
+    predictions = np.empty(n, dtype=y.dtype)
+    all_indices = np.arange(n)
+
+    for i in range(n):
+        keep = all_indices != i
+        train_X = X[keep]
+        train_y = y[keep]
+        z = standardize(train_X, X[i])
+
+        best_brand = None
+        best_dist = None
+        for brand in np.unique(train_y):
+            centroid_raw = train_X[train_y == brand].mean(axis=0)
+            centroid_z = standardize(train_X, centroid_raw)
+            dist = float(np.linalg.norm(z - centroid_z))
+            if best_dist is None or dist < best_dist:
+                best_dist = dist
+                best_brand = brand
+        predictions[i] = best_brand
+
+    return predictions

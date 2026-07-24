@@ -7,7 +7,9 @@ from contextlib import redirect_stdout
 
 import numpy as np
 
-from core.brand_classifier import load_signatures, extract_features
+from core.brand_classifier import (
+    load_signatures, extract_features, standardize, nearest_centroid_loo,
+)
 
 
 def _write_signature_json(path, n_images, per_image):
@@ -126,6 +128,43 @@ class TestExtractFeatures(unittest.TestCase):
         X, names = extract_features([], feature_set="all")
         self.assertEqual(X.shape, (0, 21))
         self.assertEqual(len(names), 21)
+
+
+class TestStandardize(unittest.TestCase):
+    def test_zero_variance_column_does_not_divide_by_zero(self):
+        train_X = np.array([[1.0, 5.0], [1.0, 7.0], [1.0, 9.0]])
+        vector = np.array([1.0, 6.0])
+        z = standardize(train_X, vector)
+        self.assertTrue(np.isfinite(z).all())
+        self.assertEqual(z[0], 0.0)
+
+
+class TestNearestCentroidLoo(unittest.TestCase):
+    def test_excludes_held_out_sample_from_own_brand_centroid(self):
+        # 브랜드 A: [0.0, 1000.0]("1000.0"은 A의 이상치이자 held-out 대상)
+        # 브랜드 B: [200.0, 202.0]
+        # 자기 자신을 제외하면 A의 centroid는 0.0뿐이라, held-out(1000.0)은
+        # B의 centroid(~201)에 훨씬 더 가까워서 "B"로 (오)분류되는 게 정답.
+        # 만약 구현이 held-out 샘플을 자기 브랜드 centroid에 leak시키면
+        # (mean([0,1000])=500), 그쪽이 더 가까워져서 "A"로 잘못 예측됨 -
+        # 이 assert가 그 리키지 버그를 정확히 잡아낸다.
+        X = np.array([[0.0], [1000.0], [200.0], [202.0]])
+        y = np.array(["A", "A", "B", "B"])
+        predictions = nearest_centroid_loo(X, y)
+        self.assertEqual(predictions[1], "B")
+
+    def test_well_separated_clusters_get_high_accuracy(self):
+        rng = np.random.default_rng(0)
+        cluster_a = rng.normal(loc=[0.0, 0.0], scale=0.5, size=(20, 2))
+        cluster_b = rng.normal(loc=[50.0, 50.0], scale=0.5, size=(20, 2))
+        cluster_c = rng.normal(loc=[-50.0, 50.0], scale=0.5, size=(20, 2))
+        X = np.vstack([cluster_a, cluster_b, cluster_c])
+        y = np.array(["A"] * 20 + ["B"] * 20 + ["C"] * 20)
+
+        predictions = nearest_centroid_loo(X, y)
+
+        accuracy = float((predictions == y).mean())
+        self.assertGreater(accuracy, 0.95)
 
 
 if __name__ == "__main__":
