@@ -81,5 +81,5 @@ def extract_features(records, feature_set="tone_color_gamut"):
         values.append(float(np.cos(hue_rad)))
         values.append(float(np.sin(hue_rad)))
         rows.append(values)
-    X = np.array(rows, dtype=np.float64)
+    X = np.array(rows, dtype=np.float64).reshape(-1, len(feature_names))
     return X, feature_names
