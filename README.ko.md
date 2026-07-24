@@ -279,6 +279,40 @@ Color Lookup 조정 레이어를 수동으로 얹어야 하는 Photoshop과 다�
 (`--group`으로 Profile Browser 하위 폴더 이름 지정, 기본값 `Hncs`) -
 Adobe 앱 자체가 Linux를 지원 안 해서 macOS/Windows에서만 동작.
 
+## 브랜드 시그니처 판별력 검증 (연구용)
+
+`tools/classify_brand.py`는 이 프로젝트의 다른 도구들과 방향이 반대다 -
+새 기능을 만드는 게 아니라, 이미 계산해둔 10개 브랜드의 population
+시그니처(`datasets/<brand>/*_signature.json`, 총 852장)가 브랜드를 실제로
+구별할 만큼 결정력이 있는지를 leave-one-out nearest-centroid 분류로
+검증한다. 표준화 거리 기반이고, held-out 사진은 매 폴드마다 자기 브랜드
+centroid 계산에서도 완전히 제외된다(리키지 없음). `npix`/`is_portrait`/
+`quality`/`subsampling`(이미지 크기·JPEG 인코더 설정)은 색감과 무관해서
+의도적으로 제외 - 안 그러면 판별기가 "색 렌더링 차이"가 아니라 "어느
+브랜드가 어떤 해상도/JPEG 설정으로 갤러리에 올렸는지"라는 무관한
+지름길을 학습해버린다. `ricoh_gr`은 `color_signature.json`이 다른 10개
+브랜드와 달리 `hue_mean`이 아니라 `hue_median`을 저장하고 있어(같은
+통계가 아님) 비교 불가능하다고 판단해 분류 대상에서 아예 제외했다 -
+CLI 실행 시 매번 출력되는 안내 메시지 참고. 새 사진을 넣어 브랜드를
+예측하는 기능은 없음(설계 근거는
+`docs/superpowers/specs/2026-07-24-brand-classifier-design.md`).
+
+```
+python3 -m tools.classify_brand                # Set A: tone+color+gamut (15차원)
+python3 -m tools.classify_brand --features all  # Set B: + texture (21차원)
+```
+
+- Set A(texture 제외) - overall accuracy: `0.196`, macro accuracy: `0.232`
+  (다수결 baseline `0.146`, 균등확률 baseline `0.100`(1/10))
+- Set B(texture 포함) - overall accuracy: `0.498`, macro accuracy: `0.490`
+
+texture의 sharpening/micro_contrast는 브랜드마다 계산 공식이 달라서
+(`docs/project_structure.md` 기존 문서화 - Canon/Sony vs Nikon/Leica/
+Pentax/Ricoh GR 스케일 다름) Set B가 Set A보다 정확도가 높게 나오더라도
+그게 "진짜 색감 차이" 때문인지 "계산 공식 차이" 때문인지는 이 결과만으로
+분리할 수 없다는 점을 유의. `leica`(45장)/`pentax`(40장)/`phaseone`(16장)은
+표본이 얇아 그 브랜드들의 recall은 특히 노이즈가 클 수 있다.
+
 ## 목표 / 철학
 
 - 주관적인 "필감" 묘사가 아니라 population 통계, raw+jpeg 페어,

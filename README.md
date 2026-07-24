@@ -192,6 +192,21 @@ python3 -m tools.export_lut hasselblad hasselblad.cube --install-lightroom  # al
 
 **Lightroom Classic / Adobe Camera Raw**: no separate export path needed - since ACR 12.3 / Lightroom Classic 9.3, Adobe reads raw `.cube` files directly out of a fixed "LUT Profiles" folder (`~/Library/Application Support/Adobe/CameraRaw/LUT Profiles` on macOS, `%APPDATA%\Adobe\CameraRaw\LUT Profiles` on Windows) and lists them as Profiles in the Develop module's Profile Browser - unlike Photoshop, which needs a manual Color Lookup adjustment layer. `--install-lightroom` copies the just-baked `.cube` there for you (`--group` picks the Profile Browser subfolder, default `Hncs`); macOS/Windows only, since Adobe's own apps don't ship for Linux.
 
+## Brand-signature discriminability check (research)
+
+`tools/classify_brand.py` runs in the opposite direction from this project's other tools - instead of building a new feature, it validates whether the already-computed population signatures for 10 brands (`datasets/<brand>/*_signature.json`, 852 photos total) actually carry enough signal to tell brands apart, via leave-one-out nearest-centroid classification. Distances are standardized (z-score), and the held-out photo is fully excluded from its own brand's centroid on every fold (no leakage). `npix`/`is_portrait`/`quality`/`subsampling` (image size, JPEG encoder settings) are deliberately excluded - keeping them would let the classifier learn "which brand uploads which resolution/JPEG setting" instead of an actual color-rendering difference. `ricoh_gr` is excluded from the classifier entirely: its `color_signature.json` stores `hue_median` instead of `hue_mean` like the other 10 brands (not the same statistic, and not comparable), so it's dropped rather than approximated - see the notice the CLI itself prints on every run. There's no predict-from-a-new-photo mode - design rationale in `docs/superpowers/specs/2026-07-24-brand-classifier-design.md`.
+
+```
+python3 -m tools.classify_brand                # Set A: tone+color+gamut (15-dim)
+python3 -m tools.classify_brand --features all  # Set B: + texture (21-dim)
+```
+
+- Set A (no texture) - overall accuracy: `0.196`, macro accuracy: `0.232`
+  (majority baseline `0.146`, uniform baseline `0.100` (1/10))
+- Set B (with texture) - overall accuracy: `0.498`, macro accuracy: `0.490`
+
+Texture's sharpening/micro_contrast use different formulas per brand (documented in `docs/project_structure.md` - Canon/Sony vs. Nikon/Leica/Pentax/Ricoh GR are on different scales), so if Set B scores higher than Set A, this result alone can't separate "genuine color difference" from "which formula was used." `leica` (45)/`pentax` (40)/`phaseone` (16) have thin samples, so those brands' recall figures are especially noisy.
+
 ## Goals / Philosophy
 
 - Parameters are grounded in **measured data** - population statistics,
