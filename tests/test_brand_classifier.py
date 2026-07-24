@@ -153,6 +153,36 @@ class TestNearestCentroidLoo(unittest.TestCase):
         predictions = nearest_centroid_loo(X, y)
         self.assertEqual(predictions[1], "B")
 
+    def test_excludes_held_out_sample_from_standardization_stats(self):
+        # 위 테스트는 centroid 리키지만 잡아내고 표준화 통계(mean/std)
+        # 리키지는 통과시켜버린다(mean/std 계산이 실수로 폴드 루프 밖으로
+        # hoist되어 train_X 대신 전체 X로 계산돼도 이 데이터로는 걸리지
+        # 않음). 이 테스트는 표준화 통계 리키지만 따로 잡아내도록 설계됨 -
+        # 두 변형 모두에서 centroid는 항상 train_X로만 계산되고(누출 없음),
+        # mean/std만 다르게 계산됐을 때 예측이 달라지는 데이터셋을 씀.
+        #
+        # 2피처 데이터. held-out(인덱스 0, 브랜드 A) = [-13, -9]는
+        # feature0에서 극단적 이상치다 - 학습 폴드(나머지 3개)의
+        # feature0 값은 [11, 11, 12]로 좁게 몰려있다.
+        #
+        # 올바르게 held-out을 제외한 학습 폴드만으로 mean/std를 구하면
+        # feature0의 std가 아주 작아서(~0.47) feature0의 z-score 거리가
+        # 두 센트로이드(A=[11,11], B=[11.5,-0.5]) 모두에 대해 ~51로
+        # 거대하고 서로 거의 같아진다 -> 승부는 feature1이 가르는데,
+        # held-out은 feature1에서 B centroid(z=-0.55)보다 A centroid
+        # (z=1.09)에 훨씬 가까워서 정답 "A"로 올바르게 분류된다
+        # (dist_A=50.99 < dist_B=51.99).
+        #
+        # 만약 mean/std가 held-out 자신을 포함한 전체 X에서 새어나온다면
+        # feature0의 std가 0.47 -> 10.5로 부풀려지면서 feature0 z-score의
+        # 영향력이 feature1과 비슷한 스케일로 줄어들고, 그 결과 균형이
+        # 뒤집혀 "B"로 잘못 예측된다(dist_A=3.36 > dist_B=2.55). 이
+        # assert가 그 표준화 통계 리키지 버그를 정확히 잡아낸다.
+        X = np.array([[-13.0, -9.0], [11.0, 5.0], [11.0, 11.0], [12.0, -6.0]])
+        y = np.array(["A", "B", "A", "B"])
+        predictions = nearest_centroid_loo(X, y)
+        self.assertEqual(predictions[0], "A")
+
     def test_well_separated_clusters_get_high_accuracy(self):
         rng = np.random.default_rng(0)
         cluster_a = rng.normal(loc=[0.0, 0.0], scale=0.5, size=(20, 2))
