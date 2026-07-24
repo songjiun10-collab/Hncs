@@ -118,6 +118,15 @@ class TestExtractFeatures(unittest.TestCase):
         dist_359_to_180 = np.linalg.norm(X[0][[cos_i, sin_i]] - X[2][[cos_i, sin_i]])
         self.assertLess(dist_359_to_1, dist_359_to_180)
 
+    def test_empty_records_returns_correct_2d_shape(self):
+        X, names = extract_features([], feature_set="tone_color_gamut")
+        self.assertEqual(X.shape, (0, 15))
+        self.assertEqual(len(names), 15)
+
+        X, names = extract_features([], feature_set="all")
+        self.assertEqual(X.shape, (0, 21))
+        self.assertEqual(len(names), 21)
+
 
 if __name__ == "__main__":
     unittest.main()
