@@ -77,12 +77,7 @@ def extract_features(records, feature_set="tone_color_gamut"):
     rows = []
     for rec in records:
         values = [float(rec[field]) for field in scalar_fields]
-        # Handle both hue_mean (most brands) and hue_median (ricoh_gr)
-        if "hue_mean" in rec:
-            hue_value = rec["hue_mean"]
-        else:
-            hue_value = rec["hue_median"]
-        hue_rad = np.deg2rad(hue_value)
+        hue_rad = np.deg2rad(rec["hue_mean"])
         values.append(float(np.cos(hue_rad)))
         values.append(float(np.sin(hue_rad)))
         rows.append(values)
