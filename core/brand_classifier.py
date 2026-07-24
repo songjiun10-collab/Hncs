@@ -124,3 +124,46 @@ def nearest_centroid_loo(X, y):
         predictions[i] = best_brand
 
     return predictions
+
+
+def confusion_matrix(y_true, y_pred, brands=BRANDS):
+    """brands 순서로 정렬된 (len(brands), len(brands)) confusion matrix.
+    matrix[i, j] = 실제 브랜드가 brands[i]인데 brands[j]로 예측된 개수."""
+    index = {b: i for i, b in enumerate(brands)}
+    matrix = np.zeros((len(brands), len(brands)), dtype=int)
+    for true_label, pred_label in zip(y_true, y_pred):
+        matrix[index[true_label], index[pred_label]] += 1
+    return matrix
+
+
+def classification_report(y_true, y_pred, brands=BRANDS):
+    """브랜드별 precision/recall/f1/표본수와 두 baseline(다수결,
+    균등확률), 그리고 전체 정확도(accuracy)와 브랜드별 recall의 비가중
+    평균(macro_accuracy = balanced accuracy, 표본 불균형에 영향받지
+    않음)을 담은 딕셔너리를 반환."""
+    matrix = confusion_matrix(y_true, y_pred, brands=brands)
+
+    per_brand = {}
+    for i, brand in enumerate(brands):
+        n = int(matrix[i].sum())
+        tp = int(matrix[i, i])
+        predicted_as_brand = int(matrix[:, i].sum())
+        recall = tp / n if n > 0 else 0.0
+        precision = tp / predicted_as_brand if predicted_as_brand > 0 else 0.0
+        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+        per_brand[brand] = {"precision": precision, "recall": recall, "f1": f1, "n": n}
+
+    total = int(matrix.sum())
+    accuracy = float(np.trace(matrix)) / total if total > 0 else 0.0
+    macro_accuracy = float(np.mean([per_brand[b]["recall"] for b in brands]))
+    counts = matrix.sum(axis=1)
+    majority_baseline = float(counts.max()) / total if total > 0 else 0.0
+    uniform_baseline = 1.0 / len(brands)
+
+    return {
+        "per_brand": per_brand,
+        "accuracy": accuracy,
+        "macro_accuracy": macro_accuracy,
+        "majority_baseline": majority_baseline,
+        "uniform_baseline": uniform_baseline,
+    }

@@ -9,6 +9,7 @@ import numpy as np
 
 from core.brand_classifier import (
     load_signatures, extract_features, standardize, nearest_centroid_loo,
+    confusion_matrix, classification_report,
 )
 
 
@@ -195,6 +196,31 @@ class TestNearestCentroidLoo(unittest.TestCase):
 
         accuracy = float((predictions == y).mean())
         self.assertGreater(accuracy, 0.95)
+
+
+class TestConfusionMatrix(unittest.TestCase):
+    def test_counts_correctly(self):
+        y_true = np.array(["A", "A", "B", "B", "B"])
+        y_pred = np.array(["A", "B", "B", "B", "A"])
+        matrix = confusion_matrix(y_true, y_pred, brands=["A", "B"])
+        np.testing.assert_array_equal(matrix, np.array([[1, 1], [1, 2]]))
+
+
+class TestClassificationReport(unittest.TestCase):
+    def test_metrics_and_baselines(self):
+        # 브랜드 A: 3개(예측 A,A,B) / 브랜드 B: 1개(예측 B)
+        y_true = np.array(["A", "A", "A", "B"])
+        y_pred = np.array(["A", "A", "B", "B"])
+        report = classification_report(y_true, y_pred, brands=["A", "B"])
+
+        self.assertAlmostEqual(report["accuracy"], 3 / 4)
+        self.assertAlmostEqual(report["per_brand"]["A"]["recall"], 2 / 3)
+        self.assertAlmostEqual(report["per_brand"]["A"]["precision"], 1.0)
+        self.assertEqual(report["per_brand"]["A"]["n"], 3)
+        self.assertAlmostEqual(report["per_brand"]["B"]["recall"], 1.0)
+        self.assertAlmostEqual(report["macro_accuracy"], (2 / 3 + 1.0) / 2)
+        self.assertAlmostEqual(report["majority_baseline"], 3 / 4)
+        self.assertAlmostEqual(report["uniform_baseline"], 0.5)
 
 
 if __name__ == "__main__":
