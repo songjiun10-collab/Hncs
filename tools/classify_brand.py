@@ -1,4 +1,5 @@
-"""브랜드 시그니처 판별기 CLI - 11개 브랜드의 이미 계산된 population
+"""브랜드 시그니처 판별기 CLI - 10개 브랜드(ricoh_gr은 hue_median/hue_mean
+통계 불일치로 제외, EXCLUDED_BRANDS 참고)의 이미 계산된 population
 시그니처(datasets/*/*_signature.json)만으로 leave-one-out 교차검증 기반
 nearest-centroid 분류를 돌려서 confusion matrix와 지표를 출력한다.
 연구용 검증 도구 - 새 사진을 넣어 예측하는 기능은 없음
