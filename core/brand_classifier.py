@@ -3,7 +3,13 @@
 새 사진을 입력받아 예측하는 기능은 없음 - 순수하게 "이 시그니처 데이터가
 브랜드를 실제로 구별할 만큼 결정력이 있는가"를 leave-one-out
 교차검증으로 확인하는 게 목적. 설계 근거는
-docs/superpowers/specs/2026-07-24-brand-classifier-design.md 참고."""
+docs/superpowers/specs/2026-07-24-brand-classifier-design.md 참고.
+
+이 모듈 자체는 BRANDS의 11개 브랜드 전부를 다룰 수 있지만, 실제 분류
+실행은 tools/classify_brand.py가 ricoh_gr을 제외하고 10개 브랜드로만
+돌린다(ricoh_gr의 color_signature.json은 다른 10개 브랜드와 달리
+hue_mean이 아니라 hue_median을 저장하고 있어 같은 통계가 아님 -
+tools/classify_brand.py의 EXCLUDED_BRANDS 참고)."""
 import json
 import os
 
@@ -13,7 +19,7 @@ DATASETS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 
 BRANDS = [
     "hasselblad", "canon", "leica", "nikon", "olympus", "panasonic",
-    "pentax", "phaseone", "ricoh_gr", "sigma", "sony",
+    "pentax", "phaseone", "ricoh_gr", "sigma", "sony",  # ricoh_gr: see module docstring - excluded by tools/classify_brand.py
 ]
 
 TONE_FIELDS = ["b2", "w995", "median", "dark_pct"]
