@@ -58,3 +58,28 @@ def load_signatures(brand, datasets_dir=DATASETS_DIR):
             merged.update(per_file[fname][filename])
         records.append(merged)
     return records
+
+
+def extract_features(records, feature_set="tone_color_gamut"):
+    """records(load_signatures 반환값)에서 (N, D) 피처 행렬과 피처
+    이름 리스트를 만든다. hue_mean은 원형 변수라 (cos, sin) 2차원으로
+    변환한다(359도와 1도가 raw z-score로는 최대로 멀게 취급되는 문제를
+    피하기 위함). npix/is_portrait/quality/subsampling은 색감과 무관한
+    메타데이터라 의도적으로 제외."""
+    if feature_set == "tone_color_gamut":
+        scalar_fields = TONE_FIELDS + ["sat_mean"] + GAMUT_FIELDS
+    elif feature_set == "all":
+        scalar_fields = TONE_FIELDS + ["sat_mean"] + GAMUT_FIELDS + TEXTURE_FIELDS
+    else:
+        raise ValueError(f"알 수 없는 feature_set: {feature_set} (tone_color_gamut 또는 all)")
+
+    feature_names = list(scalar_fields) + ["hue_cos", "hue_sin"]
+    rows = []
+    for rec in records:
+        values = [float(rec[field]) for field in scalar_fields]
+        hue_rad = np.deg2rad(rec["hue_mean"])
+        values.append(float(np.cos(hue_rad)))
+        values.append(float(np.sin(hue_rad)))
+        rows.append(values)
+    X = np.array(rows, dtype=np.float64)
+    return X, feature_names
