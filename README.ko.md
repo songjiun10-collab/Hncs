@@ -292,14 +292,16 @@ X2D II ColorChecker 차트 10장을 카메라 네이티브 RGB 공간(libraw의
 python3 -m tools.analyze_camera_native_matrix   # 피팅 + libraw 내장 매트릭스와 교차검증 비교
 ```
 
-실측 결과(XYZ D50 패치 평균 ΔE00): libraw 내장 매트릭스 23.41 ->
+실측 결과(XYZ D50 패치 평균 ΔE00): libraw 내장 매트릭스 7.81 ->
 차트 피팅 매트릭스 **2.83**(leave-one-image-out 교차검증),
-libraw 대비 87.9%. 상세 수치와 한계는
+libraw 대비 63.8%. 상세 수치와 한계는
 `hybrid_engine/EVALUATION.md`의 "후속 실측 21" 참고.
 
-**알려진 한계**: ① 차트 촬영 당시 조명이 실측되지 않아
-(`manifest.csv`의 `illuminant` 칼럼 공백) `CalibrationIlluminant1`이
-`AsShotNeutral`에서 역산한 **추정값**이다 ② 10장 전부 한 버스트라 조명
+**알려진 한계**: ① 촬영 당시 장면 조명은 이 데이터에서 복원 불가능하다 -
+`manifest.csv`의 `illuminant` 칼럼이 공백인 데다, 차트 참조값을 D50으로
+색순응시킨 뒤 피팅하므로 매트릭스가 구성상 D50 기준이라
+`CalibrationIlluminant1`을 그 참조 백색점인 **23(D50)**으로 쓴다 - 촬영
+당시 조명을 측정/가정한 값이 아니다 ② 10장 전부 한 버스트라 조명
 조건이 1개뿐이고 dual-illuminant 보간이 불가능하다 ③ **Lightroom이 실제로
 이 파일을 의도대로 렌더링하는지는 미검증**이다 - 개발 환경에 Adobe 제품이
 없어 TIFF 구조 유효성(exiftool)과 수치 라운드트립만 검증했다 ④ X2D II
