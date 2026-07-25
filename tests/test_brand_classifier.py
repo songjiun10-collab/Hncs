@@ -9,7 +9,7 @@ import numpy as np
 
 from core.brand_classifier import (
     load_signatures, extract_features, standardize, nearest_centroid_loo,
-    confusion_matrix, classification_report,
+    confusion_matrix, classification_report, rank_brands_by_distance,
 )
 
 
@@ -221,6 +221,25 @@ class TestClassificationReport(unittest.TestCase):
         self.assertAlmostEqual(report["macro_accuracy"], (2 / 3 + 1.0) / 2)
         self.assertAlmostEqual(report["majority_baseline"], 3 / 4)
         self.assertAlmostEqual(report["uniform_baseline"], 0.5)
+
+
+class TestRankBrandsByDistance(unittest.TestCase):
+    def test_ranks_nearest_brand_first_and_sorted(self):
+        rng = np.random.default_rng(0)
+        cluster_a = rng.normal(loc=[0.0, 0.0], scale=0.5, size=(20, 2))
+        cluster_b = rng.normal(loc=[50.0, 50.0], scale=0.5, size=(20, 2))
+        cluster_c = rng.normal(loc=[-50.0, 50.0], scale=0.5, size=(20, 2))
+        train_X = np.vstack([cluster_a, cluster_b, cluster_c])
+        train_y = np.array(["A"] * 20 + ["B"] * 20 + ["C"] * 20)
+
+        query = np.array([49.5, 50.2])  # 클러스터 B 중심 근처
+
+        ranking = rank_brands_by_distance(query, train_X, train_y)
+
+        self.assertEqual(len(ranking), 3)
+        self.assertEqual(ranking[0][0], "B")
+        distances = [dist for _, dist in ranking]
+        self.assertEqual(distances, sorted(distances))
 
 
 if __name__ == "__main__":
