@@ -404,33 +404,103 @@ def print_predict_report(ranking):
 
 def write_predict_html(photo_path, ranking, html_path):
     """사진(base64 내장) + 순위표 + 정확도 경고 배너가 담긴 자기완결적
-    정적 HTML 파일을 만든다. 외부 CDN/폰트 의존 없음."""
+    정적 HTML 파일을 만든다. 외부 CDN/폰트 의존 없음(시스템 폰트만 사용).
+    미니멀/무채색 톤(다크 배경, 회색조 팔레트, 색 액센트 없음) - 코너
+    브래킷 뷰파인더 프레임과 모노스페이스 라벨은 사용자가 공유한 다른
+    데모 페이지의 에디토리얼 톤에서 아이디어만 가져온 것으로, 그 페이지의
+    인터랙티브 JS 엔진은 가져오지 않는다(이 리포트는 정적 결과물)."""
     with open(photo_path, "rb") as f:
         photo_b64 = base64.b64encode(f.read()).decode("ascii")
     ext = os.path.splitext(photo_path)[1].lstrip(".").lower() or "jpeg"
     mime = "jpeg" if ext in ("jpg", "jpeg") else ext
 
+    top_brand, top_dist = ranking[0]
     rows = "\n".join(
-        f"<tr><td>{i}</td><td>{brand}</td><td>{dist:.3f}</td></tr>"
+        f'<div class="bitem{" active" if i == 1 else ""}">'
+        f'<span class="idx">{i:02d}</span>'
+        f'<span class="bn">{brand}</span>'
+        f'<span class="bd">{dist:.3f}</span>'
+        f'</div>'
         for i, (brand, dist) in enumerate(ranking, start=1)
     )
-    top_brand = ranking[0][0]
 
     html = f"""<!doctype html>
-<html><head><meta charset="utf-8"><title>브랜드 시그니처 예측 (재미용)</title>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>브랜드 시그니처 예측 (재미용)</title>
 <style>
-body {{ font-family: sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }}
-.warning {{ background: #fff3cd; border: 1px solid #ffc107; padding: 0.75rem 1rem; border-radius: 4px; margin-bottom: 1rem; }}
-img {{ max-width: 100%; border-radius: 4px; }}
-table {{ width: 100%; border-collapse: collapse; margin-top: 1rem; }}
-td, th {{ padding: 0.4rem 0.6rem; border-bottom: 1px solid #ddd; text-align: left; }}
+:root{{
+  --bg:#0a0a0a; --bg2:#101010; --bg3:#181817;
+  --fg:#f2f2f0; --fg2:#c9c9c4; --mut:#8b8b86; --dim:#4c4c48;
+  --line:#232321; --line2:#373733;
+  --mono:ui-monospace,SFMono-Regular,'IBM Plex Mono',monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+  --maxw:920px;
+}}
+*{{box-sizing:border-box;margin:0;padding:0}}
+body{{font-family:var(--sans);background:var(--bg);color:var(--fg);line-height:1.6;padding:0 0 60px}}
+.wrap{{max-width:var(--maxw);margin:0 auto;padding:0 28px}}
+.top{{border-bottom:1px solid var(--line);padding:18px 0;margin-bottom:36px}}
+.top-in{{max-width:var(--maxw);margin:0 auto;padding:0 28px;display:flex;align-items:center;gap:10px}}
+.led{{width:7px;height:7px;border-radius:50%;background:var(--fg);flex:none}}
+.wm{{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;color:var(--mut);text-transform:uppercase}}
+h1{{font-size:clamp(1.5rem,4vw,2.1rem);font-weight:800;letter-spacing:-.01em;margin-bottom:8px}}
+.kicker{{font-family:var(--mono);font-size:.64rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mut);margin-bottom:10px}}
+.warn{{background:var(--bg2);border:1px solid var(--fg2);color:var(--fg2);
+  font-family:var(--mono);font-size:.74rem;letter-spacing:.02em;padding:12px 16px;
+  margin-bottom:32px;line-height:1.7}}
+.grid{{display:grid;grid-template-columns:280px 1fr;gap:32px}}
+.frame{{position:relative;border:1px dashed var(--line2);padding:10px}}
+.corner{{position:absolute;width:13px;height:13px;border:1px solid var(--fg);opacity:.8}}
+.c-tl{{top:6px;left:6px;border-right:none;border-bottom:none}}
+.c-tr{{top:6px;right:6px;border-left:none;border-bottom:none}}
+.c-bl{{bottom:6px;left:6px;border-right:none;border-top:none}}
+.c-br{{bottom:6px;right:6px;border-left:none;border-top:none}}
+.frame img{{display:block;width:100%;height:auto}}
+.frame-cap{{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;color:var(--dim);
+  text-transform:uppercase;margin-top:10px}}
+.result{{margin-bottom:18px}}
+.result .lbl{{font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;color:var(--mut);
+  text-transform:uppercase;margin-bottom:6px}}
+.result .val{{font-size:1.7rem;font-weight:800}}
+.result .dist{{font-family:var(--mono);font-size:.78rem;color:var(--mut)}}
+.blist{{border-top:1px solid var(--fg)}}
+.bitem{{display:grid;grid-template-columns:26px 1fr auto;align-items:center;gap:10px;
+  padding:9px 4px;border-bottom:1px solid var(--line);font-size:.86rem}}
+.bitem .idx{{font-family:var(--mono);font-size:.62rem;color:var(--dim)}}
+.bitem .bd{{font-family:var(--mono);font-size:.72rem;color:var(--mut)}}
+.bitem.active{{background:var(--fg);color:var(--bg)}}
+.bitem.active .idx,.bitem.active .bd{{color:var(--bg)}}
+footer{{margin-top:40px;font-family:var(--mono);font-size:.62rem;color:var(--dim);
+  letter-spacing:.04em;line-height:1.8}}
+@media(max-width:640px){{.grid{{grid-template-columns:1fr}}}}
 </style></head>
 <body>
-<div class="warning">{ACCURACY_CAVEAT}. 가짜 확률이 아니라 거리 순위만 표시함.</div>
-<h1>1위: {top_brand}</h1>
-<img src="data:image/{mime};base64,{photo_b64}" alt="입력 사진">
-<table><thead><tr><th>순위</th><th>브랜드</th><th>거리</th></tr></thead>
-<tbody>{rows}</tbody></table>
+<div class="top"><div class="top-in"><span class="led"></span><span class="wm">HNCS &middot; PREDICT (재미용)</span></div></div>
+<div class="wrap">
+  <div class="kicker">Brand Signature Ranking &middot; Not a Verified Match</div>
+  <h1>{top_brand}에 가장 가까움</h1>
+  <div class="warn">{ACCURACY_CAVEAT}. 가짜 확률이 아니라 거리 순위만 표시함.</div>
+  <div class="grid">
+    <div>
+      <div class="frame">
+        <i class="corner c-tl"></i><i class="corner c-tr"></i><i class="corner c-bl"></i><i class="corner c-br"></i>
+        <img src="data:image/{mime};base64,{photo_b64}" alt="입력 사진">
+      </div>
+      <div class="frame-cap">Query Photo</div>
+    </div>
+    <div>
+      <div class="result">
+        <div class="lbl">1위</div>
+        <div class="val">{top_brand}</div>
+        <div class="dist">거리 {top_dist:.3f}</div>
+      </div>
+      <div class="blist">{rows}</div>
+    </div>
+  </div>
+  <footer>tools/classify_brand.py predict &middot; Set A(tone+color+gamut)만 사용, texture 미지원<br>
+  10개 브랜드 852장 population 시그니처 기준 leave-one-out nearest-centroid</footer>
+</div>
 </body></html>"""
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
@@ -481,7 +551,7 @@ Run: `python3 -m tools.classify_brand predict docs/images/before_after_hncs.jpg`
 Expected: 예외 없이 정확도 경고 문구, 1위 브랜드, 10개 브랜드 순위표(거리 오름차순)가 출력됨.
 
 Run: `python3 -m tools.classify_brand predict docs/images/before_after_hncs.jpg --html /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/predict_demo.html`
-Expected: 콘솔 출력 + `predict_demo.html` 생성 확인. 파일을 열어서(`head -c 500` 등으로) `<img src="data:image/jpeg;base64,...`가 들어있는지, 정확도 경고 문구가 들어있는지, 순위표 10행이 있는지 확인.
+Expected: 콘솔 출력 + `predict_demo.html` 생성 확인. 파일을 열어서(`grep`으로) 다음이 전부 들어있는지 확인: `<img src="data:image/jpeg;base64,...`(내장 사진), `class="warn"`(정확도 경고 배너), `class="corner c-tl"`(코너 브래킷 프레임 - 총 4개), `class="bitem active"`(1위 브랜드 하이라이트), `class="bitem"`가 정확히 10개(순위 10행). 외부 `<link>`/`http`/`https` 참조가 전혀 없는지도 확인(자기완결적 요구사항 - `grep -c "http" predict_demo.html`가 0이어야 함, base64 데이터 URI 자체는 `data:image/`로 시작하니 걸리지 않음).
 
 Run (기존 report 모드가 여전히 정상 동작하는지 최종 재확인): `python3 -m tools.classify_brand --csv /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/report_check.csv`
 Expected: 기존과 동일하게 정상 동작, CSV 생성.
