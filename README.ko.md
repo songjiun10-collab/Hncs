@@ -330,6 +330,10 @@ python3 -m tools.classify_brand predict photo.jpg
 python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진을 base64로 내장한 자기완결적 정적 HTML
 ```
 
+## 브라우저 데모 (실측 데이터 아님)
+
+[`docs/demo/hncs_convert_demo.html`](docs/demo/hncs_convert_demo.html)은 업로드한 사진의 색감을 브랜드별로 브라우저에서만(캔버스 기반 톤 커브 + 채도/색온도) 재렌더링하는 독립형 오프라인 페이지입니다. **브랜드별 파라미터는 시각적 효과를 위해 임의로 만든 값이며, 이 저장소가 실측한 population 데이터나 `apply_*` 파이프라인에서 나온 값이 아닙니다** - 페이지 상단에 이 사실을 명시하고 있습니다. 빌드나 서버 없이 파일을 브라우저에서 바로 열면 됩니다.
+
 ## 목표 / 철학
 
 - 주관적인 "필감" 묘사가 아니라 population 통계, raw+jpeg 페어,

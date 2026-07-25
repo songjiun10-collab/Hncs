@@ -214,6 +214,10 @@ python3 -m tools.classify_brand predict photo.jpg
 python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-contained static HTML with the photo embedded as base64
 ```
 
+## Browser demo (not measured data)
+
+[`docs/demo/hncs_convert_demo.html`](docs/demo/hncs_convert_demo.html) is a standalone, offline-capable page that re-renders an uploaded photo's colors per brand entirely in the browser (canvas-based tone curve + saturation/temperature). **Its per-brand parameters are hand-picked for visual effect, not derived from this repo's measured population data or its `apply_*` pipelines** - the page states this prominently at the top. Open the file directly in a browser; no build step or server needed.
+
 ## Goals / Philosophy
 
 - Parameters are grounded in **measured data** - population statistics,
