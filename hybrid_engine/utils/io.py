@@ -25,6 +25,35 @@ def decode_raw(raw_path):
     return rgb16.astype(np.float64) / 65535.0
 
 
+def decode_raw_native(raw_path):
+    """RAW -> 카메라 네이티브 linear RGB, float64 [0, 1] 근방,
+    shape (H, W, 3), RGB 순서.
+
+    decode_raw()와 결정적으로 다른 점: libraw의 카메라->출력 색매트릭스
+    (output_color)와 화이트밸런스를 **둘 다 우회**한다. Adobe DCP
+    프로필의 ColorMatrix1이 요구하는 공간이 바로 이 "카메라 네이티브
+    RGB"(디모자이크는 됐지만 색변환/WB 이전)이기 때문 - decode_raw()의
+    출력은 libraw가 이미 자기 매트릭스와 WB를 적용한 sRGB 프라이머리
+    값이라 DCP에 그대로 쓸 수 없다.
+
+    WB가 안 걸려서 초록 채널이 다른 채널의 약 2배로 치우친 이미지가
+    나오는 게 정상이다(베이어 센서의 초록 화소가 2배 많고 초록 감도가
+    높기 때문). 차트 검출에는 영향 없음 - chart_baseline.
+    detect_and_sample()이 검출용 프리뷰를 만들 때 퍼센타일 정규화를
+    거치므로 이 캐스트 상태에서도 검출된다(실측 확인)."""
+    with rawpy.imread(raw_path) as raw:
+        rgb16 = raw.postprocess(
+            use_camera_wb=False,
+            use_auto_wb=False,
+            user_wb=[1.0, 1.0, 1.0, 1.0],
+            no_auto_bright=True,
+            output_bps=16,
+            output_color=rawpy.ColorSpace.raw,
+            gamma=(1, 1),  # 순수 linear
+        )
+    return rgb16.astype(np.float64) / 65535.0
+
+
 def save_tiff16(rgb_linear, path, apply_srgb_encoding=True):
     """Linear RGB -> 16비트 TIFF 저장.
 
