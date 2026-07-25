@@ -26,6 +26,9 @@ def film_curve(x, toe_lift=0.001, shoulder_start=0.78, white_point=1.0):
     toe_lift = min(toe_lift, 0.099)
     t = x[toe_mask] / 0.1
     y[toe_mask] = toe_lift + t * (0.1 - toe_lift)   # [0,0.1] -> [lift,0.1]
+    # shoulder_start가 1에 가까우면 (1 - shoulder_start) 분모가 0에
+    # 가까워져 t2가 발산할 수 있음 - 0.999 미만으로 clamp해서 방지.
+    shoulder_start = min(shoulder_start, 0.999)
     sh_mask = x > shoulder_start
     t2 = (x[sh_mask] - shoulder_start) / (1 - shoulder_start)
     y[sh_mask] = shoulder_start + (t2 * t2 * (3 - 2 * t2)) * (white_point - shoulder_start)
@@ -61,6 +64,7 @@ def apply_highlight_rolloff(x, y, start=0.8):
 
 
 def shadow_lift(x, y, lift=0.02, threshold=0.1):
+    y = y.copy()  # 호출부가 넘긴 배열을 그대로 변경하면 안 됨(다른 커브처럼 새 배열 반환)
     mask = x < threshold
     y[mask] = y[mask] + (lift * (1 - (x[mask] / threshold)))
-    return y
+    return np.clip(y, 0, 1)

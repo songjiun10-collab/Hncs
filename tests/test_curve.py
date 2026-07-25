@@ -49,6 +49,14 @@ class TestFilmCurve(unittest.TestCase):
         y = film_curve(self.x, toe_lift=0.3)
         self.assertTrue(np.all(np.diff(y) >= -1e-6))
 
+    def test_shoulder_start_near_one_does_not_blow_up(self):
+        # shoulder_start가 1에 가까우면 (1 - shoulder_start) 분모가 0에
+        # 가까워져 t2가 발산할 수 있었던 경우 - 0.999로 clamp해서 방지.
+        y = film_curve(self.x, shoulder_start=1.0)
+        self.assertTrue(np.all(np.isfinite(y)))
+        self.assertTrue(np.all(y >= 0))
+        self.assertTrue(np.all(y <= 1))
+
 
 class TestSCurve(unittest.TestCase):
     def test_endpoints(self):
@@ -114,6 +122,19 @@ class TestShadowLift(unittest.TestCase):
         y = x.copy()
         out = shadow_lift(x, y, lift=0.02, threshold=0.1)
         self.assertAlmostEqual(out[0], 0.02, places=6)
+
+    def test_does_not_mutate_input_y(self):
+        x = np.array([0.0, 0.05, 0.5])
+        y = x.copy()
+        y_before = y.copy()
+        shadow_lift(x, y, lift=0.02, threshold=0.1)
+        np.testing.assert_array_equal(y, y_before)
+
+    def test_output_clipped_to_one(self):
+        x = np.array([0.0])
+        y = np.array([0.99])
+        out = shadow_lift(x, y, lift=0.5, threshold=0.1)
+        self.assertLessEqual(out[0], 1.0)
 
 
 if __name__ == "__main__":
