@@ -24,7 +24,9 @@ SET_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
                         "datasets", "hasselblad", "contributed", "kmichels-x2dii-2026-07")
 
 # EXIF LightSource enum 중 DCP의 CalibrationIlluminant로 흔히 쓰는 값과
-# 그 대표 색온도. 추정 CCT에서 가장 가까운 것을 고른다.
+# 그 대표 색온도. AsShotNeutral 기반 CCT 진단에서 "그 CCT면 어느 enum이
+# 가장 가까운가"를 보여주는 용도로만 쓴다 - 실제로 .dcp에 쓰는 값은
+# _calibration_illuminant()가 고정한 23(D50)이다(아래 docstring 참고).
 LIGHT_SOURCE_ENUMS = [
     (17, "Standard light A", 2856.0),
     (23, "D50", 5003.0),
@@ -32,6 +34,15 @@ LIGHT_SOURCE_ENUMS = [
     (21, "D65", 6504.0),
     (22, "D75", 7504.0),
 ]
+
+# 피팅 참조값이 XYZ(D50)이므로(chart_baseline.reference_patches_xyz_d50())
+# 피팅된 매트릭스는 구성상 D50 기준이다. 따라서 CalibrationIlluminant1은
+# 23(D50)으로 고정한다.
+CALIBRATION_ILLUMINANT_ENUM = 23
+CALIBRATION_ILLUMINANT_NAME = "D50"
+
+# chart_baseline.PATCH_NAMES에서 무채색 6패치(white 9.5 ~ black 2).
+NEUTRAL_PATCH_INDICES = [18, 19, 20, 21, 22, 23]
 
 
 def _load_native_chart_samples():
@@ -62,42 +73,100 @@ def _mean_de(samples_xyz, reference):
     return float(np.mean(chart_baseline.patch_delta_e_xyz_d50(samples_xyz, reference)))
 
 
-def _estimate_illuminant(as_shot_neutral, cam_to_xyz):
-    """AsShotNeutral(촬영 당시 중립색의 카메라 네이티브 RGB)을 피팅된
-    매트릭스로 XYZ에 보내 그 색도의 CCT를 추정하고, 가장 가까운 EXIF
-    LightSource enum을 고른다.
+def _measured_native_neutral(per_image):
+    """차트의 무채색 6패치에서 카메라 네이티브 공간의 "중립색 방향"을
+    실측한다. 패치별로 G=1로 정규화한 뒤(각 패치의 밝기가 아니라 색도만
+    비교하려고) 패치·이미지 전체를 평균하고, 다시 G=1로 정규화한
+    (3,) 배열과 패치별 값을 함께 반환.
 
-    주의: 이건 **추정**이다. 세 겹으로 그렇다.
+    이 값이 AsShotNeutral과 같은 의미(중립 물체의 카메라 네이티브 RGB)를
+    갖는 실측치라서, 둘을 비교하면 AsShotNeutral의 스케일 규약이
+    decode_raw_native() 출력과 채널별로 일치하는지 검증할 수 있다."""
+    per_patch = {}
+    for idx in NEUTRAL_PATCH_INDICES:
+        vals = []
+        for samples in per_image.values():
+            rgb = np.asarray(samples[idx], dtype=np.float64)
+            if rgb[1] <= 0:
+                continue
+            vals.append(rgb / rgb[1])
+        if vals:
+            per_patch[chart_baseline.PATCH_NAMES[idx]] = np.mean(vals, axis=0)
+    if not per_patch:
+        return None, {}
+    mean = np.mean(list(per_patch.values()), axis=0)
+    mean = mean / mean[1]
+    return mean, {k: v.tolist() for k, v in per_patch.items()}
+
+
+def _calibration_illuminant(as_shot_neutral, measured_native_neutral, cam_to_xyz):
+    """`.dcp`에 쓸 CalibrationIlluminant1을 정한다 - **항상 23(D50)**.
+
+    왜 D50인가: chart_baseline.reference_patches_xyz_d50()이 차트 참조값을
+    XYZ(D50)으로 색순응시킨 뒤 피팅하므로, 피팅된 매트릭스는 **구성상**
+    D50 기준이다. 즉 "촬영 당시 조명이 D50이었다고 측정/가정했다"가 아니라
+    "이 매트릭스가 대응하는 참조 백색점이 D50이다"라는 뜻이고, 이게 이
+    데이터로 정당화할 수 있는 유일한 illuminant 주장이다. 촬영 당시의 실제
+    장면 조명은 이 데이터에서 **복원 불가능하다**(단순히 "측정되지 않았다"
+    보다 강한 진술이다): 참조값이 이미 D50으로 색순응된 상태로 피팅에
+    들어가므로, 원래 조명의 정보는 피팅 결과에 남지 않는다.
+
+    AsShotNeutral로 CCT를 역산하는 접근은 폐기했다. 진단으로만 남긴다:
       (a) 차트 촬영 당시의 조명이 실측되지 않았다(manifest의 illuminant
           칼럼이 10장 전부 비어있음).
       (b) AsShotNeutral 자체가 카메라의 자동 WB 판단 결과라 측정된
           조명값이 아니다.
-      (c) AsShotNeutral은 DNG 스펙의 raw 값 스케일 기준인데 cam_to_xyz는
-          decode_raw_native()가 낸 libraw 디모자이크 출력(/65535 정규화)
-          기준으로 피팅된 것이라, 두 스케일이 채널별로 정확히 일치한다는
-          보장이 없다. 다만 CCT는 색도(xy)에서만 나오고 xy는 전역 스케일에
-          불변이므로, 채널별 스케일 차이가 없다면 이 추정은 유효하다 -
-          libraw가 채널별로 다른 정규화를 적용하는 경우에만 틀어진다.
-          이 부분은 확인하지 않았다."""
+      (c) **실측으로 판명**: AsShotNeutral은 DNG 스펙의 raw 값 스케일
+          기준인데 cam_to_xyz는 decode_raw_native()의 libraw 디모자이크
+          출력(/65535) 기준이고, 두 스케일이 채널별로 **일치하지 않는다** -
+          아래 measured_over_as_shot_channel_scale이 R/B에서 1에서 크게
+          벗어난다. CCT는 색도(xy)에서 나오고 xy는 전역 스케일에만
+          불변이므로, 채널별 스케일 차이가 있으면 AsShotNeutral을
+          cam_to_xyz에 먹여 구한 xy는 의미가 없다. 이전 버전 docstring이
+          "확인하지 않았다"고 달아둔 caveat (c)가 이렇게 해소됐고, 결론은
+          그 추정이 유효하지 않다는 쪽이다."""
     import colour
-    if as_shot_neutral is None:
-        return None
-    xyz = np.asarray(as_shot_neutral, dtype=np.float64) @ cam_to_xyz
-    total = xyz.sum()
-    if total <= 0:
-        return None
-    xy = np.array([xyz[0] / total, xyz[1] / total])
-    cct = float(colour.xy_to_CCT(xy, method="McCamy 1992"))
-    enum_value, enum_name, enum_cct = min(LIGHT_SOURCE_ENUMS,
-                                          key=lambda e: abs(e[2] - cct))
+    diagnostic = {
+        "as_shot_neutral": None if as_shot_neutral is None else as_shot_neutral.tolist(),
+        "measured_native_neutral_g_normalized":
+            None if measured_native_neutral is None else measured_native_neutral.tolist(),
+        "measured_over_as_shot_channel_scale": None,
+        "cct_from_as_shot_neutral": None,
+        "nearest_enum_from_that_cct": None,
+        "nearest_enum_name_from_that_cct": None,
+        "conclusive": False,
+        "note": "진단 전용 - CalibrationIlluminant1으로 쓰지 않는다. "
+                "AsShotNeutral의 채널별 스케일이 decode_raw_native() 출력과 "
+                "일치하지 않는 것이 실측으로 확인돼(아래 channel_scale), "
+                "여기서 역산한 CCT는 유효한 추정이 아니다.",
+    }
+    if as_shot_neutral is not None:
+        asn = np.asarray(as_shot_neutral, dtype=np.float64)
+        if asn[1] > 0:
+            asn_g = asn / asn[1]
+            if measured_native_neutral is not None:
+                with np.errstate(divide="ignore", invalid="ignore"):
+                    diagnostic["measured_over_as_shot_channel_scale"] = \
+                        (measured_native_neutral / asn_g).tolist()
+        xyz = asn @ cam_to_xyz
+        total = xyz.sum()
+        if total > 0:
+            xy = np.array([xyz[0] / total, xyz[1] / total])
+            cct = float(colour.xy_to_CCT(xy, method="McCamy 1992"))
+            enum_value, enum_name, _cct = min(LIGHT_SOURCE_ENUMS,
+                                              key=lambda e: abs(e[2] - cct))
+            diagnostic["neutral_xy"] = xy.tolist()
+            diagnostic["cct_from_as_shot_neutral"] = cct
+            diagnostic["nearest_enum_from_that_cct"] = enum_value
+            diagnostic["nearest_enum_name_from_that_cct"] = enum_name
+
     return {
-        "as_shot_neutral": as_shot_neutral.tolist(),
-        "neutral_xy": xy.tolist(),
-        "estimated_cct": cct,
-        "chosen_enum": enum_value,
-        "chosen_enum_name": enum_name,
-        "chosen_enum_cct": enum_cct,
-        "note": "추정값 - 촬영 당시 조명이 실측되지 않았음(manifest illuminant 칼럼 공백)",
+        "chosen_enum": CALIBRATION_ILLUMINANT_ENUM,
+        "chosen_enum_name": CALIBRATION_ILLUMINANT_NAME,
+        "reason": "피팅 참조값이 XYZ(D50)이라 매트릭스가 구성상 D50 기준 - "
+                  "촬영 당시 장면 조명을 측정/가정한 값이 아니고, 그 조명은 "
+                  "D50으로 색순응된 참조값에서 복원 불가능하다.",
+        "as_shot_neutral_diagnostic": diagnostic,
     }
 
 
@@ -116,24 +185,34 @@ def main():
     libraw_m = _libraw_matrix(raw_paths[names[0]])
 
     # 1) libraw 매트릭스의 방향을 실측으로 확정한다 - rgb_xyz_matrix가
-    #    XYZ->cam인지 cam->XYZ인지 문서만으론 단정할 수 없어서, 두 방향
-    #    다 적용해보고 XYZ 참조값에 가까워지는 쪽을 채택한다.
-    as_is = float(np.mean([
-        _mean_de(raw_baseline.apply_color_matrix(per_image[nm], libraw_m), reference)
-        for nm in names]))
-    inverted_m = np.linalg.inv(libraw_m)
-    inverted = float(np.mean([
-        _mean_de(raw_baseline.apply_color_matrix(per_image[nm], inverted_m), reference)
-        for nm in names]))
-    if as_is <= inverted:
-        libraw_cam_to_xyz, chosen = libraw_m, "as_is"
-    else:
-        libraw_cam_to_xyz, chosen = inverted_m, "inverted"
-    print("\n=== libraw rgb_xyz_matrix 방향 판정 ===")
-    print(f"  그대로 적용(native @ M):        ΔE00 {as_is:.2f}")
-    print(f"  역행렬 적용(native @ inv(M)):   ΔE00 {inverted:.2f}")
+    #    XYZ->cam인지 cam->XYZ인지, 그리고 행벡터/열벡터 규약 중 어느
+    #    쪽인지 문서만으론 단정할 수 없다. 그래서 네 후보를 전부 적용해
+    #    보고 XYZ 참조값에 가장 가까워지는 쪽을 채택한다.
+    #
+    #    후보가 둘이 아니라 넷인 이유: apply_color_matrix()는 이 프로젝트
+    #    규약대로 **행벡터**로 적용한다(native_row @ candidate). 반면
+    #    libraw의 rgb_xyz_matrix는 DNG의 ColorMatrix1과 같은 **열벡터**
+    #    규약 매트릭스다(cam_col = M @ xyz_col). 열벡터 규약 매트릭스를
+    #    행벡터로 적용하려면 전치해야 하므로, M/inv(M)만 시험하면 정답
+    #    후보(M.T, inv(M).T)를 아예 빠뜨린다.
+    candidates = {
+        "M": libraw_m,
+        "inv(M)": np.linalg.inv(libraw_m),
+        "M.T": libraw_m.T,
+        "inv(M).T": np.linalg.inv(libraw_m).T,
+    }
+    direction_de = {}
+    for label, cand in candidates.items():
+        direction_de[label] = float(np.mean([
+            _mean_de(raw_baseline.apply_color_matrix(per_image[nm], cand), reference)
+            for nm in names]))
+    chosen = min(direction_de, key=direction_de.get)
+    libraw_cam_to_xyz = candidates[chosen]
+    libraw_mean = direction_de[chosen]
+    print("\n=== libraw rgb_xyz_matrix 방향 판정 (4후보) ===")
+    for label in candidates:
+        print(f"  native @ {label:<10s} ΔE00 {direction_de[label]:.2f}")
     print(f"  채택: {chosen}")
-    libraw_mean = min(as_is, inverted)
 
     # 2) 보정 없음 - 네이티브 값을 XYZ로 그대로 간주(스케일 감각용,
     #    정상적으로 매우 나쁠 것)
@@ -172,16 +251,20 @@ def main():
     print("\n차트 매트릭스(네이티브 -> XYZ D50, in-sample):")
     print(chart_m)
 
+    print("\nDCP ColorMatrix1(XYZ D50 -> 네이티브, 열벡터 규약) = inv(chart_m).T:")
+    print(np.linalg.inv(chart_m).T)
+
+    native_neutral, native_neutral_per_patch = _measured_native_neutral(per_image)
     as_shot = read_as_shot_neutral(raw_paths[names[0]])
-    illuminant = _estimate_illuminant(as_shot, chart_m)
-    print("\n=== CalibrationIlluminant 추정 ===")
-    print(illuminant)
+    illuminant = _calibration_illuminant(as_shot, native_neutral, chart_m)
+    print("\n=== CalibrationIlluminant1 (D50 고정) + AsShotNeutral 진단 ===")
+    print(json.dumps(illuminant, indent=2, ensure_ascii=False))
 
     report = {
         "n_images": n,
         "images": names,
         "camera_model": read_unique_camera_model(raw_paths[names[0]]),
-        "libraw_direction_delta_e": {"as_is": as_is, "inverted": inverted},
+        "libraw_direction_delta_e": direction_de,
         "libraw_direction_chosen": chosen,
         "no_correction_delta_e_mean": no_corr,
         "libraw_matrix_delta_e_mean": libraw_mean,
@@ -191,8 +274,19 @@ def main():
         "improvement_vs_libraw_pct": improvement,
         "chart_matrix_beats_libraw": bool(cv_mean < libraw_mean),
         "chart_matrix_in_sample": chart_m.tolist(),
+        # DCP의 ColorMatrix1은 열벡터 규약(native_col = CM1 @ xyz_col)인데
+        # chart_matrix_in_sample은 행벡터 피팅 결과(xyz_row = native_row @ M)라
+        # 역행렬만으로는 안 되고 전치까지 필요하다. .dcp를 만들 때 쓰는
+        # 값이 정확히 이것이다(tests/test_dcp_export.py가 잠금).
+        "dcp_color_matrix_1": np.linalg.inv(chart_m).T.tolist(),
         "libraw_cam_to_xyz": libraw_cam_to_xyz.tolist(),
-        "estimated_illuminant": illuminant,
+        # 무채색 6패치에서 실측한 네이티브 중립색(패치별 G=1 정규화 후 평균).
+        # AsShotNeutral과 같은 의미의 실측치 - 아래 illuminant 진단이 둘을
+        # 비교해서 AsShotNeutral의 스케일 규약이 맞지 않음을 보인다.
+        "measured_native_neutral_g_normalized":
+            None if native_neutral is None else native_neutral.tolist(),
+        "measured_native_neutral_per_patch": native_neutral_per_patch,
+        "calibration_illuminant": illuminant,
     }
     out_path = os.path.join(SET_DIR, "camera_native_matrix_report.json")
     with open(out_path, "w", encoding="utf-8") as f:

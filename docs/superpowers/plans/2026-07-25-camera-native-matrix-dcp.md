@@ -321,7 +321,9 @@ git commit -m "Add camera-native RAW decode path + UniqueCameraModel/AsShotNeutr
 **Interfaces:**
 - Consumes: Task 1의 `chart_baseline.reference_patches_xyz_d50()` / `patch_delta_e_xyz_d50(samples_xyz, reference_xyz=None)`, Task 2의 `io.decode_raw_native(raw_path)` / `exif.read_as_shot_neutral(path)` / `exif.read_unique_camera_model(path)`.
 - Consumes: 기존 `chart_baseline.detect_and_sample(linear_rgb)` -> `(24, 3)` 또는 `None`, 기존 `raw_baseline.fit_color_matrix(sources, targets)` -> `(3, 3)`, 기존 `raw_baseline.apply_color_matrix(rgb_linear, matrix)` -> 보정된 배열(내부적으로 `rgb @ matrix` 후 음수 clip).
-- Produces: 리포트 JSON `datasets/hasselblad/contributed/kmichels-x2dii-2026-07/camera_native_matrix_report.json` - Task 5가 이 파일의 수치를 문서에 옮겨 적는다. 키: `libraw_direction_delta_e`, `libraw_direction_chosen`, `no_correction_delta_e_mean`, `libraw_matrix_delta_e_mean`, `chart_matrix_in_sample_delta_e_mean`, `chart_matrix_cv_delta_e_mean`, `improvement_vs_libraw_pct`, `chart_matrix_in_sample`, `libraw_cam_to_xyz`, `estimated_illuminant`.
+- Produces: 리포트 JSON `datasets/hasselblad/contributed/kmichels-x2dii-2026-07/camera_native_matrix_report.json` - Task 5가 이 파일의 수치를 문서에 옮겨 적는다. 키: `libraw_direction_delta_e`, `libraw_direction_chosen`, `no_correction_delta_e_mean`, `libraw_matrix_delta_e_mean`, `chart_matrix_in_sample_delta_e_mean`, `chart_matrix_cv_delta_e_mean`, `improvement_vs_libraw_pct`, `chart_matrix_in_sample`, `dcp_color_matrix_1`(= `inv(chart_matrix_in_sample).T`,
+`.dcp`에 그대로 들어가는 값), `libraw_cam_to_xyz`,
+`measured_native_neutral_g_normalized`, `calibration_illuminant`.
 
 - [ ] **Step 1: 도구 작성**
 
@@ -393,7 +395,17 @@ def _mean_de(samples_xyz, reference):
 
 
 def _estimate_illuminant(as_shot_neutral, cam_to_xyz):
-    """AsShotNeutral(촬영 당시 중립색의 카메라 네이티브 RGB)을 피팅된
+    """[정정(최종 리뷰): 이 접근은 폐기됐다. 아래 caveat (c)("확인하지
+    않았다")를 실제로 확인해보니 **거짓**이었다 - AsShotNeutral의 채널별
+    스케일이 decode_raw_native() 출력과 맞지 않아(R ~×1.1, B ~×0.8) 여기서
+    역산한 CCT는 의미가 없다. 게다가 참조값이 애초에 XYZ(D50)으로
+    색순응된 뒤 피팅되므로 매트릭스는 구성상 D50 기준이고, 촬영 당시
+    장면 조명은 이 데이터로 복원 불가능하다. 실제 구현은
+    CalibrationIlluminant1을 23(D50)으로 고정하고 이 CCT 역산은 "결론
+    없음"으로 라벨링한 진단으로만 남긴다 -
+    tools/analyze_camera_native_matrix.py의 _calibration_illuminant() 참고.]
+
+    AsShotNeutral(촬영 당시 중립색의 카메라 네이티브 RGB)을 피팅된
     매트릭스로 XYZ에 보내 그 색도의 CCT를 추정하고, 가장 가까운 EXIF
     LightSource enum을 고른다.
 
@@ -446,24 +458,31 @@ def main():
     libraw_m = _libraw_matrix(raw_paths[names[0]])
 
     # 1) libraw 매트릭스의 방향을 실측으로 확정한다 - rgb_xyz_matrix가
-    #    XYZ->cam인지 cam->XYZ인지 문서만으론 단정할 수 없어서, 두 방향
-    #    다 적용해보고 XYZ 참조값에 가까워지는 쪽을 채택한다.
-    as_is = float(np.mean([
-        _mean_de(raw_baseline.apply_color_matrix(per_image[nm], libraw_m), reference)
-        for nm in names]))
-    inverted_m = np.linalg.inv(libraw_m)
-    inverted = float(np.mean([
-        _mean_de(raw_baseline.apply_color_matrix(per_image[nm], inverted_m), reference)
-        for nm in names]))
-    if as_is <= inverted:
-        libraw_cam_to_xyz, chosen = libraw_m, "as_is"
-    else:
-        libraw_cam_to_xyz, chosen = inverted_m, "inverted"
-    print("\n=== libraw rgb_xyz_matrix 방향 판정 ===")
-    print(f"  그대로 적용(native @ M):        ΔE00 {as_is:.2f}")
-    print(f"  역행렬 적용(native @ inv(M)):   ΔE00 {inverted:.2f}")
+    #    XYZ->cam인지 cam->XYZ인지, 그리고 행벡터/열벡터 규약 중 어느
+    #    쪽인지 문서만으론 단정할 수 없어서 네 후보를 전부 적용해보고
+    #    XYZ 참조값에 가장 가까워지는 쪽을 채택한다.
+    #    [정정: 최초 계획은 M/inv(M) 두 후보만 시험했는데, libraw의
+    #     rgb_xyz_matrix는 DNG ColorMatrix1과 같은 열벡터 규약이라
+    #     apply_color_matrix()의 행벡터 적용에 맞추려면 전치가 필요하다 -
+    #     그래서 실제 정답인 inv(M).T를 빠뜨렸다. 4후보가 맞다.]
+    candidates = {
+        "M": libraw_m,
+        "inv(M)": np.linalg.inv(libraw_m),
+        "M.T": libraw_m.T,
+        "inv(M).T": np.linalg.inv(libraw_m).T,
+    }
+    direction_de = {}
+    for label, cand in candidates.items():
+        direction_de[label] = float(np.mean([
+            _mean_de(raw_baseline.apply_color_matrix(per_image[nm], cand), reference)
+            for nm in names]))
+    chosen = min(direction_de, key=direction_de.get)
+    libraw_cam_to_xyz = candidates[chosen]
+    libraw_mean = direction_de[chosen]
+    print("\n=== libraw rgb_xyz_matrix 방향 판정 (4후보) ===")
+    for label in candidates:
+        print(f"  native @ {label:<10s} ΔE00 {direction_de[label]:.2f}")
     print(f"  채택: {chosen}")
-    libraw_mean = min(as_is, inverted)
 
     # 2) 보정 없음 - 네이티브 값을 XYZ로 그대로 간주(스케일 감각용,
     #    정상적으로 매우 나쁠 것)
@@ -511,7 +530,7 @@ def main():
         "n_images": n,
         "images": names,
         "camera_model": read_unique_camera_model(raw_paths[names[0]]),
-        "libraw_direction_delta_e": {"as_is": as_is, "inverted": inverted},
+        "libraw_direction_delta_e": direction_de,
         "libraw_direction_chosen": chosen,
         "no_correction_delta_e_mean": no_corr,
         "libraw_matrix_delta_e_mean": libraw_mean,
@@ -540,7 +559,7 @@ Run: `python3 -m tools.analyze_camera_native_matrix`
 Expected: 예외 없이 완주하고 위 형식의 표 + `camera_native_matrix_report.json` 생성.
 
 **출력된 모든 수치를 받아적어 둔다** - Task 5가 문서에 그대로 옮긴다. 특히:
-- libraw 방향 판정 결과(`as_is` vs `inverted`, 각 ΔE)
+- libraw 방향 판정 결과(`M` / `inv(M)` / `M.T` / `inv(M).T` 4후보, 각 ΔE)
 - 네 가지 ΔE(보정 없음 / libraw / in-sample / CV)
 - `improvement_vs_libraw_pct`와 `chart_matrix_beats_libraw`(True/False) - **이게 Task 5의 프로필 생성 게이트**
 - 추정된 CalibrationIlluminant enum과 CCT
@@ -916,7 +935,7 @@ print('beats libraw:', r['chart_matrix_beats_libraw'])
 print('libraw ΔE:', round(r['libraw_matrix_delta_e_mean'], 3))
 print('chart CV ΔE:', round(r['chart_matrix_cv_delta_e_mean'], 3))
 print('improvement:', round(r['improvement_vs_libraw_pct'], 1), '%')
-print('illuminant enum:', r['estimated_illuminant']['chosen_enum'], r['estimated_illuminant']['chosen_enum_name'])
+print('illuminant enum:', r['calibration_illuminant']['chosen_enum'], r['calibration_illuminant']['chosen_enum_name'])
 "
 ```
 
@@ -931,16 +950,24 @@ import json, numpy as np
 from core.dcp_export import write_dcp
 r = json.load(open('datasets/hasselblad/contributed/kmichels-x2dii-2026-07/camera_native_matrix_report.json'))
 assert r['chart_matrix_beats_libraw'], '게이트 미통과 - 이 스텝을 실행해서는 안 됨'
-# 피팅된 매트릭스는 네이티브 -> XYZ(D50) 방향. DCP의 ColorMatrix1은
-# 반대 방향(XYZ D50 -> 네이티브)이라 역행렬을 넣는다.
+# 피팅된 매트릭스는 네이티브 -> XYZ(D50) 방향이고 **행벡터** 규약이다
+# (xyz_row = native_row @ M). DCP의 ColorMatrix1은 반대 방향이면서
+# **열벡터** 규약(native_col = CM1 @ xyz_col)이라 역행렬만으론 안 되고
+# 전치까지 필요하다: CM1 = inv(M.T) = inv(M).T.
+# [정정: 최초 계획은 np.linalg.inv(cam_to_xyz)만 썼는데, 그러면 전치된
+#  매트릭스가 파일에 들어가 Lightroom이 틀린 색을 낸다. .T 필수.]
 cam_to_xyz = np.array(r['chart_matrix_in_sample'], dtype=np.float64)
-color_matrix_1 = np.linalg.inv(cam_to_xyz)
+color_matrix_1 = np.linalg.inv(cam_to_xyz).T
 write_dcp(
     'hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp',
     camera_model=r['camera_model'],
     profile_name='HNCS X2D II Chart Colorimetric',
     color_matrix_1=color_matrix_1,
-    calibration_illuminant_1=r['estimated_illuminant']['chosen_enum'],
+    # 피팅 참조값이 XYZ(D50)이라 매트릭스가 구성상 D50 기준 - 23(D50).
+    # [정정: 최초 계획은 AsShotNeutral 역산 CCT로 고른 enum(21/D65)을
+    #  썼는데, 그 역산은 AsShotNeutral의 채널별 스케일이
+    #  decode_raw_native() 출력과 맞지 않아 무효다.]
+    calibration_illuminant_1=r['calibration_illuminant']['chosen_enum'],
 )
 print('생성 완료. ColorMatrix1 (XYZ D50 -> native):')
 print(np.round(color_matrix_1, 4))
@@ -970,9 +997,10 @@ libraw의 색변환·WB를 둘 다 우회한 카메라 네이티브 RGB를 얻�
 차트 24패치 vs XYZ(D50) 참조값으로 3×3을 피팅했다. 데이터는 후속 실측 9와
 같은 X2D II ColorChecker 차트 10장.
 
-libraw 내장 `rgb_xyz_matrix`의 방향(XYZ->cam인지 cam->XYZ인지)은 문서로
-단정할 수 없어 두 방향 다 적용해 실측으로 확정했다: 그대로 적용 ΔE00
-<as_is>, 역행렬 적용 ΔE00 <inverted> -> **<chosen>** 채택.
+libraw 내장 `rgb_xyz_matrix`의 방향(XYZ->cam / cam->XYZ)과 벡터 규약
+(행/열)은 문서로 단정할 수 없어 네 후보를 전부 적용해 비교했다:
+`M` ΔE00 <M>, `inv(M)` ΔE00 <inv(M)>, `M.T` ΔE00 <M.T>,
+`inv(M).T` ΔE00 <inv(M).T> -> **<chosen>** 채택.
 
 **결과** (XYZ D50 공간 패치 평균 ΔE00, 이미지별 평균의 평균):
 
@@ -991,13 +1019,17 @@ libraw 대비 개선(CV 기준): **<improvement>%**
 (core/dcp_export.py)는 향후 더 나은 차트 데이터를 위해 남겨뒀다">
 
 **알려진 한계**:
-- **조명 미측정**: 기여받은 manifest의 `illuminant` 칼럼이 10장 전부
-  비어있다(이슈 #4에서 "measured illuminant"를 요청했으나 그 항목은 오지
-  않았다). `CalibrationIlluminant1`은 `AsShotNeutral`
-  <as_shot_neutral>에서 역산한 추정 CCT <estimated_cct>K를 가장 가까운
-  EXIF LightSource enum <chosen_enum>(<chosen_enum_name>)로 매핑한
-  **추정값**이다. 그 조명에서 벗어난 촬영의 오차 증가량은 다른 조명
-  데이터가 없어 정량화할 수 없다.
+- **장면 조명 복원 불가**: 기여받은 manifest의 `illuminant` 칼럼이 10장
+  전부 비어있다(이슈 #4에서 "measured illuminant"를 요청했으나 그 항목은
+  오지 않았다). 게다가 `reference_patches_xyz_d50()`이 참조값을 D50으로
+  색순응시킨 뒤 피팅하므로 매트릭스는 **구성상** D50 기준이고, 촬영 당시
+  장면 조명은 이 데이터에서 **복원 불가능**하다. 그래서
+  `CalibrationIlluminant1`은 매트릭스가 실제로 대응하는 참조 백색점인
+  **23(D50)**으로 쓴다 - 장면 조명을 측정/가정한 값이 아니다.
+  `AsShotNeutral`에서 CCT를 역산하는 접근은 무효로 판명됐다(진단으로만
+  남김): `AsShotNeutral` <as_shot_neutral>과 무채색 패치에서 실측한
+  네이티브 중립색 <measured_native_neutral>이 채널별 스케일에서
+  <channel_scale>배만큼 어긋나, 그 역산 xy/CCT는 의미가 없다.
 - **조명 조건 1개**: 10장 전부 94초 한 버스트라 dual-illuminant 보간이
   불가능하다(`ColorMatrix2` 미사용).
 - **Lightroom 렌더링 미검증**: 생성 파일의 TIFF 구조 유효성(exiftool

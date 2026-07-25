@@ -135,7 +135,15 @@ DCP는 TIFF 구조 파일이라 Python `struct`로 직접 쓸 수 있다 - **새
 | `UniqueCameraModel` | 50708 | ASCII | 카메라 모델(어느 카메라용인지 - 없으면 Lightroom이 적용 대상을 모른다) |
 | `ProfileName` | 50936 | ASCII | Profile Browser에 뜰 이름 |
 | `CalibrationIlluminant1` | 50778 | SHORT | EXIF LightSource enum(아래 한계 1) |
-| `ColorMatrix1` | 50721 | SRATIONAL×9 | XYZ(D50) → 카메라 네이티브 = 피팅 매트릭스의 역행렬 |
+| `ColorMatrix1` | 50721 | SRATIONAL×9 | XYZ(D50) → 카메라 네이티브 = **피팅 매트릭스의 역행렬의 전치**(`inv(M).T`) |
+
+**`ColorMatrix1`에 전치가 필요한 이유**(빠뜨리면 조용히 틀린 프로필이
+나온다): `raw_baseline.fit_color_matrix()`는 **행벡터** 규약으로 피팅한다
+(`xyz_row ≈ native_row @ M`). 반면 DNG의 `ColorMatrix1`은 **열벡터** 규약
+(`native_col = CM1 @ xyz_col`)이다. `xyz_row = native_row @ M`을 전치하면
+`xyz_col = M.T @ native_col`이고, 이를 뒤집으면
+`native_col = inv(M.T) @ xyz_col = inv(M).T @ xyz_col`. 따라서
+`CM1 = inv(M).T`이며, `inv(M)`만 쓰면 전치된 매트릭스가 들어간다.
 
 `ForwardMatrix1`(50964, 카메라 네이티브 → XYZ D50)은 **조건부**로 둔다.
 DNG 스펙상 ForwardMatrix는 카메라 중립점을 D50 백색점으로 정확히
