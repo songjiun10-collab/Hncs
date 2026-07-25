@@ -65,8 +65,13 @@ def reference_patches_xyz_d50():
     reference_patches_linear_srgb()가 sRGB 프라이머리/D65로 가는 것과
     달리 이건 XYZ D50으로 간다 - Adobe DNG/DCP 프로필의 기준 공간이
     XYZ D50이기 때문(ColorMatrix1이 정의상 XYZ(D50) -> 카메라 네이티브
-    RGB). colour-science 데이터셋은 CIE Illuminant C 기준이라 Bradford
-    CAT으로 D50에 색순응시킨다."""
+    RGB). 이 colour-science 버전이 내장한 'ColorChecker24 - After
+    November 2014' 데이터셋의 cc.illuminant는 이미 D50에 가까운 값
+    ([0.3457, 0.3585] 근처)이라, 이 데이터셋에 한해서는 아래 Bradford
+    색순응이 사실상 항등변환에 가깝다. 다만 코드는 cc.illuminant를
+    하드코딩하지 않고 항상 동적으로 읽어서 색순응하므로, 향후
+    colour-science 데이터셋 버전이 바뀌어 기준 백색점이 실제 Illuminant C나
+    다른 값으로 바뀌더라도 여전히 올바르게 동작한다."""
     cc = colour.CCS_COLOURCHECKERS["ColorChecker24 - After November 2014"]
     xyY = np.array([cc.data[name] for name in PATCH_NAMES])
     XYZ = colour.xyY_to_XYZ(xyY)

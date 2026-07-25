@@ -1,5 +1,6 @@
 import unittest
 
+import colour
 import numpy as np
 
 from hybrid_engine.core.chart_baseline import (
@@ -16,7 +17,12 @@ class TestReferencePatchesXyzD50(unittest.TestCase):
     def test_neutral_patches_cluster_at_d50_whitepoint(self):
         # PATCH_NAMES의 마지막 6개(인덱스 18~23)가 무채색 패치 - D50으로
         # 색순응했으면 이들의 xy 색도가 D50 백색점 근처로 모여야 한다.
-        # (색순응이 안 걸렸으면 원본 Illuminant C 쪽에 남아있게 된다)
+        # 주의: 이 colour-science 버전의 데이터셋은 cc.illuminant 자체가
+        # 이미 D50에 가까운 값이라, 이 테스트는 색순응이 "제대로 걸렸는지"를
+        # 가르지 못한다(chromatic_adaptation() 호출을 통째로 지워도 이
+        # 값 범위 안에 들어온다) - 그냥 출력이 상식적인 범위에 있는지를
+        # 확인하는 sanity check. 색순응 메커니즘 자체의 검증은
+        # TestChromaticAdaptationMechanism을 참고.
         ref = reference_patches_xyz_d50()
         neutrals = ref[18:24]
         xy = neutrals[:, :2] / neutrals.sum(axis=1, keepdims=True)
@@ -29,6 +35,40 @@ class TestReferencePatchesXyzD50(unittest.TestCase):
         xyz = reference_patches_xyz_d50()
         srgb = reference_patches_linear_srgb()
         self.assertFalse(np.allclose(xyz, srgb, atol=1e-6))
+
+
+class TestChromaticAdaptationMechanism(unittest.TestCase):
+    """reference_patches_xyz_d50()가 쓰는 colour.chromatic_adaptation()
+    호출 패턴 자체를, 실제 데이터셋과 무관한 합성 케이스로 검증한다.
+
+    ColorChecker24 데이터셋의 cc.illuminant는 D50에 너무 가까워서
+    (TestReferencePatchesXyzD50 참고) 실제 데이터로는 색순응이 걸렸는지
+    안 걸렸는지 구분이 안 된다. 여기서는 원본과 뚜렷이 다른 실제
+    Illuminant C를 소스로, D50을 타깃으로 잡고 무채색이 아닌(색순응이
+    항등변환이 되지 않는) 합성 XYZ 점 하나를 변환해서, Bradford CAT이
+    실제로 값을 유의미하게 바꾸는지 확인한다."""
+
+    def test_adaptation_from_illuminant_c_to_d50_changes_chromatic_point(self):
+        illuminant_c_xy = colour.CCS_ILLUMINANTS[
+            "CIE 1931 2 Degree Standard Observer"
+        ]["C"]
+        source_xyz = colour.xy_to_XYZ(illuminant_c_xy)
+        target_xyz = colour.xy_to_XYZ(D50_XY)
+
+        # 무채색이 아닌 임의의 합성 XYZ - 흰색/회색이면 색순응 전후로도
+        # 크게 안 움직일 수 있어서 판별력이 없다.
+        xyz = np.array([0.25, 0.40, 0.10])
+
+        adapted = colour.chromatic_adaptation(
+            xyz, source_xyz, target_xyz,
+            method="Von Kries", transform="Bradford",
+        )
+
+        self.assertFalse(np.allclose(adapted, xyz, atol=1e-3))
+        # 절대 위치도 확인 - 그냥 "달라지기만" 하는 게 아니라 상식적인
+        # 크기의 변화인지(값이 폭주하거나 0이 되지 않는지)까지 본다.
+        self.assertTrue(np.all(np.isfinite(adapted)))
+        self.assertGreater(np.linalg.norm(adapted - xyz), 0.01)
 
 
 class TestPatchDeltaEXyzD50(unittest.TestCase):
