@@ -192,6 +192,35 @@ python3 -m tools.export_lut hasselblad hasselblad.cube --install-lightroom  # al
 
 **Lightroom Classic / Adobe Camera Raw**: no separate export path needed - since ACR 12.3 / Lightroom Classic 9.3, Adobe reads raw `.cube` files directly out of a fixed "LUT Profiles" folder (`~/Library/Application Support/Adobe/CameraRaw/LUT Profiles` on macOS, `%APPDATA%\Adobe\CameraRaw\LUT Profiles` on Windows) and lists them as Profiles in the Develop module's Profile Browser - unlike Photoshop, which needs a manual Color Lookup adjustment layer. `--install-lightroom` copies the just-baked `.cube` there for you (`--group` picks the Profile Browser subfolder, default `Hncs`); macOS/Windows only, since Adobe's own apps don't ship for Linux.
 
+## DCP camera profile (colorimetric correction, X2D II only)
+
+Where the `.cube` path above is a look layered onto an already-rendered
+image, this one goes into the **color-conversion stage right after RAW
+demosaic**. It least-squares-fits the 10 contributed X2D II ColorChecker
+frames against XYZ(D50) references in camera-native RGB space (via
+`decode_raw_native()`, which bypasses both libraw's color matrix and its
+white balance), then exports the result as an Adobe `.dcp` profile that
+Lightroom Classic/Camera Raw reads.
+
+```
+python3 -m tools.analyze_camera_native_matrix   # fit + cross-validated comparison against libraw's built-in matrix
+```
+
+Measured (patch-mean ΔE00 in XYZ D50): libraw's built-in matrix 23.41
+-> chart-fit matrix **2.83** (leave-one-image-out cross-validation),
+87.9% better than libraw. Full numbers and caveats in
+`hybrid_engine/EVALUATION.md` ("후속 실측 21").
+
+**Known limitations**: (1) the illuminant at capture time was never
+measured (the contributed `manifest.csv`'s `illuminant` column is empty),
+so `CalibrationIlluminant1` is **estimated** back out of `AsShotNeutral`;
+(2) all 10 frames come from a single burst, so there's only one lighting
+condition and dual-illuminant interpolation isn't possible; (3) **whether
+Lightroom actually renders this file as intended is unverified** - there's
+no Adobe software in this project's dev environment, so only TIFF
+structural validity (via exiftool) and numeric round-tripping were
+checked; (4) X2D II 100C only (declared via `UniqueCameraModel`).
+
 ## Brand-signature discriminability check (research)
 
 `tools/classify_brand.py` runs in the opposite direction from this project's other tools - instead of building a new feature, it validates whether the already-computed population signatures for 10 brands (`datasets/<brand>/*_signature.json`, 852 photos total) actually carry enough signal to tell brands apart, via leave-one-out nearest-centroid classification. Distances are standardized (z-score), and the held-out photo is fully excluded from its own brand's centroid on every fold (no leakage). `npix`/`is_portrait`/`quality`/`subsampling` (image size, JPEG encoder settings) are deliberately excluded - keeping them would let the classifier learn "which brand uploads which resolution/JPEG setting" instead of an actual color-rendering difference. `ricoh_gr` is excluded from the classifier entirely: its `color_signature.json` stores `hue_median` instead of `hue_mean` like the other 10 brands (not the same statistic, and not comparable), so it's dropped rather than approximated - see the notice the CLI itself prints on every run. The LOO research validation itself has no predict mode - design rationale in `docs/superpowers/specs/2026-07-24-brand-classifier-design.md`. (The separate "for fun" predictor - `rank_brands_by_distance()` in `core/brand_classifier.py` / `tools/classify_brand.py predict` - is described a few paragraphs down and in `docs/superpowers/specs/2026-07-25-brand-predict-fun-design.md`.)

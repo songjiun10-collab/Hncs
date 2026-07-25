@@ -279,6 +279,32 @@ Color Lookup 조정 레이어를 수동으로 얹어야 하는 Photoshop과 다�
 (`--group`으로 Profile Browser 하위 폴더 이름 지정, 기본값 `Hncs`) -
 Adobe 앱 자체가 Linux를 지원 안 해서 macOS/Windows에서만 동작.
 
+## DCP 카메라 프로필 (색채측정 보정, X2D II 전용)
+
+위 `.cube` 경로가 "이미 렌더링된 이미지에 얹는 룩"이라면, 이쪽은
+**RAW 디모자이크 직후 색변환 단계**에 들어가는 색채측정 보정이다. 기여받은
+X2D II ColorChecker 차트 10장을 카메라 네이티브 RGB 공간(libraw의
+색매트릭스·WB를 둘 다 우회한 `decode_raw_native()`)에서 XYZ(D50) 참조값에
+최소자승 피팅해서, Lightroom Classic/Camera Raw가 읽는 Adobe `.dcp`
+프로필로 내보낸다.
+
+```
+python3 -m tools.analyze_camera_native_matrix   # 피팅 + libraw 내장 매트릭스와 교차검증 비교
+```
+
+실측 결과(XYZ D50 패치 평균 ΔE00): libraw 내장 매트릭스 23.41 ->
+차트 피팅 매트릭스 **2.83**(leave-one-image-out 교차검증),
+libraw 대비 87.9%. 상세 수치와 한계는
+`hybrid_engine/EVALUATION.md`의 "후속 실측 21" 참고.
+
+**알려진 한계**: ① 차트 촬영 당시 조명이 실측되지 않아
+(`manifest.csv`의 `illuminant` 칼럼 공백) `CalibrationIlluminant1`이
+`AsShotNeutral`에서 역산한 **추정값**이다 ② 10장 전부 한 버스트라 조명
+조건이 1개뿐이고 dual-illuminant 보간이 불가능하다 ③ **Lightroom이 실제로
+이 파일을 의도대로 렌더링하는지는 미검증**이다 - 개발 환경에 Adobe 제품이
+없어 TIFF 구조 유효성(exiftool)과 수치 라운드트립만 검증했다 ④ X2D II
+100C 전용(`UniqueCameraModel`로 대상 명시).
+
 ## 브랜드 시그니처 판별력 검증 (연구용)
 
 `tools/classify_brand.py`는 이 프로젝트의 다른 도구들과 방향이 반대다 -

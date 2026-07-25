@@ -895,3 +895,64 @@ root-poly -> WLS/ridge -> RBF 블렌드 -> RBF 잔차 -> Huber -> full-poly)
 전부 8번째까지 실패해서, 이 결론은 이제 거의 확정적이라고 봐도 될 듯
 하다: 15쌍 데이터 규모에서는 매트릭스를 3x3(9개 자유도)보다 유연하게
 만드는 어떤 시도도 득이 안 된다.
+
+## 후속 실측 21: 카메라 네이티브 색매트릭스 + DCP 프로필 (2026-07-25)
+
+**동기**: 후속 실측 9에서 차트로 피팅한 매트릭스가 libraw 기본 디코드의
+색채측정 오차를 7.58 -> 2.78로 줄였지만, 그 매트릭스는 Lightroom/ACR에
+넣을 수 없는 형태였다. `decode_raw()`가 `output_color=sRGB` +
+`use_camera_wb=True`를 쓰므로 libraw가 **이미** 자기 색매트릭스와 WB를
+적용한 결과를 다루기 때문이다 - 즉 그 매트릭스는 "libraw sRGB -> 참값
+sRGB" 보정이고, DCP의 `ColorMatrix1`이 요구하는 "XYZ(D50) -> 카메라
+네이티브 RGB"가 아니다. 그 자리에 넣으면 Lightroom이 다른 공간의 값으로
+해석해 조용히 틀린 색을 낸다.
+
+**방법**: `decode_raw_native()`(`output_color=raw` + `user_wb=[1,1,1,1]`)로
+libraw의 색변환·WB를 둘 다 우회한 카메라 네이티브 RGB를 얻고, 그 공간에서
+차트 24패치 vs XYZ(D50) 참조값으로 3×3을 피팅했다. 데이터는 후속 실측 9와
+같은 X2D II ColorChecker 차트 10장.
+
+libraw 내장 `rgb_xyz_matrix`의 방향(XYZ->cam인지 cam->XYZ인지)은 문서로
+단정할 수 없어 두 방향 다 적용해 실측으로 확정했다: 그대로 적용 ΔE00
+46.69, 역행렬 적용 ΔE00 23.41 -> **역행렬** 채택.
+
+**결과** (XYZ D50 공간 패치 평균 ΔE00, 이미지별 평균의 평균):
+
+| 방식 | ΔE00 |
+|---|---|
+| 보정 없음(네이티브를 XYZ로 간주) | 29.31 |
+| libraw 내장 매트릭스 | 23.41 |
+| 차트 매트릭스 in-sample(10장 pooled) | 2.74 |
+| **차트 매트릭스 leave-one-image-out CV** | **2.83** |
+
+libraw 대비 개선(CV 기준): **87.9%**
+
+**판정**: "차트 매트릭스가 libraw를 이겨서 .dcp 프로필을 생성했다
+(hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp)"
+
+**알려진 한계**:
+- **조명 미측정**: 기여받은 manifest의 `illuminant` 칼럼이 10장 전부
+  비어있다(이슈 #4에서 "measured illuminant"를 요청했으나 그 항목은 오지
+  않았다). `CalibrationIlluminant1`은 `AsShotNeutral`
+  [0.3688, 1.0000, 0.5917]에서 역산한 추정 CCT 6234K를 가장 가까운
+  EXIF LightSource enum 21(D65)로 매핑한
+  **추정값**이다. 그 조명에서 벗어난 촬영의 오차 증가량은 다른 조명
+  데이터가 없어 정량화할 수 없다.
+- **조명 조건 1개**: 10장 전부 94초 한 버스트라 dual-illuminant 보간이
+  불가능하다(`ColorMatrix2` 미사용).
+- **Lightroom 렌더링 미검증**: 생성 파일의 TIFF 구조 유효성(exiftool
+  파싱)과 수치 라운드트립은 검증했지만, Lightroom/ACR이 실제로 로드해서
+  의도한 색을 내는지는 개발 환경에 Adobe 제품이 없어 확인하지 못했다.
+- **`ForwardMatrix1` 미포함**: DNG 스펙상 카메라 중립점을 D50 백색점으로
+  정확히 매핑하는 정규화 제약이 있는데 그 구현을 검증할 방법이 없어
+  넣지 않았다(`ColorMatrix1`만 있는 프로필도 유효). `write_dcp()`는
+  옵션 인자로 지원한다.
+- **패치 24개 / 카메라 1대**: ColorChecker Classic(무채색 6 + 유채색 18)은
+  본격 프로파일링 타깃보다 훨씬 적어 차트에 없는 색역의 정확도는 알 수
+  없고, X2D II 100C 전용이다(`UniqueCameraModel`로 대상 명시).
+
+**기존 `raw_baseline_matrix`와의 관계**: 이 매트릭스는 `hasselblad.json`의
+`raw_baseline_matrix`를 대체하지 않는다. 그쪽은 "카메라 JPEG 룩 근사"가
+목적이고(후속 실측 9에서 확인: 차트 참값에 대고 재면 오히려 나빠지는 게
+정상), 이쪽은 색채측정 정확도가 목적인 별개 산출물이다. `hasselblad.json`은
+건드리지 않았다.
