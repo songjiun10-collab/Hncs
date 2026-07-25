@@ -206,20 +206,24 @@ Lightroom Classic/Camera Raw reads.
 python3 -m tools.analyze_camera_native_matrix   # fit + cross-validated comparison against libraw's built-in matrix
 ```
 
-Measured (patch-mean ΔE00 in XYZ D50): libraw's built-in matrix 23.41
+Measured (patch-mean ΔE00 in XYZ D50): libraw's built-in matrix 7.81
 -> chart-fit matrix **2.83** (leave-one-image-out cross-validation),
-87.9% better than libraw. Full numbers and caveats in
+63.8% better than libraw. Full numbers and caveats in
 `hybrid_engine/EVALUATION.md` ("후속 실측 21").
 
-**Known limitations**: (1) the illuminant at capture time was never
-measured (the contributed `manifest.csv`'s `illuminant` column is empty),
-so `CalibrationIlluminant1` is **estimated** back out of `AsShotNeutral`;
-(2) all 10 frames come from a single burst, so there's only one lighting
-condition and dual-illuminant interpolation isn't possible; (3) **whether
-Lightroom actually renders this file as intended is unverified** - there's
-no Adobe software in this project's dev environment, so only TIFF
-structural validity (via exiftool) and numeric round-tripping were
-checked; (4) X2D II 100C only (declared via `UniqueCameraModel`).
+**Known limitations**: (1) the scene illuminant at capture time is
+unrecoverable from this data - the contributed `manifest.csv`'s
+`illuminant` column is empty, and since the chart references are
+chromatically adapted to D50 before fitting, the resulting matrix is
+D50-referenced by construction, so `CalibrationIlluminant1` is set to
+**23 (D50)** to match the reference space, not a measured or assumed
+scene illuminant; (2) all 10 frames come from a single burst, so there's
+only one lighting condition and dual-illuminant interpolation isn't
+possible; (3) **whether Lightroom actually renders this file as intended
+is unverified** - there's no Adobe software in this project's dev
+environment, so only TIFF structural validity (via exiftool) and numeric
+round-tripping were checked; (4) X2D II 100C only (declared via
+`UniqueCameraModel`).
 
 ## Brand-signature discriminability check (research)
 

@@ -912,32 +912,47 @@ libraw의 색변환·WB를 둘 다 우회한 카메라 네이티브 RGB를 얻�
 차트 24패치 vs XYZ(D50) 참조값으로 3×3을 피팅했다. 데이터는 후속 실측 9와
 같은 X2D II ColorChecker 차트 10장.
 
-libraw 내장 `rgb_xyz_matrix`의 방향(XYZ->cam인지 cam->XYZ인지)은 문서로
-단정할 수 없어 두 방향 다 적용해 실측으로 확정했다: 그대로 적용 ΔE00
-46.69, 역행렬 적용 ΔE00 23.41 -> **역행렬** 채택.
+libraw 내장 `rgb_xyz_matrix`의 방향(XYZ->cam / cam->XYZ)과 벡터 규약
+(행/열)은 문서로 단정할 수 없어 네 후보를 전부 적용해 비교했다:
+`M` ΔE00 46.69, `inv(M)` ΔE00 23.41, `M.T` ΔE00 42.02,
+`inv(M).T` ΔE00 7.81 -> **`inv(M).T`** 채택.
+
+> **정정(2026-07-25, 최종 리뷰 이후)**: 이 절은 처음에 `M`/`inv(M)` 두
+> 후보만 시험해서 libraw ΔE00을 23.41, 개선폭을 87.9%로 잘못 기록했었다.
+> libraw의 `rgb_xyz_matrix`가 DNG `ColorMatrix1`과 같은 **열벡터** 규약인데
+> 이 프로젝트의 `apply_color_matrix()`는 **행벡터**로 적용하기 때문에,
+> 올바른 비교를 하려면 전치한 `M.T`/`inv(M).T`도 후보에 넣어야 했다. 같은
+> 실수가 `.dcp`에 쓴 `ColorMatrix1`에도 있었다(전치 누락) - 아래 결과와
+> 판정은 네 후보 전부를 실측 재비교하고 `.dcp`를 재생성한 뒤의 수치다.
+> 상세 유도는 `core/dcp_export.py`의 `write_dcp` docstring 참고.
 
 **결과** (XYZ D50 공간 패치 평균 ΔE00, 이미지별 평균의 평균):
 
 | 방식 | ΔE00 |
 |---|---|
 | 보정 없음(네이티브를 XYZ로 간주) | 29.31 |
-| libraw 내장 매트릭스 | 23.41 |
+| libraw 내장 매트릭스(`inv(M).T`) | 7.81 |
 | 차트 매트릭스 in-sample(10장 pooled) | 2.74 |
 | **차트 매트릭스 leave-one-image-out CV** | **2.83** |
 
-libraw 대비 개선(CV 기준): **87.9%**
+libraw 대비 개선(CV 기준): **63.8%**
 
 **판정**: "차트 매트릭스가 libraw를 이겨서 .dcp 프로필을 생성했다
 (hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp)"
 
 **알려진 한계**:
-- **조명 미측정**: 기여받은 manifest의 `illuminant` 칼럼이 10장 전부
-  비어있다(이슈 #4에서 "measured illuminant"를 요청했으나 그 항목은 오지
-  않았다). `CalibrationIlluminant1`은 `AsShotNeutral`
-  [0.3688, 1.0000, 0.5917]에서 역산한 추정 CCT 6234K를 가장 가까운
-  EXIF LightSource enum 21(D65)로 매핑한
-  **추정값**이다. 그 조명에서 벗어난 촬영의 오차 증가량은 다른 조명
-  데이터가 없어 정량화할 수 없다.
+- **장면 조명 복원 불가**: 기여받은 manifest의 `illuminant` 칼럼이 10장
+  전부 비어있다(이슈 #4에서 "measured illuminant"를 요청했으나 그 항목은
+  오지 않았다). 게다가 `reference_patches_xyz_d50()`이 참조값을 D50으로
+  색순응시킨 뒤 피팅하므로 매트릭스는 **구성상** D50 기준이고, 촬영 당시
+  장면 조명은 이 데이터에서 **복원 불가능**하다. 그래서
+  `CalibrationIlluminant1`은 매트릭스가 실제로 대응하는 참조 백색점인
+  **23(D50)**을 쓴다 - 장면 조명을 측정/가정한 값이 아니다.
+  `AsShotNeutral` [0.3688, 1.0000, 0.5917]에서 CCT를 역산하는 접근은
+  무효로 판명됐다(진단으로만 남김): `AsShotNeutral`과 무채색 패치에서
+  실측한 네이티브 중립색 [0.4094, 1.0000, 0.4940]이 채널별로
+  R×1.110/B×0.835만큼 어긋나(스케일 규약이 다름), 그 역산 xy/CCT는
+  의미가 없다.
 - **조명 조건 1개**: 10장 전부 94초 한 버스트라 dual-illuminant 보간이
   불가능하다(`ColorMatrix2` 미사용).
 - **Lightroom 렌더링 미검증**: 생성 파일의 TIFF 구조 유효성(exiftool
