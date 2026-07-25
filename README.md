@@ -207,6 +207,13 @@ python3 -m tools.classify_brand --features all  # Set B: + texture (21-dim)
 
 Texture's sharpening/micro_contrast use different formulas per brand (documented in `docs/project_structure.md` - Canon/Sony vs. Nikon/Leica/Pentax/Ricoh GR are on different scales), so if Set B scores higher than Set A, this result alone can't separate "genuine color difference" from "which formula was used." `leica` (45)/`pentax` (40)/`phaseone` (16) have thin samples, so those brands' recall figures are especially noisy.
 
+**And for fun**: a `predict` subcommand built on top of the same validated tool - feed it any photo and it ranks which of the 10 brands' centroids it lands closest to, by distance. Texture is left out (Set A only, tone+color+gamut) - the same caveat as above, since texture's per-brand formulas can't be reconstructed for a new photo. Since measured accuracy is only 19.6%, it never shows a fabricated confidence number (no "87% Sony") - just the distance ranking, with that accuracy figure always printed alongside both the console and HTML output.
+
+```
+python3 -m tools.classify_brand predict photo.jpg
+python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-contained static HTML with the photo embedded as base64
+```
+
 ## Goals / Philosophy
 
 - Parameters are grounded in **measured data** - population statistics,

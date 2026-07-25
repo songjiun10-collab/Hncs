@@ -313,6 +313,19 @@ Pentax/Ricoh GR 스케일 다름) Set B가 Set A보다 정확도가 높게 나�
 분리할 수 없다는 점을 유의. `leica`(45장)/`pentax`(40장)/`phaseone`(16장)은
 표본이 얇아 그 브랜드들의 recall은 특히 노이즈가 클 수 있다.
 
+**그리고 재미로**: 위 검증 도구 위에 얹은 `predict` 서브커맨드로, 아무
+사진이나 넣으면 그 사진이 10개 브랜드 중 어디에 가장 가까운지 거리
+순위를 보여준다. texture 없이 Set A(tone+color+gamut)만 쓴다 - 브랜드별
+texture 계산 공식이 유실돼 새 사진에 재현할 방법이 없어서다(위 캐비앗
+그대로). 실측 정확도가 19.6%밖에 안 되기 때문에 가짜 확률(예: "87%
+Sony")은 절대 표시하지 않고 거리 순위만 보여주며, 콘솔/HTML 결과물
+양쪽에 이 정확도 숫자를 항상 같이 출력한다.
+
+```
+python3 -m tools.classify_brand predict photo.jpg
+python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진을 base64로 내장한 자기완결적 정적 HTML
+```
+
 ## 목표 / 철학
 
 - 주관적인 "필감" 묘사가 아니라 population 통계, raw+jpeg 페어,
