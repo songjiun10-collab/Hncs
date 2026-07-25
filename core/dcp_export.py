@@ -62,9 +62,26 @@ def write_dcp(path, camera_model, profile_name, color_matrix_1,
         이게 없으면 Lightroom이 적용 대상을 판단할 수 없다.
     profile_name: Profile Browser에 표시될 이름.
     color_matrix_1: (3, 3) 또는 길이 9. DNG 정의상 **XYZ(D50) -> 카메라
-        네이티브 RGB** 방향이다 - 카메라 네이티브 -> XYZ로 피팅한
-        매트릭스를 넣으려면 호출부에서 역행렬을 취해 넘겨야 한다.
+        네이티브 RGB** 방향이고, **열벡터 규약**이다:
+        `color_matrix_1[i][j]`는 `native_col = color_matrix_1 @ xyz_col`
+        (표준 행렬-벡터 곱)을 만족하는 3x3의 i행 j열이다.
+
+        **주의 - 전치를 빠뜨리면 조용히 틀린 프로필이 나온다.** 이
+        프로젝트의 `hybrid_engine.core.raw_baseline.fit_color_matrix()`는
+        **행벡터 규약**으로 피팅한다(`xyz_row ≈ native_row @ M`,
+        `apply_color_matrix()`가 `features @ matrix`로 적용하는 것과 같은
+        규약). 그 `M`을 여기 넣으려면 역행렬만으로는 부족하고
+        **`np.linalg.inv(M).T`** 를 넘겨야 한다. 유도:
+        `xyz_row = native_row @ M` 를 전치하면
+        `xyz_col = M.T @ native_col` 이고, 이를 뒤집으면
+        `native_col = inv(M.T) @ xyz_col = inv(M).T @ xyz_col`.
+        `np.linalg.inv(M)`만 넘기면 전치된 매트릭스가 파일에 들어가고,
+        구조 검증(exiftool)과 수치 라운드트립은 전부 통과하지만
+        Lightroom이 내는 색만 틀리게 된다(실제로 한 번 발생한 버그다 -
+        `tests/test_dcp_export.py`의 실제 산출물 회귀 테스트가 잠금).
     calibration_illuminant_1: EXIF LightSource enum(예: 21=D65, 23=D50).
+        매트릭스가 어느 백색점 기준으로 피팅됐는지와 반드시 일치해야
+        한다 - XYZ(D50) 참조값에 피팅했다면 23(D50)이다.
     forward_matrix_1: 선택. 카메라 네이티브 -> XYZ(D50). DNG 스펙상
         카메라 중립점을 D50 백색점으로 정확히 매핑하는 정규화 제약이
         있는데 그 구현을 Lightroom으로 검증할 수 없어서 기본값은

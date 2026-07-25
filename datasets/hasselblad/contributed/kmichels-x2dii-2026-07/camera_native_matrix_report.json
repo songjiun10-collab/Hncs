@@ -14,12 +14,14 @@
   ],
   "camera_model": "Hasselblad X2D II 100C",
   "libraw_direction_delta_e": {
-    "as_is": 46.68757560359507,
-    "inverted": 23.41298241301115
+    "M": 46.68757560359507,
+    "inv(M)": 23.41298241301115,
+    "M.T": 42.02091444306331,
+    "inv(M).T": 7.813571382833578
   },
-  "libraw_direction_chosen": "inverted",
+  "libraw_direction_chosen": "inv(M).T",
   "no_correction_delta_e_mean": 29.312571890618027,
-  "libraw_matrix_delta_e_mean": 23.41298241301115,
+  "libraw_matrix_delta_e_mean": 7.813571382833578,
   "chart_matrix_in_sample_delta_e_mean": 2.7411690294426587,
   "chart_matrix_cv_delta_e_mean": 2.831563145049044,
   "chart_matrix_cv_delta_e_per_image": {
@@ -34,7 +36,7 @@
     "B_31333.3FR": 2.50991119052067,
     "B_31334.3FR": 2.5026790992945567
   },
-  "improvement_vs_libraw_pct": 87.90601259122171,
+  "improvement_vs_libraw_pct": 63.76096145649874,
   "chart_matrix_beats_libraw": true,
   "chart_matrix_in_sample": [
     [
@@ -53,37 +55,106 @@
       2.802203611443674
     ]
   ],
+  "dcp_color_matrix_1": [
+    [
+      0.47375910521230835,
+      -0.12124362529778289,
+      -0.054690083585459
+    ],
+    [
+      -0.3363057257677442,
+      0.9232931418859188,
+      0.1259169613761577
+    ],
+    [
+      -0.0425351232358106,
+      0.08997739561644674,
+      0.3699999056802853
+    ]
+  ],
   "libraw_cam_to_xyz": [
     [
       1.7332523442476488,
-      0.26363380156780636,
-      0.045023843112387774
-    ],
-    [
       0.6445952870824644,
-      0.9502031351308622,
-      -0.3386010548195894
+      -0.02460656998079903
     ],
     [
-      -0.02460656998079903,
-      -0.1821143802675917,
+      0.26363380156780636,
+      0.9502031351308622,
+      -0.1821143802675917
+    ],
+    [
+      0.045023843112387774,
+      -0.3386010548195894,
       1.7141607719990466
     ]
   ],
-  "estimated_illuminant": {
-    "as_shot_neutral": [
-      0.3687930491,
+  "measured_native_neutral_g_normalized": [
+    0.40938372736691025,
+    1.0,
+    0.4939620915929612
+  ],
+  "measured_native_neutral_per_patch": {
+    "white 9.5 (.05 D)": [
+      0.4112129061118182,
       1.0,
-      0.5916830682
+      0.4942755416071935
     ],
-    "neutral_xy": [
-      0.31722068766357375,
-      0.33437521457683483
+    "neutral 8 (.23 D)": [
+      0.4057780153062098,
+      1.0,
+      0.4951699595314791
     ],
-    "estimated_cct": 6234.390070523479,
-    "chosen_enum": 21,
-    "chosen_enum_name": "D65",
-    "chosen_enum_cct": 6504.0,
-    "note": "추정값 - 촬영 당시 조명이 실측되지 않았음(manifest illuminant 칼럼 공백)"
+    "neutral 6.5 (.44 D)": [
+      0.4070768880740883,
+      1.0,
+      0.49227343462113565
+    ],
+    "neutral 5 (.70 D)": [
+      0.4130317592467566,
+      1.0,
+      0.48863423310183435
+    ],
+    "neutral 3.5 (1.05 D)": [
+      0.40732870455913545,
+      1.0,
+      0.49674238657145137
+    ],
+    "black 2 (1.5 D)": [
+      0.41187409090345267,
+      1.0,
+      0.4966769941246736
+    ]
+  },
+  "calibration_illuminant": {
+    "chosen_enum": 23,
+    "chosen_enum_name": "D50",
+    "reason": "피팅 참조값이 XYZ(D50)이라 매트릭스가 구성상 D50 기준 - 촬영 당시 장면 조명을 측정/가정한 값이 아니고, 그 조명은 D50으로 색순응된 참조값에서 복원 불가능하다.",
+    "as_shot_neutral_diagnostic": {
+      "as_shot_neutral": [
+        0.3687930491,
+        1.0,
+        0.5916830682
+      ],
+      "measured_native_neutral_g_normalized": [
+        0.40938372736691025,
+        1.0,
+        0.4939620915929612
+      ],
+      "measured_over_as_shot_channel_scale": [
+        1.110063566452696,
+        1.0,
+        0.8348423643348075
+      ],
+      "cct_from_as_shot_neutral": 6234.390070523479,
+      "nearest_enum_from_that_cct": 21,
+      "nearest_enum_name_from_that_cct": "D65",
+      "conclusive": false,
+      "note": "진단 전용 - CalibrationIlluminant1으로 쓰지 않는다. AsShotNeutral의 채널별 스케일이 decode_raw_native() 출력과 일치하지 않는 것이 실측으로 확인돼(아래 channel_scale), 여기서 역산한 CCT는 유효한 추정이 아니다.",
+      "neutral_xy": [
+        0.31722068766357375,
+        0.33437521457683483
+      ]
+    }
   }
 }
