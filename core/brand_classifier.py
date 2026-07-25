@@ -132,6 +132,24 @@ def nearest_centroid_loo(X, y):
     return predictions
 
 
+def rank_brands_by_distance(query_vector, train_X, train_y):
+    """query_vector(D,)가 train_X/train_y(전체 훈련 풀, held-out 없음)
+    기준으로 각 브랜드 centroid와 표준화 공간에서 얼마나 가까운지
+    오름차순으로 정렬해서 반환. nearest_centroid_loo()와 달리 폴드마다
+    제외할 대상이 없다 - query_vector는 애초에 train_X에 속하지 않는
+    새로운 사진이라 리키지 문제 자체가 없다."""
+    train_y = np.asarray(train_y)
+    z = standardize(train_X, query_vector)
+    ranking = []
+    for brand in np.unique(train_y):
+        centroid_raw = train_X[train_y == brand].mean(axis=0)
+        centroid_z = standardize(train_X, centroid_raw)
+        dist = float(np.linalg.norm(z - centroid_z))
+        ranking.append((str(brand), dist))
+    ranking.sort(key=lambda pair: pair[1])
+    return ranking
+
+
 def confusion_matrix(y_true, y_pred, brands=BRANDS):
     """brands 순서로 정렬된 (len(brands), len(brands)) confusion matrix.
     matrix[i, j] = 실제 브랜드가 brands[i]인데 brands[j]로 예측된 개수."""
