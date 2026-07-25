@@ -1,9 +1,11 @@
 import io
 import json
 import os
+import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
+from unittest import mock
 
 import numpy as np
 
@@ -11,6 +13,7 @@ from core.brand_classifier import (
     load_signatures, extract_features, standardize, nearest_centroid_loo,
     confusion_matrix, classification_report, rank_brands_by_distance,
 )
+from tools.classify_brand import main as classify_brand_main
 
 
 def _write_signature_json(path, n_images, per_image):
@@ -240,6 +243,31 @@ class TestRankBrandsByDistance(unittest.TestCase):
         self.assertEqual(ranking[0][0], "B")
         distances = [dist for _, dist in ranking]
         self.assertEqual(distances, sorted(distances))
+
+
+class TestClassifyBrandCliFeaturesGuard(unittest.TestCase):
+    """--features는 predict 서브커맨드에서 지원하지 않음 - 조용히 무시하지
+    않고 argparse 에러(exit code 2)로 명확히 거부해야 한다."""
+
+    def test_features_all_with_predict_errors_out(self):
+        argv = ["classify_brand.py", "--features", "all", "predict", "photo.jpg"]
+        with mock.patch.object(sys, "argv", argv):
+            with redirect_stderr(io.StringIO()) as err:
+                with self.assertRaises(SystemExit) as ctx:
+                    classify_brand_main()
+        self.assertEqual(ctx.exception.code, 2)
+        self.assertIn("--features", err.getvalue())
+
+    def test_features_omitted_with_predict_runs_normally(self):
+        # --features를 아예 안 주면 여전히 predict가 정상 실행돼야 한다
+        # (가드가 오탐하지 않는지 확인) - run_predict 자체는 목으로 대체.
+        argv = ["classify_brand.py", "predict", "photo.jpg"]
+        fake_ranking = [("hasselblad", 1.0), ("sony", 2.0)]
+        with mock.patch.object(sys, "argv", argv), \
+                mock.patch("tools.classify_brand.run_predict", return_value=fake_ranking) as run_predict:
+            with redirect_stdout(io.StringIO()):
+                classify_brand_main()  # SystemExit이면 테스트가 실패한다
+        run_predict.assert_called_once_with("photo.jpg")
 
 
 if __name__ == "__main__":

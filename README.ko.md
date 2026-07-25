@@ -293,9 +293,13 @@ centroid 계산에서도 완전히 제외된다(리키지 없음). `npix`/`is_po
 지름길을 학습해버린다. `ricoh_gr`은 `color_signature.json`이 다른 10개
 브랜드와 달리 `hue_mean`이 아니라 `hue_median`을 저장하고 있어(같은
 통계가 아님) 비교 불가능하다고 판단해 분류 대상에서 아예 제외했다 -
-CLI 실행 시 매번 출력되는 안내 메시지 참고. 새 사진을 넣어 브랜드를
-예측하는 기능은 없음(설계 근거는
-`docs/superpowers/specs/2026-07-24-brand-classifier-design.md`).
+CLI 실행 시 매번 출력되는 안내 메시지 참고. 이 LOO 연구 검증 자체에는
+예측 모드가 없음(설계 근거는
+`docs/superpowers/specs/2026-07-24-brand-classifier-design.md`) - 별도의
+"재미용" 예측기(`rank_brands_by_distance()` in `core/brand_classifier.py`
+/ `tools/classify_brand.py predict`)는 몇 문단 아래와
+`docs/superpowers/specs/2026-07-25-brand-predict-fun-design.md`에 설명돼
+있다.
 
 ```
 python3 -m tools.classify_brand                # Set A: tone+color+gamut (15차원)

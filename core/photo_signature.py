@@ -16,14 +16,17 @@ docs/superpowers/specs/2026-07-25-brand-predict-fun-design.md).
 
 hue_mean은 기존 데이터와 같은 단위(OpenCV 원본 H 채널, 0~179 - 실제
 색상각의 절반)로 반환한다 - datasets/*/color_signature.json의 실측값이
-전부 이 범위(관측된 최댓값 179) 안에 있음을 확인하고 맞췄다. 원형평균
-자체는 실제 색상각 단위(0~360도, H*2)로 계산해서 wraparound을 올바르게
-처리한 뒤 다시 절반으로 접어 저장 단위에 맞춘다."""
+전부 이 범위(관측된 최댓값 171, 180 미만) 안에 있음을 확인하고 맞췄다.
+원형평균 자체는 실제 색상각 단위(0~360도, H*2)로 계산해서 wraparound을
+올바르게 처리한 뒤 다시 절반으로 접어 저장 단위에 맞춘다."""
 import cv2
 import numpy as np
 
 
 def compute_signature(img_bgr):
+    """img_bgr(OpenCV BGR ndarray) 한 장에서 tone/color/gamut 시그니처
+    필드를 계산해서 dict로 반환한다(texture 제외). 필드 정의와 근사
+    재구현의 한계는 위 모듈 docstring 참고."""
     gray = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
     hsv = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2HSV)
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
