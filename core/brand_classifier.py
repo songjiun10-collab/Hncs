@@ -1,9 +1,12 @@
 """11개 population-fit 브랜드의 이미 계산된 시그니처(datasets/<brand>/
 *_signature.json)만으로 브랜드 판별력을 검증하는 연구용 도구.
-새 사진을 입력받아 예측하는 기능은 없음 - 순수하게 "이 시그니처 데이터가
-브랜드를 실제로 구별할 만큼 결정력이 있는가"를 leave-one-out
-교차검증으로 확인하는 게 목적. 설계 근거는
-docs/superpowers/specs/2026-07-24-brand-classifier-design.md 참고.
+이 LOO 교차검증 자체는 예측 모드가 아님 - 순수하게 "이 시그니처 데이터가
+브랜드를 실제로 구별할 만큼 결정력이 있는가"를 확인하는 게 목적. 설계
+근거는 docs/superpowers/specs/2026-07-24-brand-classifier-design.md 참고.
+(별도의 "재미용" 예측 경로는 이 파일의 rank_brands_by_distance()가
+담당한다 - 새 사진 1장을 훈련 풀 전체 centroid와 비교하는 것으로,
+held-out 폴드가 없는 별개 문제다. 설계 근거:
+docs/superpowers/specs/2026-07-25-brand-predict-fun-design.md.)
 
 이 모듈 자체는 BRANDS의 11개 브랜드 전부를 다룰 수 있지만, 실제 분류
 실행은 tools/classify_brand.py가 ricoh_gr을 제외하고 10개 브랜드로만

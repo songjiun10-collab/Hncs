@@ -40,6 +40,11 @@ EXCLUDED_BRANDS = {"ricoh_gr"}
 
 CLASSIFIED_BRANDS = [b for b in BRANDS if b not in EXCLUDED_BRANDS]
 
+_IMAGE_MIME_TYPES = {
+    "jpg": "jpeg", "jpeg": "jpeg", "png": "png", "webp": "webp",
+    "gif": "gif", "bmp": "bmp", "tif": "tiff", "tiff": "tiff",
+}
+
 
 def load_all_features(feature_set):
     """CLASSIFIED_BRANDS(ricoh_gr 제외 10개 브랜드) 전체를 로드해서
@@ -122,8 +127,8 @@ def write_predict_html(photo_path, ranking, html_path):
     인터랙티브 JS 엔진은 가져오지 않는다(이 리포트는 정적 결과물)."""
     with open(photo_path, "rb") as f:
         photo_b64 = base64.b64encode(f.read()).decode("ascii")
-    ext = os.path.splitext(photo_path)[1].lstrip(".").lower() or "jpeg"
-    mime = "jpeg" if ext in ("jpg", "jpeg") else ext
+    ext = os.path.splitext(photo_path)[1].lstrip(".").lower()
+    mime = _IMAGE_MIME_TYPES.get(ext, "jpeg")
 
     top_brand, top_dist = ranking[0]
     rows = "\n".join(
@@ -141,7 +146,7 @@ def write_predict_html(photo_path, ranking, html_path):
 <title>브랜드 시그니처 예측 (재미용)</title>
 <style>
 :root{{
-  --bg:#0a0a0a; --bg2:#101010; --bg3:#181817;
+  --bg:#0a0a0a; --bg2:#101010;
   --fg:#f2f2f0; --fg2:#c9c9c4; --mut:#8b8b86; --dim:#4c4c48;
   --line:#232321; --line2:#373733;
   --mono:ui-monospace,SFMono-Regular,'IBM Plex Mono',monospace;
@@ -210,7 +215,7 @@ footer{{margin-top:40px;font-family:var(--mono);font-size:.62rem;color:var(--dim
     </div>
   </div>
   <footer>tools/classify_brand.py predict &middot; Set A(tone+color+gamut)만 사용, texture 미지원<br>
-  10개 브랜드 852장 population 시그니처 기준 leave-one-out nearest-centroid</footer>
+  10개 브랜드 852장 population 시그니처 전체(held-out 없음) centroid까지 거리 - leave-one-out 아님. 위 19.6%는 report 모드(원본 데이터)에서 LOO로 측정한 일반 수치이며, 이 사진 시그니처는 core/photo_signature.py의 근사 재구현이라 실제 정확도는 다를 수 있음</footer>
 </div>
 </body></html>"""
     with open(html_path, "w", encoding="utf-8") as f:
@@ -219,7 +224,7 @@ footer{{margin-top:40px;font-family:var(--mono);font-size:.62rem;color:var(--dim
 
 def main():
     parser = argparse.ArgumentParser(description="브랜드 시그니처 판별기 - leave-one-out 결정력 검증 / 새 사진 브랜드 순위(재미용)")
-    parser.add_argument("--features", choices=["tone_color_gamut", "all"], default="tone_color_gamut",
+    parser.add_argument("--features", choices=["tone_color_gamut", "all"], default=None,
                          help="tone_color_gamut(기본, Set A) 또는 all(Set B, texture 포함) - report 모드에만 적용")
     parser.add_argument("--csv", default=None, help="confusion matrix를 CSV로도 저장 - report 모드에만 적용")
 
@@ -232,6 +237,9 @@ def main():
 
     args = parser.parse_args()
 
+    if args.command == "predict" and args.features is not None:
+        parser.error("--features는 predict에서 지원하지 않음 - Set A(tone+color+gamut)만 지원")
+
     if args.command == "predict":
         ranking = run_predict(args.photo)
         print_predict_report(ranking)
@@ -240,12 +248,13 @@ def main():
             print(f"\n저장됨: {args.html}")
         return
 
+    feature_set = args.features or "tone_color_gamut"
     print(
         f"note: ricoh_gr excluded - color_signature.json uses hue_median instead of "
         f"hue_mean, not comparable to the other {len(CLASSIFIED_BRANDS)} brands' hue feature"
     )
-    matrix, report = run(args.features)
-    print_report(matrix, report, args.features)
+    matrix, report = run(feature_set)
+    print_report(matrix, report, feature_set)
     if args.csv:
         write_csv(matrix, args.csv)
         print(f"\n저장됨: {args.csv}")
