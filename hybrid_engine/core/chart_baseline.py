@@ -25,6 +25,7 @@ import numpy as np
 import colour
 
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
+D50_XY = colour.CCS_ILLUMINANTS["CIE 1931 2 Degree Standard Observer"]["D50"]
 
 # 표준 4x6 ColorChecker Classic 레이아웃의 canonical 순서 (row-major,
 # dark skin이 좌상단). colour-science 데이터셋과 cv2.mcc의 getRefColors()
@@ -55,6 +56,41 @@ def reference_patches_linear_srgb():
         apply_cctf_encoding=False,
     )
     return rgb_linear
+
+
+def reference_patches_xyz_d50():
+    """ColorChecker Classic 24패치의 공식 참조값을 XYZ(D50)로 변환해서
+    반환. (24, 3) ndarray, PATCH_NAMES와 같은 순서.
+
+    reference_patches_linear_srgb()가 sRGB 프라이머리/D65로 가는 것과
+    달리 이건 XYZ D50으로 간다 - Adobe DNG/DCP 프로필의 기준 공간이
+    XYZ D50이기 때문(ColorMatrix1이 정의상 XYZ(D50) -> 카메라 네이티브
+    RGB). colour-science 데이터셋은 CIE Illuminant C 기준이라 Bradford
+    CAT으로 D50에 색순응시킨다."""
+    cc = colour.CCS_COLOURCHECKERS["ColorChecker24 - After November 2014"]
+    xyY = np.array([cc.data[name] for name in PATCH_NAMES])
+    XYZ = colour.xyY_to_XYZ(xyY)
+    return colour.chromatic_adaptation(
+        XYZ,
+        colour.xy_to_XYZ(cc.illuminant),
+        colour.xy_to_XYZ(D50_XY),
+        method="Von Kries",
+        transform="Bradford",
+    )
+
+
+def patch_delta_e_xyz_d50(samples_xyz, reference_xyz=None, method="CIE 2000"):
+    """XYZ(D50) 공간의 (N, 3) 샘플과 참조값 사이 패치별 ΔE00.
+    reference 생략 시 reference_patches_xyz_d50()를 쓴다.
+
+    patch_delta_e()와 별개 함수인 이유: 그쪽은 선형 sRGB 입력을 D65
+    백색점 기준으로 Lab 변환하는데, 이쪽은 입력이 이미 XYZ이고 백색점도
+    D50이라 변환 경로가 다르다."""
+    if reference_xyz is None:
+        reference_xyz = reference_patches_xyz_d50()
+    lab_a = colour.XYZ_to_Lab(samples_xyz, illuminant=D50_XY)
+    lab_b = colour.XYZ_to_Lab(reference_xyz, illuminant=D50_XY)
+    return np.asarray(colour.delta_E(lab_a, lab_b, method=method))
 
 
 def _detect_chart_bgr8(bgr_u8):
