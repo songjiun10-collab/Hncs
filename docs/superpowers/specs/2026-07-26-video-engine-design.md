@@ -130,7 +130,7 @@ white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP)` 형태로 이 값들을
 패턴(입력 경로, 출력 경로, 옵션 인자):
 
 ```
-python3 -m tools.video_engine input.mp4 output.mp4 --brand fuji
+python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
 ```
 
 핵심 흐름:

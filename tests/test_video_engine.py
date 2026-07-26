@@ -1,4 +1,6 @@
+import inspect
 import os
+import shutil
 import tempfile
 import unittest
 
@@ -55,6 +57,7 @@ class TestBrandVideoParams(unittest.TestCase):
 class TestProcessVideo(unittest.TestCase):
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
         self.input_path = os.path.join(self.tmpdir, "input.mp4")
         self.output_path = os.path.join(self.tmpdir, "output.mp4")
         _make_synthetic_video(self.input_path)
@@ -77,6 +80,7 @@ class TestProcessVideo(unittest.TestCase):
                           cap_out.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.assertEqual(cap_in.get(cv2.CAP_PROP_FRAME_COUNT),
                           cap_out.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.assertEqual(cap_in.get(cv2.CAP_PROP_FPS), cap_out.get(cv2.CAP_PROP_FPS))
         cap_in.release()
         cap_out.release()
 
@@ -126,7 +130,8 @@ class TestVideoModeReducesFlickerVsPhotoMode(unittest.TestCase):
         toe_lift, shoulder_start, white_point = brand_video_params("canon")
 
         def frame_to_frame_variation(processed_frames):
-            means = [f[:, :, 0].astype(np.float64).mean() for f in processed_frames]
+            means = [cv2.cvtColor(f, cv2.COLOR_BGR2GRAY).astype(np.float64).mean()
+                     for f in processed_frames]
             diffs = [abs(means[i + 1] - means[i]) for i in range(len(means) - 1)]
             return float(np.mean(diffs))
 
@@ -138,6 +143,20 @@ class TestVideoModeReducesFlickerVsPhotoMode(unittest.TestCase):
 
         self.assertLess(frame_to_frame_variation(video_outputs),
                          frame_to_frame_variation(photo_outputs))
+
+
+class TestBrandFunctionsArePurePassthroughs(unittest.TestCase):
+    def test_every_brand_look_is_a_pure_population_fit_passthrough(self):
+        from core.engine import apply_population_fit_look
+        from tools.video_engine import _BRAND_FUNCTIONS, brand_video_params
+
+        img = np.random.default_rng(3).integers(0, 255, (64, 64, 3), dtype=np.uint8)
+        for name, fn in _BRAND_FUNCTIONS.items():
+            with self.subTest(brand=name):
+                clahe_clip = inspect.signature(fn).parameters["clahe_clip"].default
+                np.testing.assert_array_equal(
+                    fn(img),
+                    apply_population_fit_look(img, *brand_video_params(name), clahe_clip))
 
 
 if __name__ == "__main__":
