@@ -41,3 +41,21 @@ def apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, cl
     l = cv2.LUT(l, lut)
 
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+def apply_population_fit_look_video_frame(img_bgr, toe_lift, shoulder_start, white_point):
+    """apply_population_fit_look()의 비디오 전용 변형 - CLAHE(프레임별
+    적응형 로컬 대비 보정)를 생략하고 톤 LUT만 적용한다. CLAHE는 프레임마다
+    로컬 히스토그램을 새로 계산해서 비디오에서 깜빡임을 유발하지만, 이
+    함수가 쓰는 film_curve() 기반 톤 LUT는 브랜드 고정 파라미터로만
+    계산되고 프레임 내용과 무관해 시간적으로 안정적이다. 사진 모드
+    apply_population_fit_look()과 동일한 출력이 아니다(로컬 대비가 약함)."""
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
