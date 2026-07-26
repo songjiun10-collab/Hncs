@@ -247,6 +247,16 @@ python3 -m tools.classify_brand predict photo.jpg
 python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-contained static HTML with the photo embedded as base64
 ```
 
+## Video engine (frame-by-frame, engineering reuse - not a new measurement)
+
+`tools/video_engine.py` applies an already-measured population-fit brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement, it reuses the 10 population-fit brands' `apply_*_look()` (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony; Fujifilm and Hasselblad use different pipelines and are out of scope for this CLI - see [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md)).
+
+```
+python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+```
+
+**Known limitations**: (1) audio tracks are not preserved (this environment has no `ffmpeg` CLI/`moviepy`/audio-mux tooling - `cv2`'s built-in FFmpeg only covers video frames); (2) the video path skips CLAHE (per-frame adaptive local-contrast correction) to avoid inter-frame flicker, so its output is not identical to the photo-mode `apply_*_look()`; (3) this is not a video-specific color-science measurement - whether a camera brand actually renders video differently from its still JPEGs (different tone curve, sharpening, etc.) is unverified; (4) only validated against synthetic test video in this environment - no real camera mp4/mov sample was available for a smoke test.
+
 ## Browser demo (not measured data)
 
 [`docs/demo/hncs_convert_demo.html`](docs/demo/hncs_convert_demo.html) is a standalone, offline-capable page that re-renders an uploaded photo's colors per brand entirely in the browser (canvas-based tone curve + saturation/temperature). **Its per-brand parameters are hand-picked for visual effect, not derived from this repo's measured population data or its `apply_*` pipelines** - the page states this prominently at the top. Open the file directly in a browser; no build step or server needed.

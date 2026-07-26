@@ -358,6 +358,16 @@ python3 -m tools.classify_brand predict photo.jpg
 python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진을 base64로 내장한 자기완결적 정적 HTML
 ```
 
+## 비디오 엔진 (프레임 단위, 기존 측정 재사용 - 새 측정 아님)
+
+`tools/video_engine.py`는 이미 측정된 population-fit 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않고 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 `apply_*_look()`을 재사용한다(Fujifilm/Hasselblad는 별도 파이프라인이라 이 CLI 범위 밖 - [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md) 참고).
+
+```
+python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+```
+
+**알려진 한계**: (1) 오디오 트랙 미보존(이 환경에 `ffmpeg` CLI/`moviepy` 등 오디오 mux 도구가 없음 - `cv2` 내장 FFmpeg는 비디오 프레임만 다룸); (2) 비디오 경로는 프레임 간 깜빡임을 피하려고 CLAHE(프레임별 적응형 로컬 대비 보정)를 생략해서 사진 모드 `apply_*_look()`과 동일한 출력이 아님; (3) 비디오 전용 색과학 측정이 아님 - 카메라 브랜드가 정지 JPEG와 실제 영상에서 다른 색처리(톤커브/샤프닝 등)를 쓸 수 있다는 점은 검증되지 않음; (4) 이 환경에 실제 카메라 mp4/mov 샘플이 없어 합성 테스트 비디오로만 검증됨.
+
 ## 브라우저 데모 (실측 데이터 아님)
 
 [`docs/demo/hncs_convert_demo.html`](docs/demo/hncs_convert_demo.html)은 업로드한 사진의 색감을 브랜드별로 브라우저에서만(캔버스 기반 톤 커브 + 채도/색온도) 재렌더링하는 독립형 오프라인 페이지입니다. **브랜드별 파라미터는 시각적 효과를 위해 임의로 만든 값이며, 이 저장소가 실측한 population 데이터나 `apply_*` 파이프라인에서 나온 값이 아닙니다** - 페이지 상단에 이 사실을 명시하고 있습니다. 빌드나 서버 없이 파일을 브라우저에서 바로 열면 됩니다.
