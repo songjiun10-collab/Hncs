@@ -165,14 +165,25 @@ DNG 스펙상 ForwardMatrix는 카메라 중립점을 D50 백색점으로 정확
 
 ## 알려진 한계 (전부 문서화 대상)
 
-1. **illuminant 미측정.** `datasets/.../manifest.csv`의 `illuminant`
+1. **장면 조명 복원 불가.** `datasets/.../manifest.csv`의 `illuminant`
    칼럼이 10장 전부 비어있다(이슈 #4에서 "measured illuminant (with the
-   illuminant noted)"를 요청했으나 그 항목은 오지 않았다). 따라서
-   `CalibrationIlluminant1`은 `AsShotNeutral`(0.3688, 1, 0.5917)에서
-   역산한 **추정** 색온도를 가장 가까운 EXIF LightSource enum으로 매핑해
-   넣고, "측정값 아님/추정" 라벨을 붙인다. 그 조명에서 벗어난 촬영에서는
-   오차가 커지는데, 다른 조명 데이터가 없어 **그 증가량을 정량화할 수
-   없다**.
+   illuminant noted)"를 요청했으나 그 항목은 오지 않았다).
+
+   > **정정(2026-07-25, 최종 리뷰 이후)**: 이 항목은 원래 `CalibrationIlluminant1`을
+   > `AsShotNeutral`(0.3688, 1, 0.5917)에서 역산한 추정 CCT로 정한다고
+   > 적혀 있었다. 구현 후 `.dcp`의 `ColorMatrix1`에서 전치 누락 버그를
+   > 잡던 중, 이 역산 자체도 무효였음이 드러났다: `AsShotNeutral`의
+   > 채널별 스케일이 `decode_raw_native()` 출력과 일치하지 않아(R×1.11,
+   > B×0.83, 무채색 패치 실측으로 확인) CCT 역산이 의미가 없었다. 게다가
+   > `reference_patches_xyz_d50()`이 참조값을 D50으로 색순응시킨 뒤
+   > 피팅하므로 매트릭스는 애초에 **구성상** D50 기준이라, 촬영 당시 장면
+   > 조명은 이 데이터에서 **복원 자체가 불가능**하다(단순히 "측정 안 됨"
+   > 보다 강한 진술). 그래서 `CalibrationIlluminant1`은 매트릭스가 실제로
+   > 대응하는 참조 백색점인 **23(D50)**으로 고정한다 - 장면 조명을
+   > 측정/가정한 값이 아니다. `AsShotNeutral` CCT 역산은 "결론 없음"
+   > 진단으로만 리포트 JSON에 남긴다. 상세: `tools/analyze_camera_native_matrix.py`의
+   > `_calibration_illuminant()`, `hybrid_engine/EVALUATION.md`의
+   > "후속 실측 21".
 2. **조명 조건 1개.** 10장 전부 94초 한 버스트다(manifest 기록). 단일
    illuminant 프로필만 만들 수 있고, 조명 간 보간(dual-illuminant)은
    불가능하다.

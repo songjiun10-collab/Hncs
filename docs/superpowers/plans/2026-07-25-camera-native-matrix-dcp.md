@@ -15,6 +15,13 @@
 - **DCP 프로필 파일 생성은 Phase 1 결과에 게이트.** 차트 피팅 매트릭스가 leave-one-image-out 교차검증 기준으로 libraw 내장 매트릭스를 이기지 못하면 `.dcp` 파일을 생성/커밋하지 않는다. `core/dcp_export.py` writer 코드 자체는 결과와 무관하게 만들어 남긴다(매트릭스를 인자로 받는 범용 도구).
 - **`ForwardMatrix1`은 기본적으로 넣지 않는다.** `write_dcp()`가 옵션 인자로 지원하되 기본값은 `None`. DNG 스펙상 ForwardMatrix는 카메라 중립점을 D50 백색점으로 정확히 매핑하는 정규화 제약이 있고 이 환경에서 Lightroom으로 확인할 방법이 없다. `ColorMatrix1`만 있는 프로필도 유효하므로, 추측해서 넣기보다 빼는 쪽을 택한다.
 - **`CalibrationIlluminant1`은 추정값이며 그렇게 라벨링한다.** manifest의 `illuminant` 칼럼이 10장 전부 비어있어(측정 안 됨) `AsShotNeutral`에서 역산한 추정 CCT를 가장 가까운 EXIF LightSource enum으로 매핑한다.
+  [정정(최종 리뷰 이후): 이 접근은 폐기됐다. `AsShotNeutral`의 채널별
+  스케일이 `decode_raw_native()` 출력과 일치하지 않아(실측으로 확인)
+  CCT 역산이 무효였다. 참조값이 D50으로 색순응된 뒤 피팅되므로 매트릭스는
+  구성상 D50 기준이고, 촬영 당시 장면 조명은 이 데이터에서 복원
+  불가능하다(단순 "미측정"보다 강한 진술). `CalibrationIlluminant1`은
+  **23(D50)**으로 고정하고, `AsShotNeutral` CCT 역산은 "결론 없음" 진단으로만
+  리포트에 남긴다.]
 - **Lightroom 실제 렌더링은 미검증으로 남는다.** 구조 검증(exiftool)과 수학 검증(라운드트립)만 가능. 코드 docstring과 문서에 "미검증" 명시(프로젝트 기존 관례).
 - 테스트는 `unittest.TestCase` 스타일(프로젝트 관례, pytest 미사용).
 - 각 태스크 종료 시 `python3 -m unittest discover -s tests`가 그린이어야 한다(현재 347개).
@@ -553,6 +560,19 @@ if __name__ == "__main__":
     main()
 ```
 
+> **정정(2026-07-25, 최종 리뷰 이후)**: 위 코드 블록의 `_estimate_illuminant()`/
+> `illuminant = _estimate_illuminant(as_shot, chart_m)`/
+> `report["estimated_illuminant"] = illuminant` 부분은 폐기됐다(`:404`의
+> 정정 노트, 이 파일 상단 Global Constraints의 정정 노트 참고). 실제
+> `tools/analyze_camera_native_matrix.py`는 대신 `_measured_native_neutral()`
+> + `_calibration_illuminant()`를 쓰고, 리포트 키도 `"estimated_illuminant"`가
+> 아니라 `"calibration_illuminant"`(+ `"measured_native_neutral_g_normalized"`,
+> `"measured_native_neutral_per_patch"`, `"dcp_color_matrix_1"`)다 - 이
+> 파일 상단 Task 3의 "Produces" 줄과 Task 5 Step 1/2의 스니펫이 이미 이
+> 새 키 이름을 쓰고 있다. 위 코드 블록은 원래 작성된 형태를 그대로 남겨둔
+> 역사적 기록이고, 실제 소스는 `tools/analyze_camera_native_matrix.py`를
+> 참고할 것.
+
 - [ ] **Step 2: 실행 (10장 100MP RAW 디코드 - 수 분 소요)**
 
 Run: `python3 -m tools.analyze_camera_native_matrix`
@@ -562,7 +582,8 @@ Expected: 예외 없이 완주하고 위 형식의 표 + `camera_native_matrix_r
 - libraw 방향 판정 결과(`M` / `inv(M)` / `M.T` / `inv(M).T` 4후보, 각 ΔE)
 - 네 가지 ΔE(보정 없음 / libraw / in-sample / CV)
 - `improvement_vs_libraw_pct`와 `chart_matrix_beats_libraw`(True/False) - **이게 Task 5의 프로필 생성 게이트**
-- 추정된 CalibrationIlluminant enum과 CCT
+- `calibration_illuminant`(23/D50 고정, 근거는 실제 소스 참고) - [정정: 원래
+  "추정된 CalibrationIlluminant enum과 CCT"였으나 그 추정 접근은 폐기됨]
 
 **차트 검출이 2장 미만만 성공하면** 멈추고 보고할 것(네이티브 이미지에서 검출이 예상보다 불안정하다는 뜻 - 설계 단계에서 1장은 성공 확인했으나 전수는 미확인).
 
@@ -1084,6 +1105,15 @@ libraw 대비 <improvement>%. 상세 수치와 한계는
 100C 전용(`UniqueCameraModel`로 대상 명시).
 ```
 
+> **정정(2026-07-25, 최종 리뷰 이후)**: 위 템플릿의 한계 ①번은 원래
+> `CalibrationIlluminant1`이 `AsShotNeutral`에서 역산한 추정값이라고 썼는데,
+> 그 역산 접근 자체가 무효로 판명됐다(Global Constraints의 정정 노트 참고).
+> 실제 커밋된 README.ko.md는 "장면 조명 복원 불가 - 매트릭스가 D50 참조값
+> 기준으로 구성상 D50이라 `CalibrationIlluminant1`을 23(D50)으로 씀"으로
+> 바뀌었다. libraw ΔE00도 이 템플릿이 만들어질 당시 2후보 방향 탐색만
+> 반영해 실제보다 훨씬 나쁘게 나왔었다(23.41 vs 정정 후 7.81) - 실제
+> 커밋된 README.ko.md의 수치를 참고할 것.
+
 - [ ] **Step 5: README.md에 같은 절의 영어판 추가**
 
 "## Photoshop / DaVinci Resolve preset export (.cube LUT)" 절의 Lightroom
@@ -1120,6 +1150,17 @@ no Adobe software in this project's dev environment, so only TIFF
 structural validity (via exiftool) and numeric round-tripping were
 checked; (4) X2D II 100C only (declared via `UniqueCameraModel`).
 ```
+
+> **Correction (2026-07-25, after final review)**: limitation (1) above
+> originally said `CalibrationIlluminant1` was estimated back out of
+> `AsShotNeutral`; that back-calculation turned out to rest on a false
+> scale-matching assumption (see the Global Constraints correction note).
+> The committed README.md now reads "the scene illuminant is
+> unrecoverable from this data - the matrix is D50-referenced by
+> construction, so `CalibrationIlluminant1` is set to 23 (D50)". The
+> libraw ΔE00 figure was also wrong in this template (it reflected an
+> incomplete 2-of-4 matrix-orientation search, 23.41 vs the corrected
+> 7.81) - see the actual committed README.md for the real numbers.
 
 - [ ] **Step 6: `docs/project_structure.md`/`.en.md`에 행 추가**
 
