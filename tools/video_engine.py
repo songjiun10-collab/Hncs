@@ -136,6 +136,8 @@ def mux_audio(video_only_path, audio_source_path, final_output_path):
         capture_output=True, text=True,
     )
     if result.returncode != 0:
+        if os.path.exists(final_output_path):
+            os.remove(final_output_path)
         raise IOError(f"오디오 remux 실패 (ffmpeg exit {result.returncode}): "
                        f"{result.stderr[-500:]}")
 
@@ -144,6 +146,10 @@ def process_video_with_audio(input_path, output_path, brand_name, progress_every
     """process_video()로 색보정한 뒤 input_path의 오디오를 다시 입혀서
     output_path에 쓴다 - CLI의 기본 진입점. process_video() 자체는
     수정하지 않는다."""
+    if not output_path.lower().endswith(".mp4"):
+        raise ValueError(
+            f"출력 파일은 .mp4만 지원함: {output_path!r}"
+        )
     tmp_dir = tempfile.mkdtemp()
     tmp_video_only = os.path.join(tmp_dir, "video_only.mp4")
     try:

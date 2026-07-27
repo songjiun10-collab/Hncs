@@ -255,7 +255,7 @@ python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-con
 python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
 ```
 
-**Known limitations**: (1) audio is preserved by default via a lossless remux step (`imageio-ffmpeg`'s bundled static ffmpeg binary, `-c:v copy -c:a copy` - no re-encoding, first audio track only, no opt-out flag); (2) the video path skips CLAHE (per-frame adaptive local-contrast correction) to avoid inter-frame flicker, so its output is not identical to the photo-mode `apply_*_look()`; (3) this is not a video-specific color-science measurement - whether a camera brand actually renders video differently from its still JPEGs (different tone curve, sharpening, etc.) is unverified; (4) only validated against synthetic test video in this environment - no real camera mp4/mov sample was available for a smoke test.
+**Known limitations**: (1) audio is preserved by default via a lossless remux step (`imageio-ffmpeg`'s bundled static ffmpeg binary, `-c:v copy -c:a copy` - no re-encoding, first audio track only, no opt-out flag), and a remux failure aborts the whole run rather than falling back to a silent video; (2) the video path skips CLAHE (per-frame adaptive local-contrast correction) to avoid inter-frame flicker, so its output is not identical to the photo-mode `apply_*_look()`; (3) this is not a video-specific color-science measurement - whether a camera brand actually renders video differently from its still JPEGs (different tone curve, sharpening, etc.) is unverified; (4) only validated against synthetic test video in this environment - no real camera mp4/mov sample was available for a smoke test.
 
 ## Browser demo (not measured data)
 

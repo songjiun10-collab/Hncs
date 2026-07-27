@@ -248,6 +248,22 @@ class TestMuxAudio(unittest.TestCase):
         with self.assertRaises(IOError):
             mux_audio(video_only, audio_source, output)
 
+    def test_mux_failure_removes_stub_output_file(self):
+        """ffmpeg의 -y는 실패 전에 output을 먼저 truncate하므로, 실패한
+        mux_audio() 호출이 final_output_path에 이미 존재하던 파일을 깨진
+        stub으로 남겨두면 안 된다 - 성공 여부를 os.path.exists()로만
+        확인하는 순진한 호출자를 속일 수 있기 때문."""
+        video_only = os.path.join(self.tmpdir, "does_not_exist.mp4")
+        audio_source = os.path.join(self.tmpdir, "also_does_not_exist.mp4")
+        output = os.path.join(self.tmpdir, "output.mp4")
+        with open(output, "wb") as f:
+            f.write(b"dummy pre-existing content")
+
+        with self.assertRaises(IOError):
+            mux_audio(video_only, audio_source, output)
+
+        self.assertFalse(os.path.exists(output))
+
 
 class TestProcessVideoWithAudio(unittest.TestCase):
     def setUp(self):
@@ -274,7 +290,7 @@ class TestProcessVideoWithAudio(unittest.TestCase):
         self.assertGreater(frame_count, 0)
         self.assertFalse(_has_audio_stream(output_path))
 
-    def test_output_frames_are_color_graded(self):
+    def test_output_differs_from_raw_input(self):
         input_path = os.path.join(self.tmpdir, "input.mp4")
         output_path = os.path.join(self.tmpdir, "output.mp4")
         _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
@@ -291,16 +307,71 @@ class TestProcessVideoWithAudio(unittest.TestCase):
         cap_in.release()
         cap_out.release()
 
+    def test_output_video_matches_direct_process_video_output(self):
+        """mux_audio()는 -c:v copy(재인코딩 없음)를 쓰므로
+        process_video_with_audio()의 비디오 스트림은 같은 입력/브랜드에
+        대한 process_video() 단독 출력과 픽셀 단위로 동일해야 한다 - 이
+        비교라야 색보정 자체가 no-op이 되는 회귀를 잡는다(raw 입력과
+        비교하면 h264->mp4v 코덱 교체만으로도 항상 프레임이 달라지므로
+        무의미하다)."""
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        direct_output_path = os.path.join(self.tmpdir, "direct_output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        process_video_with_audio(input_path, output_path, "canon")
+        process_video(input_path, direct_output_path, "canon")
+
+        cap_out = cv2.VideoCapture(output_path)
+        cap_direct = cv2.VideoCapture(direct_output_path)
+        ok_out, frame_out = cap_out.read()
+        ok_direct, frame_direct = cap_direct.read()
+        self.assertTrue(ok_out)
+        self.assertTrue(ok_direct)
+        np.testing.assert_array_equal(frame_out, frame_direct)
+        cap_out.release()
+        cap_direct.release()
+
     def test_no_leftover_temp_directories(self):
+        scratch_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, scratch_root, ignore_errors=True)
+        original_tempdir = tempfile.tempdir
+        tempfile.tempdir = scratch_root
+        self.addCleanup(setattr, tempfile, "tempdir", original_tempdir)
+
         input_path = os.path.join(self.tmpdir, "input.mp4")
         output_path = os.path.join(self.tmpdir, "output.mp4")
         _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
 
-        before = set(os.listdir(tempfile.gettempdir()))
         process_video_with_audio(input_path, output_path, "canon")
-        after = set(os.listdir(tempfile.gettempdir()))
+        self.assertEqual(os.listdir(scratch_root), [])
 
-        self.assertEqual(before, after)
+    def test_no_leftover_temp_directories_after_mux_failure(self):
+        scratch_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, scratch_root, ignore_errors=True)
+        original_tempdir = tempfile.tempdir
+        tempfile.tempdir = scratch_root
+        self.addCleanup(setattr, tempfile, "tempdir", original_tempdir)
+
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        # sabotage: point output_path at a directory that doesn't exist so mux_audio() fails
+        bad_output_path = os.path.join(self.tmpdir, "no_such_subdir", "output.mp4")
+        with self.assertRaises((IOError, OSError)):
+            process_video_with_audio(input_path, bad_output_path, "canon")
+        self.assertEqual(os.listdir(scratch_root), [])
+
+    def test_non_mp4_output_extension_raises_value_error_before_processing(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.webm")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        with self.assertRaises(ValueError):
+            process_video_with_audio(input_path, output_path, "canon")
+
+        self.assertFalse(os.path.exists(output_path))
 
     def test_unsupported_brand_raises_value_error(self):
         input_path = os.path.join(self.tmpdir, "input.mp4")
