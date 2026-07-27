@@ -1,13 +1,15 @@
 import inspect
 import os
 import shutil
+import subprocess
 import tempfile
 import unittest
 
 import cv2
+import imageio_ffmpeg
 import numpy as np
 
-from tools.video_engine import SUPPORTED_BRANDS, brand_video_params, process_video
+from tools.video_engine import SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video
 
 
 def _make_synthetic_video(path, num_frames=10, width=64, height=48, fps=24.0, seed=0):
@@ -26,6 +28,40 @@ def _make_synthetic_video(path, num_frames=10, width=64, height=48, fps=24.0, se
         frame[10:20, 10:20] = (200, 50, 50)  # BGR 색 패치
         writer.write(frame)
     writer.release()
+
+
+def _make_synthetic_video_with_audio(path, duration=1, width=64, height=48, fps=24):
+    """testsrc(그라디언트 패턴 비디오) + sine(440Hz 톤 오디오)을 ffmpeg
+    lavfi 소스로 직접 만든 합성 비디오 - cv2.VideoWriter는 오디오를 못
+    쓰므로 오디오 트랙이 필요한 테스트에서만 이 헬퍼를 쓴다."""
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    subprocess.run(
+        [ffmpeg_exe, "-y",
+         "-f", "lavfi", "-i", f"testsrc=size={width}x{height}:rate={fps}:duration={duration}",
+         "-f", "lavfi", "-i", f"sine=frequency=440:duration={duration}",
+         "-c:v", "libx264", "-c:a", "aac", path],
+        capture_output=True, text=True, check=True,
+    )
+
+
+def _make_synthetic_video_without_audio(path, duration=1, width=64, height=48, fps=24):
+    """testsrc만 있는(오디오 트랙 없는) 합성 비디오."""
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    subprocess.run(
+        [ffmpeg_exe, "-y",
+         "-f", "lavfi", "-i", f"testsrc=size={width}x{height}:rate={fps}:duration={duration}",
+         "-c:v", "libx264", path],
+        capture_output=True, text=True, check=True,
+    )
+
+
+def _has_audio_stream(path):
+    """ffprobe가 이 환경에 없으므로 ffmpeg -i 출력(stderr)에 "Audio:"
+    문자열이 있는지로 오디오 스트림 존재 여부를 판별한다(설계 단계
+    검증과 동일한 방법)."""
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    result = subprocess.run([ffmpeg_exe, "-i", path], capture_output=True, text=True)
+    return "Audio:" in result.stderr
 
 
 class TestBrandVideoParams(unittest.TestCase):
@@ -157,6 +193,57 @@ class TestBrandFunctionsArePurePassthroughs(unittest.TestCase):
                 np.testing.assert_array_equal(
                     fn(img),
                     apply_population_fit_look(img, *brand_video_params(name), clahe_clip))
+
+
+class TestMuxAudio(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+
+    def test_mux_with_audio_source_produces_audio_output(self):
+        video_only = os.path.join(self.tmpdir, "video_only.mp4")
+        audio_source = os.path.join(self.tmpdir, "audio_source.mp4")
+        output = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_without_audio(video_only)
+        _make_synthetic_video_with_audio(audio_source)
+
+        mux_audio(video_only, audio_source, output)
+
+        self.assertTrue(os.path.exists(output))
+        self.assertTrue(_has_audio_stream(output))
+
+    def test_mux_with_silent_source_produces_silent_output_no_error(self):
+        video_only = os.path.join(self.tmpdir, "video_only.mp4")
+        audio_source = os.path.join(self.tmpdir, "audio_source.mp4")
+        output = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_without_audio(video_only)
+        _make_synthetic_video_without_audio(audio_source)
+
+        mux_audio(video_only, audio_source, output)  # must not raise
+
+        self.assertTrue(os.path.exists(output))
+        self.assertFalse(_has_audio_stream(output))
+
+    def test_mux_preserves_video_stream(self):
+        video_only = os.path.join(self.tmpdir, "video_only.mp4")
+        audio_source = os.path.join(self.tmpdir, "audio_source.mp4")
+        output = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_without_audio(video_only)
+        _make_synthetic_video_with_audio(audio_source)
+
+        mux_audio(video_only, audio_source, output)
+
+        cap = cv2.VideoCapture(output)
+        self.assertTrue(cap.isOpened())
+        self.assertGreater(cap.get(cv2.CAP_PROP_FRAME_COUNT), 0)
+        cap.release()
+
+    def test_mux_failure_raises_io_error(self):
+        video_only = os.path.join(self.tmpdir, "does_not_exist.mp4")
+        audio_source = os.path.join(self.tmpdir, "also_does_not_exist.mp4")
+        output = os.path.join(self.tmpdir, "output.mp4")
+        with self.assertRaises(IOError):
+            mux_audio(video_only, audio_source, output)
 
 
 if __name__ == "__main__":

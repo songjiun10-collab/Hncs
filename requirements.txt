@@ -6,3 +6,4 @@ gdown
 colour-science
 lensfunpy
 OpenEXR
+imageio-ffmpeg
