@@ -16,9 +16,11 @@ Fujifilm(프리셋마다 CLAHE 사용이 제각각)과 Hasselblad(별도 파이�
 비디오에서 눈에 띄는 밝기/대비 깜빡임(flicker)이 생기기 때문이다
 (core.engine.apply_population_fit_look_video_frame() 참고).
 
-오디오 트랙은 보존하지 않는다 - 이 환경에 ffmpeg CLI/moviepy 등 오디오
-mux 도구가 없다(cv2가 FFmpeg를 내장 빌드했지만 파이썬에서 오디오
-스트림을 다루는 경로는 별도로 없음).
+오디오 트랙은 기본으로 보존된다 - process_video_with_audio()가
+imageio-ffmpeg(정적 ffmpeg 바이너리를 pip로 받아옴)로 색보정된 무음
+비디오에 원본의 첫 번째 오디오 트랙을 무손실 remux한다(입력에 오디오가
+없으면 출력도 무음, 에러 아님). 재인코딩·다중 트랙 선택은 하지 않는다.
+프레임 색보정 자체는 process_video()가 그대로 담당한다(오디오와 무관).
 
   python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
 """
@@ -154,7 +156,7 @@ def process_video_with_audio(input_path, output_path, brand_name, progress_every
 
 def main():
     parser = argparse.ArgumentParser(
-        description="비디오 파일에 population-fit 브랜드 룩 적용 (오디오 미보존)")
+        description="비디오 파일에 population-fit 브랜드 룩 적용 (오디오 트랙 기본 보존)")
     parser.add_argument("input", help="입력 비디오 파일 경로")
     parser.add_argument("output", help="출력 비디오 파일 경로 (.mp4)")
     parser.add_argument("--brand", required=True, choices=sorted(SUPPORTED_BRANDS),
