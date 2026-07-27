@@ -24,9 +24,11 @@ mux 도구가 없다(cv2가 FFmpeg를 내장 빌드했지만 파이썬에서 오
 """
 import argparse
 import inspect
+import subprocess
 import sys
 
 import cv2
+import imageio_ffmpeg
 
 from brands.canon import apply_canon_look
 from brands.leica import apply_leica_look
@@ -110,6 +112,26 @@ def process_video(input_path, output_path, brand_name, progress_every=100):
         writer.release()
 
     return frame_count
+
+
+def mux_audio(video_only_path, audio_source_path, final_output_path):
+    """video_only_path(오디오 없는 색보정 비디오)에 audio_source_path의
+    첫 번째 오디오 트랙을 무손실로 입혀 final_output_path에 쓴다.
+    audio_source_path에 오디오가 없으면 final_output_path도 무음(에러
+    아님) - ffmpeg의 optional map(`?`)이 처리한다. 재인코딩 없음
+    (-c:v copy -c:a copy)."""
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
+    result = subprocess.run(
+        [ffmpeg_exe, "-y",
+         "-i", video_only_path, "-i", audio_source_path,
+         "-map", "0:v:0", "-map", "1:a:0?",
+         "-c:v", "copy", "-c:a", "copy",
+         final_output_path],
+        capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        raise IOError(f"오디오 remux 실패 (ffmpeg exit {result.returncode}): "
+                       f"{result.stderr[-500:]}")
 
 
 def main():
