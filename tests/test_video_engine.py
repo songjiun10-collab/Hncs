@@ -9,7 +9,10 @@ import cv2
 import imageio_ffmpeg
 import numpy as np
 
-from tools.video_engine import SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video
+from tools.video_engine import (
+    SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video,
+    process_video_with_audio,
+)
 
 
 def _make_synthetic_video(path, num_frames=10, width=64, height=48, fps=24.0, seed=0):
@@ -244,6 +247,75 @@ class TestMuxAudio(unittest.TestCase):
         output = os.path.join(self.tmpdir, "output.mp4")
         with self.assertRaises(IOError):
             mux_audio(video_only, audio_source, output)
+
+
+class TestProcessVideoWithAudio(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+
+    def test_input_with_audio_preserves_audio_in_output(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        frame_count = process_video_with_audio(input_path, output_path, "canon")
+
+        self.assertGreater(frame_count, 0)
+        self.assertTrue(_has_audio_stream(output_path))
+
+    def test_input_without_audio_produces_silent_output_no_error(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_without_audio(input_path, duration=1, fps=24)
+
+        frame_count = process_video_with_audio(input_path, output_path, "canon")
+
+        self.assertGreater(frame_count, 0)
+        self.assertFalse(_has_audio_stream(output_path))
+
+    def test_output_frames_are_color_graded(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        process_video_with_audio(input_path, output_path, "canon")
+
+        cap_in = cv2.VideoCapture(input_path)
+        cap_out = cv2.VideoCapture(output_path)
+        ok_in, frame_in = cap_in.read()
+        ok_out, frame_out = cap_out.read()
+        self.assertTrue(ok_in)
+        self.assertTrue(ok_out)
+        self.assertFalse(np.array_equal(frame_in, frame_out))
+        cap_in.release()
+        cap_out.release()
+
+    def test_no_leftover_temp_directories(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        before = set(os.listdir(tempfile.gettempdir()))
+        process_video_with_audio(input_path, output_path, "canon")
+        after = set(os.listdir(tempfile.gettempdir()))
+
+        self.assertEqual(before, after)
+
+    def test_unsupported_brand_raises_value_error(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        with self.assertRaises(ValueError):
+            process_video_with_audio(input_path, output_path, "fuji")
+
+    def test_missing_input_raises_io_error(self):
+        missing_path = os.path.join(self.tmpdir, "does_not_exist.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+
+        with self.assertRaises(IOError):
+            process_video_with_audio(missing_path, output_path, "canon")
 
 
 if __name__ == "__main__":

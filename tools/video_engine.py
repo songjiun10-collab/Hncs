@@ -24,8 +24,11 @@ mux 도구가 없다(cv2가 FFmpeg를 내장 빌드했지만 파이썬에서 오
 """
 import argparse
 import inspect
+import os
+import shutil
 import subprocess
 import sys
+import tempfile
 
 import cv2
 import imageio_ffmpeg
@@ -78,7 +81,8 @@ def brand_video_params(brand_name):
 def process_video(input_path, output_path, brand_name, progress_every=100):
     """input_path의 비디오를 읽어 brand_name 룩(CLAHE 생략, 톤 LUT만)을
     프레임마다 적용해 output_path에 쓴다. 처리한 프레임 수를 반환한다.
-    오디오 트랙은 보존하지 않는다."""
+    오디오 트랙은 보존하지 않는다(오디오는 process_video_with_audio()가
+    별도로 처리)."""
     toe_lift, shoulder_start, white_point = brand_video_params(brand_name)
 
     cap = cv2.VideoCapture(input_path)
@@ -134,6 +138,20 @@ def mux_audio(video_only_path, audio_source_path, final_output_path):
                        f"{result.stderr[-500:]}")
 
 
+def process_video_with_audio(input_path, output_path, brand_name, progress_every=100):
+    """process_video()로 색보정한 뒤 input_path의 오디오를 다시 입혀서
+    output_path에 쓴다 - CLI의 기본 진입점. process_video() 자체는
+    수정하지 않는다."""
+    tmp_dir = tempfile.mkdtemp()
+    tmp_video_only = os.path.join(tmp_dir, "video_only.mp4")
+    try:
+        frame_count = process_video(input_path, tmp_video_only, brand_name, progress_every)
+        mux_audio(tmp_video_only, input_path, output_path)
+        return frame_count
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="비디오 파일에 population-fit 브랜드 룩 적용 (오디오 미보존)")
@@ -144,7 +162,7 @@ def main():
     args = parser.parse_args()
 
     try:
-        frame_count = process_video(args.input, args.output, args.brand)
+        frame_count = process_video_with_audio(args.input, args.output, args.brand)
     except (IOError, ValueError) as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)
