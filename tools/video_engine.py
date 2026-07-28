@@ -45,6 +45,12 @@ from brands.phaseone import apply_phaseone_look
 from brands.ricoh_gr import apply_ricoh_gr_look
 from brands.sigma import apply_sigma_look
 from brands.sony import apply_sony_look
+from brands.fuji import (
+    apply_astia, apply_pro_neg_std, apply_pro_neg_hi_video_frame,
+    apply_eterna_cinema, apply_eterna_bleach_bypass, apply_nostalgic_neg,
+    apply_reala_ace, apply_classic_negative, apply_acros, apply_monochrome,
+)
+from brands.hasselblad import apply_hncs_video_frame
 from core.engine import apply_population_fit_look_video_frame
 
 _BRAND_FUNCTIONS = {
@@ -61,6 +67,33 @@ _BRAND_FUNCTIONS = {
 }
 
 SUPPORTED_BRANDS = frozenset(_BRAND_FUNCTIONS)
+
+
+def _grayscale_to_bgr_frame(frame_func):
+    """apply_acros/apply_monochrome처럼 1채널 그레이스케일을 반환하는
+    함수를 3채널 BGR 프레임을 반환하도록 감싼다(cv2.VideoWriter가 컬러
+    프레임을 가정하므로)."""
+    def wrapped(img_bgr):
+        gray = frame_func(img_bgr)
+        return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+    return wrapped
+
+
+_EXPANDED_BRAND_FUNCTIONS = {
+    "fuji_astia": apply_astia,
+    "fuji_pro_neg_std": apply_pro_neg_std,
+    "fuji_pro_neg_hi": apply_pro_neg_hi_video_frame,
+    "fuji_eterna_cinema": apply_eterna_cinema,
+    "fuji_eterna_bleach_bypass": apply_eterna_bleach_bypass,
+    "fuji_nostalgic_neg": apply_nostalgic_neg,
+    "fuji_reala_ace": apply_reala_ace,
+    "fuji_classic_negative": apply_classic_negative,
+    "fuji_acros": _grayscale_to_bgr_frame(apply_acros),
+    "fuji_monochrome": _grayscale_to_bgr_frame(apply_monochrome),
+    "hasselblad": apply_hncs_video_frame,
+}
+
+EXPANDED_SUPPORTED_BRANDS = frozenset(_EXPANDED_BRAND_FUNCTIONS)
 
 
 def brand_video_params(brand_name):
@@ -154,6 +187,69 @@ def process_video_with_audio(input_path, output_path, brand_name, progress_every
     tmp_video_only = os.path.join(tmp_dir, "video_only.mp4")
     try:
         frame_count = process_video(input_path, tmp_video_only, brand_name, progress_every)
+        mux_audio(tmp_video_only, input_path, output_path)
+        return frame_count
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+
+def process_video_v2(input_path, output_path, brand_name, progress_every=100):
+    """확장 브랜드(Fuji 9개 무수정 + apply_pro_neg_hi/apply_hncs CLAHE
+    생략 변형) 전용 - process_video()와 거의 동일한 I/O 구조지만, 프레임
+    처리 함수가 (toe_lift, shoulder_start, white_point) 3개 인자 대신
+    단일 인자 콜백이라는 점이 다르다. process_video()는 수정하지 않는다
+    (나란히 추가)."""
+    if brand_name not in _EXPANDED_BRAND_FUNCTIONS:
+        raise ValueError(
+            f"지원하지 않는 확장 브랜드: {brand_name!r} "
+            f"(지원: {', '.join(sorted(EXPANDED_SUPPORTED_BRANDS))})"
+        )
+    frame_func = _EXPANDED_BRAND_FUNCTIONS[brand_name]
+
+    cap = cv2.VideoCapture(input_path)
+    if not cap.isOpened():
+        raise IOError(f"입력 비디오를 열 수 없음: {input_path}")
+
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    if not writer.isOpened():
+        cap.release()
+        raise IOError(f"출력 비디오를 열 수 없음: {output_path}")
+
+    frame_count = 0
+    try:
+        while True:
+            ok, frame = cap.read()
+            if not ok:
+                break
+            out_frame = frame_func(frame)
+            writer.write(out_frame)
+            frame_count += 1
+            if frame_count % progress_every == 0:
+                print(f"{frame_count}프레임 처리됨...", file=sys.stderr)
+    finally:
+        cap.release()
+        writer.release()
+
+    return frame_count
+
+
+def process_video_v2_with_audio(input_path, output_path, brand_name, progress_every=100):
+    """process_video_v2()로 색보정한 뒤 mux_audio()로 원본 오디오를
+    입힌다 - process_video_with_audio()와 같은 구조지만 process_video_v2()를
+    쓴다는 점만 다르다. process_video_with_audio()는 수정하지 않는다."""
+    if not output_path.lower().endswith(".mp4"):
+        raise ValueError(
+            f"출력 파일은 .mp4만 지원함: {output_path!r}"
+        )
+    tmp_dir = tempfile.mkdtemp()
+    tmp_video_only = os.path.join(tmp_dir, "video_only.mp4")
+    try:
+        frame_count = process_video_v2(input_path, tmp_video_only, brand_name, progress_every)
         mux_audio(tmp_video_only, input_path, output_path)
         return frame_count
     finally:

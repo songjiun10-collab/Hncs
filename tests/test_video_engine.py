@@ -10,9 +10,11 @@ import imageio_ffmpeg
 import numpy as np
 
 from tools.video_engine import (
-    SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video,
+    EXPANDED_SUPPORTED_BRANDS, SUPPORTED_BRANDS, brand_video_params,
+    mux_audio, process_video, process_video_v2, process_video_v2_with_audio,
     process_video_with_audio,
 )
+from tools.video_engine import _grayscale_to_bgr_frame
 from brands.fuji import apply_pro_neg_hi, apply_pro_neg_hi_video_frame
 from brands.hasselblad import apply_hncs, apply_hncs_video_frame
 from core.curve import film_curve, s_curve
@@ -463,6 +465,225 @@ class TestApplyHncsVideoFrame(unittest.TestCase):
 
         out = apply_hncs_video_frame(self.img)
         np.testing.assert_array_equal(out, expected)
+
+
+class TestGrayscaleToBgrFrame(unittest.TestCase):
+    def test_wraps_grayscale_output_as_three_channel_bgr(self):
+        def fake_gray_func(img_bgr):
+            return cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY)
+
+        wrapped = _grayscale_to_bgr_frame(fake_gray_func)
+        rng = np.random.default_rng(1)
+        img = rng.integers(0, 255, (32, 32, 3), dtype=np.uint8)
+        out = wrapped(img)
+
+        self.assertEqual(out.ndim, 3)
+        self.assertEqual(out.shape, (32, 32, 3))
+        expected_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        np.testing.assert_array_equal(out[:, :, 0], expected_gray)
+        np.testing.assert_array_equal(out[:, :, 1], expected_gray)
+        np.testing.assert_array_equal(out[:, :, 2], expected_gray)
+
+
+class TestExpandedBrandNames(unittest.TestCase):
+    def test_expanded_supported_brands_has_exactly_eleven(self):
+        self.assertEqual(len(EXPANDED_SUPPORTED_BRANDS), 11)
+        self.assertEqual(EXPANDED_SUPPORTED_BRANDS, frozenset({
+            "fuji_astia", "fuji_pro_neg_std", "fuji_pro_neg_hi",
+            "fuji_eterna_cinema", "fuji_eterna_bleach_bypass",
+            "fuji_nostalgic_neg", "fuji_reala_ace", "fuji_classic_negative",
+            "fuji_acros", "fuji_monochrome", "hasselblad",
+        }))
+
+    def test_no_overlap_with_original_supported_brands(self):
+        self.assertEqual(SUPPORTED_BRANDS & EXPANDED_SUPPORTED_BRANDS, frozenset())
+
+    def test_all_brands_union_has_21(self):
+        self.assertEqual(len(SUPPORTED_BRANDS | EXPANDED_SUPPORTED_BRANDS), 21)
+
+
+class TestProcessVideoV2AllBrands(unittest.TestCase):
+    """11개 확장 브랜드 전부에 대해 가벼운 스모크(출력 생성+열림)만
+    확인 - 깊은 검증은 TestProcessVideoV2Representative에서 대표
+    브랜드 4개(fuji_astia/fuji_pro_neg_hi/fuji_acros/hasselblad)만."""
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+        self.input_path = os.path.join(self.tmpdir, "input.mp4")
+        _make_synthetic_video(self.input_path)
+
+    def test_every_expanded_brand_produces_readable_output(self):
+        for brand in EXPANDED_SUPPORTED_BRANDS:
+            with self.subTest(brand=brand):
+                output_path = os.path.join(self.tmpdir, f"output_{brand}.mp4")
+                frame_count = process_video_v2(self.input_path, output_path, brand)
+                self.assertEqual(frame_count, 10)
+                cap = cv2.VideoCapture(output_path)
+                self.assertTrue(cap.isOpened())
+                cap.release()
+
+
+class TestProcessVideoV2Representative(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+        self.input_path = os.path.join(self.tmpdir, "input.mp4")
+        self.output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video(self.input_path)
+
+    def test_fuji_astia_matches_input_resolution_and_frame_count(self):
+        process_video_v2(self.input_path, self.output_path, "fuji_astia")
+        cap_in = cv2.VideoCapture(self.input_path)
+        cap_out = cv2.VideoCapture(self.output_path)
+        self.assertEqual(cap_in.get(cv2.CAP_PROP_FRAME_WIDTH),
+                          cap_out.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.assertEqual(cap_in.get(cv2.CAP_PROP_FRAME_HEIGHT),
+                          cap_out.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        self.assertEqual(cap_in.get(cv2.CAP_PROP_FRAME_COUNT),
+                          cap_out.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.assertEqual(cap_in.get(cv2.CAP_PROP_FPS), cap_out.get(cv2.CAP_PROP_FPS))
+        cap_in.release()
+        cap_out.release()
+
+    def test_fuji_astia_output_frames_differ_from_input(self):
+        process_video_v2(self.input_path, self.output_path, "fuji_astia")
+        cap_in = cv2.VideoCapture(self.input_path)
+        cap_out = cv2.VideoCapture(self.output_path)
+        ok_in, frame_in = cap_in.read()
+        ok_out, frame_out = cap_out.read()
+        self.assertTrue(ok_in)
+        self.assertTrue(ok_out)
+        self.assertFalse(np.array_equal(frame_in, frame_out))
+        cap_in.release()
+        cap_out.release()
+
+    def test_fuji_pro_neg_hi_output_frames_differ_from_input(self):
+        process_video_v2(self.input_path, self.output_path, "fuji_pro_neg_hi")
+        cap_in = cv2.VideoCapture(self.input_path)
+        cap_out = cv2.VideoCapture(self.output_path)
+        ok_in, frame_in = cap_in.read()
+        ok_out, frame_out = cap_out.read()
+        self.assertTrue(ok_in)
+        self.assertTrue(ok_out)
+        self.assertFalse(np.array_equal(frame_in, frame_out))
+        cap_in.release()
+        cap_out.release()
+
+    def test_fuji_acros_output_is_three_channel_bgr(self):
+        process_video_v2(self.input_path, self.output_path, "fuji_acros")
+        cap_out = cv2.VideoCapture(self.output_path)
+        ok_out, frame_out = cap_out.read()
+        self.assertTrue(ok_out)
+        self.assertEqual(frame_out.ndim, 3)
+        self.assertEqual(frame_out.shape[2], 3)
+        cap_out.release()
+
+    def test_fuji_acros_output_channels_are_equal(self):
+        process_video_v2(self.input_path, self.output_path, "fuji_acros")
+        cap_out = cv2.VideoCapture(self.output_path)
+        ok_out, frame_out = cap_out.read()
+        self.assertTrue(ok_out)
+        np.testing.assert_array_equal(frame_out[:, :, 0], frame_out[:, :, 1])
+        np.testing.assert_array_equal(frame_out[:, :, 1], frame_out[:, :, 2])
+        cap_out.release()
+
+    def test_hasselblad_output_frames_differ_from_input(self):
+        process_video_v2(self.input_path, self.output_path, "hasselblad")
+        cap_in = cv2.VideoCapture(self.input_path)
+        cap_out = cv2.VideoCapture(self.output_path)
+        ok_in, frame_in = cap_in.read()
+        ok_out, frame_out = cap_out.read()
+        self.assertTrue(ok_in)
+        self.assertTrue(ok_out)
+        self.assertFalse(np.array_equal(frame_in, frame_out))
+        cap_in.release()
+        cap_out.release()
+
+    def test_unsupported_brand_raises_before_writing_output(self):
+        with self.assertRaises(ValueError):
+            process_video_v2(self.input_path, self.output_path, "fuji_provia")
+
+    def test_missing_input_file_raises_io_error(self):
+        missing_path = os.path.join(self.tmpdir, "does_not_exist.mp4")
+        with self.assertRaises(IOError):
+            process_video_v2(missing_path, self.output_path, "fuji_astia")
+
+    def test_output_in_nonexistent_directory_raises_io_error(self):
+        bad_output_path = os.path.join(self.tmpdir, "no_such_subdir", "output.mp4")
+        with self.assertRaises(IOError):
+            process_video_v2(self.input_path, bad_output_path, "fuji_astia")
+
+
+class TestProcessVideoV2WithAudio(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmpdir, ignore_errors=True)
+
+    def test_input_with_audio_preserves_audio_in_output(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        frame_count = process_video_v2_with_audio(input_path, output_path, "fuji_astia")
+
+        self.assertGreater(frame_count, 0)
+        self.assertTrue(_has_audio_stream(output_path))
+
+    def test_output_video_matches_direct_process_video_v2_output(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        direct_output_path = os.path.join(self.tmpdir, "direct_output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        process_video_v2_with_audio(input_path, output_path, "hasselblad")
+        process_video_v2(input_path, direct_output_path, "hasselblad")
+
+        cap_out = cv2.VideoCapture(output_path)
+        cap_direct = cv2.VideoCapture(direct_output_path)
+        ok_out, frame_out = cap_out.read()
+        ok_direct, frame_direct = cap_direct.read()
+        self.assertTrue(ok_out)
+        self.assertTrue(ok_direct)
+        np.testing.assert_array_equal(frame_out, frame_direct)
+        cap_out.release()
+        cap_direct.release()
+
+    def test_no_leftover_temp_directories(self):
+        scratch_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, scratch_root, ignore_errors=True)
+        original_tempdir = tempfile.tempdir
+        tempfile.tempdir = scratch_root
+        self.addCleanup(setattr, tempfile, "tempdir", original_tempdir)
+
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        process_video_v2_with_audio(input_path, output_path, "fuji_astia")
+        self.assertEqual(os.listdir(scratch_root), [])
+
+    def test_non_mp4_output_extension_raises_value_error(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.webm")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        with self.assertRaises(ValueError):
+            process_video_v2_with_audio(input_path, output_path, "fuji_astia")
+        self.assertFalse(os.path.exists(output_path))
+
+    def test_unsupported_brand_raises_value_error(self):
+        input_path = os.path.join(self.tmpdir, "input.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
+
+        with self.assertRaises(ValueError):
+            process_video_v2_with_audio(input_path, output_path, "fuji_provia")
+
+    def test_missing_input_raises_io_error(self):
+        missing_path = os.path.join(self.tmpdir, "does_not_exist.mp4")
+        output_path = os.path.join(self.tmpdir, "output.mp4")
+        with self.assertRaises(IOError):
+            process_video_v2_with_audio(missing_path, output_path, "fuji_astia")
 
 
 if __name__ == "__main__":
