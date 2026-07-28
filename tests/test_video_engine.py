@@ -579,12 +579,24 @@ class TestProcessVideoV2Representative(unittest.TestCase):
         cap_out.release()
 
     def test_fuji_acros_output_channels_are_equal(self):
+        # _grayscale_to_bgr_frame() writes B==G==R exactly going into
+        # cv2.VideoWriter, but this environment's mp4v codec's YUV<->BGR
+        # round-trip introduces a few levels of chroma noise even for a
+        # perfectly flat gray frame (confirmed independently of any
+        # brand/grayscale-wrapper code: a bare cv2.VideoWriter/VideoCapture
+        # round-trip of a flat 128-gray frame comes back with channels
+        # differing by up to 3). A tight tolerance still confirms the
+        # frame stays achromatic (no real color introduced), without
+        # asserting exact equality no lossy video codec can guarantee.
         process_video_v2(self.input_path, self.output_path, "fuji_acros")
         cap_out = cv2.VideoCapture(self.output_path)
         ok_out, frame_out = cap_out.read()
         self.assertTrue(ok_out)
-        np.testing.assert_array_equal(frame_out[:, :, 0], frame_out[:, :, 1])
-        np.testing.assert_array_equal(frame_out[:, :, 1], frame_out[:, :, 2])
+        b = frame_out[:, :, 0].astype(np.int16)
+        g = frame_out[:, :, 1].astype(np.int16)
+        r = frame_out[:, :, 2].astype(np.int16)
+        self.assertLessEqual(np.abs(b - g).max(), 8)
+        self.assertLessEqual(np.abs(g - r).max(), 8)
         cap_out.release()
 
     def test_hasselblad_output_frames_differ_from_input(self):
