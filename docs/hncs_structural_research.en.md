@@ -73,8 +73,9 @@ experimental module and `apply_hncs()` (applied to the same raw-derived
 baseline, for a fair comparison) on the same 13 pairs.
 
 **Results**: the structural experiment (`apply_hncs_structural`) came in
-at a mean ΔE of 10.191, 4.1% below `apply_hncs()`'s 10.629 (winning 8 of
-13 folds, losing 5) - a real but narrow effect.
+at a mean ΔE of 10.191, 4.1% below `apply_hncs()`'s 10.629 (winning 6 of
+13 folds, losing 7 - the mean improved but a majority of individual folds
+did not) - a real but narrow and inconsistent effect.
 
 | Method | Mean ΔE (CIEDE2000) |
 |---|---|
