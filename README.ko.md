@@ -474,6 +474,9 @@ README는 훑어보는 용도로 짧게 유지하고, 자세한 실측 기록은
   Ricoh GR 브랜드별 상세 방법론
 - [docs/project_structure.md](docs/project_structure.md) - 파일별 역할
   전체 목록
+- [docs/hncs_structural_research.md](docs/hncs_structural_research.md) -
+  HNCS 실제 4단계 구조 vs `apply_hncs()`의 3단계 단순화 비교(연구용),
+  leave-one-out ΔE 실험 포함
 
 ## 기여
 
