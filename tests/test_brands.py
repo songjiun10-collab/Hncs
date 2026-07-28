@@ -34,7 +34,6 @@ FUJI_COLOR_PRESETS = [
     "apply_astia",
     "apply_pro_neg_std",
     "apply_pro_neg_hi",
-    "apply_pro_neg_hi_video_frame",
     "apply_eterna_cinema",
     "apply_eterna_bleach_bypass",
     "apply_nostalgic_neg",
@@ -45,6 +44,14 @@ FUJI_COLOR_PRESETS = [
 # 개수(10 - 위 8개 컬러 + acros/monochrome 2개)와 다른 걸 이 테스트로 발견,
 # README도 같이 고침(brands/fuji.py 자체 코드는 원래도 정확했음).
 FUJI_MONO_PRESETS = ["apply_acros", "apply_monochrome"]
+
+# apply_pro_neg_hi_video_frame은 apply_pro_neg_hi의 CLAHE 생략 버전으로
+# tools/video_engine.py 전용 구현 디테일이지, 사용자에게 노출되는 별도
+# "필름 시뮬레이션 룩"이 아니다 - README가 세는 "10종"에는 포함되지
+# 않는다(위 FUJI_COLOR_PRESETS/FUJI_MONO_PRESETS와 별개 리스트로 뺀 이유).
+# 그래도 shape/dtype 회귀 커버리지 자체는 잃으면 안 되므로 이 리스트로
+# 따로 스윕한다.
+FUJI_VIDEO_ONLY_HELPERS = ["apply_pro_neg_hi_video_frame"]
 
 
 def make_test_image():
@@ -89,16 +96,30 @@ class TestFujiPresets(unittest.TestCase):
                 self.assertEqual(out.shape, self.img.shape[:2])
                 self.assertEqual(out.dtype, self.img.dtype)
 
+    def test_video_only_helpers_preserve_shape_and_dtype(self):
+        # apply_pro_neg_hi_video_frame은 "프리셋"으로 세지 않지만(위
+        # FUJI_VIDEO_ONLY_HELPERS 주석 참고) shape/dtype 회귀 커버리지는
+        # 여전히 필요하므로 나머지 프리셋과 같은 스윕 패턴으로 검사한다.
+        for name in FUJI_VIDEO_ONLY_HELPERS:
+            with self.subTest(preset=name):
+                fn = getattr(self.fuji, name)
+                out = fn(self.img)
+                self.assertEqual(out.shape, self.img.shape)
+                self.assertEqual(out.dtype, self.img.dtype)
+
     def test_all_documented_presets_covered(self):
         # brand.fuji의 apply_* 중 core.curve/core.lut에서 재노출된 범용
-        # 헬퍼(apply_lut/apply_highlight_rolloff)를 뺀 진짜 프리셋 개수가
-        # README에 적힌 "9종"과 일치하는지 확인 - 프리셋을 추가/삭제했는데
-        # 이 테스트나 README를 깜빡하고 안 고치는 걸 방지.
+        # 헬퍼(apply_lut/apply_highlight_rolloff)와 tools/video_engine.py
+        # 전용 CLAHE-생략 변형(이름이 "_video_frame"으로 끝남 - 별도
+        # "룩"이 아니라 구현 디테일)을 뺀 진짜 프리셋 개수가 README에
+        # 적힌 "10종"과 일치하는지 확인 - 프리셋을 추가/삭제했는데 이
+        # 테스트나 README를 깜빡하고 안 고치는 걸 방지.
         generic_helpers = {"apply_lut", "apply_highlight_rolloff"}
         preset_names = {n for n in dir(self.fuji)
-                         if n.startswith("apply_") and n not in generic_helpers}
+                         if n.startswith("apply_") and n not in generic_helpers
+                         and not n.endswith("_video_frame")}
         self.assertEqual(preset_names, set(FUJI_COLOR_PRESETS) | set(FUJI_MONO_PRESETS))
-        self.assertEqual(len(preset_names), 11)
+        self.assertEqual(len(preset_names), 10)
 
 
 if __name__ == "__main__":

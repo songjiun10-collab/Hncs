@@ -14,7 +14,7 @@ from tools.video_engine import (
     mux_audio, process_video, process_video_v2, process_video_v2_with_audio,
     process_video_with_audio,
 )
-from tools.video_engine import _grayscale_to_bgr_frame
+from tools.video_engine import _EXPANDED_BRAND_FUNCTIONS, _grayscale_to_bgr_frame
 from brands.fuji import apply_pro_neg_hi, apply_pro_neg_hi_video_frame
 from brands.hasselblad import apply_hncs, apply_hncs_video_frame
 from core.curve import film_curve, s_curve
@@ -500,6 +500,42 @@ class TestExpandedBrandNames(unittest.TestCase):
 
     def test_all_brands_union_has_21(self):
         self.assertEqual(len(SUPPORTED_BRANDS | EXPANDED_SUPPORTED_BRANDS), 21)
+
+
+class TestExpandedBrandFunctionsNeverUseClahe(unittest.TestCase):
+    """이 플랜 전체에서 가장 중요한 정합성 속성: _EXPANDED_BRAND_FUNCTIONS의
+    어떤 항목도 내부적으로 cv2.createCLAHE를 호출하는 함수를 가리키면 안
+    된다 - 그러면 이 플랜이 없애려던 프레임 간 깜빡임 버그가 그 브랜드에서
+    조용히 되살아난다(예: "fuji_pro_neg_hi"가 실수로 apply_pro_neg_hi_
+    video_frame 대신 원본 apply_pro_neg_hi를 가리키게 되돌아가는 회귀).
+    fuji_acros/fuji_monochrome처럼 _grayscale_to_bgr_frame()으로 감싼
+    항목은 inspect.getsource()가 wrapper 자체의 소스(cv2.cvtColor 호출)만
+    보여주므로, 클로저 셀에서 진짜 frame_func을 먼저 꺼내 그 함수의
+    소스를 검사한다."""
+
+    @staticmethod
+    def _unwrap(fn):
+        # _grayscale_to_bgr_frame()의 wrapped()는 frame_func 하나만
+        # 클로저에 갖고 있는 클로저 함수이므로, 클로저 셀 안의 콜러블을
+        # 찾아 그걸 실제 검사 대상으로 쓴다. 클로저가 없는(감싸지 않은)
+        # 함수는 그대로 반환.
+        if fn.__closure__:
+            for cell in fn.__closure__:
+                contents = cell.cell_contents
+                if callable(contents):
+                    return contents
+        return fn
+
+    def test_no_expanded_brand_function_references_create_clahe(self):
+        for brand_name, fn in _EXPANDED_BRAND_FUNCTIONS.items():
+            with self.subTest(brand=brand_name):
+                real_fn = self._unwrap(fn)
+                source = inspect.getsource(real_fn)
+                self.assertNotIn(
+                    "createCLAHE", source,
+                    f"{brand_name!r} -> {real_fn.__qualname__} calls "
+                    f"cv2.createCLAHE - this brand would regain the "
+                    f"frame-flicker bug in video mode")
 
 
 class TestProcessVideoV2AllBrands(unittest.TestCase):
