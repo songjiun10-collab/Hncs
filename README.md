@@ -249,7 +249,7 @@ python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-con
 
 ## Video engine (frame-by-frame, engineering reuse - not a new measurement)
 
-`tools/video_engine.py` applies an already-measured population-fit brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement, it reuses the 10 brands' measured tone-curve parameters (the default arguments of their `apply_*_look()`) (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony; Fujifilm and Hasselblad use different pipelines and are out of scope for this CLI - see [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md)).
+`tools/video_engine.py` applies an already-measured brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement. 21 brands are supported: the 10 population-fit brands' measured tone-curve parameters (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony), plus Fujifilm's 10 film-simulation presets and Hasselblad's `apply_hncs` (`fuji_astia`/`fuji_pro_neg_std`/`fuji_pro_neg_hi`/`fuji_eterna_cinema`/`fuji_eterna_bleach_bypass`/`fuji_nostalgic_neg`/`fuji_reala_ace`/`fuji_classic_negative`/`fuji_acros`/`fuji_monochrome`/`hasselblad`) - see [docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md](docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md) for which presets needed a CLAHE-free variant and which didn't.
 
 ```
 python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
