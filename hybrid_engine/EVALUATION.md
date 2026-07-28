@@ -971,3 +971,64 @@ libraw 대비 개선(CV 기준): **63.8%**
 목적이고(후속 실측 9에서 확인: 차트 참값에 대고 재면 오히려 나빠지는 게
 정상), 이쪽은 색채측정 정확도가 목적인 별개 산출물이다. `hasselblad.json`은
 건드리지 않았다.
+
+## HNCS 구조 실험: 4단계 구조 미러링이 ΔE를 개선하는가
+
+**배경**: `apply_hncs()`(Stable)는 실제 HNCS 파이프라인을 3단계로
+단순화한 근사다. 실제 구조(조명별 매트릭스 -> 조명별 chroma LUT ->
+공유 필름커브, `docs/hncs_structural_research.md` 참고)를 미러링한
+연구용 실험 모듈(`hybrid_engine/research/hncs_structural.py`)이 실제로
+ΔE를 개선하는지 leave-one-out 교차검증(13쌍, `tools/evaluate_hncs_structural.py`)으로
+측정했다.
+
+**결과** (같은 13쌍, CIEDE2000, held-out마다 재피팅):
+
+| 방법 | 평균 ΔE (CIEDE2000) |
+|---|---|
+| `apply_hncs()` (raw 기반 baseline에 적용, 이 실험 안에서 재측정) | 10.629 |
+| 구조 실험 (`apply_hncs_structural`, 클러스터별 매트릭스+chroma LUT+공유 필름커브) | 10.191 |
+
+개선폭: 4.1% (구조적 실험이 이겼다)
+
+**판정**: 구조 실험이 근소하게 이겼다 (4.1% 개선, 13쌍 중 8쌍에서 우세,
+5쌍에서 열세) - 실재하지만 좁은 효과이지 결정적 승리가 아니다. 폴드별로
+보면 `cluster_b`(소수 클러스터, 3쌍)에서는 결과가 엇갈렸다
+([x1d-II-sample-09.jpg]는 구조 실험이 5.249 vs 13.449로 크게 이겼지만,
+[B0000994.jpg]와 [02709.jpg]는 반대로 졌다) - 아래 "알려진 한계"의
+`cluster_b` 표본 부족과 무관하지 않을 것이다.
+
+**폴드별 상세** (13개 held-out 쌍 전부):
+
+```
+[x1d-II-sample-02.jpg] cluster=cluster_a structural ΔE=10.787 apply_hncs ΔE=9.961
+[x1d-II-sample-09.jpg] cluster=cluster_b structural ΔE=5.249 apply_hncs ΔE=13.449
+[B0000994.jpg] cluster=cluster_b structural ΔE=14.223 apply_hncs ΔE=9.128
+[B0001395.jpg] cluster=cluster_a structural ΔE=18.412 apply_hncs ΔE=18.334
+[x1d-xcd45-01.jpg] cluster=cluster_a structural ΔE=13.194 apply_hncs ΔE=9.395
+[x1d-xcd45-03.jpg] cluster=cluster_a structural ΔE=8.342 apply_hncs ΔE=9.246
+[x1d-xcd45-04.jpg] cluster=cluster_a structural ΔE=4.729 apply_hncs ΔE=8.245
+[x1d-ii-xcd45p-01.jpg] cluster=cluster_a structural ΔE=10.126 apply_hncs ΔE=14.976
+[x1d-ii-xcd45p-02.jpg] cluster=cluster_a structural ΔE=11.055 apply_hncs ΔE=11.645
+[x1d-II-sample-01.jpg] cluster=cluster_a structural ΔE=6.452 apply_hncs ΔE=5.478
+[x1d-II-sample-06.jpg] cluster=cluster_a structural ΔE=11.726 apply_hncs ΔE=8.610
+[02709.jpg] cluster=cluster_b structural ΔE=13.074 apply_hncs ΔE=9.636
+[00378.jpg] cluster=cluster_a structural ΔE=5.115 apply_hncs ΔE=10.073
+```
+
+**알려진 한계**:
+- **표본 13쌍, 클러스터당 3~10쌍(소수 클러스터 3쌍)** - 통계적으로
+  매우 얇다. 특히 `cluster_b`(3쌍)는 leave-one-out 시 학습 데이터가
+  2쌍뿐이라 매트릭스 피팅이 ridge 정규화(=1.0)에 크게 의존한다.
+- **DOWNSAMPLE_MAX_DIM=512로 축소한 이미지에서 피팅/측정** - 3x3
+  매트릭스와 2-파라미터 chroma LUT 둘 다 공간 정보가 아니라 색 분포에만
+  의존하는 전역 변환이라 실질적 영향은 작다고 보지만, 원본 해상도에서
+  재측정하면 수치가 달라질 수 있다.
+- **chroma LUT 그리드가 성기다**(`sat_mult` 7개 x `hue_shift_deg` 7개) -
+  더 촘촘한 그리드나 연속 최적화가 이 결과를 바꿀 수 있다.
+- **`apply_hncs()`를 대체하지 않는다** - 이 실험이 이겨도 Stable로
+  승격하지 않는다(별도 논의).
+
+**기존 v8~v12 RMSE 23.3과의 관계**: 그 수치는 다른 표본/다른 측정
+방식(RMSE, 이 실험은 ΔE)이라 그대로 비교하지 않고, 이 실험 안에서
+`apply_hncs()`의 ΔE를 같은 13쌍 raw 기반으로 재측정했다(위 표의
+`apply_hncs()` 행).
