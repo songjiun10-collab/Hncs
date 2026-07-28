@@ -43,14 +43,48 @@ LUT → CLAHE → `film_curve` LUT 3단계뿐이다.
 뜻은 아니었다 - 3단계(조명별 chroma LUT)는 프리셋과 무관하게 항상
 존재하는 별도 단계다.
 
-**데이터 재확인**(설계 단계 실측): 이 프로젝트가 이미 캐시해둔 raw+jpeg
-페어 원본 파일(`raw_calib_cache/*.3FR`, `*.fff`, 15장)에서 `exiftool
--AsShotNeutral`을 직접 뽑아봤다. R/B 비율이 뚜렷이 두 클러스터로
-갈린다: 0.34~0.45(데이라이트/그늘 계열, 예: x1d-II-sample-01/02/06,
-x1d-xcd45-01/03/04, x2dii-chart-*) vs 0.48~0.57(따뜻한/텅스텐 계열,
-예: B0000994, x1d-II-sample-09, 02709). 공식 구조가 말하는 "최소 4개
-조명"까지 표본이 안 되지만(15장을 4개로 쪼개면 클러스터당 3~4장),
-**2-클러스터 모델은 이 데이터로 시도해볼 근거가 있다**.
+**데이터 재확인**(설계 단계 실측, **아래는 plan 작성 단계에서 정정된
+수치** - 최초 설계 때는 `AsShotNeutral`의 R값을 B로 나누지 않고 그냥
+R값 자체를 "R/B 비율"로 잘못 읽어서 클러스터 경계를 틀리게 적었음.
+아래가 정정된 값):
+
+`hasselblad_raw_jpeg_pairs.csv`가 실제로 담고 있는 건 13쌍(14줄 -
+헤더 1줄)뿐이다 - `raw_calib_cache/`에 캐시된 15개 raw 파일 중
+`x2dii-chart-31325`/`x2dii-chart-31330` 2개는 이 CSV에 없는, **다른
+데이터셋**(카메라 네이티브 매트릭스 스펙에서 쓴 X2D II ColorChecker
+차트 기여분, `datasets/hasselblad/contributed/kmichels-x2dii-2026-07/`)에서
+온 파일이다 - 실제 사진이 아니라 컬러체커 차트 촬영이고 카메라도 다른
+세대(X2D II)라 이 실험의 population에 안 맞는다. **이 실험은 13쌍만
+쓴다.**
+
+13쌍의 `AsShotNeutral[0]/AsShotNeutral[2]`(R/B 비율, `exiftool`로 직접
+재확인):
+
+```
+B0001395            0.3649
+x1d-II-sample-06    0.4263
+x1d-xcd45-01        0.4699
+x1d-ii-xcd45p-02    0.4755
+x1d-II-sample-01    0.4764
+x1d-II-sample-02    0.4855
+00378               0.5389
+x1d-ii-xcd45p-01    0.5429
+x1d-xcd45-04        0.6023
+x1d-xcd45-03        0.6584
+B0000994            1.1294
+02709               1.1336
+x1d-II-sample-09    1.3163
+```
+
+10쌍이 0.36~0.66 구간에 몰려있고, 나머지 3쌍(`B0000994`/`02709`/
+`x1d-II-sample-09`)이 1.13~1.32로 확 떨어져 있다 - **10 대 3, 뚜렷한
+2-클러스터**. 경계값은 두 그룹 사이 어디나 가능(0.66과 1.13 사이) -
+0.9를 쓴다. 공식 구조가 말하는 "최소 4개 조명"까지는 표본이 훨씬
+못 미치지만(13쌍을 4개로 쪼개면 클러스터당 3쌍 남짓), **2-클러스터
+모델은 이 데이터로 시도해볼 근거가 있다** - 다만 소수 클러스터가
+**3쌍뿐**이라는 건 원래 예상(13쌍 기준 클러스터당 3~4쌍)보다도 더
+얇다는 뜻이고, 이 한계를 아래 "한계" 섹션과 실제 실험 결과 모두에
+분명히 반영해야 한다.
 
 ## 목표
 
@@ -68,8 +102,9 @@ x1d-xcd45-01/03/04, x2dii-chart-*) vs 0.48~0.57(따뜻한/텅스텐 계열,
 - **`brands/hasselblad.py`의 `apply_hncs()` 수정** - Stable 버전은
   건드리지 않는다. 이 실험이 이기더라도 이 스펙에서 교체하지 않는다
   (승격은 별도 논의 - 최소한 이 스펙에서는 "실험 결과 기록"까지만).
-- **4개 이상의 조명 클러스터** - 표본(15장)이 못 뒷받침한다.
-  2-클러스터(데이라이트계/따뜻한계)로 제한.
+- **4개 이상의 조명 클러스터** - 표본(13쌍)이 못 뒷받침한다.
+  2-클러스터로 제한(아래 "조사 결과"의 정정된 수치 참고 - 소수
+  클러스터가 3쌍뿐).
 - **비디오 엔진 통합** - 이 실험 모듈은 정지 RAW 한 장을 다루는
   연구용 코드고, `tools/video_engine.py`에 새 브랜드로 추가하지
   않는다(그 자체로 별도 스펙 - Stable로 승격된 뒤에나 고려할 일).
@@ -118,11 +153,11 @@ def decode_and_white_balance(raw_path):
 
 def classify_illuminant_cluster(as_shot_neutral):
     """AsShotNeutral의 R/B 비율(as_shot_neutral[0] / as_shot_neutral[2])로
-    2-클러스터 분류: 0.46 미만이면 "daylight", 이상이면 "warm".
-    임계값 0.46은 설계 단계 실측에서 확인한 두 클러스터
-    (0.34~0.45 vs 0.48~0.57) 사이의 중간값."""
+    2-클러스터 분류: 0.9 미만이면 "cluster_a"(10쌍, R/B 0.36~0.66),
+    이상이면 "cluster_b"(3쌍뿐, R/B 1.13~1.32). 임계값 0.9는 두 그룹
+    사이(0.66과 1.13 사이) 어디든 상관없어 중간값으로 선택."""
     r_over_b = as_shot_neutral[0] / as_shot_neutral[2]
-    return "daylight" if r_over_b < 0.46 else "warm"
+    return "cluster_a" if r_over_b < 0.9 else "cluster_b"
 
 
 def apply_chroma_lut(img_rgb, sat_mult, hue_shift_deg):
@@ -137,14 +172,14 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
                            toe_lift, shoulder_start, white_point):
     """4단계 파이프라인: WB적용 네이티브 RGB -> 클러스터별 3x3 매트릭스
     -> 클러스터별 chroma LUT -> 공유 필름커브. illuminant_matrices/
-    chroma_lut_params는 {"daylight": ..., "warm": ...} 형태의 피팅
+    chroma_lut_params는 {"cluster_a": ..., "cluster_b": ...} 형태의 피팅
     결과를 받는다(피팅 자체는 별도 캘리브레이션 스크립트)."""
     ...
 ```
 
 **클러스터별 매트릭스 피팅**: 기존 `fit_color_matrix(sources, targets)`를
 그대로 재사용 - `sources`=`decode_and_white_balance()` 출력(클러스터에
-속한 raw들만), `targets`=대응 JPEG의 linear RGB. 클러스터당 3~7장뿐이라
+속한 raw들만), `targets`=대응 JPEG의 linear RGB. 클러스터당 3~10쌍뿐이라(소수 클러스터는 3쌍뿐)
 정규화(`ridge=` 인자, 이미 `fit_color_matrix()`가 지원) 필요 - 표본
 대비 3×3(자유도 9)이 과적합 위험이 크므로 ridge 정규화를 기본으로
 켠다.
@@ -154,11 +189,11 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
 적용 후 이미지의 population 채도/hue 통계(기존 `core/hue_core.py`나
 `datasets/hasselblad/color_signature.json` 계산에 쓴 방식 재사용)를
 목표 JPEG의 실측 채도/hue에 맞춘다. 저차원으로 제한하는 이유:
-클러스터당 3~7장으로 그 이상의 파라미터(예: hue-conditional 배열)를
+클러스터당 3쌍(소수 클러스터 기준)으로 그 이상의 파라미터(예: hue-conditional 배열)를
 피팅하면 이 프로젝트가 반복적으로 경고해온 과적합(예: EVALUATION.md의
 3D residual LUT in-sample +11.1%/CV -5.7% 사례)과 같은 함정에 빠진다.
 
-**공유 필름커브**: 클러스터로 나누지 않고 전체 13~15장으로 공유
+**공유 필름커브**: 클러스터로 나누지 않고 전체 13쌍으로 공유
 피팅(기존 `film_curve()`/`core/curve.py` 재사용) - 톤(밝기 분포)은
 조명보다 노출/장면에 더 좌우된다고 보고, 표본을 쪼개지 않는 쪽을
 택함(v11에서 이미 밝힌 것처럼 toe_lift/shoulder_start는 표본이 작아
@@ -171,12 +206,12 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
 `tools/`에 둔다"는 전례를 따름 - `hybrid_engine/evaluation/`은
 재사용 가능한 평가 프로토콜/메트릭용이라 이 1회성 실험과는 결이
 다름) - leave-one-out
-교차검증: 15장 중 1장을 held-out으로 빼고 나머지로 클러스터별
+교차검증: 13쌍 중 1쌍을 held-out으로 빼고 나머지로 클러스터별
 매트릭스+chroma LUT+공유 필름커브를 피팅, held-out 이미지에 적용해
 ΔE(CIEDE2000, 기존 프로젝트 관례대로)를 측정, 15번 반복해 평균.
-같은 15장에 대해 기존 `apply_hncs()`(공식 사이트에서 그대로 적용,
+같은 13쌍에 대해 기존 `apply_hncs()`(공식 사이트에서 그대로 적용,
 raw 없이 jpeg 대비)의 ΔE도 같이 재는 게 아니라, **공정 비교를 위해
-`apply_hncs()`도 raw 입력 기준으로 같은 15장에 대해 ΔE를 잰다**
+`apply_hncs()`도 raw 입력 기준으로 같은 13쌍에 대해 ΔE를 잰다**
 (현재 v8~v12 이력의 RMSE 23.3은 다른 표본/다른 측정 방식일 수 있어
 그대로 갖다 쓰지 않고 이 실험 안에서 재측정).
 
@@ -185,7 +220,7 @@ raw 없이 jpeg 대비)의 ΔE도 같이 재는 게 아니라, **공정 비교�
 
 ## 한계 (문서화 대상: 리서치 문서, 모듈 docstring, EVALUATION.md)
 
-- **Phocus의 실제 매트릭스/LUT 값과 다르다** - 우리가 가진 15장짜리
+- **Phocus의 실제 매트릭스/LUT 값과 다르다** - 우리가 가진 13쌍짜리
   raw+jpeg 페어로 새로 피팅한 근사치. Hasselblad의 비공개 자산을
   재현한 게 아니다.
 - **조사 출처가 비공식이다** - 공식 화이트페이퍼 없음, tonalphoto.com은
@@ -195,7 +230,7 @@ raw 없이 jpeg 대비)의 ΔE도 같이 재는 게 아니라, **공정 비교�
   점을 리서치 문서에 명시.
 - **2-클러스터는 실제 구조(4개 이상)의 축소판** - 표본 부족으로
   인한 타협이지 "2개가 맞다"는 주장이 아니다.
-- **표본 15장으로 클러스터당 3~7장** - 통계적으로 매우 얇음. 교차검증
+- **표본 13쌍으로 클러스터당 3~10쌍(소수 클러스터 3쌍)** - 통계적으로 매우 얇음. 교차검증
   결과가 양수든 음수든 "표본이 늘어나면 재확인 필요"라는 단서를
   반드시 붙인다.
 - **`apply_hncs()`를 대체하지 않는다** - 이 실험이 이겨도 이 스펙
