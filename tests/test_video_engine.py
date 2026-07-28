@@ -13,6 +13,10 @@ from tools.video_engine import (
     SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video,
     process_video_with_audio,
 )
+from brands.fuji import apply_pro_neg_hi, apply_pro_neg_hi_video_frame
+from brands.hasselblad import apply_hncs, apply_hncs_video_frame
+from core.curve import film_curve, s_curve
+from core.lut import ensure_uint8
 
 
 def _make_synthetic_video(path, num_frames=10, width=64, height=48, fps=24.0, seed=0):
@@ -387,6 +391,78 @@ class TestProcessVideoWithAudio(unittest.TestCase):
 
         with self.assertRaises(IOError):
             process_video_with_audio(missing_path, output_path, "canon")
+
+
+class TestApplyProNegHiVideoFrame(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(42)
+        self.img = rng.integers(0, 255, (128, 128, 3), dtype=np.uint8)
+
+    def test_preserves_shape_and_dtype(self):
+        out = apply_pro_neg_hi_video_frame(self.img)
+        self.assertEqual(out.shape, self.img.shape)
+        self.assertEqual(out.dtype, self.img.dtype)
+
+    def test_does_not_mutate_input(self):
+        img_copy = self.img.copy()
+        apply_pro_neg_hi_video_frame(self.img)
+        np.testing.assert_array_equal(self.img, img_copy)
+
+    def test_differs_from_photo_mode_with_clahe(self):
+        photo_out = apply_pro_neg_hi(self.img)
+        video_out = apply_pro_neg_hi_video_frame(self.img)
+        self.assertFalse(np.array_equal(photo_out, video_out))
+
+    def test_matches_manual_reconstruction_without_clahe(self):
+        img = ensure_uint8(self.img)
+        lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        x = np.arange(256, dtype=np.float32) / 255.0
+        y = s_curve(x, n=1.7)
+        lut = np.clip(y * 255, 0, 255).astype(np.uint8)
+        l = cv2.LUT(l, lut)
+        img_u8 = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+        hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
+        hsv[:, :, 1] = np.clip(hsv[:, :, 1] * 1.10, 0, 255)
+        expected = cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+
+        out = apply_pro_neg_hi_video_frame(self.img)
+        np.testing.assert_array_equal(out, expected)
+
+
+class TestApplyHncsVideoFrame(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(42)
+        self.img = rng.integers(0, 255, (128, 128, 3), dtype=np.uint8)
+
+    def test_preserves_shape_and_dtype(self):
+        out = apply_hncs_video_frame(self.img)
+        self.assertEqual(out.shape, self.img.shape)
+        self.assertEqual(out.dtype, self.img.dtype)
+
+    def test_does_not_mutate_input(self):
+        img_copy = self.img.copy()
+        apply_hncs_video_frame(self.img)
+        np.testing.assert_array_equal(self.img, img_copy)
+
+    def test_differs_from_photo_mode_with_clahe(self):
+        photo_out = apply_hncs(self.img)
+        video_out = apply_hncs_video_frame(self.img)
+        self.assertFalse(np.array_equal(photo_out, video_out))
+
+    def test_matches_manual_reconstruction_without_clahe(self):
+        lab = cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        x = np.arange(256, dtype=np.float32) / 255.0
+        exp_lut = np.clip((x ** 0.7) * 255, 0, 255).astype(np.uint8)
+        l = cv2.LUT(l, exp_lut)
+        x2 = np.arange(256, dtype=np.float32) / 255.0
+        lut = np.clip(film_curve(x2, 0.001, 0.78, 1.0) * 255, 0, 255).astype(np.uint8)
+        l = cv2.LUT(l, lut)
+        expected = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+        out = apply_hncs_video_frame(self.img)
+        np.testing.assert_array_equal(out, expected)
 
 
 if __name__ == "__main__":

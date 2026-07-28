@@ -368,3 +368,25 @@ def apply_classic_negative(img_bgr, sat_mult=0.65, contrast_n=1.4,
     hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
     hsv[:, :, 1] = np.clip(hsv[:, :, 1] * sat_mult, 0, 255)
     return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+
+
+# ==========================================
+# 10. PRO Neg. Hi 비디오 전용 변형 (CLAHE 생략) - tools/video_engine.py가 사용
+# ==========================================
+def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
+    """apply_pro_neg_hi()의 비디오 전용 변형 - CLAHE(프레임별 적응형
+    로컬 대비 보정)를 생략해 프레임 간 깜빡임을 피한다. 사진 모드와
+    동일한 출력이 아니다(로컬 대비가 약함)."""
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    y = s_curve(x, n=contrast_n)
+    lut = np.clip(y * 255, 0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    img_u8 = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * sat_mult, 0, 255)
+    return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)

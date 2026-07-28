@@ -12,6 +12,7 @@ import numpy as np
 # (모듈 경로, 함수명) - 브랜드 하나당 대표 apply_* 하나씩
 BRAND_LOOKS = [
     ("brands.hasselblad", "apply_hncs"),
+    ("brands.hasselblad", "apply_hncs_video_frame"),
     ("brands.hasselblad_learned", "apply_hncs_learned"),
     ("brands.hasselblad_day", "apply_hasselblad_day"),
     ("brands.hasselblad_night", "apply_hasselblad_night"),
@@ -33,6 +34,7 @@ FUJI_COLOR_PRESETS = [
     "apply_astia",
     "apply_pro_neg_std",
     "apply_pro_neg_hi",
+    "apply_pro_neg_hi_video_frame",
     "apply_eterna_cinema",
     "apply_eterna_bleach_bypass",
     "apply_nostalgic_neg",
@@ -96,7 +98,7 @@ class TestFujiPresets(unittest.TestCase):
         preset_names = {n for n in dir(self.fuji)
                          if n.startswith("apply_") and n not in generic_helpers}
         self.assertEqual(preset_names, set(FUJI_COLOR_PRESETS) | set(FUJI_MONO_PRESETS))
-        self.assertEqual(len(preset_names), 10)
+        self.assertEqual(len(preset_names), 11)
 
 
 if __name__ == "__main__":
