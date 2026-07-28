@@ -3,12 +3,20 @@ CLI. brands/*.py의 apply_*_look()은 이미 각 브랜드의 population 측정�
 마쳤지만 정지 이미지 한 장만 다룬다 - 이 모듈은 새 색과학 측정 없이
 그 결과를 비디오 프레임 시퀀스에 반복 적용하는 순수 엔지니어링이다.
 
-지원 브랜드는 core.engine.apply_population_fit_look()을 공유하는 10개뿐
-(canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony).
-Fujifilm(프리셋마다 CLAHE 사용이 제각각)과 Hasselblad(별도 파이프라인,
-자체 CLAHE)는 각자 다른 코드 경로라 이 모듈 하나로 묶을 수 없어 범위
-밖이다 - 지원 대상 확장은 docs/superpowers/specs/2026-07-26-video-engine-design.md
-참고.
+지원 브랜드는 21개: population-fit 10개(canon/leica/nikon/olympus/
+panasonic/pentax/phaseone/ricoh_gr/sigma/sony, core.engine.
+apply_population_fit_look()을 공유, process_video()/
+process_video_with_audio()가 처리) + Fuji/Hasselblad 11개(fuji_astia/
+fuji_pro_neg_std/fuji_pro_neg_hi/fuji_eterna_cinema/
+fuji_eterna_bleach_bypass/fuji_nostalgic_neg/fuji_reala_ace/
+fuji_classic_negative/fuji_acros/fuji_monochrome/hasselblad,
+process_video_v2()/process_video_v2_with_audio()가 처리 - Fuji 10개
+프리셋 중 CLAHE를 쓰는 건 apply_pro_neg_hi 하나뿐이라 나머지 9개는
+수정 없이 재사용하고, apply_pro_neg_hi와 Hasselblad apply_hncs만 CLAHE
+생략 변형을 추가했다. 자세한 조사 내용은
+docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md
+참고). Hasselblad는 apply_hncs(Stable)만 지원 - day/night/learned
+프리셋은 범위 밖.
 
 비디오 모드는 사진 모드(apply_*_look())와 동일한 출력이 아니다 - CLAHE
 (프레임별 적응형 로컬 대비 보정)를 생략한다. CLAHE를 프레임마다 그대로
@@ -258,15 +266,19 @@ def process_video_v2_with_audio(input_path, output_path, brand_name, progress_ev
 
 def main():
     parser = argparse.ArgumentParser(
-        description="비디오 파일에 population-fit 브랜드 룩 적용 (오디오 트랙 기본 보존)")
+        description="비디오 파일에 브랜드 룩 적용 (오디오 트랙 기본 보존)")
     parser.add_argument("input", help="입력 비디오 파일 경로")
     parser.add_argument("output", help="출력 비디오 파일 경로 (.mp4)")
-    parser.add_argument("--brand", required=True, choices=sorted(SUPPORTED_BRANDS),
+    all_brands = sorted(SUPPORTED_BRANDS | EXPANDED_SUPPORTED_BRANDS)
+    parser.add_argument("--brand", required=True, choices=all_brands,
                          help="적용할 브랜드 룩")
     args = parser.parse_args()
 
     try:
-        frame_count = process_video_with_audio(args.input, args.output, args.brand)
+        if args.brand in SUPPORTED_BRANDS:
+            frame_count = process_video_with_audio(args.input, args.output, args.brand)
+        else:
+            frame_count = process_video_v2_with_audio(args.input, args.output, args.brand)
     except (IOError, ValueError) as e:
         print(str(e), file=sys.stderr)
         sys.exit(1)

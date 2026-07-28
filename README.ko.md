@@ -360,7 +360,7 @@ python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진�
 
 ## 비디오 엔진 (프레임 단위, 기존 측정 재사용 - 새 측정 아님)
 
-`tools/video_engine.py`는 이미 측정된 population-fit 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않고 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony) `apply_*_look()`의 측정된 톤커브 파라미터(기본 인자값)를 재사용한다(Fujifilm/Hasselblad는 별도 파이프라인이라 이 CLI 범위 밖 - [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md) 참고).
+`tools/video_engine.py`는 이미 측정된 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않는다. 21개 브랜드를 지원: 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 측정된 톤커브 파라미터에 더해, Fujifilm 필름 시뮬레이션 프리셋 10종과 Hasselblad `apply_hncs`(`fuji_astia`/`fuji_pro_neg_std`/`fuji_pro_neg_hi`/`fuji_eterna_cinema`/`fuji_eterna_bleach_bypass`/`fuji_nostalgic_neg`/`fuji_reala_ace`/`fuji_classic_negative`/`fuji_acros`/`fuji_monochrome`/`hasselblad`) - 어떤 프리셋이 CLAHE 생략 변형을 필요로 했고 어떤 건 그대로 재사용했는지는 [docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md](docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md) 참고.
 
 ```
 python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
