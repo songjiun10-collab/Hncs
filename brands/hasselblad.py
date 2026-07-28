@@ -112,3 +112,23 @@ def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
 
     # 3. 채도/hue 무조작 (rich saturation은 "안 건드림"으로 달성)
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+def apply_hncs_video_frame(img_bgr, toe_lift=0.001, shoulder_start=0.78,
+                            white_point=1.0, exposure_gamma=0.7):
+    """apply_hncs()의 비디오 전용 변형 - CLAHE를 생략해 프레임 간
+    깜빡임을 피한다. 사진 모드와 동일한 출력이 아니다."""
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    if exposure_gamma != 1.0:
+        x = np.arange(256, dtype=np.float32) / 255.0
+        exp_lut = np.clip((x ** exposure_gamma) * 255, 0, 255).astype(np.uint8)
+        l = cv2.LUT(l, exp_lut)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
