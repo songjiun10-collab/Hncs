@@ -208,7 +208,8 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
 다름) - leave-one-out
 교차검증: 13쌍 중 1쌍을 held-out으로 빼고 나머지로 클러스터별
 매트릭스+chroma LUT+공유 필름커브를 피팅, held-out 이미지에 적용해
-ΔE(CIEDE2000, 기존 프로젝트 관례대로)를 측정, 15번 반복해 평균.
+ΔE(CIEDE2000, 기존 프로젝트 관례대로)를 측정, 13번(13쌍 각각을
+한 번씩 held-out) 반복해 평균.
 같은 13쌍에 대해 기존 `apply_hncs()`(공식 사이트에서 그대로 적용,
 raw 없이 jpeg 대비)의 ΔE도 같이 재는 게 아니라, **공정 비교를 위해
 `apply_hncs()`도 raw 입력 기준으로 같은 13쌍에 대해 ΔE를 잰다**
