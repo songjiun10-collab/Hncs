@@ -72,7 +72,16 @@ fitting on the rest) re-measured ΔE (CIEDE2000) for both this
 experimental module and `apply_hncs()` (applied to the same raw-derived
 baseline, for a fair comparison) on the same 13 pairs.
 
-<!-- Results filled in after running tools/evaluate_hncs_structural.py -->
+**Results**: the structural experiment (`apply_hncs_structural`) came in
+at a mean ΔE of 10.191, 4.1% below `apply_hncs()`'s 10.629 (winning 8 of
+13 folds, losing 5) - a real but narrow effect.
+
+| Method | Mean ΔE (CIEDE2000) |
+|---|---|
+| `apply_hncs()` (applied to the raw-derived baseline, re-measured within this experiment) | 10.629 |
+| Structural experiment (`apply_hncs_structural`, per-cluster matrix + chroma LUT + shared film curve) | 10.191 |
+
+See the "HNCS Structural Experiment" section of hybrid_engine/EVALUATION.md for full methodology and limitations.
 
 ## Limitations
 

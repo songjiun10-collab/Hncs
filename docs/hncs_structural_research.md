@@ -64,7 +64,16 @@ leave-one-out 교차검증(13회, 매회 1쌍을 held-out으로 빼고 나머지
 피팅)으로 이 실험 모듈과 `apply_hncs()`(같은 raw 기반 baseline에
 적용, 공정 비교) 양쪽의 ΔE(CIEDE2000)를 같은 13쌍에 대해 재측정했다.
 
-<!-- 결과는 tools/evaluate_hncs_structural.py 실행 후 채워짐 -->
+**결과**: 구조 실험(`apply_hncs_structural`)이 평균 ΔE 10.191로
+`apply_hncs()`의 10.629보다 4.1% 낮았다(13쌍 중 8쌍에서 우세, 5쌍에서
+열세) - 실재하지만 근소한 효과다.
+
+| 방법 | 평균 ΔE (CIEDE2000) |
+|---|---|
+| `apply_hncs()` (raw 기반 baseline에 적용, 이 실험 안에서 재측정) | 10.629 |
+| 구조 실험 (`apply_hncs_structural`, 클러스터별 매트릭스+chroma LUT+공유 필름커브) | 10.191 |
+
+자세한 방법론과 한계는 hybrid_engine/EVALUATION.md의 "HNCS 구조 실험" 절 참고.
 
 ## 한계
 

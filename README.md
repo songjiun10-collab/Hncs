@@ -354,6 +354,10 @@ lives in `docs/`.
   Fujifilm/Leica/Phase One/Pentax/Ricoh GR
 - [docs/project_structure.en.md](docs/project_structure.en.md) - full
   file-by-file breakdown
+- [docs/hncs_structural_research.en.md](docs/hncs_structural_research.en.md) -
+  research-only comparison of HNCS's real 4-stage pipeline vs.
+  `apply_hncs()`'s 3-stage simplification, with a leave-one-out ΔE
+  experiment
 
 ## Contributing
 
