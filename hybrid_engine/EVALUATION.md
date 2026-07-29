@@ -1172,8 +1172,9 @@ in-sample 이점이 얼마나 남아 있는지는 알 수 없다 - "일부 남�
 값이 `AHD`/`DHT`/`AAHD`(내부 `user_qual` > 2)면 셋 다 **같은 X-Trans
 전용 3-pass Markesteijn 데모자이크**로 합쳐 보낸다 - 이게 이미
 `decode_raw()`의 기본값이다. 그래서 "기본 vs DHT"는 실제로는 같은
-코드 경로를 두 번 실행한 것과 같다. `demosaic_algorithm=None`(quality
-2 이하, LINEAR/VNG/PPG)만 실제로 다른 경로를 타서 결과가 달라진다 -
+코드 경로를 두 번 실행한 것과 같다(`demosaic_algorithm=None`도 기본값이
+Markesteijn/quality 3이라 마찬가지). `quality` 2 이하(LINEAR/VNG/PPG)로
+명시적으로 낮춰야만 실제로 다른 경로를 타서 결과가 달라진다 -
 직접 확인: `demosaic_algorithm=PPG`로 같은 파일을 디코드하면 픽셀의
 26.7%가 기본과 달라진다(반면 DHT/AHD/AAHD는 0%). 대조군으로
 핫셀블라드 Bayer 파일(`raw_calib_cache/00378.jpg.3FR`)에 같은 DHT
