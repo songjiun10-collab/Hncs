@@ -131,12 +131,18 @@ See the "HNCS Structural Experiment" section of hybrid_engine/EVALUATION.md for 
   hand-tuned values, and the 2-cluster split and its 0.9 threshold were
   chosen after looking at all 13 R/B values - so it is not strictly
   out-of-sample either. Neither bias was quantified.
-- **`MATRIX_RIDGE=1.0` is effectively a no-op** - relative to the pooled
-  normal equations, ridge/trace(XᵀX) = 1.2e-5, and coefficients move by
-  at most 0.16% versus ridge=0.0. The recorded numbers are essentially an
-  unregularized least-squares fit, and the ridge value does not change
-  the result (so no claim of "regularization prevented overfitting" is
-  supportable).
+- **`MATRIX_RIDGE=1.0` is close to a no-op** - fitting on all 3
+  `cluster_b` pairs at once (589,824 px), ridge/trace(XᵀX) = 1.2e-5 and
+  coefficients move by at most 0.16% (max|ΔM|/max|M| on that pooled fit)
+  versus ridge=0.0. The numbers actually recorded come from LOOCV,
+  though, where some folds train on only 2 pairs - there the per-
+  coefficient change is larger (up to ~9.6% on the `x1d-II-sample-09`
+  holdout fold, moving that fold's matrix-stage ΔE by -0.065, from 6.458
+  to 6.393) - still negligible next to the 3.978 ΔE fold-to-fold
+  standard deviation. The recorded numbers are close to an unregularized
+  least-squares fit, and the ridge value does not meaningfully change
+  the final result (so no claim of "regularization prevented
+  overfitting" is supportable).
 - **Differs from Phocus's actual matrix/LUT values** - this is a new fit
   from our own 13 raw+jpeg pairs, not a reproduction of Hasselblad's
   proprietary asset.
