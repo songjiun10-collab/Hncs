@@ -357,7 +357,8 @@ lives in `docs/`.
 - [docs/hncs_structural_research.en.md](docs/hncs_structural_research.en.md) -
   research-only comparison of HNCS's real 4-stage pipeline vs.
   `apply_hncs()`'s 3-stage simplification, with a leave-one-out ΔE
-  experiment
+  experiment (result: inconclusive - the measured difference is not
+  distinguishable from zero at n=13)
 
 ## Contributing
 

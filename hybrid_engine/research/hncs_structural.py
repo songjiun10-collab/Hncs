@@ -17,6 +17,21 @@ docs/superpowers/specs/2026-07-28-hncs-structural-research-design.md.
 이 모듈은 표본(13쌍 raw+jpeg)이 뒷받침하는 만큼만 근사한다: 조명
 "최소 4종" 대신 AsShotNeutral R/B 비율 기반 2-클러스터
 ("cluster_a"/"cluster_b", 임계값 CLUSTER_THRESHOLD_R_OVER_B)로 단순화.
+
+**"미러링"이라는 말의 범위**(과대해석 금지):
+
+- 이 모듈은 조사된 **단계 구성**을 흉내낼 뿐, Phocus의 실제 매트릭스/LUT
+  값을 재현하지 않는다. 값은 우리 13쌍으로 새로 피팅한 근사치다.
+- 평가(tools/evaluate_hncs_structural.py)의 정답지는 **카메라 내장
+  JPEG**이지 Phocus/HNCS의 출력이 아니다. 따라서 ΔE가 낮아진다고 해서
+  "진짜 HNCS에 더 가깝다"는 뜻이 되지 않는다 - 재는 건 "카메라 JPEG에
+  얼마나 가까운가"뿐이다.
+- 그 평가에서 4단계 중 필름커브는 **피팅하지 않고** film_curve() 기본값
+  (= apply_hncs()가 쓰는 값)으로 고정한다. 데이터로 정해지는 건 매트릭스,
+  chroma LUT, 클러스터 분류 3가지다.
+- 2026-07 실측 결과는 apply_hncs() 대비 **판정 보류(무승부)**다 - 평균
+  ΔE는 4.1% 낮았지만 n=13에서 그 차이가 0과 구분되지 않는다. 자세한
+  통계와 한계는 hybrid_engine/EVALUATION.md "HNCS 구조 실험" 절.
 """
 import cv2
 import numpy as np
