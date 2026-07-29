@@ -1,5 +1,18 @@
 # Fuji X-Trans 데모자이크 알고리즘 비교 실험 (설계)
 
+> **정정(2026-07-29, 최종 리뷰 이후 재검증)**: 이 스펙의 핵심 전제
+> ("rawpy 기본 데모자이크가 X-Trans에 최적이 아닐 수 있다")는 실험
+> 결과 성립하지 않는 것으로 확인됐다 - LibRaw는 X-Trans에서
+> `demosaic_algorithm`이 AHD/DHT/AAHD(quality>2)면 셋 다 이미 같은
+> X-Trans 전용 Markesteijn 데모자이크로 합친다(`decode_raw()`의
+> 기본값도 이미 그 경로). 그래서 "기본 vs DHT" 비교는 같은 코드
+> 경로를 두 번 실행한 것과 동일했다 - 처음 기록했던 "아주 작은 실제
+> 차이"는 DHT 효과가 아니라 LibRaw의 X-Trans 병렬 디코드 자체의
+> 스레딩 논디터미니즘이었다(`OMP_NUM_THREADS=1`로 고정하면 완전히
+> 사라짐). 자세한 재검증 내용은
+> `hybrid_engine/EVALUATION.md`의 "Fuji X-Trans 데모자이크 알고리즘
+> 비교" 절 참고. 아래 원문은 실험 설계 당시의 전제를 그대로 남겨둔다.
+
 ## 배경
 
 `brands/fuji.py`는 raw+jpeg 페어 캘리브레이션(핫셀블라드 v8~v12급 방식)을

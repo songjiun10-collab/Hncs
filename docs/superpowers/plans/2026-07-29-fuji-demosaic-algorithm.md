@@ -1,5 +1,15 @@
 # Fuji X-Trans Demosaic Algorithm Comparison Implementation Plan
 
+> **정정(2026-07-29, 최종 리뷰 이후)**: 이 플랜이 구현한 "기본 vs DHT"
+> 비교는 X-Trans에서 두 조건이 코드 레벨에서 동일했던 것으로 밝혀졌다
+> (LibRaw가 quality>2 알고리즘을 전부 Markesteijn으로 합침) - 코드
+> 자체(Task 1의 `demosaic_algorithm` 파라미터)는 정상 동작하고 유효한
+> 추가지만, Task 2가 검증하려던 가설은 이 경로로는 성립하지 않는다.
+> 자세한 내용과 정정된 결론은
+> `docs/superpowers/specs/2026-07-29-fuji-demosaic-algorithm-design.md`와
+> `hybrid_engine/EVALUATION.md`의 해당 절 참고. 아래 태스크 내용은
+> 실행 당시 그대로 남겨둔다(역사 기록).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Determine (with an honest, small-sample caveat) whether decoding Fuji X-Trans RAWs with `rawpy`'s DHT demosaic algorithm instead of its default reduces ΔE against the real camera JPEG, using the 3 real local raw+jpeg pairs already on disk.
