@@ -64,28 +64,79 @@ chroma LUT -> shared film curve). The sample (13 raw+jpeg pairs,
 `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv`) can't support "at
 least 4 illuminants," so this was reduced to a 2-cluster split by the
 `AsShotNeutral` R/B ratio (`cluster_a`/`cluster_b`, threshold 0.9) - a
-clear 10-vs-3 separation gives grounds to try it, but the minority
-cluster at only 3 pairs is statistically thin.
+10-vs-3 gap gives grounds to try it, but the minority cluster at only 3
+pairs is statistically thin, and at n=13 a single gap is not evidence
+that two distinct illuminant populations actually exist (all we verified
+is that it is *not* a camera-generation artifact - both clusters contain
+a mix of X1D and X1D II bodies).
+
+Note that **the film curve, one of the 4 stages, is not fitted**: it is
+pinned to `film_curve()`'s defaults (the same values `apply_hncs()` uses)
+so that both pipelines share one tone curve. Only three things are
+actually determined from data: the matrix, the chroma LUT, and the
+cluster assignment.
 
 Leave-one-out cross-validation (13 runs, each holding out 1 pair and
 fitting on the rest) re-measured ΔE (CIEDE2000) for both this
 experimental module and `apply_hncs()` (applied to the same raw-derived
-baseline, for a fair comparison) on the same 13 pairs.
+baseline) on the same 13 pairs.
 
-**Results**: the structural experiment (`apply_hncs_structural`) came in
-at a mean ΔE of 10.191, 4.1% below `apply_hncs()`'s 10.629 (winning 6 of
-13 folds, losing 7 - the mean improved but a majority of individual folds
-did not) - a real but narrow and inconsistent effect.
+**Result: a draw (inconclusive).** The structural experiment
+(`apply_hncs_structural`) came in at a mean ΔE of 10.191, 4.1% below
+`apply_hncs()`'s 10.629 - but **that difference is not distinguishable
+from zero.**
 
 | Method | Mean ΔE (CIEDE2000) |
 |---|---|
 | `apply_hncs()` (applied to the raw-derived baseline, re-measured within this experiment) | 10.629 |
 | Structural experiment (`apply_hncs_structural`, per-cluster matrix + chroma LUT + shared film curve) | 10.191 |
 
+- It wins only 6 of 13 folds and loses 7 - two-sided sign test p = 1.000
+- The **median** paired difference is −0.078 ΔE, i.e. the opposite sign
+  from the mean
+- Fold-to-fold standard deviation is 3.978 ΔE; paired t(df=12) = 0.40
+- Bootstrap 95% CI on the mean difference: [−1.572, +2.548]; on the
+  improvement: [−15.8%, +22.9%] - both straddle zero
+- Dropping the single pair `x1d-II-sample-09.jpg` **flips the improvement
+  to −2.0%**
+
+So this experiment supports neither "mirroring the structure more closely
+improves ΔE" nor the opposite. **The "4.1% improvement" figure must not
+be cited as this experiment's conclusion.**
+
 See the "HNCS Structural Experiment" section of hybrid_engine/EVALUATION.md for full methodology and limitations.
 
 ## Limitations
 
+- **The experiment cannot isolate the effect of "structure"** - the two
+  arms differ in more than stage count: the structural arm decodes
+  differently (camera-native + `AsShotNeutral` WB vs. libraw sRGB) and
+  **fits** both a 3x3 matrix and the chroma parameters to the targets,
+  while `apply_hncs()` learns nothing at all inside this experiment.
+  Without a 1-cluster (global matrix) control, any difference cannot be
+  attributed to "illuminant-specific structure" rather than simply to
+  "a matrix was fitted to the data."
+- **The ground truth is not HNCS output** - the targets are JPEGs
+  produced by the X1D / X1D II **camera bodies**, whereas the HNCS
+  pipeline this document describes is Phocus's desktop RAW rendering.
+  Nothing here verifies that the in-camera JPEG engine runs the same 4
+  stages. "Mirrors HNCS's structure" and "is closer to real HNCS output"
+  are **different claims**; this experiment measures only closeness to
+  the camera JPEG.
+- **The comparison is not symmetric** - `apply_hncs()`'s
+  `exposure_gamma=0.7` and friends were grid-searched against these very
+  pairs (10 of them at the time), so it is partly in-sample on every
+  fold, which biases against the structural arm. Conversely the
+  structural arm inherits its film-curve constants from those same
+  hand-tuned values, and the 2-cluster split and its 0.9 threshold were
+  chosen after looking at all 13 R/B values - so it is not strictly
+  out-of-sample either. Neither bias was quantified.
+- **`MATRIX_RIDGE=1.0` is effectively a no-op** - relative to the pooled
+  normal equations, ridge/trace(XᵀX) = 1.2e-5, and coefficients move by
+  at most 0.16% versus ridge=0.0. The recorded numbers are essentially an
+  unregularized least-squares fit, and the ridge value does not change
+  the result (so no claim of "regularization prevented overfitting" is
+  supportable).
 - **Differs from Phocus's actual matrix/LUT values** - this is a new fit
   from our own 13 raw+jpeg pairs, not a reproduction of Hasselblad's
   proprietary asset.

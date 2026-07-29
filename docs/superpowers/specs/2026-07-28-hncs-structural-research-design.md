@@ -199,6 +199,17 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
 택함(v11에서 이미 밝힌 것처럼 toe_lift/shoulder_start는 표본이 작아
 바꾸지 않은 전례와 같은 판단).
 
+> **정정(2026-07-29, 사후 감사)**: 위 "공유 피팅"은 **구현되지 않았다**.
+> `tools/evaluate_hncs_structural.py`는 `FILM_CURVE_TOE_LIFT=0.001` /
+> `SHOULDER_START=0.78` / `WHITE_POINT=1.0`을 상수로 고정하고 한 번도
+> 피팅하지 않는다(= `film_curve()` 기본값 = `apply_hncs()`가 v11에서
+> 채택한 값). 결과적으로 두 방식이 같은 톤커브를 공유해 톤이 통제변수가
+> 되는 효과는 있지만, **"4단계 미러링" 중 데이터로 정해지는 건
+> 3단계**(매트릭스, chroma LUT, 클러스터 분류)뿐이다. 게다가 그 고정
+> 상수 자체가 이 13쌍(당시 10쌍)으로 손보정된 값이라 구조 실험도 이
+> 단계에서는 out-of-sample이 아니다. 문서(EVALUATION.md /
+> docs/hncs_structural_research{,.en}.md)에 한계로 명시했다.
+
 ### 평가
 
 `tools/evaluate_hncs_structural.py`(가칭, 기존
@@ -218,6 +229,18 @@ raw 없이 jpeg 대비)의 ΔE도 같이 재는 게 아니라, **공정 비교�
 
 결과는 승패 관계없이 `hybrid_engine/EVALUATION.md`에 새 섹션으로
 기록(이 프로젝트의 기존 "이기든 지든 정직하게 기록" 관례).
+
+> **정정(2026-07-29, 사후 감사)**: 위에서 "공정 비교"라고 쓴 것은
+> 과장이다. 같은 raw에서 출발해 같은 타깃으로 재는 것까지는 맞지만,
+> (1) `apply_hncs()`의 파라미터는 과거에 바로 이 페어들(당시 10쌍)로
+> 그리드서치해 정해진 값이라 모든 폴드에서 부분적으로 in-sample이고,
+> (2) 구조 실험 쪽만 매트릭스/chroma를 타깃에 맞춰 피팅하며 입력 디코드
+> 경로도 다르다(카메라 네이티브 vs libraw sRGB). 그래서 이 비교는
+> "구조(3단계 vs 4단계)"의 효과를 분리하지 못한다 - 분리하려면
+> 1-클러스터 전역 매트릭스 대조군이 필요하고, 이 스펙에는 없다.
+> 또한 n=13 LOOCV의 평균 ΔE 차이는 폴드 간 산포에 비해 작아서
+> 유의성/불확실성 보고 없이 승패를 선언하면 안 된다(실제로 초판이
+> 그렇게 기록했다가 정정됨).
 
 ## 한계 (문서화 대상: 리서치 문서, 모듈 docstring, EVALUATION.md)
 

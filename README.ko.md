@@ -476,7 +476,8 @@ README는 훑어보는 용도로 짧게 유지하고, 자세한 실측 기록은
   전체 목록
 - [docs/hncs_structural_research.md](docs/hncs_structural_research.md) -
   HNCS 실제 4단계 구조 vs `apply_hncs()`의 3단계 단순화 비교(연구용),
-  leave-one-out ΔE 실험 포함
+  leave-one-out ΔE 실험 포함(결과: 판정 보류 - n=13에서 측정된 차이가
+  0과 구분되지 않는다)
 
 ## 기여
 
