@@ -3,6 +3,10 @@ RAW 디코딩 및 TIFF 입출력. rawpy로 어떤 카메라의 RAW든 16비트 L
 순수하게 뽑아내고(감마/톤커브 없음 - 이후 파이프라인이 전부 처리), 최종
 결과를 16비트 무손실 TIFF로 저장한다.
 """
+import os
+import subprocess
+import tempfile
+
 import numpy as np
 import rawpy
 import cv2
@@ -110,3 +114,43 @@ def load_image_linear(path, resize_to=None):
     else:
         rgb = bgr[:, :, ::-1].astype(np.float64) / 255.0
     return colour.cctf_decoding(rgb, function="sRGB")
+
+
+def decode_raw_darktable(raw_path):
+    """RAW -> Linear RGB, darktable-cli 경유(연구용 전용 -
+    decode_raw()를 대체하지 않는다, tools/evaluate_darktable_vs_rawpy.py
+    전용). float64 [0, ~) 범위, shape (H, W, 3), RGB 순서,
+    decode_raw()와 같은 sRGB(Rec.709) 프라이머리 기준 선형광 값이지만
+    데모자이크/카메라 매트릭스/화이트밸런스를 rawpy(LibRaw)가 아니라
+    darktable이 계산한다는 점이 다르다.
+
+    subprocess로 darktable-cli를 호출해 32비트 float TIFF로 export한다.
+    --icc-type LIN_REC709(선형, Rec.709 프라이머리)와
+    plugins/darkroom/workflow=none(filmic/노출 자동보정 끔 - 안 끄면
+    darktable 기본값이 톤매핑까지 적용해서 decode_raw()와 비교
+    불가능한 결과가 나온다, 직접 확인함)이 핵심이다. darktable 출력은
+    음수를 클립하지 않으므로 읽어온 뒤 0으로 클립해서 decode_raw()와
+    하한을 맞춘다.
+
+    subprocess+임시파일 기반이라 decode_raw()보다 훨씬 느리다(파일당
+    10초 이상) - 프로덕션 경로가 아니라
+    tools/evaluate_darktable_vs_rawpy.py 전용이다."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_path = os.path.join(tmpdir, "out.tif")
+        result = subprocess.run(
+            ["darktable-cli", raw_path, out_path,
+             "--icc-type", "LIN_REC709", "--out-ext", "tif",
+             "--core",
+             "--conf", "plugins/imageio/format/tiff/bpp=32",
+             "--conf", "plugins/darkroom/workflow=none"],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0 or not os.path.exists(out_path):
+            raise RuntimeError(
+                f"darktable-cli failed for {raw_path}: {result.stderr}")
+        bgr = cv2.imread(out_path, cv2.IMREAD_UNCHANGED)
+        if bgr is None:
+            raise RuntimeError(
+                f"failed to read darktable-cli output for {raw_path}")
+    rgb = bgr[:, :, ::-1].astype(np.float64)
+    return np.clip(rgb, 0.0, None)
