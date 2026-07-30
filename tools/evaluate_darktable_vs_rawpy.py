@@ -20,6 +20,7 @@ darktable-cli는 시스템 패키지(apt-get install darktable)로 설치돼야
 """
 import csv
 import glob
+import math
 import os
 import sys
 
@@ -148,6 +149,69 @@ def run_comparison():
     return results
 
 
+def _sign_test_p(wins, losses):
+    """부호검정 양측 p값(정확 이항, 무승부 제외). scipy 의존 없이
+    math.comb으로 직접 계산한다 - tools/evaluate_hncs_structural.py와
+    동일한 구현(이 프로젝트의 표준 방식)."""
+    n = wins + losses
+    if n == 0:
+        return 1.0
+    k = min(wins, losses)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / (2.0 ** n)
+    return min(1.0, 2.0 * tail)
+
+
+def summarize(results):
+    """run_comparison()의 결과((camera, name, de_rawpy, de_dt, improved)
+    튜플 리스트) -> 요약 통계 dict.
+
+    노이즈 바닥 게이트(check_determinism())는 반복-디코드 재현성만
+    잴 뿐 페어 간 분산은 안 잰다 - 작은 진짜 효과와 노이즈를 구분하지
+    못한다(이 실험의 최초 버전이 겪은 OMP_NUM_THREADS 버그를 정정하고
+    나서 실제로 그런 작은 효과가 나왔다). 그래서 부호검정과 대응표본
+    t-통계량을 별도로 계산한다 - tools/evaluate_hncs_structural.py의
+    summarize()와 같은 근거/구현. 순수 함수라 기록된 페어별 결과만
+    있으면 스크립트를 다시 안 돌려도 재현할 수 있다
+    (tests/test_evaluate_darktable_vs_rawpy.py 참고)."""
+    de_rawpy = np.array([r[2] for r in results], dtype=np.float64)
+    de_dt = np.array([r[3] for r in results], dtype=np.float64)
+    n = len(results)
+    diff = de_dt - de_rawpy  # 양수 = darktable이 더 나쁨(rawpy가 더 정확)
+    mean_rawpy = float(de_rawpy.mean())
+    mean_dt = float(de_dt.mean())
+
+    rawpy_wins = int((diff > 0).sum())
+    dt_wins = int((diff < 0).sum())
+    sd_diff = float(diff.std(ddof=1)) if n > 1 else 0.0
+    sem_diff = sd_diff / math.sqrt(n) if n > 1 else 0.0
+    t_stat = float(diff.mean() / sem_diff) if sem_diff > 0 else 0.0
+
+    return {
+        "n": n,
+        "mean_rawpy": mean_rawpy,
+        "mean_darktable": mean_dt,
+        "mean_diff": float(diff.mean()),
+        "rawpy_wins": rawpy_wins,
+        "darktable_wins": dt_wins,
+        "sd_diff": sd_diff,
+        "sem_diff": sem_diff,
+        "t_stat": t_stat,
+        "sign_test_p": _sign_test_p(rawpy_wins, dt_wins),
+    }
+
+
+def print_summary(s):
+    print()
+    print(f"평균 rawpy ΔE (CIEDE2000, n={s['n']}): {s['mean_rawpy']:.3f}")
+    print(f"평균 darktable ΔE (CIEDE2000, n={s['n']}): {s['mean_darktable']:.3f}")
+    print(f"평균 차이: {s['mean_diff']:+.6f} (darktable - rawpy, 양수면 "
+          f"rawpy가 더 정확)")
+    print(f"페어 승패: rawpy {s['rawpy_wins']}승 darktable {s['darktable_wins']}승")
+    print(f"대응 차이 표준편차: {s['sd_diff']:.3f} "
+          f"(t={s['t_stat']:.2f}, df={s['n'] - 1})")
+    print(f"부호검정 양측 p값: {s['sign_test_p']:.4f}")
+
+
 def main():
     print("반복-디코드 노이즈 바닥 측정 (ΔE CIEDE2000 단위, 대표 파일 각 1장):")
     hasselblad_pairs = load_hasselblad_pairs()
@@ -155,25 +219,14 @@ def main():
     noise_pairs = [check_determinism(hasselblad_pairs[0]), check_determinism(fuji_pairs[0])]
     max_noise_de = max(n for pair_noise in noise_pairs for n in pair_noise)
     print(f"측정된 최대 노이즈 바닥: ΔE {max_noise_de:.6f}")
+    print("(참고: 이 값은 반복-디코드 재현성만 재는 것이지 통계적 유의성")
+    print(" 검정이 아니다 - 실제 유의성은 아래 부호검정/t-통계량을 본다)")
     print()
 
     print("전체 16쌍 비교:")
     results = run_comparison()
-    n_total = len(results)
-    n_improved = sum(1 for *_, improved in results if improved)
-    de_rawpy_mean = sum(r[2] for r in results) / n_total
-    de_dt_mean = sum(r[3] for r in results) / n_total
-    de_diff = de_rawpy_mean - de_dt_mean
-    print()
-    print(f"평균 rawpy ΔE (n={n_total}): {de_rawpy_mean:.3f}")
-    print(f"평균 darktable ΔE (n={n_total}): {de_dt_mean:.3f}")
-    print(f"평균 차이: {de_diff:.6f} (rawpy - darktable, 양수면 darktable이 더 정확)")
-    print(f"darktable가 더 나은 페어: {n_improved}/{n_total}")
-    print(f"측정된 노이즈 바닥(ΔE): {max_noise_de:.6f}")
-    if abs(de_diff) < max_noise_de:
-        print("판정: 평균 차이가 노이즈 바닥보다 작다 - 노이즈와 구분 불가")
-    else:
-        print("판정: 평균 차이가 노이즈 바닥보다 크다 - 노이즈로는 설명 안 되는 차이")
+    s = summarize(results)
+    print_summary(s)
 
 
 if __name__ == "__main__":

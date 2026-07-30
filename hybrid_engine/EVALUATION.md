@@ -1289,12 +1289,43 @@ darktable 서브프로세스에는 안 전달되지만, rawpy 프로세스 자�
 darktable가 더 나은 페어: 3/16(Fuji 3쌍 전부), rawpy가 더 나은 페어:
 13/16(핫셀블라드 13쌍 전부)
 
+**페어별 상세** (16쌍 전부, `python3 -m tools.evaluate_darktable_vs_rawpy`
+실제 재실행 출력 그대로 - 아래 유의성 검정은 이 표만으로
+재현 가능하다, `tests/test_evaluate_darktable_vs_rawpy.py`의
+`TestSummarizeRecordedRun`이 이 표를 그대로 입력해서 통계 수치를
+회귀 테스트로 고정한다):
+
+| 카메라 | 파일 | rawpy ΔE | darktable ΔE | 승자 |
+|---|---|---|---|---|
+| Hasselblad | x1d-II-sample-02.jpg | 14.225 | 15.955 | rawpy |
+| Hasselblad | x1d-II-sample-09.jpg | 17.386 | 17.771 | rawpy |
+| Hasselblad | B0000994.jpg | 14.926 | 15.226 | rawpy |
+| Hasselblad | B0001395.jpg | 16.366 | 16.428 | rawpy |
+| Hasselblad | x1d-xcd45-01.jpg | 16.715 | 16.721 | rawpy |
+| Hasselblad | x1d-xcd45-03.jpg | 4.055 | 5.649 | rawpy |
+| Hasselblad | x1d-xcd45-04.jpg | 4.029 | 4.186 | rawpy |
+| Hasselblad | x1d-ii-xcd45p-01.jpg | 6.657 | 7.078 | rawpy |
+| Hasselblad | x1d-ii-xcd45p-02.jpg | 10.065 | 12.843 | rawpy |
+| Hasselblad | x1d-II-sample-01.jpg | 13.983 | 14.040 | rawpy |
+| Hasselblad | x1d-II-sample-06.jpg | 17.202 | 17.482 | rawpy |
+| Hasselblad | 02709.jpg | 12.533 | 12.584 | rawpy |
+| Hasselblad | 00378.jpg | 4.007 | 4.709 | rawpy |
+| Fujifilm X-T3 | DSCF3954.RAF | 11.648 | 11.557 | darktable |
+| Fujifilm X-T30 | DSCF7094.RAF | 8.379 | 8.107 | darktable |
+| Fujifilm X-T30 | DSCF7030.RAF | 11.188 | 11.181 | darktable |
+
 **노이즈 바닥 게이트(0.000000 대비 -0.51)는 통계적 유의성 검정이
-아니다** - 반복 디코드 재현성만 잴 뿐, 페어 간 분산은 안 잰다. 실제
-유의성은 별도로 검정했다:
+아니다** - 반복 디코드 재현성만 잴 뿐, 페어 간 분산은 안 잰다.
+`tools/evaluate_darktable_vs_rawpy.py`의 `summarize()`/`print_summary()`
+(`tools/evaluate_hncs_structural.py`의 부호검정 구현과 동일한 방식,
+scipy 의존 없음)가 이제 별도로 실제 유의성을 계산해서 출력한다:
 - 부호검정(양측, n=16, 13승 3패): p ≈ 0.0213
 - 대응표본 t-검정: t(15) = 2.47, p ≈ 0.0259
 - 평균 차이 0.510 ΔE, 표준편차 0.825 ΔE(대응 차이 기준)
+
+이 수치들은 위 페어별 표만으로 재현 가능하다(스크립트를 다시 안
+돌려도 된다) - `tests/test_evaluate_darktable_vs_rawpy.py`의
+`TestSummarizeRecordedRun`이 회귀 테스트로 고정해뒀다.
 
 **판정**: 두 검정 모두 p < 0.05로, **rawpy가 근소하지만 통계적으로
 유의미하게 낫다**(평균 0.51 ΔE, 약 4.4% 차이) - 그러나 최초 기록의
