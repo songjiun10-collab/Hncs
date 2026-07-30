@@ -132,9 +132,29 @@ def decode_raw_darktable(raw_path):
     음수를 클립하지 않으므로 읽어온 뒤 0으로 클립해서 decode_raw()와
     하한을 맞춘다.
 
+    **호출 프로세스의 OMP_NUM_THREADS를 절대 물려받으면 안 된다** -
+    darktable 4.6.1이 이 값을 코어 수보다 작게 설정된 채로 물려받으면
+    프레임을 코어 수만큼 스트라이프로 나눠놓고 그중 OMP_NUM_THREADS
+    개만 실제로 렌더링해서, 나머지 스트라이프가 전부 새까맣게 나온다
+    (에러도 안 나고 종료 코드도 0 - 조용히 잘못된 결과를 냄, 실측
+    확인: 이 컨테이너의 4코어에서 OMP_NUM_THREADS=1이면 이미지의
+    75%가 검게 잘림). tools/evaluate_darktable_vs_rawpy.py는 rawpy의
+    X-Trans 논디터미니즘 때문에 자기 프로세스 환경에
+    OMP_NUM_THREADS=1을 설정하는데, 그게 부모→자식으로 그대로
+    전달되면서 처음 실제로 벌어진 문제였다 - 그래서 이 함수는 호출자의
+    환경과 무관하게 항상 OMP_NUM_THREADS/OMP_THREAD_LIMIT를 지운
+    독립된 환경으로 subprocess를 띄운다.
+
+    출력에 대해서도 방어적으로 검증한다 - 위 문제처럼 종료 코드/파일
+    존재만으로는 부분 잘림을 못 잡으므로, 완전히 까만(전 채널 0) 행이
+    일정 비율을 넘으면 잘린 렌더로 보고 예외를 던진다.
+
     subprocess+임시파일 기반이라 decode_raw()보다 훨씬 느리다(파일당
     10초 이상) - 프로덕션 경로가 아니라
     tools/evaluate_darktable_vs_rawpy.py 전용이다."""
+    env = os.environ.copy()
+    env.pop("OMP_NUM_THREADS", None)
+    env.pop("OMP_THREAD_LIMIT", None)
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = os.path.join(tmpdir, "out.tif")
         result = subprocess.run(
@@ -143,7 +163,7 @@ def decode_raw_darktable(raw_path):
              "--core",
              "--conf", "plugins/imageio/format/tiff/bpp=32",
              "--conf", "plugins/darkroom/workflow=none"],
-            capture_output=True, text=True,
+            capture_output=True, text=True, env=env,
         )
         if result.returncode != 0 or not os.path.exists(out_path):
             raise RuntimeError(
@@ -153,4 +173,10 @@ def decode_raw_darktable(raw_path):
             raise RuntimeError(
                 f"failed to read darktable-cli output for {raw_path}")
     rgb = bgr[:, :, ::-1].astype(np.float64)
+    black_row_fraction = (rgb == 0).all(axis=(1, 2)).mean()
+    if black_row_fraction > 0.01:
+        raise RuntimeError(
+            f"darktable-cli output for {raw_path} looks truncated: "
+            f"{black_row_fraction:.1%} of rows are fully black "
+            "(likely an OpenMP thread-count mismatch during rendering)")
     return np.clip(rgb, 0.0, None)
