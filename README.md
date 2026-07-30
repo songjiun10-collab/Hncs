@@ -78,6 +78,8 @@ pip install -r requirements.txt
 
 `.claude/settings.json` is the sandbox config that auto-allows network access to `cdn.hasselblad.com`, `live.staticflickr.com`, etc. when running analysis scripts in this repo with Claude Code.
 
+Reproducing `tools/evaluate_darktable_vs_rawpy.py` (a research-only RAW-decoder comparison experiment) requires `darktable-cli` to be installed on the system (`apt-get install darktable` or your distro's equivalent - a separate system package not covered by Python's `requirements.txt`). No other feature in this project requires darktable.
+
 ## RAW -> Log Colorspace Pipeline (Professional)
 
 A separate module with a different purpose from the per-brand `apply_*` engine. Instead of approximating "the JPEG this specific camera actually produces," it standardizes RAW files - **regardless of camera** - into a common intermediate colorspace (ProPhoto RGB Linear), then encodes into whichever video camera's Log curve/gamut you want (F-Log2, S-Log3, V-Log, ARRI LogC3/4, etc.) so that camera's creative `.cube` LUTs can be applied to RAW photos without color drift ([inspired by raw-alchemy](https://github.com/shenmintao/raw-alchemy), reimplemented here on top of `colour-science`).

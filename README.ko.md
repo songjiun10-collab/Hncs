@@ -79,6 +79,12 @@ pip install -r requirements.txt
 `cdn.hasselblad.com`, `live.staticflickr.com` 등으로의 네트워크 접근을
 자동 허용하는 샌드박스 설정입니다.
 
+`tools/evaluate_darktable_vs_rawpy.py`(연구용 RAW 디코더 비교 실험)를
+재현하려면 `darktable-cli`가 시스템에 설치돼 있어야 한다
+(`apt-get install darktable` 또는 배포판에 맞는 방법 - Python
+`requirements.txt`로는 안 잡히는 별도 시스템 패키지다). 이 프로젝트의
+다른 어떤 기능도 darktable을 요구하지 않는다.
+
 ## RAW → Log 색공간 파이프라인 (전문가용)
 
 브랜드별 `apply_*` 엔진과는 목적이 다른 별도 모듈. "이 카메라가 실제로

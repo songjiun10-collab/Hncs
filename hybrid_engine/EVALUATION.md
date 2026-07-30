@@ -1223,3 +1223,83 @@ X-Trans에서만 quality > 2 알고리즘들이 이미 같은 경로로 합쳐�
 - **`apply_hncs()`/`brands/fuji.py`의 실제 프리셋 함수는 이 실험과
   무관하다** - 이번 비교는 `decode_raw()`라는 하위 유틸리티 레벨
   비교일 뿐, 두 함수 다 이 결과로 바뀌지 않았다.
+
+## darktable vs rawpy RAW 디코드 비교 (핫셀블라드 13쌍 + Fuji 3쌍)
+
+**배경**: 직전 Fuji 데모자이크 실험에서 rawpy 안의 알고리즘 선택으로는
+X-Trans 데모자이크를 바꿀 수 없다는 게 밝혀졌다(위 "Fuji X-Trans
+데모자이크 알고리즘 비교" 절 참고). 이번 실험은 더 넓게, RAW 디코드
+프로그램 자체(rawpy/LibRaw vs darktable)를 바꿔서 비교한다 - 데모자이크뿐
+아니라 카메라 매트릭스/화이트밸런스 계산까지 전부 다른 프로그램이 하는
+차이. `decode_raw()`는 대체하지 않았다(기존 캘리브레이션 전부가 그
+출력에 맞춰 피팅돼 있음) - `decode_raw_darktable()`이라는 별도 함수로만
+비교했다. 설계 근거:
+`docs/superpowers/specs/2026-07-30-darktable-vs-rawpy-design.md`.
+
+**측정 방법**: darktable-cli를 `--icc-type LIN_REC709` +
+`plugins/imageio/format/tiff/bpp=32` + `plugins/darkroom/workflow=none`
+조합으로 호출해야 `decode_raw()`와 비교 가능한 순수 선형 출력이
+나온다(기본 설정은 filmic 톤매핑이 걸려서 비교 불가 - 직접 확인함).
+지난 두 실험에서 사후에야 측정 노이즈 문제를 발견했던 걸 반영해서,
+이번엔 **실제 비교 전에 반복-디코드 노이즈 바닥을 ΔE 단위로 먼저
+측정**했다. (측정 과정에서 100MP 원본을 축소 없이 그대로 들고 있다가
+실제로 OOM으로 죽는 문제가 발견돼, `tools/evaluate_hncs_structural.py`와
+같은 `DOWNSAMPLE_MAX_DIM=1024` 축소를 디코드 직후에 적용하도록
+수정했다 - 자세한 내용은 스크립트 docstring 참고.)
+
+**노이즈 바닥** (대표 파일 각 1장, 같은 파일 반복 디코드 간 ΔE):
+
+측정된 최대 노이즈 바닥: 0.000000 ΔE (`OMP_NUM_THREADS=1` 고정 + 축소
+해상도에서 rawpy/darktable 둘 다 완전히 결정론적이었다)
+
+**결과** (핫셀블라드 13쌍 + Fuji 3쌍 = 16쌍, 같은 카메라 JPEG 타깃 대비
+ΔE CIEDE2000):
+
+| 방법 | 평균 ΔE (n=16) |
+|---|---|
+| `decode_raw()`(rawpy/LibRaw) | 11.460 |
+| `decode_raw_darktable()`(darktable-cli) | 29.186 |
+
+평균 차이: -17.725668 (rawpy - darktable, 양수면 darktable이 더 정확 -
+음수이므로 rawpy가 더 정확)
+darktable가 더 나은 페어: 0/16
+
+**판정**: 평균 차이가 노이즈 바닥(ΔE 0.000000)보다 크다 - **rawpy가
+decode_raw_darktable()보다 결정적으로 낫다**(근거: -17.725668, 약
+2.5배). 직전 두 실험(HNCS 구조 실험, Fuji 데모자이크)과 달리 이번엔
+차이가 노이즈와 전혀 헷갈리지 않을 만큼 크다 - 핫셀블라드/Fuji 16쌍
+전부에서 예외 없이 rawpy가 이겼다.
+
+**해석**: 이 결과가 "darktable이 나쁜 RAW 프로세서"라는 뜻은 아니다.
+이 실험이 요구한 `plugins/darkroom/workflow=none` 설정(선형 비교를
+위해 필수적이었음)이 darktable 자체의 색보정 모듈들(`channelmixerrgb`
+등 자동 적용 히스토리)을 꺼버려서, LibRaw가 카메라별로 수십 년간
+다듬어온 매트릭스보다 훨씬 덜 튜닝된 기본 카메라->RGB 매트릭스만
+남긴 상태로 비교한 것이다. 이 실험이 실제로 확인한 건 "darktable의
+선형/무처리 모드가 rawpy 기본값보다 이 카메라들의 JPEG 렌더링에
+가까운가"뿐이지, "어느 프로그램이 일반적으로 더 색채측정학적으로
+정확한가"가 아니다 - darktable의 기본(scene-referred, filmic 포함)
+워크플로우는 애초에 이 실험과 비교 불가능해서(톤매핑 때문에) 시도하지
+않았다.
+
+**알려진 한계**:
+- **핫셀블라드 13쌍 + Fuji 3쌍, 두 카메라 시스템뿐이다** - 다른
+  브랜드/센서로 일반화되는지는 확인 안 됨.
+- **darktable-cli의 `colorin`(카메라->작업색공간 변환) 로직이
+  LibRaw의 매트릭스와 정확히 어떻게 다른지는 조사하지 않았다** -
+  "각 프로그램의 기본 카메라 인식 로직"을 그대로 비교했을 뿐, 둘 중
+  어느 쪽이 더 정확한 카메라 고유 매트릭스를 쓰는지 별도로 검증하지
+  않았다.
+- **`decode_raw_darktable()`은 subprocess+임시파일 기반이라 훨씬
+  느리다**(파일당 10초 이상, 이번 16쌍 전체 실행에 약 14분 걸림) -
+  이 결과가 rawpy 승리라 프로덕션 채택 여부는 애초에 논점이 아니게
+  됐다.
+- **`hasselblad.json`/DCP 프로파일 등 기존 캘리브레이션은 이 결과로
+  재피팅하지 않았다** - 애초에 필요 없어졌다(rawpy가 이겼으므로).
+- **darktable-cli는 시스템 패키지 의존성**(`apt-get install darktable`)
+  이라 이 실험을 재현하려면 별도 설치가 필요하다 - `requirements.txt`
+  로는 안 잡힌다.
+- **비교 결과가 축소 해상도(최대 1024px)에서 측정됐다** - 3x3
+  매트릭스/전역 색 분포 기반 ΔE라 공간 해상도에 크게 좌우되지
+  않는다고 보지만(이 프로젝트의 다른 실험들과 같은 근거), 원본
+  해상도에서 재측정하면 수치가 달라질 수 있다.
