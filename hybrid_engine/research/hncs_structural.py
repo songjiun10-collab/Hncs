@@ -34,6 +34,7 @@ docs/superpowers/specs/2026-07-28-hncs-structural-research-design.md.
   통계와 한계는 hybrid_engine/EVALUATION.md "HNCS 구조 실험" 절.
 """
 import cv2
+import colour
 import numpy as np
 
 from core.curve import film_curve
@@ -42,6 +43,7 @@ from hybrid_engine.utils.exif import read_as_shot_neutral
 from hybrid_engine.utils.io import decode_raw_native
 
 CLUSTER_THRESHOLD_R_OVER_B = 0.9
+_SRGB = colour.RGB_COLOURSPACES["sRGB"]
 
 
 def decode_and_white_balance(raw_path):
@@ -101,6 +103,52 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
     cluster = classify_illuminant_cluster(as_shot_neutral)
     matrixed = apply_color_matrix(wb_rgb, illuminant_matrices[cluster])
     sat_mult, hue_shift_deg = chroma_lut_params[cluster]
+    chroma_applied = apply_chroma_lut(matrixed, sat_mult, hue_shift_deg)
+    return film_curve(chroma_applied, toe_lift=toe_lift,
+                       shoulder_start=shoulder_start, white_point=white_point)
+
+
+def compute_blend_weight_rb(as_shot_neutral, rb_min, rb_max):
+    """AsShotNeutral의 R/B 비율을 [rb_min, rb_max] 범위 기준으로
+    [0, 1]로 정규화한 블렌딩 가중치. 0에 가까울수록 앵커A(저 R/B),
+    1에 가까울수록 앵커B. rb_min/rb_max는 13쌍 전체에서 관측된 실제
+    최솟값/최댓값을 호출부(평가 스크립트)가 넘긴다 - 하드코딩하지
+    않는다. 관측 범위 밖 값이 오면 [0,1] 밖으로 나갈 수 있고, 이는
+    의도된 외삽 허용이다."""
+    r_over_b = as_shot_neutral[0] / as_shot_neutral[2]
+    return (r_over_b - rb_min) / (rb_max - rb_min)
+
+
+def compute_blend_weight_cct(as_shot_neutral, mired_min, mired_max):
+    """AsShotNeutral을 대략적 CCT로 변환(camera-native RGB를 sRGB
+    선형 RGB로 근사하는 가정 1개 추가 - 실제 카메라 분광감도를 모르니
+    엄밀하지 않다, 이 실험 안에서만 쓰는 근사) 후 mired(=1e6/CCT) 공간
+    에서 [mired_min, mired_max] 기준 [0, 1]로 정규화. mired 공간에서
+    보간하는 건 Adobe DCP의 실제 dual-illuminant 보간 관례와 동일."""
+    rgb = np.array(as_shot_neutral[:3], dtype=np.float64)
+    xyz = colour.RGB_to_XYZ(rgb, _SRGB, apply_cctf_decoding=False)
+    xy = colour.XYZ_to_xy(xyz)
+    cct = colour.temperature.xy_to_CCT(xy, method="McCamy 1992")
+    mired = 1e6 / cct
+    return (mired - mired_min) / (mired_max - mired_min)
+
+
+def apply_hncs_structural_blend(raw_path, weight, matrix_a, matrix_b,
+                                 chroma_lut_a, chroma_lut_b,
+                                 toe_lift, shoulder_start, white_point):
+    """블렌딩 버전 4단계 파이프라인: WB적용 네이티브 RGB -> 가중
+    평균 매트릭스((1-weight)*matrix_a + weight*matrix_b) -> 가중 평균
+    chroma LUT 파라미터 -> 공유 필름커브(하드클러스터 버전과 동일하게
+    조명 무관 고정). weight는 이미 계산된 스칼라를 받는다
+    (compute_blend_weight_*는 평가 스크립트에서 호출) - 이 함수는
+    블렌딩 로직만 담당한다."""
+    wb_rgb = decode_and_white_balance(raw_path)
+    blended_matrix = (1.0 - weight) * matrix_a + weight * matrix_b
+    matrixed = apply_color_matrix(wb_rgb, blended_matrix)
+    sat_a, hue_a = chroma_lut_a
+    sat_b, hue_b = chroma_lut_b
+    sat_mult = (1.0 - weight) * sat_a + weight * sat_b
+    hue_shift_deg = (1.0 - weight) * hue_a + weight * hue_b
     chroma_applied = apply_chroma_lut(matrixed, sat_mult, hue_shift_deg)
     return film_curve(chroma_applied, toe_lift=toe_lift,
                        shoulder_start=shoulder_start, white_point=white_point)
