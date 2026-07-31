@@ -33,8 +33,8 @@ docs/superpowers/specs/2026-07-28-hncs-structural-research-design.md.
   ΔE는 4.1% 낮았지만 n=13에서 그 차이가 0과 구분되지 않는다. 자세한
   통계와 한계는 hybrid_engine/EVALUATION.md "HNCS 구조 실험" 절.
 """
-import cv2
 import colour
+import cv2
 import numpy as np
 
 from core.curve import film_curve

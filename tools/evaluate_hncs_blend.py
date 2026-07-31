@@ -158,8 +158,17 @@ def pair_weight_cct(pair, bounds):
 
 def fit_weighted_matrices(train_pairs, weight_fn, bounds):
     """train_pairs 전부가 매트릭스 A/B 피팅 둘 다에 기여(가중 최소자승)
-    - 각 페어의 블렌딩 가중치가 그대로 그 페어의 피팅 기여도가 된다."""
-    weights_b = [weight_fn(p, bounds) for p in train_pairs]
+    - 각 페어의 블렌딩 가중치가 그대로 그 페어의 피팅 기여도가 된다.
+
+    weight_fn이 [0,1] 밖의 값을 낼 수도 있다(compute_blend_weight_*는
+    관측 범위 밖 값에 대해 의도적으로 외삽을 허용) - 여기서는 [0,1]로
+    clip한다. 피팅 가중치가 음수면 fit_color_matrix() 내부의
+    sqrt(weight)가 NaN이 되어(예외 없이 RuntimeWarning만 내고 조용히
+    깨진 매트릭스를 반환) 디버깅하기 어려운 실패를 만들기 때문 - 이
+    실험(bounds가 13쌍 전체 population min/max라 모든 페어의 가중치가
+    항상 [0,1] 안)에서는 실제로 발동하지 않지만, 이 함수를 다른
+    bounds로 재사용할 미래 호출부를 위한 방어."""
+    weights_b = [min(1.0, max(0.0, weight_fn(p, bounds))) for p in train_pairs]
     sources = [_pair_data(p)[0] for p in train_pairs]
     targets = [_pair_data(p)[1] for p in train_pairs]
     w_a = [np.full(s.shape[:2], 1.0 - w) for s, w in zip(sources, weights_b)]

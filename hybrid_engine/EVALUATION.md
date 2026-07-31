@@ -1483,7 +1483,7 @@ p값이나 CI 숫자만 인용하면 이 결과가 얼마나 완전히 평평했
 ΔE=10.191)을, 실제 HNCS가 쓴다고 알려진 방식(Lightroom
 dual-illuminant DCP와 유사한 연속 블렌딩 - Luminous Landscape 포럼의
 HNCS 메커니즘 분석 참고)으로 바꾸면 개선되는지 검증했다. 설계 근거:
-[docs/superpowers/specs/2026-07-31-hncs-illuminant-blend-design.md](superpowers/specs/2026-07-31-hncs-illuminant-blend-design.md).
+[docs/superpowers/specs/2026-07-31-hncs-illuminant-blend-design.md](../docs/superpowers/specs/2026-07-31-hncs-illuminant-blend-design.md).
 
 핫셀블라드 13쌍에 대해 두 가지 블렌딩 가중치 공식(R/B 비율 선형,
 CCT/mired)을 각각 leave-one-out 교차검증으로 하드-클러스터와 비교.
@@ -1562,10 +1562,11 @@ p=0.581, 부트스트랩 95% CI - 평균 ΔE 차이 [-0.871, +0.411] / 개선폭
 블렌딩 공식 모두에서 weight=1.000(완전히 앵커B)이면서 동시에 두
 공식 모두의 가장 크게 진 폴드다(RB: 8.750, CCT: 8.889 vs
 하드클러스터 5.249). 공교롭게도 이 페어는 원래 하드-클러스터 구조
-실험(위 "HNCS 구조 실험" 절)에서도 유일한 대형 승리 폴드였다(구조
-5.249 vs `apply_hncs()` 13.449). 이 페어 하나가 두 실험 모두에서
-극단값 역할을 하고 있다는 뜻이지만, n=1이라 여기서 일반적인 결론을
-끌어낼 근거는 없다.
+실험(위 "HNCS 구조 실험" 절)에서도 가장 크게 이긴(그리고 유일하게
+13쌍 평균 개선폭의 부호를 뒤집는) 폴드였다(구조 5.249 vs
+`apply_hncs()` 13.449, 그 절의 drop-one 민감도 참고). 이 페어 하나가
+두 실험 모두에서 극단값 역할을 하고 있다는 뜻이지만, n=1이라 여기서
+일반적인 결론을 끌어낼 근거는 없다.
 
 **알려진 한계**:
 - 두 실험(이 절과 위 "HNCS 구조 실험" 절)의 하드-클러스터 기준선
