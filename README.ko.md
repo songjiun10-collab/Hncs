@@ -16,7 +16,9 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 - **12개 브랜드** 색감 근사: Hasselblad/Fujifilm/Leica/Phase One/Pentax/
   Ricoh GR/Canon/Nikon/Sony/Panasonic/Olympus/Sigma
 - 전부 **공식 샘플 이미지 실측**에 근거 - population-fit 10개 브랜드
-  총 834장 + 핫셀블라드 raw+jpeg 페어 캘리브레이션(124장, RMSE 15.4)
+  총 834장 + 핫셀블라드 raw+jpeg 페어 캘리브레이션(2026-08 기준 카메라
+  4세대 74쌍, 파라메트릭 RMSE 19.94 - [docs/measurements.md](docs/measurements.md#로컬-기여-데이터셋으로-세대-간-pooling-첫-실측-2026-08-local-mixed-2026-07)
+  참고)
 - 픽셀 단위 **5종 시그니처 분석**(tone/color/texture/gamut/joint
   distribution)으로 브랜드별 색과학을 데이터로 기록
 - **population 통계 재현성 감사 10/10 일치** - 커밋된 모든 수치가

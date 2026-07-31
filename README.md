@@ -14,7 +14,8 @@ A project that measures official (or near-official) sample images from camera/di
   Canon/Nikon/Sony/Panasonic/Olympus/Sigma
 - Every brand is grounded in **measurements from official sample images**
   - 834 photos total across the 10 population-fit brands, plus Hasselblad's
-    raw+jpeg pair calibration (124 photos, RMSE 15.4)
+    raw+jpeg pair calibration (74 pairs across 4 camera generations as of
+    2026-08, parametric RMSE 19.94 - see [docs/measurements.en.md](docs/measurements.en.md#first-real-cross-generation-pooling-test-via-a-local-contributed-dataset-2026-08-local-mixed-2026-07))
 - Pixel-level **5-part signature analysis** (tone/color/texture/gamut/
   joint distribution) records each brand's color science as data
 - **Population-statistics reproducibility audit: 10/10 matched** - every
