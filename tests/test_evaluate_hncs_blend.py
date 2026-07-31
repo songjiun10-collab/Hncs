@@ -100,5 +100,63 @@ class TestSummarizeShape(unittest.TestCase):
         self.assertEqual(s["a_wins"], 1)
 
 
+# 실제 13쌍 LOO 교차검증 재실행 기록값 - hybrid_engine/EVALUATION.md의
+# "HNCS 조명 블렌딩 실험" 절에 실린 것과 정확히 같다.
+# (name, de_hard, de_blend, weight)
+_RECORDED_RB_RUN = [
+    ("x1d-II-sample-02.jpg", 10.787, 10.871, 0.127),
+    ("x1d-II-sample-09.jpg", 5.249, 8.750, 1.000),
+    ("B0000994.jpg", 14.223, 13.882, 0.804),
+    ("B0001395.jpg", 18.412, 18.424, 0.000),
+    ("x1d-xcd45-01.jpg", 13.194, 12.614, 0.110),
+    ("x1d-xcd45-03.jpg", 8.342, 9.324, 0.308),
+    ("x1d-xcd45-04.jpg", 4.729, 4.641, 0.250),
+    ("x1d-ii-xcd45p-01.jpg", 10.126, 10.002, 0.187),
+    ("x1d-ii-xcd45p-02.jpg", 11.055, 10.552, 0.116),
+    ("x1d-II-sample-01.jpg", 6.452, 7.007, 0.117),
+    ("x1d-II-sample-06.jpg", 11.726, 10.423, 0.065),
+    ("02709.jpg", 13.074, 12.505, 0.808),
+    ("00378.jpg", 5.115, 5.572, 0.183),
+]
+_RECORDED_CCT_RUN = [
+    ("x1d-II-sample-02.jpg", 10.787, 10.668, 0.270),
+    ("x1d-II-sample-09.jpg", 5.249, 8.889, 1.000),
+    ("B0000994.jpg", 14.223, 13.981, 0.891),
+    ("B0001395.jpg", 18.412, 18.502, 0.000),
+    ("x1d-xcd45-01.jpg", 13.194, 12.371, 0.245),
+    ("x1d-xcd45-03.jpg", 8.342, 9.421, 0.476),
+    ("x1d-xcd45-04.jpg", 4.729, 4.663, 0.395),
+    ("x1d-ii-xcd45p-01.jpg", 10.126, 10.023, 0.346),
+    ("x1d-ii-xcd45p-02.jpg", 11.055, 10.585, 0.238),
+    ("x1d-II-sample-01.jpg", 6.452, 6.943, 0.243),
+    ("x1d-II-sample-06.jpg", 11.726, 10.269, 0.177),
+    ("02709.jpg", 13.074, 12.307, 0.894),
+    ("00378.jpg", 5.115, 5.698, 0.335),
+]
+
+
+class TestSummarizeRecordedRun(unittest.TestCase):
+    """hybrid_engine/EVALUATION.md에 기록된 실제 13쌍 LOO 결과를
+    재현하는 회귀 테스트."""
+
+    def test_rb_reproduces_documented_means(self):
+        s = summarize(_RECORDED_RB_RUN)
+        self.assertAlmostEqual(s["mean_a"], 10.191, places=2)
+        self.assertAlmostEqual(s["mean_b"], 10.351, places=2)
+
+    def test_rb_reproduces_documented_sign_test_p(self):
+        s = summarize(_RECORDED_RB_RUN)
+        self.assertAlmostEqual(s["sign_test_p"], 1.0, places=9)
+
+    def test_cct_reproduces_documented_means(self):
+        s = summarize(_RECORDED_CCT_RUN)
+        self.assertAlmostEqual(s["mean_a"], 10.191, places=2)
+        self.assertAlmostEqual(s["mean_b"], 10.332, places=2)
+
+    def test_cct_reproduces_documented_sign_test_p(self):
+        s = summarize(_RECORDED_CCT_RUN)
+        self.assertAlmostEqual(s["sign_test_p"], 0.5810546875, places=9)
+
+
 if __name__ == "__main__":
     unittest.main()
