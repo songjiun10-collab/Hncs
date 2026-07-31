@@ -13,7 +13,7 @@ import cv2
 import colour
 
 
-def decode_raw(raw_path, demosaic_algorithm=None):
+def decode_raw(raw_path, demosaic_algorithm=None, chromatic_aberration=None):
     """RAW -> Linear RGB, float64 [0, 1] 근방(하이라이트는 1을 넘을 수
     있음), shape (H, W, 3), RGB 순서. 카메라 고유 색공간이 아니라 sRGB
     프라이머리 기준 선형광(linear light) 값 - 이후 core/pipeline이
@@ -23,7 +23,13 @@ def decode_raw(raw_path, demosaic_algorithm=None):
     기존 호출부와 100% 동일하게 동작한다. rawpy.DemosaicAlgorithm 값을
     넘기면 raw.postprocess()에 그대로 전달된다(예: X-Trans용 DHT 비교
     실험 - tools/evaluate_fuji_demosaic.py 참고). AMAZE는 이 프로젝트가
-    쓰는 LibRaw 빌드에 GPL3 데모자이크 팩이 없어 런타임 에러가 난다."""
+    쓰는 LibRaw 빌드에 GPL3 데모자이크 팩이 없어 런타임 에러가 난다.
+
+    chromatic_aberration: None(기본값)이면 색수차 보정 없이 기존과
+    100% 동일하게 동작한다(rawpy 기본값 (1.0, 1.0)과 결과가 바이트
+    단위로 동일함을 실측 확인). (red_scale, blue_scale) 튜플을 넘기면
+    raw.postprocess()에 그대로 전달돼 R/B 채널을 스케일링해서 렌즈
+    색수차를 보정한다(tools/evaluate_chromatic_aberration.py 참고)."""
     kwargs = dict(
         use_camera_wb=True,
         no_auto_bright=True,
@@ -33,6 +39,8 @@ def decode_raw(raw_path, demosaic_algorithm=None):
     )
     if demosaic_algorithm is not None:
         kwargs["demosaic_algorithm"] = demosaic_algorithm
+    if chromatic_aberration is not None:
+        kwargs["chromatic_aberration"] = chromatic_aberration
     with rawpy.imread(raw_path) as raw:
         rgb16 = raw.postprocess(**kwargs)
     return rgb16.astype(np.float64) / 65535.0

@@ -62,5 +62,53 @@ class TestDecodeRawDemosaicParam(unittest.TestCase):
         np.testing.assert_allclose(result, 1.0)
 
 
+class TestDecodeRawChromaticAberrationParam(unittest.TestCase):
+    @patch("hybrid_engine.utils.io.rawpy.imread")
+    def test_default_none_omits_chromatic_aberration_kwarg(self, mock_imread):
+        mock_raw = _mock_raw_context()
+        mock_imread.return_value = mock_raw
+
+        decode_raw("fake.raw")
+
+        _, kwargs = mock_raw.postprocess.call_args
+        self.assertNotIn("chromatic_aberration", kwargs)
+
+    @patch("hybrid_engine.utils.io.rawpy.imread")
+    def test_explicit_tuple_is_passed_through(self, mock_imread):
+        mock_raw = _mock_raw_context()
+        mock_imread.return_value = mock_raw
+
+        decode_raw("fake.raw", chromatic_aberration=(1.01, 0.99))
+
+        _, kwargs = mock_raw.postprocess.call_args
+        self.assertEqual(kwargs["chromatic_aberration"], (1.01, 0.99))
+
+    @patch("hybrid_engine.utils.io.rawpy.imread")
+    def test_both_new_params_can_be_combined(self, mock_imread):
+        mock_raw = _mock_raw_context()
+        mock_imread.return_value = mock_raw
+
+        decode_raw("fake.raw", demosaic_algorithm=rawpy.DemosaicAlgorithm.DHT,
+                    chromatic_aberration=(1.0, 1.02))
+
+        _, kwargs = mock_raw.postprocess.call_args
+        self.assertEqual(kwargs["demosaic_algorithm"], rawpy.DemosaicAlgorithm.DHT)
+        self.assertEqual(kwargs["chromatic_aberration"], (1.0, 1.02))
+
+    @patch("hybrid_engine.utils.io.rawpy.imread")
+    def test_other_kwargs_unchanged_by_new_parameter(self, mock_imread):
+        mock_raw = _mock_raw_context()
+        mock_imread.return_value = mock_raw
+
+        decode_raw("fake.raw", chromatic_aberration=(1.01, 0.99))
+
+        _, kwargs = mock_raw.postprocess.call_args
+        self.assertTrue(kwargs["use_camera_wb"])
+        self.assertTrue(kwargs["no_auto_bright"])
+        self.assertEqual(kwargs["output_bps"], 16)
+        self.assertEqual(kwargs["output_color"], rawpy.ColorSpace.sRGB)
+        self.assertEqual(kwargs["gamma"], (1, 1))
+
+
 if __name__ == "__main__":
     unittest.main()
