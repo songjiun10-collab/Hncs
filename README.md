@@ -361,6 +361,11 @@ lives in `docs/`.
   `apply_hncs()`'s 3-stage simplification, with a leave-one-out ΔE
   experiment (result: inconclusive - the measured difference is not
   distinguishable from zero at n=13)
+- [docs/hncs_external_sources_analysis.en.md](docs/hncs_external_sources_analysis.en.md) -
+  analysis of 17 external documents (a Hasselblad-adjacent blog + a
+  forum thread) about how HNCS actually works, cross-checked against
+  this project's three structural experiments (all inconclusive/null
+  at n=13)
 
 ## Contributing
 

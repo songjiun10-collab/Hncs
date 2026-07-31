@@ -484,6 +484,10 @@ README는 훑어보는 용도로 짧게 유지하고, 자세한 실측 기록은
   HNCS 실제 4단계 구조 vs `apply_hncs()`의 3단계 단순화 비교(연구용),
   leave-one-out ΔE 실험 포함(결과: 판정 보류 - n=13에서 측정된 차이가
   0과 구분되지 않는다)
+- [docs/hncs_external_sources_analysis.md](docs/hncs_external_sources_analysis.md) -
+  HNCS 실제 동작 방식에 대한 외부 문서 17건(핫셀블라드 관련 블로그 +
+  포럼 스레드) 분석, 이 프로젝트의 구조 실험 3건(전부 n=13에서 판정
+  보류/무신호)과 교차 대조
 
 ## 기여
 
