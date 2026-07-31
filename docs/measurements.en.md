@@ -232,3 +232,62 @@ wants to filter on it later.
 
 The X2D II raw+jpeg pair contribution is proceeding separately (see the GitHub issue #4
 thread).
+
+## First real cross-generation pooling test via a local contributed dataset (2026-08, local-mixed-2026-07)
+
+The gap left open above - "no way to test the cross-generation pooling premise because every
+raw+jpeg pair is X1D" - was finally closed using raw+jpeg pairs from the project owner's own
+personal photo library. Unlike the public web-scraping attempts above ("Another expansion
+attempt"), these are files the owner already owns, so there's no licensing question standing in
+the way.
+
+**Methodology** (`tools/build_local_manifest.py`, new):
+- Match raw/jpeg as "same shutter" when EXIF `DateTimeOriginal` agrees within 2 seconds (same
+  tolerance `tools/verify_contributed_pairs.py` already uses)
+- Found mid-matching: 8 X1D raw files from a 2017 shoot had `DateTimeOriginal` recorded exactly
+  **7 hours** ahead of their jpeg siblings (minute and second matched exactly - a pattern that's
+  essentially impossible by chance). Likely the camera/firmware stamped raw and jpeg against
+  different timezone references. Added an integer ±12-hour offset search so pairs like this
+  aren't missed (though these particular 8 turned out to have Lightroom-edited jpegs anyway and
+  were excluded regardless, see below)
+- Of 104 candidate pairs, `verify_contributed_pairs` **passed 61 (59%) and failed 43 (41%)** -
+  every failure was a Photoshop/Lightroom trace in the jpeg's EXIF Software tag (the same order
+  of contamination rate as the explorecams.com check above (44%) and the re-verification pass
+  (24%)). Without this filter, the calibration would have measured Lightroom's color science
+  instead of Hasselblad's
+
+**Generation breakdown of the 61 passing pairs** - the first real X2D/907X·CFV raw+jpeg pairs
+this project has ever had:
+
+| Camera | n |
+|---|---|
+| CFV 100C/907X | 30 |
+| X2D 100C | 24 |
+| X1D II 50C | 6 |
+| X1D | 1 |
+
+Re-ran `python3 -m tools.calibrate learn_curve` on official 13 pairs (all X1D-line) + local 61
+pairs = 74 total. RMSE broken down by generation:
+
+| Camera | n | Parametric (v11) RMSE | Learned LUT (v12) RMSE |
+|---|---|---|---|
+| CFV 100C/907X | 30 | 10.82 | 19.11 |
+| X2D 100C | 24 | 19.15 | 19.64 |
+| Official samples (X1D line) | 13 | 22.38 | 23.09 |
+| X1D II 50C | 6 | 41.89 | 37.17 |
+| X1D | 1 | 8.25 | 32.45 |
+| **Overall** | **74** | **19.94** | **22.20** |
+
+**Conclusion - the cross-generation pooling premise is rejected by measurement.** On the
+original 10-pair, X1D-only sample, `apply_hncs_learned` (v12) beat the parametric curve (RMSE
+15.4 vs 23.3, recorded above). Once real X2D/CFV data is added, that reverses - on CFV
+100C/907X specifically, the parametric curve is almost 2x better (10.82 vs 19.11). A LUT trained
+purely on X1D pairs was overfit when applied to other generations - confirming, for the first
+time with actual raw data, a concern this project could previously only flag and not test.
+**`apply_hncs` (parametric v11) stays the shipped default.** `apply_hncs_learned` isn't adopted
+in its current pooled form since its cross-generation premise doesn't hold; per-generation
+learned LUTs might still beat the parametric curve within a single generation (untested - each
+generation only has on the order of 30 pairs so far, not attempted this round).
+
+Reproduce: `python3 -m tools.build_local_manifest <source dir> datasets/hasselblad/contributed/local-mixed-2026-07`
+to add pairs, then `python3 -m tools.calibrate learn_curve` to retrain.

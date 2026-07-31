@@ -67,9 +67,23 @@ manifest에 기록) - manifest.csv와 검증 결과만 커밋.
    raw 베이스라인 ΔE00 7.58, 차트 매트릭스로 교차검증 기준 2.78(-63.3%).
 
 1번(세대 간 pooling 판정, `apply_hncs` 커브를 X2D II에 그대로 적용했을
-때 RMSE 동급 여부)은 이 데이터가 다양한 실사진이 아니라 ColorChecker
-차트 반복 촬영이라 아직 미실행 - 실사진 X2D II raw+jpeg 페어가 따로
-확보되면 그때 실행.
+때 RMSE 동급 여부)은 `kmichels-x2dii-2026-07/`이 다양한 실사진이 아니라
+ColorChecker 차트 반복 촬영이라 그 데이터로는 미실행이었다 - **이후
+`local-mixed-2026-07/`(아래)로 확보한 실사진 X2D/907X·CFV raw+jpeg
+페어로 실행 완료**. 결과는 세대 간 pooling 전제 기각(파라메트릭이
+학습 LUT보다 나음, 특히 CFV 100C/907X에서 거의 2배) -
+`docs/measurements.md` "로컬 기여 데이터셋으로 세대 간 pooling 첫 실측"
+참고.
+
+## 현재 수용된 세트
+
+- **`kmichels-x2dii-2026-07/`** (이슈 #4 기여): ColorChecker Classic
+  차트 10장, X2D II. camera-to-XYZ 매트릭스 특성화용 (위 2번 항목)
+- **`local-mixed-2026-07/`** (프로젝트 소유자 개인 라이브러리): 실사진
+  raw+jpeg 61쌍 (CFV 100C/907X 30, X2D 100C 24, X1D II 50C 6, X1D 1).
+  `tools/build_local_manifest.py`로 EXIF 시각 매칭 + 자동 검증까지
+  한 번에 생성 - 후보 104쌍 중 43쌍(41%)이 Lightroom/Photoshop 편집
+  흔적으로 탈락. 위 1번 항목(세대 간 pooling 판정)에 사용됨.
 
 별개로, **hybrid_engine 자체 캘리브레이션 데이터셋에 챠트 페어를
 직접 pooling하는 실험은 실행했고 실제로 배포까지 됐다** - 챠트 10장

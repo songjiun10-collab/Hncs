@@ -54,6 +54,29 @@ def collect_pairs():
             and not r['raw_url'].lower().endswith('.tif')]
 
 
+def collect_local_pairs():
+    """datasets/hasselblad/contributed/<세트>/manifest.csv의 로컬 raw+jpeg
+    페어 수집 (tools.verify_contributed_pairs 통과 전제 - 여기선 파일 존재만
+    재확인). 공식 샘플(collect_pairs, 원격 URL)과 별개 출처라 함수를 분리."""
+    base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "datasets", "hasselblad", "contributed")
+    pairs = []
+    if not os.path.isdir(base):
+        return pairs
+    for set_name in sorted(os.listdir(base)):
+        manifest = os.path.join(base, set_name, "manifest.csv")
+        if not os.path.exists(manifest):
+            continue
+        for row in csv.DictReader(open(manifest, encoding='utf-8-sig')):
+            raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
+            jpeg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
+            if os.path.exists(raw_path) and os.path.exists(jpeg_path):
+                pairs.append(dict(
+                    filename=f"{set_name}__{os.path.splitext(row['filename_raw'])[0]}",
+                    raw_path=raw_path, jpeg_path=jpeg_path))
+    return pairs
+
+
 def _resize_to_max_dim(img, max_dim):
     """긴 변이 max_dim을 넘으면 비율 유지 축소 (5군데서 각자 반복하던 걸 통합)."""
     h, w = img.shape[:2]
@@ -183,15 +206,33 @@ def run_grid_search():
 # ============================================================
 # learn_curve: 파라메트릭 가정 없이 LUT 직접 학습 (v12)
 # ============================================================
+def _resolve_pairs():
+    """공식 샘플(collect_pairs, 원격 URL - 다운로드해서 캐시에 확보) + 로컬
+    기여 페어(collect_local_pairs, 이미 로컬에 있음)를 raw_path/jpeg_path가
+    바로 붙은 공통 포맷으로 합친다."""
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    resolved = []
+    for r in collect_pairs():
+        ext = os.path.splitext(r['raw_url'])[1]
+        raw_path = os.path.join(CACHE_DIR, r['filename'] + ext)
+        jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
+        if download(r['raw_url'].strip(), raw_path) and download(r['jpeg_url'].strip(), jpeg_path):
+            resolved.append(dict(filename=r['filename'], raw_path=raw_path, jpeg_path=jpeg_path))
+    n_official = len(resolved)
+    local_pairs = collect_local_pairs()
+    resolved.extend(local_pairs)
+    print(f"공식 샘플 페어 {n_official}개 + 로컬 기여 페어 {len(local_pairs)}개 = 총 {len(resolved)}개")
+    return resolved
+
+
 def run_learn_curve():
-    pairs = collect_pairs()
+    pairs = _resolve_pairs()
     neutral_l_all = []
     target_l_all = []
 
     for r in pairs:
-        ext = os.path.splitext(r['raw_url'])[1]
-        raw_path = os.path.join(CACHE_DIR, r['filename'] + ext)
-        jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
+        raw_path = r['raw_path']
+        jpeg_path = r['jpeg_path']
         if not (os.path.exists(raw_path) and os.path.exists(jpeg_path)):
             continue
 
@@ -245,9 +286,8 @@ def run_learn_curve():
     learned_err = 0.0
     n = 0
     for r in pairs:
-        ext = os.path.splitext(r['raw_url'])[1]
-        raw_path = os.path.join(CACHE_DIR, r['filename'] + ext)
-        jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
+        raw_path = r['raw_path']
+        jpeg_path = r['jpeg_path']
         if not (os.path.exists(raw_path) and os.path.exists(jpeg_path)):
             continue
         target = _resize_to_max_dim(cv2.imread(jpeg_path), 2000)
