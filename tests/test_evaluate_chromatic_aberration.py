@@ -98,5 +98,51 @@ class TestSummarizeShape(unittest.TestCase):
         self.assertEqual(s["baseline_wins"], 1)
 
 
+# 실제 13쌍 LOO 교차검증 재실행 기록값 - hybrid_engine/EVALUATION.md의
+# "색수차 보정(chromatic aberration) 실험" 절에 실린 것과 정확히 같다.
+# (name, de_baseline, de_corrected, best_red, best_blue)
+_RECORDED_13_PAIR_RUN = [
+    ("x1d-II-sample-02.jpg", 13.858, 13.858, 1.0, 1.0),
+    ("x1d-II-sample-09.jpg", 17.301, 17.301, 1.0, 1.0),
+    ("B0000994.jpg", 14.667, 14.667, 1.0, 1.0),
+    ("B0001395.jpg", 16.005, 16.005, 1.0, 1.0),
+    ("x1d-xcd45-01.jpg", 16.700, 16.700, 1.0, 1.0),
+    ("x1d-xcd45-03.jpg", 3.936, 3.936, 1.0, 1.0),
+    ("x1d-xcd45-04.jpg", 3.670, 3.670, 1.0, 1.0),
+    ("x1d-ii-xcd45p-01.jpg", 6.563, 6.563, 1.0, 1.0),
+    ("x1d-ii-xcd45p-02.jpg", 9.938, 9.938, 1.0, 1.0),
+    ("x1d-II-sample-01.jpg", 13.903, 13.903, 1.0, 1.0),
+    ("x1d-II-sample-06.jpg", 17.088, 17.088, 1.0, 1.0),
+    ("02709.jpg", 12.496, 12.496, 1.0, 1.0),
+    ("00378.jpg", 3.866, 3.866, 1.0, 1.0),
+]
+
+
+class TestSummarizeRecordedRun(unittest.TestCase):
+    """hybrid_engine/EVALUATION.md에 기록된 실제 13쌍 LOO 결과를
+    재현하는 회귀 테스트 - 스크립트를 다시 안 돌려도(60~70분 소요)
+    문서의 통계 수치를 검증할 수 있다. 이 기록은 완전히 평평한
+    결과다: 13개 LOO 폴드 전부가 훈련 폴드 12쌍에서 (1.0, 1.0)을
+    최선으로 골랐다 - baseline과 corrected가 폴드마다 바이트
+    단위로(따라서 ΔE 단위로도) 동일하다."""
+
+    def setUp(self):
+        self.s = summarize(_RECORDED_13_PAIR_RUN)
+
+    def test_reproduces_documented_means(self):
+        self.assertAlmostEqual(self.s["mean_baseline"], 11.538, places=2)
+        self.assertAlmostEqual(self.s["mean_corrected"], 11.538, places=2)
+
+    def test_reproduces_documented_win_counts(self):
+        self.assertEqual(self.s["corrected_wins"], 0)
+        self.assertEqual(self.s["baseline_wins"], 0)
+
+    def test_reproduces_documented_sign_test_p(self):
+        self.assertAlmostEqual(self.s["sign_test_p"], 1.0, places=9)
+
+    def test_reproduces_documented_t_stat(self):
+        self.assertAlmostEqual(self.s["t_stat"], 0.0, places=3)
+
+
 if __name__ == "__main__":
     unittest.main()
