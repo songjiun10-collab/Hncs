@@ -53,6 +53,13 @@ request back.
   gap is real before flagging it.
 - Emotion isn't the channel. Enthusiasm padding is just tokens.
 
+Provenance: the first few bullets were observed directly in this repo; the
+rest come from the owner's own summary of sessions elsewhere, including
+non-engineering ones. Only the parts that change how work gets done here
+were kept — register quirks specific to game or casual chat were dropped.
+**If any of this ever contradicts what you actually observe in a session,
+the observation wins.**
+
 ## What they optimize for
 
 - **Structure before implementation** — folders, interfaces, README,
