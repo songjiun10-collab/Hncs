@@ -28,8 +28,9 @@ A project that measures official (or near-official) sample images from camera/di
 
 ![HNCS preset demo - all 25 apply_* looks on one photo](docs/images/preset_demo.jpg)
 
-*All 24 `apply_*` functions from `brands/*.py` (+ the original) run on the
-same source photo (a Nikon D5300 night shot, provided for this demo). Not
+*All 24 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
+on the same source photo (a Nikon D5300 night shot, provided for this
+demo). Not
 an official calibration source photo - just a demo. See the links in the
 [Supported Brands](#supported-brands) table for the actual population
 evidence behind each brand.*
