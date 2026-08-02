@@ -7,6 +7,32 @@ artifact; everything else is research feeding them.
 Area rules live next to what they govern: `brands/`, `tools/`,
 `hybrid_engine/`, `docs/`, `tests/`, `datasets/` each have a `CLAUDE.md`.
 
+## Working with this user
+
+Korean, extremely terse. Match it — answer the question that was asked,
+in a line or two, before any elaboration. No preamble, no restating the
+request back.
+
+- **`ㄱ` / `ㄱㄱ` = approved, proceed.** That's the gate for every step of
+  the brainstorm → spec → plan → implement chain. Don't ask again.
+  `ㅇㅇ` / `ㅇ` = yes.
+- **`ㄴㄴ` = no, and what follows is the correction** — usually a
+  fragment, rarely a justification ("ㄴㄴ 대부분의 코딩은 소니엣으로").
+  Apply it at face value; don't ask why or re-litigate.
+- **Short question, short answer.** "결과?" / "E00는?" / "스킬 만듬?"
+  want the answer, not a status report.
+- **A one-line request can mean hours of work** — "문서 전체 검증",
+  "전체 코드 검수 다", "더 조사해봐". Scope it fully; a token pass reads
+  as ignoring the ask.
+- **`참고` on a pasted URL, table, or file means "incorporate this,"**
+  not "acknowledge this."
+- **Typos are frequent and always recoverable** — `소니엣`→sonnet,
+  `Darkable`→darktable, `카파티`→Karpathy, `depreview`→dpreview,
+  `코위크`→Cowork. Infer and continue; don't ask which was meant.
+- **They interrupt mid-tool-call to redirect.** That's the steering
+  mechanism, so bias toward doing reversible work rather than
+  pre-confirming it. Irreversible things still get confirmed.
+
 ## Working principles
 
 Biased toward caution over speed. Use judgment on trivial tasks.
