@@ -30,6 +30,18 @@ from core.validation import is_image_array_usable
 CACHE_DIR = "raw_calib_cache"
 CSV_PATH = "datasets/hasselblad/hasselblad_sample_images.csv"
 
+_GENERATION_MAP = {
+    "Hasselblad X1D II 50C": "X1D II 50C",
+    "Hasselblad X1D": "X1D",
+}
+
+
+def _generation_for(camera):
+    """로컬 기여 manifest.csv의 camera 필드를 docs/measurements.md의
+    기존 세대 버킷 라벨로 정규화. 이미 그 라벨 형태인 값(CFV 100C/907X,
+    X2D 100C)은 그대로 통과."""
+    return _GENERATION_MAP.get(camera, camera)
+
 
 def download(url, path):
     if os.path.exists(path):
@@ -73,7 +85,8 @@ def collect_local_pairs():
             if os.path.exists(raw_path) and os.path.exists(jpeg_path):
                 pairs.append(dict(
                     filename=f"{set_name}__{os.path.splitext(row['filename_raw'])[0]}",
-                    raw_path=raw_path, jpeg_path=jpeg_path))
+                    raw_path=raw_path, jpeg_path=jpeg_path,
+                    generation=_generation_for(row["camera"])))
     return pairs
 
 
@@ -209,7 +222,8 @@ def run_grid_search():
 def _resolve_pairs():
     """공식 샘플(collect_pairs, 원격 URL - 다운로드해서 캐시에 확보) + 로컬
     기여 페어(collect_local_pairs, 이미 로컬에 있음)를 raw_path/jpeg_path가
-    바로 붙은 공통 포맷으로 합친다."""
+    바로 붙은 공통 포맷으로 합친다. generation 필드도 붙여 반환(공식은
+    한 버킷 "공식 샘플(X1D 계열)", 로컬은 카메라별)."""
     os.makedirs(CACHE_DIR, exist_ok=True)
     resolved = []
     for r in collect_pairs():
@@ -217,7 +231,8 @@ def _resolve_pairs():
         raw_path = os.path.join(CACHE_DIR, r['filename'] + ext)
         jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
         if download(r['raw_url'].strip(), raw_path) and download(r['jpeg_url'].strip(), jpeg_path):
-            resolved.append(dict(filename=r['filename'], raw_path=raw_path, jpeg_path=jpeg_path))
+            resolved.append(dict(filename=r['filename'], raw_path=raw_path, jpeg_path=jpeg_path,
+                                  generation="공식 샘플(X1D 계열)"))
     n_official = len(resolved)
     local_pairs = collect_local_pairs()
     resolved.extend(local_pairs)
