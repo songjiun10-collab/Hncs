@@ -18,6 +18,11 @@ Biased toward caution over speed. Use judgment on trivial tasks.
 - Simpler approach exists → say so. Push back when warranted.
 - Confused → stop, name what's confusing, ask. Don't hide it.
   (Exception under `/goal` — see Commands.)
+- **Genuinely stuck** — not first-attempt friction, actually out of ideas
+  — consulting another vendor's AI is allowed, and better than guessing.
+  Applies to local/desktop sessions where such a CLI is installed. Ask
+  about approach, algorithm, or library semantics; don't paste contributed
+  datasets or unpublished results into a third party.
 
 ### Simplicity first
 
