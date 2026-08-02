@@ -30,7 +30,7 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 ![HNCS 프리셋 데모 - 사진 한 장에 apply_* 25개 전부 적용](docs/images/preset_demo.jpg)
 
 *동일한 소스 사진(Nikon D5300 야경샷, 데모용으로 제공받음) 한 장에
-`brands/*.py`의 `apply_*` 함수 24개(+원본)를 그대로 돌린 결과. 공식
+`brands/*.py`의 사진용 `apply_*` 룩 24개(+원본)를 그대로 돌린 결과. 공식
 캘리브레이션 소스 사진이 아니라 단순 데모용 - 실제 population 수치의
 근거는 [지원 브랜드](#지원-브랜드) 표에 링크된 문서를 참고.*
 
@@ -68,8 +68,10 @@ cv2.imwrite("photo_hncs.jpg", result)
 ```
 
 `brands/*.py`의 각 `apply_*` 함수는 전부 동일하게 BGR `np.ndarray`를
-받아 BGR `np.ndarray`를 반환한다. 리포 루트에서 실행해야 `core`/`brands`/
-`tools` 임포트 경로가 맞다.
+받아 같은 shape의 `np.ndarray`를 반환한다. 단, 흑백 필름 시뮬레이션
+2종(`apply_acros`/`apply_monochrome`)만 3채널 BGR이 아니라 2D 단일채널을
+반환한다 - 의도된 동작이고 `tests/test_brands.py`가 검증한다. 리포
+루트에서 실행해야 `core`/`brands`/`tools` 임포트 경로가 맞다.
 
 ## 설치
 
