@@ -291,3 +291,27 @@ generation only has on the order of 30 pairs so far, not attempted this round).
 
 Reproduce: `python3 -m tools.build_local_manifest <source dir> datasets/hasselblad/contributed/local-mixed-2026-07`
 to add pairs, then `python3 -m tools.calibrate learn_curve` to retrain.
+
+**Hybrid (regularize) re-check (2026-08)** - re-ran `tools/calibrate.py`'s
+`regularize` mode (the v11↔v12 ridge hybrid, `lut = (sums + λ·prior)/(counts + λ)`)
+on the same 74 pairs as the two re-checks above. Best λ=1e9 (effectively pure
+parametric) - LOO RMSE decreased monotonically from 33.61 at λ=0 (pure learned
+LUT) to 22.18 at λ=1e9, with no intermediate point ever beating the endpoint.
+Significance test, best (=v11) vs v12 (λ=0): 46.4% improvement, 60 wins/14
+losses, sign-test p=0.000, bootstrap 95% CI [+35.5%, +56.4%] (excludes 0) -
+same direction as the learned-LUT re-check above (19.94 vs 22.20), though the
+absolute numbers aren't directly comparable since this script uses its own
+percentile-based LOO error, not the same metric. Per-generation RMSE
+breakdown (at λ=1e9):
+
+| Camera | n | Hybrid (λ=1e9) RMSE |
+|---|---|---|
+| CFV 100C/907X | 30 | 15.37 |
+| X2D 100C | 24 | 13.37 |
+| Official samples (X1D line) | 13 | 27.40 |
+| X1D II 50C | 6 | 48.77 |
+| X1D | 1 | 31.48 |
+
+**Conclusion: the hybrid doesn't help.** v11 already beats v12 by a wide
+margin, so there's no upside to blending them, and the grid search itself
+confirms that quantitatively. Reproduce: `python3 -m tools.calibrate regularize`.
