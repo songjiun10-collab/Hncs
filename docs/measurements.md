@@ -295,3 +295,26 @@ X2D II raw+jpeg 페어 기여 제안은 별도로 진행 중(GitHub 이슈 #4 �
 
 재현: `python3 -m tools.build_local_manifest <원본 폴더> datasets/hasselblad/contributed/local-mixed-2026-07`
 로 페어 추가 → `python3 -m tools.calibrate learn_curve`로 재학습.
+
+**하이브리드(regularize) 재검증(2026-08)** - 위 두 버전(v11/v12)
+재검증과 같은 74쌍으로 `tools/calibrate.py regularize` 모드(v11↔v12
+ridge 하이브리드, `lut = (sums + λ·prior)/(counts + λ)`)도 재실행.
+최적 λ=1e9(=순수 파라메트릭) - λ를 0(순수 학습LUT)에서 1e9까지
+키우는 동안 LOO RMSE가 33.61에서 22.18로 단조 감소, 중간 지점에서
+더 나아지는 구간은 전혀 없었다. 최적(=v11) vs v12(λ=0) 유의성 검정:
+개선폭 46.4%, 60승 14패, 부호검정 p=0.000, 부트스트랩 95% CI
+[+35.5%, +56.4%](0 미포함) - 위 학습LUT 재검증(19.94 vs 22.20)과
+방향은 같지만 이쪽이 이 스크립트 고유의 percentile 기반 LOO 오차라
+절대값은 직접 비교 대상이 아니다. 세대별 RMSE 분해(λ=1e9 기준):
+
+| 카메라 | n | 하이브리드(λ=1e9) RMSE |
+|---|---|---|
+| CFV 100C/907X | 30 | 15.37 |
+| X2D 100C | 24 | 13.37 |
+| 공식 샘플(X1D 계열) | 13 | 27.40 |
+| X1D II 50C | 6 | 48.77 |
+| X1D | 1 | 31.48 |
+
+**결론: 하이브리드는 도움이 안 된다.** v11이 이미 v12를 압도적으로
+이기는 상황이라 둘을 섞을 이유가 없고, 그리드서치 자체가 그걸
+정량적으로 확인해줬다. 재현: `python3 -m tools.calibrate regularize`.
