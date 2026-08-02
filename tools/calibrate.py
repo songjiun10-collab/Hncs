@@ -384,12 +384,18 @@ def _collect_pair_pixels():
     return dataset
 
 
-def _build_lut(neutral_l, target_l, prior, lam):
-    # 중앙값 대신 평균 사용 (fold마다 반복 계산해야 해서 속도상 평균으로 근사;
-    # learn_curve의 최종 학습 LUT은 중앙값 기준이라 약간 다를 수 있음)
+def _pair_counts_sums(neutral_l, target_l):
+    """페어 한 장의 neutral_L->target_L 픽셀 대응을 bincount로 집계.
+    LOO 뺄셈에 쓰기 위해 페어별로 한 번만 계산해둔다."""
     counts = np.bincount(neutral_l, minlength=256).astype(np.float64)
     sums = np.bincount(neutral_l, weights=target_l.astype(np.float64), minlength=256)
+    return counts, sums
 
+
+def _build_lut_from_counts(counts, sums, prior, lam):
+    """counts/sums(여러 페어를 이미 합친 것이든, 전체에서 한 페어를 뺀
+    것이든 상관없이)로부터 ridge-정규화 LUT을 만든다. lam=0이면 순수
+    경험적 평균(빈 bin은 prior로 대체), lam이 크면 prior에 수렴."""
     lut = np.where(counts > 0, (sums + lam * prior) / (counts + lam), prior)
     lut = np.maximum.accumulate(lut)  # 단조 증가 보정
     return lut.astype(np.float32)
