@@ -13,6 +13,7 @@ raw_url+jpeg_url이 둘 다 있는 CSV 행을 rawpy로 중립 렌더링해서 "�
 거의 그대로 중복해서 갖고 있던 걸 collect_pairs()로 합쳤다.
 """
 import csv
+import math
 import os
 import sys
 import urllib.request
@@ -401,6 +402,104 @@ def _build_lut_from_counts(counts, sums, prior, lam):
     return lut.astype(np.float32)
 
 
+def _sign_test_p(wins, losses):
+    """부호검정 양측 p값(정확 이항, 무승부 제외). scipy 의존 없이
+    math.comb으로 직접 계산한다."""
+    n = wins + losses
+    if n == 0:
+        return 1.0
+    k = min(wins, losses)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / (2.0 ** n)
+    return min(1.0, 2.0 * tail)
+
+
+def summarize(per_fold, n_bootstrap=20000, seed=0):
+    """페어드 비교 통계. per_fold의 각 행은 (name, value_a, value_b, ...)
+    형태(추가 필드는 무시) - value_a가 기준, value_b가 비교 대상이다.
+    개선폭/verdict는 value_b가 value_a보다 작을 때(=b가 더 좋음, 오차
+    낮을수록 좋음) 양수가 되도록 정의한다."""
+    a = np.array([row[1] for row in per_fold], dtype=np.float64)
+    b = np.array([row[2] for row in per_fold], dtype=np.float64)
+    n = len(per_fold)
+    diff = a - b
+    mean_a = float(a.mean())
+    mean_b = float(b.mean())
+    improvement_pct = (mean_a - mean_b) / mean_a * 100.0
+
+    wins = int((diff > 0).sum())
+    losses = int((diff < 0).sum())
+    sd_diff = float(diff.std(ddof=1)) if n > 1 else 0.0
+    sem_diff = sd_diff / math.sqrt(n) if n > 1 else 0.0
+    t_stat = float(diff.mean() / sem_diff) if sem_diff > 0 else 0.0
+
+    rng = np.random.default_rng(seed)
+    boot_diff, boot_pct = [], []
+    for _ in range(n_bootstrap):
+        idx = rng.integers(0, n, n)
+        boot_diff.append(float(diff[idx].mean()))
+        boot_pct.append(float((a[idx].mean() - b[idx].mean())
+                              / a[idx].mean() * 100.0))
+    ci_diff = tuple(float(v) for v in np.percentile(boot_diff, [2.5, 97.5]))
+    ci_pct = tuple(float(v) for v in np.percentile(boot_pct, [2.5, 97.5]))
+
+    dropone = []
+    for i in range(n):
+        keep = np.ones(n, dtype=bool)
+        keep[i] = False
+        dropone.append(float((a[keep].mean() - b[keep].mean())
+                             / a[keep].mean() * 100.0))
+
+    inconclusive = ci_diff[0] <= 0.0 <= ci_diff[1]
+    if inconclusive:
+        verdict = ("판정 보류 - 평균 차이가 0과 구분되지 않는다"
+                   "(95% 부트스트랩 CI가 0을 포함)")
+    elif improvement_pct > 0:
+        verdict = "B가 이겼다"
+    else:
+        verdict = "A가 더 낫다"
+
+    return {
+        "n": n,
+        "mean_a": mean_a,
+        "mean_b": mean_b,
+        "mean_diff": float(diff.mean()),
+        "median_diff": float(np.median(diff)),
+        "improvement_pct": improvement_pct,
+        "b_wins": wins,
+        "a_wins": losses,
+        "sd_diff": sd_diff,
+        "sem_diff": sem_diff,
+        "t_stat": t_stat,
+        "sign_test_p": _sign_test_p(wins, losses),
+        "ci_diff": ci_diff,
+        "ci_pct": ci_pct,
+        "dropone_pct_min": min(dropone),
+        "dropone_pct_max": max(dropone),
+        "dropone_flips_sign": min(dropone) <= 0.0 <= max(dropone),
+        "inconclusive": inconclusive,
+        "verdict": verdict,
+    }
+
+
+def print_summary(s, label_a="A", label_b="B"):
+    print()
+    print(f"평균 {label_a} 오차(RMSE 기여값, n={s['n']}): {s['mean_a']:.3f}")
+    print(f"평균 {label_b} 오차(RMSE 기여값, n={s['n']}): {s['mean_b']:.3f}")
+    print(f"개선폭({label_b} 기준): {s['improvement_pct']:.1f}%")
+    print(f"폴드 승패: {label_b} {s['b_wins']}승 {label_a} {s['a_wins']}패")
+    print(f"페어드 차이({label_a}-{label_b}): 평균 {s['mean_diff']:+.3f} / 중앙값 "
+          f"{s['median_diff']:+.3f} / 표준편차 {s['sd_diff']:.3f} "
+          f"(t={s['t_stat']:.2f}, df={s['n'] - 1})")
+    print(f"부호검정 양측 p = {s['sign_test_p']:.3f}")
+    print(f"부트스트랩 95% CI - 평균 오차 차이: "
+          f"[{s['ci_diff'][0]:+.3f}, {s['ci_diff'][1]:+.3f}] / "
+          f"개선폭: [{s['ci_pct'][0]:+.1f}%, {s['ci_pct'][1]:+.1f}%]")
+    print(f"drop-one 민감도: 한 쌍을 빼면 개선폭이 "
+          f"{s['dropone_pct_min']:.1f}% ~ {s['dropone_pct_max']:.1f}% 사이로 움직인다"
+          + (" (부호가 뒤집힌다)" if s["dropone_flips_sign"] else ""))
+    print(f"판정: {s['verdict']}")
+
+
 def run_regularize():
     dataset = _collect_pair_pixels()
     prior = _parametric_prior()
@@ -443,12 +542,28 @@ def run_regularize():
     best_lam, best_rmse = min(results, key=lambda t: t[1])
     print(f"\n최적 lambda={best_lam} (LOO RMSE={best_rmse:.2f})")
 
+    # --- 유의성 검정: 최적 lambda vs λ=0(v12) / λ=1e9(v11) ---
+    best_fold = per_fold_by_lambda[best_lam]
+    summaries = {}
+    for baseline_lam, label in [(0, "v12(학습LUT)"), (1e9, "v11(파라메트릭)")]:
+        if baseline_lam == best_lam:
+            print(f"\n최적 lambda가 {label}과 동일 - 비교 생략")
+            continue
+        baseline_fold = per_fold_by_lambda[baseline_lam]
+        paired = [(best_name, base_e, best_e)
+                  for (best_name, _, best_e), (_, _, base_e)
+                  in zip(best_fold, baseline_fold)]
+        summary = summarize(paired)
+        summaries[label] = summary
+        print(f"\n=== 최적 하이브리드(λ={best_lam}) vs {label} ===")
+        print_summary(summary, label_a=label, label_b=f"하이브리드(λ={best_lam})")
+
     # 최적 lambda로 전체 74쌍 사용해 최종 LUT 생성
     final_lut = _build_lut_from_counts(counts_all, sums_all, prior, best_lam)
     np.save("regularized_tone_lut.npy", np.clip(final_lut, 0, 255).astype(np.uint8))
     print("저장: regularized_tone_lut.npy")
 
-    return per_fold_by_lambda, best_lam
+    return per_fold_by_lambda, best_lam, summaries
 
 
 if __name__ == "__main__":
