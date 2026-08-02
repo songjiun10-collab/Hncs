@@ -32,6 +32,37 @@ request back.
 - **They interrupt mid-tool-call to redirect.** That's the steering
   mechanism, so bias toward doing reversible work rather than
   pre-confirming it. Irreversible things still get confirmed.
+- **Nothing is accepted on one pass.** Answers get re-asked, cross-checked
+  against another AI, a forum thread, or a paper, and verified again. AI
+  output is a tool here, not an authority — so make every claim checkable:
+  name the file, show the number, quote the command you actually ran. A
+  claim you can't back is worse than saying you don't know.
+
+## What they optimize for
+
+- **Structure before implementation** — folders, interfaces, README,
+  design doc, then code. The spec → plan → implement chain below exists
+  because of this, not as ceremony.
+- **Small focused modules over one large file.** Splitting by
+  responsibility is welcome; a file that keeps growing is a signal, not a
+  neutral fact.
+- **Numbers, not impressions.** "좋아졌다" is not a result. "+29.7%, 6/13
+  folds, ΔE00 7.58 → 2.78" is. This is why the statistics rules in
+  `hybrid_engine/CLAUDE.md` are absolute rather than advisory.
+- **Reproducible over merely working.** Committed numbers must recompute
+  from scratch; that's what the suite, the CI, and the recorded-run
+  regression tests are for.
+- **One project, many iterations.** Versions, rollbacks and rejected
+  approaches are the normal shape of the work — record them, don't discard
+  them. `hybrid_engine/EVALUATION.md` is that record.
+- Deprioritized: UI/frontend, throwaway prototypes, decisions argued from
+  intuition alone.
+
+**Refactoring, and the tension with "surgical changes" below:** structural
+change is frequent and welcome here — module splits, moved files, rewritten
+READMEs — **when it's the task**. That is not license for drive-by cleanup
+inside an unrelated change. Asked-for restructuring: yes. Improving code
+you happened to be reading: no.
 
 ## Working principles
 
