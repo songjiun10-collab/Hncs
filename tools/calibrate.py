@@ -500,6 +500,20 @@ def print_summary(s, label_a="A", label_b="B"):
     print(f"판정: {s['verdict']}")
 
 
+def _generation_breakdown(fold):
+    """(name, generation, sqrt_e) 리스트를 generation별로 묶어
+    (generation, n, rmse) 리스트로 반환 - generation 이름 순 정렬."""
+    by_gen = {}
+    for _, gen, sqrt_e in fold:
+        by_gen.setdefault(gen, []).append(sqrt_e)
+    result = []
+    for gen in sorted(by_gen):
+        errs = by_gen[gen]
+        rmse = (sum(e ** 2 for e in errs) / len(errs)) ** 0.5
+        result.append((gen, len(errs), rmse))
+    return result
+
+
 def run_regularize():
     dataset = _collect_pair_pixels()
     prior = _parametric_prior()
@@ -557,6 +571,11 @@ def run_regularize():
         summaries[label] = summary
         print(f"\n=== 최적 하이브리드(λ={best_lam}) vs {label} ===")
         print_summary(summary, label_a=label, label_b=f"하이브리드(λ={best_lam})")
+
+    print(f"\n=== 세대별 오차 분해 (λ={best_lam}) ===")
+    print(f"{'세대':20s} {'n':>4s}  {'하이브리드 RMSE':>14s}")
+    for gen, n_gen, rmse_gen in _generation_breakdown(best_fold):
+        print(f"{gen:20s} {n_gen:4d}  {rmse_gen:14.2f}")
 
     # 최적 lambda로 전체 74쌍 사용해 최종 LUT 생성
     final_lut = _build_lut_from_counts(counts_all, sums_all, prior, best_lam)
