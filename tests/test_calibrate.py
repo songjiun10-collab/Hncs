@@ -156,5 +156,28 @@ class TestSummarizeShape(unittest.TestCase):
         self.assertIn("판정 보류", s["verdict"])
 
 
+class TestGenerationBreakdown(unittest.TestCase):
+    def test_groups_and_computes_rmse(self):
+        from tools.calibrate import _generation_breakdown
+        fold = [
+            ("a", "X1D", 3.0),
+            ("b", "X1D", 5.0),
+            ("c", "X2D 100C", 4.0),
+        ]
+        result = _generation_breakdown(fold)
+        by_gen = {gen: (n, rmse) for gen, n, rmse in result}
+        self.assertEqual(by_gen["X1D"][0], 2)
+        self.assertAlmostEqual(by_gen["X1D"][1], (3.0 ** 2 + 5.0 ** 2) ** 0.5 / (2 ** 0.5))
+        self.assertEqual(by_gen["X2D 100C"][0], 1)
+        self.assertAlmostEqual(by_gen["X2D 100C"][1], 4.0)
+
+    def test_sorted_by_generation_name(self):
+        from tools.calibrate import _generation_breakdown
+        fold = [("a", "X2D 100C", 1.0), ("b", "CFV 100C/907X", 1.0)]
+        result = _generation_breakdown(fold)
+        gens = [gen for gen, _, _ in result]
+        self.assertEqual(gens, sorted(gens))
+
+
 if __name__ == "__main__":
     unittest.main()
