@@ -10,18 +10,30 @@ docs/superpowers/specs/2026-07-31-hncs-illuminant-blend-design.md
 두 가지 블렌딩 가중치 공식(R/B 비율 선형, CCT/mired)을 각각 독립적으로
 평가하고, 마지막에 둘을 직접 비교한다. 하드-클러스터 쪽은 재실행하지
 않는다 - hybrid_engine/EVALUATION.md의 "HNCS 구조 실험" 절에 이미
-기록된 13개 폴드 값을 HARD_CLUSTER_DE 상수로 그대로 가져와 쓴다.
+기록된 74개 폴드 값(2026-08, 공식 13 + 로컬 기여 61 재실행분)을
+HARD_CLUSTER_DE 상수로 그대로 가져와 쓴다.
 
-매트릭스/chroma LUT 둘 다 **가중 최소자승**으로 피팅한다: 13쌍 전부가
+매트릭스/chroma LUT 둘 다 **가중 최소자승**으로 피팅한다: 74쌍 전부가
 두 앵커(A/B) 피팅에 다 기여하되, 각 페어의 블렌딩 가중치가 그대로
 그 페어의 기여도가 된다 - 기존 하드-클러스터 버전에서 소수 클러스터
-(cluster_b, 3쌍뿐)의 매트릭스가 사실상 2쌍(LOO 기준)으로만 피팅되던
-문제를 근본적으로 해결한다.
+(cluster_b)의 매트릭스가 사실상 학습쌍 몇 개로만 피팅되던 문제를
+근본적으로 해결한다.
+
+**74쌍으로 확장하며 추가한 병렬화(2026-08)**: `fit_weighted_chroma_lut()`의
+49콤보 그리드서치가 폴드(74) x 가중치공식(rb/cct) 두 번 반복되면
+단일 스레드로 감당이 안 되는 시간이 걸린다(추정 10시간 안팎). 콤보
+단위로 프로세스 풀에 분산한다(evaluate_hncs_structural.py와 동일한
+"워커가 시작할 때 전체 페어를 한 번씩 디코드해 로컬 캐시를 채워둔다"
+패턴). 블렌딩 가중치도 폴드마다/콤보마다 다시 계산하지 않도록
+`compute_weights_by_name()`으로 페어당 한 번만 구해 dict로 넘긴다
+(원래도 폴드당 재계산이었지 콤보와는 무관한 값이라 이 캐싱은 순수
+속도 최적화 - 계산 결과는 바뀌지 않는다).
 """
 import csv
 import glob
 import itertools
 import math
+import multiprocessing as mp
 import os
 import sys
 
@@ -40,6 +52,9 @@ from hybrid_engine.research.hncs_structural import (
 from hybrid_engine.utils.evaluate import mean_delta_e
 from hybrid_engine.utils.exif import read_as_shot_neutral
 from hybrid_engine.utils.io import load_image_linear
+from hybrid_engine.utils.pairs import combine_pairs
+
+N_WORKERS = max(1, min(3, (os.cpu_count() or 3) - 2))  # 16GB 메모리에서 워커당 페어 전체 캐시(~1.3GB)를 감당할 만큼만
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE_DIR = os.path.join(_ROOT, "raw_calib_cache")
@@ -57,22 +72,85 @@ FILM_CURVE_WHITE_POINT = 1.0
 
 DOWNSAMPLE_MAX_DIM = 512
 
-# hybrid_engine/EVALUATION.md "HNCS 구조 실험" 절, "폴드별 상세" 표에서
-# 그대로 옮겨적은 하드-클러스터 구조 실험의 실측 ΔE(재실행 안 함).
+# tools/evaluate_hncs_structural.py의 2026-08 74쌍(공식 13 + 로컬 기여
+# 61) 재실행 결과에서 그대로 옮겨적은 하드-클러스터 구조 실험의 실측
+# ΔE(재실행 안 함). 이전엔 공식 13쌍만 있어서 로컬 페어가 held-out으로
+# 걸리면 KeyError가 났다.
 HARD_CLUSTER_DE = {
-    "x1d-II-sample-02.jpg": 10.787,
-    "x1d-II-sample-09.jpg": 5.249,
-    "B0000994.jpg": 14.223,
-    "B0001395.jpg": 18.412,
-    "x1d-xcd45-01.jpg": 13.194,
-    "x1d-xcd45-03.jpg": 8.342,
-    "x1d-xcd45-04.jpg": 4.729,
-    "x1d-ii-xcd45p-01.jpg": 10.126,
-    "x1d-ii-xcd45p-02.jpg": 11.055,
-    "x1d-II-sample-01.jpg": 6.452,
-    "x1d-II-sample-06.jpg": 11.726,
-    "02709.jpg": 13.074,
-    "00378.jpg": 5.115,
+    "x1d-II-sample-02.jpg": 11.587,
+    "x1d-II-sample-09.jpg": 17.884,
+    "B0000994.jpg": 14.709,
+    "B0001395.jpg": 17.294,
+    "x1d-xcd45-01.jpg": 12.580,
+    "x1d-xcd45-03.jpg": 6.912,
+    "x1d-xcd45-04.jpg": 4.654,
+    "x1d-ii-xcd45p-01.jpg": 8.589,
+    "x1d-ii-xcd45p-02.jpg": 10.575,
+    "x1d-II-sample-01.jpg": 8.588,
+    "x1d-II-sample-06.jpg": 14.069,
+    "02709.jpg": 14.487,
+    "00378.jpg": 5.558,
+    "local-mixed-2026-07__6507810936": 8.607,
+    "local-mixed-2026-07__0149725587": 6.327,
+    "local-mixed-2026-07__8204307982": 6.941,
+    "local-mixed-2026-07__3832345792": 8.458,
+    "local-mixed-2026-07__5537240075": 7.599,
+    "local-mixed-2026-07__0587181218": 5.840,
+    "local-mixed-2026-07__7971015535": 5.763,
+    "local-mixed-2026-07__6311094775": 5.144,
+    "local-mixed-2026-07__6787000086": 12.546,
+    "local-mixed-2026-07__7826992126": 5.898,
+    "local-mixed-2026-07__5533274085": 4.597,
+    "local-mixed-2026-07__1094220000": 6.607,
+    "local-mixed-2026-07__8082395282": 7.480,
+    "local-mixed-2026-07__1932636179": 6.098,
+    "local-mixed-2026-07__3953661245": 5.921,
+    "local-mixed-2026-07__8127122405": 5.846,
+    "local-mixed-2026-07__5746737497": 8.995,
+    "local-mixed-2026-07__9515423899": 7.915,
+    "local-mixed-2026-07__6454535758": 9.402,
+    "local-mixed-2026-07__8742913299": 6.527,
+    "local-mixed-2026-07__7492975828": 5.219,
+    "local-mixed-2026-07__7321006825": 11.814,
+    "local-mixed-2026-07__6660888354": 33.718,
+    "local-mixed-2026-07__4236625428": 6.285,
+    "local-mixed-2026-07__8581844385": 14.510,
+    "local-mixed-2026-07__7121592185": 12.170,
+    "local-mixed-2026-07__3766372330": 8.209,
+    "local-mixed-2026-07__7732046028": 4.795,
+    "local-mixed-2026-07__0908944042": 5.514,
+    "local-mixed-2026-07__1917191504": 4.922,
+    "local-mixed-2026-07__9011626130": 12.049,
+    "local-mixed-2026-07__5310704161": 22.590,
+    "local-mixed-2026-07__3683076943": 8.212,
+    "local-mixed-2026-07__7406451876": 5.852,
+    "local-mixed-2026-07__6519755969": 4.820,
+    "local-mixed-2026-07__3333340029": 10.758,
+    "local-mixed-2026-07__9479682988": 8.227,
+    "local-mixed-2026-07__5385314660": 12.598,
+    "local-mixed-2026-07__9247740424": 4.806,
+    "local-mixed-2026-07__5715595764": 9.708,
+    "local-mixed-2026-07__6704898202": 15.312,
+    "local-mixed-2026-07__6340134840": 5.114,
+    "local-mixed-2026-07__9928856380": 4.369,
+    "local-mixed-2026-07__0758706524": 4.351,
+    "local-mixed-2026-07__4087418227": 4.684,
+    "local-mixed-2026-07__1063588653": 5.330,
+    "local-mixed-2026-07__1755788551": 36.934,
+    "local-mixed-2026-07__9070200412": 6.551,
+    "local-mixed-2026-07__9318140329": 6.806,
+    "local-mixed-2026-07__4589763049": 12.054,
+    "local-mixed-2026-07__0229019868": 23.267,
+    "local-mixed-2026-07__9063680763": 17.887,
+    "local-mixed-2026-07__0550549226": 5.074,
+    "local-mixed-2026-07__3153320186": 7.105,
+    "local-mixed-2026-07__6762931572": 9.219,
+    "local-mixed-2026-07__6661213999": 12.155,
+    "local-mixed-2026-07__5983653715": 11.781,
+    "local-mixed-2026-07__1372685658": 9.451,
+    "local-mixed-2026-07__3528755502": 6.257,
+    "local-mixed-2026-07__7278483295": 27.887,
+    "local-mixed-2026-07__8647104982": 8.939,
 }
 
 _PAIR_DATA_CACHE = {}
@@ -116,11 +194,19 @@ def _pair_data(pair):
     무관)."""
     name = pair["name"]
     if name not in _PAIR_DATA_CACHE:
-        wb_rgb = _resize_max_dim(decode_and_white_balance(pair["raw_path"]),
+        wb_rgb = _resize_max_dim(decode_and_white_balance(pair["raw_path"], half_size=True),
                                   DOWNSAMPLE_MAX_DIM)
         target = load_image_linear(pair["target_path"], resize_to=wb_rgb.shape[:2])
         _PAIR_DATA_CACHE[name] = (wb_rgb, target)
     return _PAIR_DATA_CACHE[name]
+
+
+def _init_worker(pairs):
+    """풀 워커 시작 시 한 번만 실행 - 전체 페어를 디코드해 이 워커의
+    _PAIR_DATA_CACHE를 채워둔다(이후 모든 폴드x콤보 태스크가 재디코드
+    없이 이 캐시를 쓴다)."""
+    for p in pairs:
+        _pair_data(p)
 
 
 def _cct_mired(as_shot_neutral):
@@ -156,19 +242,29 @@ def pair_weight_cct(pair, bounds):
     return compute_blend_weight_cct(asn, bounds["mired_min"], bounds["mired_max"])
 
 
-def fit_weighted_matrices(train_pairs, weight_fn, bounds):
+def compute_weights_by_name(pairs, weight_fn, bounds):
+    """페어별 블렌딩 가중치를 한 번만 계산해 name -> weight dict로 반환.
+    weight_fn(p, bounds)는 매 호출마다 exiftool 서브프로세스를 띄워
+    AsShotNeutral을 다시 읽는데, 그 값은 폴드/콤보와 무관하므로 폴드마다
+    (게다가 그리드서치 콤보마다) 다시 부르면 낭비다. 74쌍으로 늘면서
+    이 낭비가 무시할 수 없어져 페어당 1회로 캐시한다(계산 결과는
+    이전과 동일)."""
+    return {p["name"]: weight_fn(p, bounds) for p in pairs}
+
+
+def fit_weighted_matrices(train_pairs, weights):
     """train_pairs 전부가 매트릭스 A/B 피팅 둘 다에 기여(가중 최소자승)
     - 각 페어의 블렌딩 가중치가 그대로 그 페어의 피팅 기여도가 된다.
 
-    weight_fn이 [0,1] 밖의 값을 낼 수도 있다(compute_blend_weight_*는
-    관측 범위 밖 값에 대해 의도적으로 외삽을 허용) - 여기서는 [0,1]로
+    weights의 값이 [0,1] 밖일 수도 있다(compute_blend_weight_*는 관측
+    범위 밖 값에 대해 의도적으로 외삽을 허용) - 여기서는 [0,1]로
     clip한다. 피팅 가중치가 음수면 fit_color_matrix() 내부의
     sqrt(weight)가 NaN이 되어(예외 없이 RuntimeWarning만 내고 조용히
     깨진 매트릭스를 반환) 디버깅하기 어려운 실패를 만들기 때문 - 이
-    실험(bounds가 13쌍 전체 population min/max라 모든 페어의 가중치가
-    항상 [0,1] 안)에서는 실제로 발동하지 않지만, 이 함수를 다른
-    bounds로 재사용할 미래 호출부를 위한 방어."""
-    weights_b = [min(1.0, max(0.0, weight_fn(p, bounds))) for p in train_pairs]
+    실험(bounds가 전체 population min/max라 모든 페어의 가중치가 항상
+    [0,1] 안)에서는 실제로 발동하지 않지만, 이 함수를 다른 bounds로
+    재사용할 미래 호출부를 위한 방어."""
+    weights_b = [min(1.0, max(0.0, weights[p["name"]])) for p in train_pairs]
     sources = [_pair_data(p)[0] for p in train_pairs]
     targets = [_pair_data(p)[1] for p in train_pairs]
     w_a = [np.full(s.shape[:2], 1.0 - w) for s, w in zip(sources, weights_b)]
@@ -178,60 +274,77 @@ def fit_weighted_matrices(train_pairs, weight_fn, bounds):
     return matrix_a, matrix_b
 
 
-def fit_weighted_chroma_lut(train_pairs, weight_fn, bounds, matrix_a, matrix_b):
+def _blend_combo_mean(names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg):
+    sum_a, total_a, sum_b, total_b = 0.0, 0.0, 0.0, 0.0
+    for name in names:
+        w = weights[name]
+        wb_rgb, target = _PAIR_DATA_CACHE[name]
+        blended_matrix = (1.0 - w) * matrix_a + w * matrix_b
+        matrixed = apply_color_matrix(wb_rgb, blended_matrix)
+        chroma_applied = apply_chroma_lut(matrixed, sat_mult, hue_shift_deg)
+        result = film_curve(chroma_applied, toe_lift=FILM_CURVE_TOE_LIFT,
+                             shoulder_start=FILM_CURVE_SHOULDER_START,
+                             white_point=FILM_CURVE_WHITE_POINT)
+        de = mean_delta_e(result, target)
+        sum_a += (1.0 - w) * de
+        total_a += (1.0 - w)
+        sum_b += w * de
+        total_b += w
+    return sum_a, total_a, sum_b, total_b
+
+
+def _blend_combo_task(args):
+    names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg = args
+    sum_a, total_a, sum_b, total_b = _blend_combo_mean(
+        names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg)
+    return (sat_mult, hue_shift_deg), sum_a, total_a, sum_b, total_b
+
+
+def fit_weighted_chroma_lut(train_pairs, weights, matrix_a, matrix_b, pool=None):
     """앵커A/B용 (sat_mult, hue_shift_deg)를 각각 가중 평균 ΔE 최소화로
     그리드서치. 매트릭스는 이미 그 폴드에서 피팅된 blended matrix(각
     페어 자기 가중치로 블렌딩)를 먼저 적용한 뒤 후보 chroma 파라미터를
     얹어 평가한다 - apply_hncs_structural_blend()가 예측 시 실제로
-    하는 순서와 일치시키기 위함."""
-    entries = []
-    for p in train_pairs:
-        w = weight_fn(p, bounds)
-        wb_rgb, target = _pair_data(p)
-        blended_matrix = (1.0 - w) * matrix_a + w * matrix_b
-        matrixed = apply_color_matrix(wb_rgb, blended_matrix)
-        entries.append((w, matrixed, target))
+    하는 순서와 일치시키기 위함. pool이 있으면 49개 콤보를 워커들에
+    나눠 계산한다(결과는 직렬 실행과 수학적으로 동일)."""
+    names = [p["name"] for p in train_pairs]
+    combos = list(itertools.product(SAT_MULT_GRID, HUE_SHIFT_GRID))
+    if pool is None:
+        results = [((s, h), *_blend_combo_mean(names, weights, matrix_a, matrix_b, s, h))
+                   for s, h in combos]
+    else:
+        tasks = [(names, weights, matrix_a, matrix_b, s, h) for s, h in combos]
+        results = pool.map(_blend_combo_task, tasks)
 
     best_a, best_a_score = (1.0, 0.0), float("inf")
     best_b, best_b_score = (1.0, 0.0), float("inf")
-    for sat_mult, hue_shift_deg in itertools.product(SAT_MULT_GRID, HUE_SHIFT_GRID):
-        sum_a, total_a, sum_b, total_b = 0.0, 0.0, 0.0, 0.0
-        for w, matrixed, target in entries:
-            chroma_applied = apply_chroma_lut(matrixed, sat_mult, hue_shift_deg)
-            result = film_curve(chroma_applied, toe_lift=FILM_CURVE_TOE_LIFT,
-                                 shoulder_start=FILM_CURVE_SHOULDER_START,
-                                 white_point=FILM_CURVE_WHITE_POINT)
-            de = mean_delta_e(result, target)
-            sum_a += (1.0 - w) * de
-            total_a += (1.0 - w)
-            sum_b += w * de
-            total_b += w
+    for combo, sum_a, total_a, sum_b, total_b in results:
         if total_a > 0:
             score_a = sum_a / total_a
             if score_a < best_a_score:
-                best_a_score, best_a = score_a, (sat_mult, hue_shift_deg)
+                best_a_score, best_a = score_a, combo
         if total_b > 0:
             score_b = sum_b / total_b
             if score_b < best_b_score:
-                best_b_score, best_b = score_b, (sat_mult, hue_shift_deg)
+                best_b_score, best_b = score_b, combo
     return best_a, best_b
 
 
-def run_loocv(weight_fn_name):
-    """weight_fn_name: "rb" 또는 "cct". 13개 폴드 전부에 대해
+def run_loocv(weight_fn_name, pool=None):
+    """weight_fn_name: "rb" 또는 "cct". 74개 폴드 전부에 대해
     (name, de_hard, de_blend, weight) 튜플 리스트를 반환한다."""
-    pairs = load_pairs()
+    pairs = combine_pairs(load_pairs())
     bounds = compute_population_bounds(pairs)
     weight_fn = pair_weight_rb if weight_fn_name == "rb" else pair_weight_cct
+    weights = compute_weights_by_name(pairs, weight_fn, bounds)
 
     per_fold = []
     for i, held_out in enumerate(pairs):
         train = pairs[:i] + pairs[i + 1:]
-        matrix_a, matrix_b = fit_weighted_matrices(train, weight_fn, bounds)
-        chroma_a, chroma_b = fit_weighted_chroma_lut(train, weight_fn, bounds,
-                                                       matrix_a, matrix_b)
+        matrix_a, matrix_b = fit_weighted_matrices(train, weights)
+        chroma_a, chroma_b = fit_weighted_chroma_lut(train, weights, matrix_a, matrix_b, pool)
 
-        w_held = weight_fn(held_out, bounds)
+        w_held = weights[held_out["name"]]
         wb_rgb, target = _pair_data(held_out)
         blended_matrix = (1.0 - w_held) * matrix_a + w_held * matrix_b
         matrixed = apply_color_matrix(wb_rgb, blended_matrix)
@@ -354,16 +467,28 @@ def print_summary(s, label_a="A", label_b="B"):
 
 
 def main():
-    print("=== R/B 선형 블렌딩 vs 하드-클러스터 ===")
-    per_fold_rb = run_loocv("rb")
-    summary_rb = summarize(per_fold_rb)
-    print_summary(summary_rb, label_a="하드클러스터", label_b="RB블렌딩")
+    pairs = combine_pairs(load_pairs())
+    print(f"페어 {len(pairs)}개 - 디코드 캐시 준비 중(메인 프로세스)", flush=True)
+    _init_worker(pairs)  # 메인 프로세스도 fit_weighted_matrices()/held-out 평가용으로 필요
+    pool = mp.Pool(processes=N_WORKERS, initializer=_init_worker, initargs=(pairs,)) \
+        if N_WORKERS > 1 else None
+    if pool is not None:
+        print(f"워커 {N_WORKERS}개에 디코드 캐시 배포 중 (RB/CCT 두 실행이 공유)", flush=True)
+    try:
+        print("=== R/B 선형 블렌딩 vs 하드-클러스터 ===")
+        per_fold_rb = run_loocv("rb", pool)
+        summary_rb = summarize(per_fold_rb)
+        print_summary(summary_rb, label_a="하드클러스터", label_b="RB블렌딩")
 
-    print()
-    print("=== CCT/mired 블렌딩 vs 하드-클러스터 ===")
-    per_fold_cct = run_loocv("cct")
-    summary_cct = summarize(per_fold_cct)
-    print_summary(summary_cct, label_a="하드클러스터", label_b="CCT블렌딩")
+        print()
+        print("=== CCT/mired 블렌딩 vs 하드-클러스터 ===")
+        per_fold_cct = run_loocv("cct", pool)
+        summary_cct = summarize(per_fold_cct)
+        print_summary(summary_cct, label_a="하드클러스터", label_b="CCT블렌딩")
+    finally:
+        if pool is not None:
+            pool.close()
+            pool.join()
 
     print()
     print("=== RB블렌딩 vs CCT블렌딩 직접 비교 ===")

@@ -70,12 +70,16 @@ class TestSignTestP(unittest.TestCase):
 
 
 class TestHardClusterDeConstant(unittest.TestCase):
-    def test_has_all_13_pairs(self):
-        self.assertEqual(len(HARD_CLUSTER_DE), 13)
+    def test_has_all_74_pairs(self):
+        self.assertEqual(len(HARD_CLUSTER_DE), 74)
 
-    def test_matches_documented_value_for_one_pair(self):
-        # hybrid_engine/EVALUATION.md "HNCS 구조 실험" 절, 폴드별 상세 표
-        self.assertAlmostEqual(HARD_CLUSTER_DE["x1d-II-sample-09.jpg"], 5.249)
+    def test_matches_documented_value_for_one_official_pair(self):
+        # tools/evaluate_hncs_structural.py 2026-08 74쌍 재실행 결과
+        self.assertAlmostEqual(HARD_CLUSTER_DE["x1d-II-sample-09.jpg"], 17.884)
+
+    def test_matches_documented_value_for_one_local_pair(self):
+        self.assertAlmostEqual(
+            HARD_CLUSTER_DE["local-mixed-2026-07__6507810936"], 8.607)
 
 
 class TestSummarizeShape(unittest.TestCase):

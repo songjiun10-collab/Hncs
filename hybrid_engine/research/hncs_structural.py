@@ -46,14 +46,18 @@ CLUSTER_THRESHOLD_R_OVER_B = 0.9
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
 
 
-def decode_and_white_balance(raw_path):
+def decode_and_white_balance(raw_path, half_size=False):
     """RAW -> 카메라 네이티브 linear RGB에 AsShotNeutral로 WB만 적용한
     상태(HNCS 2단계 - 조명별 매트릭스 - 가 받는 입력에 해당). WB
     게인만 걸고 아직 어떤 색매트릭스도 안 걸린 상태를 만들어야 하므로
     decode_raw()(libraw 자체 매트릭스까지 같이 적용)가 아니라
     decode_raw_native()(WB/매트릭스 둘 다 미적용)에서 시작해 직접
-    AsShotNeutral로 나눈다."""
-    native_rgb = decode_raw_native(raw_path)
+    AsShotNeutral로 나눈다.
+
+    half_size: decode_raw_native()에 그대로 전달(기본 False, 기존
+    호출부 영향 없음) - 평가 스크립트들이 어차피 디코드 직후 512px로
+    축소하는 용도로만 쓸 때 디코드 시간/메모리를 줄이려고 추가."""
+    native_rgb = decode_raw_native(raw_path, half_size=half_size)
     as_shot_neutral = read_as_shot_neutral(raw_path)
     if as_shot_neutral is None:
         raise ValueError(f"AsShotNeutral 태그를 읽을 수 없음: {raw_path}")
