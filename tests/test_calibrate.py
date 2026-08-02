@@ -82,5 +82,39 @@ class TestBuildLutFromCounts(unittest.TestCase):
         self.assertTrue(np.all(np.diff(lut) >= 0))
 
 
+class TestSubtractionLooMatchesRecompute(unittest.TestCase):
+    def test_subtraction_equals_full_recompute(self):
+        from tools.calibrate import _pair_counts_sums, _build_lut_from_counts
+
+        rng = np.random.default_rng(42)
+        pairs = []
+        for _ in range(4):
+            neutral_l = rng.integers(0, 256, size=30).astype(np.int64)
+            target_l = neutral_l.astype(np.float64) + rng.normal(0, 5, size=30)
+            counts, sums = _pair_counts_sums(neutral_l, target_l)
+            pairs.append(dict(neutral_l=neutral_l, target_l=target_l,
+                               counts=counts, sums=sums))
+
+        prior = np.arange(256, dtype=np.float32)
+        lam = 500
+
+        counts_all = sum(p['counts'] for p in pairs)
+        sums_all = sum(p['sums'] for p in pairs)
+
+        for i, held_out in enumerate(pairs):
+            # 뺄셈 방식
+            train_counts_sub = counts_all - held_out['counts']
+            train_sums_sub = sums_all - held_out['sums']
+            lut_sub = _build_lut_from_counts(train_counts_sub, train_sums_sub, prior, lam)
+
+            # 재계산 방식 (기존 방식 그대로 재현)
+            train = [p for j, p in enumerate(pairs) if j != i]
+            train_counts_full = sum(p['counts'] for p in train)
+            train_sums_full = sum(p['sums'] for p in train)
+            lut_full = _build_lut_from_counts(train_counts_full, train_sums_full, prior, lam)
+
+            np.testing.assert_array_equal(lut_sub, lut_full)
+
+
 if __name__ == "__main__":
     unittest.main()

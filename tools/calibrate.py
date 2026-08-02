@@ -354,10 +354,9 @@ def _parametric_prior():
 
 def _collect_pair_pixels():
     dataset = []
-    for r in collect_pairs():
-        ext = os.path.splitext(r['raw_url'])[1]
-        raw_path = os.path.join(CACHE_DIR, r['filename'] + ext)
-        jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
+    for r in _resolve_pairs():
+        raw_path = r['raw_path']
+        jpeg_path = r['jpeg_path']
         if not (os.path.exists(raw_path) and os.path.exists(jpeg_path)):
             continue
 
@@ -378,9 +377,10 @@ def _collect_pair_pixels():
         t_stats = gray_stats(target)
 
         dataset.append(dict(name=r['filename'], neutral_l=n_l, target_l=t_l,
+                             generation=r['generation'],
                              b2=t_stats['b2'], w995=t_stats['w995'],
                              shadow_valid=t_stats['dark_pct'] > 5))
-        print(f"  {r['filename']} - {n_l.size}px")
+        print(f"  {r['filename']} ({r['generation']}) - {n_l.size}px")
     return dataset
 
 
@@ -406,18 +406,25 @@ def run_regularize():
     prior = _parametric_prior()
     print(f"\n{len(dataset)}장 로드 완료\n")
 
+    for d in dataset:
+        d['counts'], d['sums'] = _pair_counts_sums(d['neutral_l'], d['target_l'])
+
+    counts_all = sum(d['counts'] for d in dataset)
+    sums_all = sum(d['sums'] for d in dataset)
+
     lambdas = [0, 50, 200, 500, 1000, 2000, 5000, 20000, 1e9]  # 1e9 ~= 순수 파라메트릭
 
     print(f"{'lambda':>10s}  {'LOO RMSE':>10s}")
     results = []
+    per_fold_by_lambda = {}
     for lam in lambdas:
         sq_err = 0.0
         n = 0
-        for i, held_out in enumerate(dataset):
-            train = [d for j, d in enumerate(dataset) if j != i]
-            neutral_l = np.concatenate([d['neutral_l'] for d in train])
-            target_l = np.concatenate([d['target_l'] for d in train])
-            lut = _build_lut(neutral_l, target_l, prior, lam)
+        per_fold = []
+        for held_out in dataset:
+            train_counts = counts_all - held_out['counts']
+            train_sums = sums_all - held_out['sums']
+            lut = _build_lut_from_counts(train_counts, train_sums, prior, lam)
 
             pred_l = lut[held_out['neutral_l'].astype(np.int32)]
             pred_stats = dict(b2=np.percentile(pred_l, 2), w995=np.percentile(pred_l, 99.5))
@@ -427,19 +434,21 @@ def run_regularize():
                 e += (pred_stats['b2'] - held_out['b2']) ** 2
             sq_err += e
             n += 1
+            per_fold.append((held_out['name'], held_out['generation'], e ** 0.5))
         rmse = (sq_err / n) ** 0.5
         results.append((lam, rmse))
+        per_fold_by_lambda[lam] = per_fold
         print(f"{lam:10.0f}  {rmse:10.2f}")
 
     best_lam, best_rmse = min(results, key=lambda t: t[1])
     print(f"\n최적 lambda={best_lam} (LOO RMSE={best_rmse:.2f})")
 
-    # 최적 lambda로 전체 10장 사용해 최종 LUT 생성
-    all_neutral = np.concatenate([d['neutral_l'] for d in dataset])
-    all_target = np.concatenate([d['target_l'] for d in dataset])
-    final_lut = _build_lut(all_neutral, all_target, prior, best_lam)
+    # 최적 lambda로 전체 74쌍 사용해 최종 LUT 생성
+    final_lut = _build_lut_from_counts(counts_all, sums_all, prior, best_lam)
     np.save("regularized_tone_lut.npy", np.clip(final_lut, 0, 255).astype(np.uint8))
     print("저장: regularized_tone_lut.npy")
+
+    return per_fold_by_lambda, best_lam
 
 
 if __name__ == "__main__":
