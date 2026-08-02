@@ -20,9 +20,11 @@ Biased toward caution over speed. Use judgment on trivial tasks.
   (Exception under `/goal` — see Commands.)
 - **Genuinely stuck** — not first-attempt friction, actually out of ideas
   — consulting another vendor's AI is allowed, and better than guessing.
-  Applies to local/desktop sessions where such a CLI is installed. Ask
-  about approach, algorithm, or library semantics; don't paste contributed
-  datasets or unpublished results into a third party.
+  The route is a Cowork/desktop session driving a browser with computer
+  use, so it doesn't apply in a remote container like this one. Ask about
+  approach, algorithm, or library semantics; typing into someone else's
+  chat window publishes it, so contributed datasets and unpublished
+  results stay out.
 
 ### Simplicity first
 
