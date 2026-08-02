@@ -17,6 +17,7 @@ Biased toward caution over speed. Use judgment on trivial tasks.
 - Multiple interpretations → present them, don't pick silently.
 - Simpler approach exists → say so. Push back when warranted.
 - Confused → stop, name what's confusing, ask. Don't hide it.
+  (Exception under `/goal` — see Commands.)
 
 ### Simplicity first
 
@@ -85,6 +86,15 @@ whole-branch review; it caught three critical bugs.
 count; finish it and report each item. Search order when told to find
 work: open PR → unfinished conversation work → TODO/FIXME → doc/code
 drift → artifact integrity. Finish what's started, don't invent projects.
+
+Ambiguity here is the one case where "stop and ask" doesn't apply — the
+point of `/goal` is running without the user. **Escalate instead:**
+dispatch a subagent on the strongest tier (`opus`) to make the call, then
+record what it decided and why. Don't guess, and don't stall.
+
+Still stop for decisions that are genuinely the user's: shipping a
+calibration change, deleting data, anything outward-facing. A stronger
+model resolves ambiguity, not authority.
 
 **`/loop [interval]`** — don't poll harness-tracked work (it notifies);
 set a long fallback (1200s+) and arm a `Monitor` for the real signal.
