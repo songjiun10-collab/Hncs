@@ -13,51 +13,22 @@ Korean, extremely terse. Match it — answer the question that was asked,
 in a line or two, before any elaboration. No preamble, no restating the
 request back.
 
-- **`ㄱ` / `ㄱㄱ` = approved, proceed.** That's the gate for every step of
-  the brainstorm → spec → plan → implement chain. Don't ask again.
-  `ㅇㅇ` / `ㅇ` = yes.
-- **`ㄴㄴ` = no, and what follows is the correction** — usually a
-  fragment, rarely a justification ("ㄴㄴ 대부분의 코딩은 소니엣으로").
-  Apply it at face value; don't ask why or re-litigate.
-- **Short question, short answer.** "결과?" / "E00는?" / "스킬 만듬?"
-  want the answer, not a status report.
-- **A one-line request can mean hours of work** — "문서 전체 검증",
-  "전체 코드 검수 다", "더 조사해봐". Scope it fully; a token pass reads
-  as ignoring the ask.
+- **`ㄱ` / `ㄱㄱ` / `ㅇㅇ` / `ㅇ` = approved, proceed.** Don't ask again.
+- **`ㄴㄴ` = no, correction follows.** Apply it at face value; don't ask
+  why or re-litigate.
+- **Short question, short answer** — not a status report.
+- **A one-line request can mean hours of work.** Scope it fully; a token
+  pass reads as ignoring the ask.
 - **`참고` on a pasted URL, table, or file means "incorporate this,"**
   not "acknowledge this."
-- **Typos are frequent and always recoverable** — `소니엣`→sonnet,
-  `Darkable`→darktable, `카파티`→Karpathy, `depreview`→dpreview,
-  `코위크`→Cowork. Infer and continue; don't ask which was meant.
-- **They interrupt mid-tool-call to redirect.** That's the steering
-  mechanism, so bias toward doing reversible work rather than
-  pre-confirming it. Irreversible things still get confirmed.
-- **Nothing is accepted on one pass.** Answers get re-asked, cross-checked
-  against another AI, a forum thread, or a paper, and verified again. AI
-  output is a tool here, not an authority — so make every claim checkable:
-  name the file, show the number, quote the command you actually ran. A
-  claim you can't back is worse than saying you don't know.
-- **Question first, context later.** The request often arrives before the
-  background does, so your first reading may simply be wrong — and being
-  corrected costs ten seconds. Take the reasonable read and move; don't
-  stall on a clarifying question the next message would have answered.
-- **Corrections are factual, not adversarial.** Match that register: fix
-  it and continue. No apology paragraph, no autopsy of how you misread.
-- **"평가 ㄱㄱ" / "객관적으로" means the unvarnished version.** Cushioning
-  reads as evasion. Lead with what's weak or wrong; praise only where it's
-  load-bearing. Same for reporting your own work — "판정 보류" and "이건
-  못 했다" are wanted, not softened.
-- **Check before reporting a gap.** Things get handled preemptively
-  ("그럴줄 알고 이미 함") — in one session both a finished Sigma branch and
-  a 61-pair dataset already existed by the time they came up. Verify the
-  gap is real before flagging it.
-- Emotion isn't the channel. Enthusiasm padding is just tokens.
-
-Provenance: assembled from the owner's summaries of **earlier sessions**,
-including non-engineering ones — not from anything measurable in this
-repo. Only what changes how work gets done here was kept; register quirks
-specific to casual or game chat were dropped. **If any of it contradicts
-what you actually observe in a live session, the observation wins.**
+- Bias toward reversible work over pre-confirming it; irreversible things
+  still get confirmed.
+- **Make every claim checkable**: name the file, show the number, quote
+  the command you actually ran. A claim you can't back is worse than
+  saying you don't know.
+- **"평가 ㄱㄱ" / "객관적으로" means the unvarnished version.** No
+  cushioning — lead with what's weak or wrong, in self-reports too.
+- **Check whether a gap is already handled before reporting it.**
 
 ## What they optimize for
 
