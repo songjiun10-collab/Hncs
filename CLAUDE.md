@@ -7,10 +7,55 @@ artifact; everything else is research feeding them.
 Area rules live next to what they govern: `brands/`, `tools/`,
 `hybrid_engine/`, `docs/`, `tests/`, `datasets/` each have a `CLAUDE.md`.
 
+## Working principles
+
+Biased toward caution over speed. Use judgment on trivial tasks.
+
+### Think before coding
+
+- State assumptions explicitly. Uncertain → ask.
+- Multiple interpretations → present them, don't pick silently.
+- Simpler approach exists → say so. Push back when warranted.
+- Confused → stop, name what's confusing, ask. Don't hide it.
+
+### Simplicity first
+
+Minimum code that solves the problem. Nothing speculative.
+
+- No features beyond what was asked. No abstractions for single-use code.
+  No unrequested configurability. No error handling for impossible cases.
+- 200 lines that could be 50 → rewrite it.
+- "Would a senior engineer call this overcomplicated?" If yes, simplify.
+
+### Surgical changes
+
+Every changed line traces directly to the request.
+
+- Don't "improve" adjacent code, comments, or formatting. Don't refactor
+  what isn't broken. Match existing style even if you'd do it differently.
+- Unrelated dead code → mention it, don't delete it.
+- Remove only the orphans your own change created.
+- The hardest instance of this rule is the never-touch list below. The
+  softer version applies everywhere: old research approaches stay as
+  baselines, docstring history gets appended to, not rewritten.
+
+### Goal-driven execution
+
+Turn the task into something verifiable, then loop until it passes.
+
+- "Add validation" → write tests for invalid inputs, then make them pass
+- "Fix the bug" → write a failing reproduction, then make it pass
+- "Does X beat Y?" → **commit to the success criterion before seeing
+  results.** See `hybrid_engine/CLAUDE.md`: a confidence interval
+  straddling zero is inconclusive no matter how good the mean looks.
+
+Multi-step work gets a plan with a verify step per item. Strong criteria
+let you run independently; "make it work" needs constant clarification.
+
 ## Never
 
-- Modify `apply_hncs()` in `brands/hasselblad.py`, or any shipped
-  `apply_*`, or `hybrid_engine/assets/profiles/*.json` / `*.dcp`.
+- Modify `apply_hncs()` in `brands/hasselblad.py`, any shipped `apply_*`,
+  or `hybrid_engine/assets/profiles/*.json` / `*.dcp`.
 - Ship an experimental result automatically. That's a separate decision.
 
 ## Every commit
