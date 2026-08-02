@@ -116,5 +116,45 @@ class TestSubtractionLooMatchesRecompute(unittest.TestCase):
             np.testing.assert_array_equal(lut_sub, lut_full)
 
 
+class TestSignTestP(unittest.TestCase):
+    def test_no_pairs_is_p_one(self):
+        from tools.calibrate import _sign_test_p
+        self.assertEqual(_sign_test_p(0, 0), 1.0)
+
+    def test_even_split_is_p_one(self):
+        from tools.calibrate import _sign_test_p
+        self.assertAlmostEqual(_sign_test_p(5, 5), 1.0)
+
+    def test_all_wins_is_significant(self):
+        from tools.calibrate import _sign_test_p
+        p = _sign_test_p(10, 0)
+        self.assertLess(p, 0.05)
+
+
+class TestSummarizeShape(unittest.TestCase):
+    def test_returns_expected_keys(self):
+        from tools.calibrate import summarize
+        per_fold = [(f"pair{i}", 10.0, 9.0) for i in range(20)]
+        s = summarize(per_fold)
+        expected_keys = {
+            "n", "mean_a", "mean_b", "mean_diff", "median_diff",
+            "improvement_pct", "b_wins", "a_wins", "sd_diff", "sem_diff",
+            "t_stat", "sign_test_p", "ci_diff", "ci_pct",
+            "dropone_pct_min", "dropone_pct_max", "dropone_flips_sign",
+            "inconclusive", "verdict",
+        }
+        self.assertEqual(set(s.keys()), expected_keys)
+        self.assertEqual(s["n"], 20)
+        self.assertAlmostEqual(s["mean_a"], 10.0)
+        self.assertAlmostEqual(s["mean_b"], 9.0)
+
+    def test_identical_values_is_inconclusive(self):
+        from tools.calibrate import summarize
+        per_fold = [(f"pair{i}", 10.0, 10.0) for i in range(20)]
+        s = summarize(per_fold)
+        self.assertTrue(s["inconclusive"])
+        self.assertIn("판정 보류", s["verdict"])
+
+
 if __name__ == "__main__":
     unittest.main()
