@@ -69,8 +69,11 @@ cv2.imwrite("photo_hncs.jpg", result)
 ```
 
 Every `apply_*` function in `brands/*.py` uniformly takes a BGR
-`np.ndarray` and returns a BGR `np.ndarray`. Run from the repo root so
-the `core`/`brands`/`tools` import paths resolve correctly.
+`np.ndarray` and returns a same-shape `np.ndarray`. The two monochrome
+film simulations (`apply_acros`, `apply_monochrome`) return a
+single-channel 2D array rather than 3-channel BGR - deliberate, and
+covered by `tests/test_brands.py`. Run from the repo root so the
+`core`/`brands`/`tools` import paths resolve correctly.
 
 ## Installation
 

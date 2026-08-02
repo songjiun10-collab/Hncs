@@ -68,8 +68,10 @@ cv2.imwrite("photo_hncs.jpg", result)
 ```
 
 `brands/*.py`의 각 `apply_*` 함수는 전부 동일하게 BGR `np.ndarray`를
-받아 BGR `np.ndarray`를 반환한다. 리포 루트에서 실행해야 `core`/`brands`/
-`tools` 임포트 경로가 맞다.
+받아 같은 shape의 `np.ndarray`를 반환한다. 단, 흑백 필름 시뮬레이션
+2종(`apply_acros`/`apply_monochrome`)만 3채널 BGR이 아니라 2D 단일채널을
+반환한다 - 의도된 동작이고 `tests/test_brands.py`가 검증한다. 리포
+루트에서 실행해야 `core`/`brands`/`tools` 임포트 경로가 맞다.
 
 ## 설치
 
