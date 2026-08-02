@@ -13,7 +13,7 @@ import cv2
 import colour
 
 
-def decode_raw(raw_path, demosaic_algorithm=None, chromatic_aberration=None):
+def decode_raw(raw_path, demosaic_algorithm=None, chromatic_aberration=None, half_size=False):
     """RAW -> Linear RGB, float64 [0, 1] 근방(하이라이트는 1을 넘을 수
     있음), shape (H, W, 3), RGB 순서. 카메라 고유 색공간이 아니라 sRGB
     프라이머리 기준 선형광(linear light) 값 - 이후 core/pipeline이
@@ -29,7 +29,12 @@ def decode_raw(raw_path, demosaic_algorithm=None, chromatic_aberration=None):
     100% 동일하게 동작한다(rawpy 기본값 (1.0, 1.0)과 결과가 바이트
     단위로 동일함을 실측 확인). (red_scale, blue_scale) 튜플을 넘기면
     raw.postprocess()에 그대로 전달돼 R/B 채널을 스케일링해서 렌즈
-    색수차를 보정한다(tools/evaluate_chromatic_aberration.py 참고)."""
+    색수차를 보정한다(tools/evaluate_chromatic_aberration.py 참고).
+
+    half_size: True면 데모자이크를 건너뛰고 2x2 Bayer 블록을 그대로
+    묶어 절반 해상도로 뽑는다(LibRaw half_size) - 디코드 시간과 메모리가
+    대략 1/4로 줄어든다. 평가 스크립트들이 어차피 디코드 직후 512px로
+    축소하는 용도라 픽셀 단위 데모자이크 품질이 필요 없을 때만 켤 것."""
     kwargs = dict(
         use_camera_wb=True,
         no_auto_bright=True,
@@ -41,12 +46,14 @@ def decode_raw(raw_path, demosaic_algorithm=None, chromatic_aberration=None):
         kwargs["demosaic_algorithm"] = demosaic_algorithm
     if chromatic_aberration is not None:
         kwargs["chromatic_aberration"] = chromatic_aberration
+    if half_size:
+        kwargs["half_size"] = True
     with rawpy.imread(raw_path) as raw:
         rgb16 = raw.postprocess(**kwargs)
     return rgb16.astype(np.float64) / 65535.0
 
 
-def decode_raw_native(raw_path):
+def decode_raw_native(raw_path, half_size=False):
     """RAW -> 카메라 네이티브 linear RGB, float64 [0, 1] 근방,
     shape (H, W, 3), RGB 순서.
 
@@ -61,17 +68,23 @@ def decode_raw_native(raw_path):
     나오는 게 정상이다(베이어 센서의 초록 화소가 2배 많고 초록 감도가
     높기 때문). 차트 검출에는 영향 없음 - chart_baseline.
     detect_and_sample()이 검출용 프리뷰를 만들 때 퍼센타일 정규화를
-    거치므로 이 캐스트 상태에서도 검출된다(실측 확인)."""
+    거치므로 이 캐스트 상태에서도 검출된다(실측 확인).
+
+    half_size: decode_raw()와 같은 의미(LibRaw half_size, 데모자이크
+    생략) - 기본 False로 기존 호출부는 전혀 영향 없음."""
+    kwargs = dict(
+        use_camera_wb=False,
+        use_auto_wb=False,
+        user_wb=[1.0, 1.0, 1.0, 1.0],
+        no_auto_bright=True,
+        output_bps=16,
+        output_color=rawpy.ColorSpace.raw,
+        gamma=(1, 1),  # 순수 linear
+    )
+    if half_size:
+        kwargs["half_size"] = True
     with rawpy.imread(raw_path) as raw:
-        rgb16 = raw.postprocess(
-            use_camera_wb=False,
-            use_auto_wb=False,
-            user_wb=[1.0, 1.0, 1.0, 1.0],
-            no_auto_bright=True,
-            output_bps=16,
-            output_color=rawpy.ColorSpace.raw,
-            gamma=(1, 1),  # 순수 linear
-        )
+        rgb16 = raw.postprocess(**kwargs)
     return rgb16.astype(np.float64) / 65535.0
 
 
