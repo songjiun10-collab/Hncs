@@ -81,9 +81,10 @@ User gates each step with "ㄱ".
 ### Controller
 
 - **Always name the model.** Omitting it inherits this session's, usually
-  the most expensive. Brief contains the complete code → `haiku`, it's
-  transcription. Multi-file or judgment → `sonnet`. Architecture, and the
-  final whole-branch review → `opus`.
+  the most expensive. **`sonnet` is the default for implementation and
+  review.** `opus` only for architecture and the final whole-branch
+  review. Don't reach for `haiku` — the extra turns it takes on anything
+  multi-step cost more than the tokens it saves.
 - **Hand off files, not pasted text.** Anything pasted into a dispatch, or
   printed back by a subagent, sits in your context for the rest of the
   session. Use the skill's `scripts/task-brief` for requirements, a
