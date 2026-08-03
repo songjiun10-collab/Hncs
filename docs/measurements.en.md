@@ -398,3 +398,51 @@ produced this table lived in session scratch space, not the repo).
 new `*.phos` sidecar files in that folder (Phocus's own adjustment-state
 files) - `raw_calib_cache/` is already `.gitignore`d so these never reach
 a commit, but noting that they exist locally.
+
+> **Correction (2026-08-03, found by actually checking the "these 13
+> pairs have never been individually checked" concern above)**: checked
+> the `target.jpg` EXIF `Software` tag on all 13 `raw_calib_cache` pairs -
+> **9 of 13 carry a third-party editing software tag**, the first time
+> this check has ever been run on `apply_hncs()` (v11)'s own original
+> calibration dataset:
+>
+> | Pair | Software tag |
+> |---|---|
+> | 00378 | none (presumed clean) |
+> | 02709 | none (presumed clean) |
+> | B0000994 | Adobe Photoshop CC 2018 (Windows) |
+> | B0001395 | Adobe Photoshop CC 2018 (Windows) |
+> | x1d-II-sample-01 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-II-sample-02 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-II-sample-06 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-II-sample-09 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-ii-xcd45p-01 | none (presumed clean) |
+> | x1d-ii-xcd45p-02 | none (presumed clean) |
+> | x1d-xcd45-01 | Adobe Photoshop Lightroom Classic 8.0 (Macintosh) |
+> | x1d-xcd45-03 | Adobe Photoshop Lightroom Classic 8.0 (Macintosh) |
+> | x1d-xcd45-04 | Adobe Photoshop Lightroom Classic 8.0 (Macintosh) |
+>
+> "No Software tag" is "unconfirmed," not "confirmed unedited," for the
+> same reason as the "Phocus contamination re-check" section above -
+> though at minimum it means no obvious edit trace, so these 4 are
+> treated as "clean" below.
+>
+> **ΔE00 recomputed on just the 4 clean pairs**
+> (00378/02709/x1d-ii-xcd45p-01/02, alongside the n=13 table - n=4 is
+> reference only, not a replacement):
+>
+> | | target vs apply_hncs | target vs real Phocus | real Phocus vs apply_hncs |
+> |---|---|---|---|
+> | Mean (n=4, clean) | 9.031 | 4.187 | 9.103 |
+> | Median (n=4, clean) | 9.623 | 3.978 | 9.668 |
+> | Mean (n=13, all) | 9.926 | 6.437 | 9.990 |
+>
+> The direction doesn't change (target-vs-apply_hncs is still bigger than
+> target-vs-real-Phocus even on just the 4 clean pairs) - but n=4 proves
+> essentially nothing statistically, so the point of this correction isn't
+> "the conclusion changed." It's that **this is the first time it's been
+> confirmed that 9 of the 13 pairs `apply_hncs()` v11 was trained on may
+> have gone through editing software** - a far more fundamental issue than
+> this Phocus comparison itself, and whether v11 needs recalibrating is a
+> separate decision outside this document's scope (`apply_hncs()` itself
+> was not touched this session).
