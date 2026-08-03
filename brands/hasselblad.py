@@ -89,6 +89,16 @@ raw+jpeg 페어가 X1D 13장(공식)에서 X2D/907X·CFV 실사진 61장이 추�
 (10.82 vs 19.11). v12가 X1D 10장 표본에서만 우세했던 건 과적합이었던
 것으로 확인됨. `apply_hncs`가 기본값으로 유지되는 근거가 더 튼튼해짐.
 자세한 세대별 표는 `docs/measurements.md` 참고.
+
+원 캘리브레이션 데이터(공식 X1D 13쌍) 편집 오염 발견(2026-08): 이
+13쌍의 `target.jpg` EXIF Software 태그를 이번에 처음 확인했다 -
+**13개 중 9개가 Adobe Photoshop/Lightroom Classic 편집 태그를 갖고
+있음**(순정 추정은 4쌍뿐: 00378/02709/x1d-ii-xcd45p-01/02). 이 v11
+커브(및 v12 학습 LUT)는 이 13쌍(그중 9쌍이 편집됐을 수 있는) 전체로
+피팅됐다. 클린 4쌍만으로 다시 잰 ΔE(target vs 실제 Phocus 렌더 기준
+`docs/measurements.md` 참고)는 방향은 안 바뀌지만 n=4라 통계적 의미는
+없음 - 재캘리브레이션 여부는 아직 결정하지 않았고 이 함수는 이번에
+손대지 않았다.
 """
 import cv2
 import numpy as np

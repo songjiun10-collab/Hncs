@@ -393,3 +393,47 @@ Standard 프리셋) → TIFF Export 후, 이 문서를 생성한 1회성 스크�
 `*.phos` 사이드카 파일이 새로 생긴다(Phocus의 조정값 저장 파일) -
 `raw_calib_cache/`는 이미 `.gitignore` 대상이라 커밋에는 안 잡히지만,
 로컬에 남아있다는 점은 기록해둔다.
+
+> **정정(2026-08-03, 위 "이 13쌍도 개별 검증된 적은 없다"는 우려를
+> 실제로 검증해서 발견)**: `raw_calib_cache` 13쌍 전부의 `target.jpg`
+> EXIF `Software` 태그를 확인했다 - **13개 중 9개가 제3자 편집
+> 소프트웨어 태그를 갖고 있다**, `apply_hncs()`(v11)의 원 캘리브레이션
+> 데이터셋 자체에서 이 검증이 이번이 처음이다:
+>
+> | 페어 | Software 태그 |
+> |---|---|
+> | 00378 | 없음(순정 추정) |
+> | 02709 | 없음(순정 추정) |
+> | B0000994 | Adobe Photoshop CC 2018 (Windows) |
+> | B0001395 | Adobe Photoshop CC 2018 (Windows) |
+> | x1d-II-sample-01 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-II-sample-02 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-II-sample-06 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-II-sample-09 | Adobe Photoshop CC 2019 (Macintosh) |
+> | x1d-ii-xcd45p-01 | 없음(순정 추정) |
+> | x1d-ii-xcd45p-02 | 없음(순정 추정) |
+> | x1d-xcd45-01 | Adobe Photoshop Lightroom Classic 8.0 (Macintosh) |
+> | x1d-xcd45-03 | Adobe Photoshop Lightroom Classic 8.0 (Macintosh) |
+> | x1d-xcd45-04 | Adobe Photoshop Lightroom Classic 8.0 (Macintosh) |
+>
+> "Software 태그 없음"은 위 "Phocus 오염 재검증" 절과 같은 이유로
+> "확인된 무편집"이 아니라 "미확인"이다 - 다만 최소한 명백한 편집
+> 흔적은 없다는 뜻이므로 아래에서 "클린 4쌍"으로 취급한다.
+>
+> **클린 4쌍(00378/02709/x1d-ii-xcd45p-01/02)만으로 재계산한 ΔE00**
+> (n=13 표와 나란히 - 표본이 4개뿐이라 참고용이지 대체용이 아니다):
+>
+> | | target vs apply_hncs | target vs Phocus실제 | Phocus실제 vs apply_hncs |
+> |---|---|---|---|
+> | 평균(n=4, 클린) | 9.031 | 4.187 | 9.103 |
+> | 중앙값(n=4, 클린) | 9.623 | 3.978 | 9.668 |
+> | 평균(n=13, 전체) | 9.926 | 6.437 | 9.990 |
+>
+> 방향은 안 바뀐다(클린 4쌍만 봐도 target-vs-apply_hncs가 target-vs-
+> Phocus실제보다 여전히 크다) - 다만 n=4는 통계적으로 사실상 아무것도
+> 증명 못 하는 크기라, 이 정정의 요점은 "결론이 바뀌었다"가 아니라
+> **"apply_hncs() v11을 학습시킨 원본 13쌍 중 9쌍이 편집 소프트웨어를
+> 거쳤을 가능성이 이번에 처음 확인됐다"**는 것이다 - 이건 이 Phocus
+> 비교 실험보다 훨씬 근본적인 문제이고, v11 자체의 재캘리브레이션
+> 여부는 이 문서 스코프 밖의 별도 결정이다(`apply_hncs()`는 이 세션에서
+> 손대지 않았다).
