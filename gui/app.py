@@ -2,7 +2,11 @@
 import tkinter as tk
 from tkinter import ttk
 
-TABS = []
+from gui.tabs import brand_preview
+
+TABS = [
+    ("브랜드 Look", brand_preview.build_tab),
+]
 
 
 def build_app(root):
