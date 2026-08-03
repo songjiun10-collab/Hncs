@@ -4,26 +4,33 @@ import json
 import os
 import subprocess
 import sys
-import tempfile
-import threading
 import tkinter as tk
 from tkinter import filedialog, ttk
 
 import cv2
 
+from gui.tabs._cli_runner import CliRunner
 from gui.widgets.image_view import RAW_EXTS, ImageView, quick_raw_preview
 
 _EXIF_TAGS = ["Make", "Model", "LensModel", "LensID", "LensInfo",
               "FocalLength", "FNumber", "ApertureValue"]
 
 
-def read_exif_fields(path):
+def read_exif_fields(path, on_error=None):
     """tools/lens_correction.py의 _read_exif()와 동일한 exiftool 호출 -
     make/model/lens/focal_length/aperture가 EXIF에 있으면 채워서 반환,
-    없으면 해당 키를 생략한다."""
-    out = subprocess.run(
-        ["exiftool", "-json"] + [f"-{t}" for t in _EXIF_TAGS] + [path],
-        capture_output=True, text=True, timeout=60)
+    없으면 해당 키를 생략한다. exiftool이 설치돼 있지 않거나
+    (FileNotFoundError) 타임아웃되면 {}를 반환한다 - 이 함수는 Tk에 의존하지
+    않는 순수 함수라 로그 위젯에 직접 못 쓰므로, on_error가 주어지면 그
+    예외를 넘겨서 호출자(위젯)가 로그로 남기게 한다."""
+    try:
+        out = subprocess.run(
+            ["exiftool", "-json"] + [f"-{t}" for t in _EXIF_TAGS] + [path],
+            capture_output=True, text=True, timeout=60, env=dict(os.environ))
+    except Exception as exc:
+        if on_error:
+            on_error(exc)
+        return {}
     if out.returncode != 0 or not out.stdout.strip():
         return {}
     exif = json.loads(out.stdout)[0]
@@ -69,7 +76,9 @@ class LensCorrectionTab(ttk.Frame):
 
         controls = ttk.Frame(self)
         controls.pack(fill="x", padx=4, pady=4)
-        ttk.Button(controls, text="이미지 선택", command=self._choose_file).pack(side="left")
+        self._choose_button = ttk.Button(controls, text="이미지 선택",
+                                          command=self._choose_file)
+        self._choose_button.pack(side="left")
 
         fields = ttk.Frame(self)
         fields.pack(fill="x", padx=4)
@@ -88,12 +97,15 @@ class LensCorrectionTab(ttk.Frame):
         self._view = ImageView(self)
         self._view.pack(fill="both", expand=True)
 
+        self._runner = CliRunner(self, self._run_button, self._choose_button, self._progress)
+
     def _choose_file(self):
         path = filedialog.askopenfilename()
         if not path:
             return
         self._input_path = path
-        detected = read_exif_fields(path)
+        detected = read_exif_fields(
+            path, on_error=lambda exc: self._log.insert("end", f"EXIF 읽기 실패: {exc}\n"))
         for name in self._FIELDS:
             self._vars[name].set(detected.get(name, ""))
         self._log.insert("end", f"입력: {path} (EXIF 인식: {detected})\n")
@@ -102,23 +114,17 @@ class LensCorrectionTab(ttk.Frame):
         if not self._input_path:
             self._log.insert("end", "이미지를 먼저 선택하세요\n")
             return
-        self._run_button.configure(state="disabled")
-        self._progress.pack(fill="x", padx=4)
-        self._progress.start()
-        threading.Thread(target=self._run_worker, daemon=True).start()
-
-    def _run_worker(self):
-        out_dir = tempfile.mkdtemp(prefix="hncs_gui_")
-        output_path = os.path.join(out_dir, "output.jpg")
         values = {name: (self._vars[name].get() or None) for name in self._FIELDS}
+        self._runner.start(lambda: self._build_and_run(values), self._on_success, self._on_error)
+
+    def _build_and_run(self, values):
+        output_path = os.path.join(self._runner.out_dir, "output.jpg")
         cmd = build_lens_correction_command(self._input_path, output_path, **values)
         proc = subprocess.run(cmd, capture_output=True, text=True, env=dict(os.environ))
-        self.after(0, self._on_done, proc, output_path)
+        return proc, output_path
 
-    def _on_done(self, proc, output_path):
-        self._progress.stop()
-        self._progress.pack_forget()
-        self._run_button.configure(state="normal")
+    def _on_success(self, result):
+        proc, output_path = result
         self._log.insert("end", proc.stdout)
         if proc.returncode != 0:
             self._log.insert("end", f"에러 (exit {proc.returncode}):\n{proc.stderr}\n")
@@ -130,7 +136,13 @@ class LensCorrectionTab(ttk.Frame):
         ext = os.path.splitext(self._input_path)[1].lower()
         before = quick_raw_preview(self._input_path) if ext in RAW_EXTS else cv2.imread(
             self._input_path)
+        if before is None:
+            self._log.insert("end", f"원본 이미지를 못 읽음: {self._input_path}\n")
+            return
         self._view.show(before, after)
+
+    def _on_error(self, exc):
+        self._log.insert("end", f"실행 실패: {exc}\n")
 
 
 def build_tab(master):

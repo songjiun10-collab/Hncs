@@ -3,14 +3,13 @@
 import os
 import subprocess
 import sys
-import tempfile
-import threading
 import tkinter as tk
 from tkinter import filedialog, ttk
 
 import cv2
 
 from core.log_pipeline import LOG_SPACES
+from gui.tabs._cli_runner import CliRunner
 from gui.widgets.image_view import ImageView, quick_raw_preview
 
 LOG_SPACE_CHOICES = sorted(LOG_SPACES)
@@ -36,7 +35,9 @@ class RawPipelineTab(ttk.Frame):
 
         controls = ttk.Frame(self)
         controls.pack(fill="x", padx=4, pady=4)
-        ttk.Button(controls, text="RAW 파일 선택", command=self._choose_file).pack(side="left")
+        self._choose_button = ttk.Button(controls, text="RAW 파일 선택",
+                                          command=self._choose_file)
+        self._choose_button.pack(side="left")
 
         self._log_space = tk.StringVar(value=LOG_SPACE_CHOICES[0])
         ttk.Combobox(controls, textvariable=self._log_space, state="readonly",
@@ -58,6 +59,8 @@ class RawPipelineTab(ttk.Frame):
         self._view = ImageView(self)
         self._view.pack(fill="both", expand=True)
 
+        self._runner = CliRunner(self, self._run_button, self._choose_button, self._progress)
+
     def _choose_file(self):
         path = filedialog.askopenfilename()
         if path:
@@ -68,24 +71,23 @@ class RawPipelineTab(ttk.Frame):
         if not self._input_path:
             self._log.insert("end", "RAW 파일을 먼저 선택하세요\n")
             return
-        self._run_button.configure(state="disabled")
-        self._progress.pack(fill="x", padx=4)
-        self._progress.start()
-        threading.Thread(target=self._run_worker, daemon=True).start()
+        log_space = self._log_space.get()
+        exposure = self._exposure.get()
+        auto_expose_mode = self._auto_expose.get()
+        self._runner.start(
+            lambda: self._build_and_run(log_space, exposure, auto_expose_mode),
+            self._on_success, self._on_error)
 
-    def _run_worker(self):
-        out_dir = tempfile.mkdtemp(prefix="hncs_gui_")
-        output_path = os.path.join(out_dir, "output.tiff")
+    def _build_and_run(self, log_space, exposure, auto_expose_mode):
+        output_path = os.path.join(self._runner.out_dir, "output.tiff")
         cmd = build_raw_pipeline_command(
-            self._input_path, output_path, self._log_space.get(),
-            exposure=self._exposure.get(), auto_expose_mode=self._auto_expose.get())
+            self._input_path, output_path, log_space,
+            exposure=exposure, auto_expose_mode=auto_expose_mode)
         proc = subprocess.run(cmd, capture_output=True, text=True, env=dict(os.environ))
-        self.after(0, self._on_done, proc, output_path)
+        return proc, output_path
 
-    def _on_done(self, proc, output_path):
-        self._progress.stop()
-        self._progress.pack_forget()
-        self._run_button.configure(state="normal")
+    def _on_success(self, result):
+        proc, output_path = result
         self._log.insert("end", proc.stdout)
         if proc.returncode != 0:
             self._log.insert("end", f"에러 (exit {proc.returncode}):\n{proc.stderr}\n")
@@ -100,6 +102,9 @@ class RawPipelineTab(ttk.Frame):
             self._log.insert("end", f"프리뷰 디코드 실패: {exc}\n")
             before = after
         self._view.show(before, after)
+
+    def _on_error(self, exc):
+        self._log.insert("end", f"실행 실패: {exc}\n")
 
 
 def build_tab(master):

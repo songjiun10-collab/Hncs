@@ -3,13 +3,12 @@ hybrid_engine.main을 그대로 subprocess로 실행한다(로직 재구현 없�
 import os
 import subprocess
 import sys
-import tempfile
-import threading
 import tkinter as tk
 from tkinter import filedialog, ttk
 
 import cv2
 
+from gui.tabs._cli_runner import CliRunner
 from gui.widgets.image_view import RAW_EXTS, ImageView, quick_raw_preview
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -61,7 +60,9 @@ class HybridConvertTab(ttk.Frame):
 
         controls = ttk.Frame(self)
         controls.pack(fill="x", padx=4, pady=4)
-        ttk.Button(controls, text="입력 파일 선택", command=self._choose_file).pack(side="left")
+        self._choose_button = ttk.Button(controls, text="입력 파일 선택",
+                                          command=self._choose_file)
+        self._choose_button.pack(side="left")
 
         self._target = tk.StringVar()
         self._target_combo = ttk.Combobox(controls, textvariable=self._target, state="readonly")
@@ -79,6 +80,8 @@ class HybridConvertTab(ttk.Frame):
         self._log.pack(fill="x", padx=4)
         self._view = ImageView(self)
         self._view.pack(fill="both", expand=True)
+
+        self._runner = CliRunner(self, self._run_button, self._choose_button, self._progress)
 
     def _choose_file(self):
         path = filedialog.askopenfilename()
@@ -101,22 +104,20 @@ class HybridConvertTab(ttk.Frame):
             return
         target = self._target.get()
         source = self._source.get()
-        self._run_button.configure(state="disabled")
-        self._progress.pack(fill="x", padx=4)
-        self._progress.start()
-        threading.Thread(target=self._run_worker, args=(target, source), daemon=True).start()
+        if not is_raw_input(self._input_path) and not target:
+            self._log.insert("end", "타깃을 먼저 선택하세요\n")
+            return
+        self._runner.start(lambda: self._build_and_run(target, source),
+                            self._on_success, self._on_error)
 
-    def _run_worker(self, target, source):
-        out_dir = tempfile.mkdtemp(prefix="hncs_gui_")
-        output_path = os.path.join(out_dir, "output.jpg")
+    def _build_and_run(self, target, source):
+        output_path = os.path.join(self._runner.out_dir, "output.jpg")
         cmd = build_hybrid_convert_command(self._input_path, output_path, target, source)
         proc = subprocess.run(cmd, capture_output=True, text=True, env=dict(os.environ))
-        self.after(0, self._on_done, proc, output_path)
+        return proc, output_path
 
-    def _on_done(self, proc, output_path):
-        self._progress.stop()
-        self._progress.pack_forget()
-        self._run_button.configure(state="normal")
+    def _on_success(self, result):
+        proc, output_path = result
         self._log.insert("end", proc.stdout)
         if proc.returncode != 0:
             self._log.insert("end", f"에러 (exit {proc.returncode}):\n{proc.stderr}\n")
@@ -129,7 +130,13 @@ class HybridConvertTab(ttk.Frame):
             before = quick_raw_preview(self._input_path)
         else:
             before = cv2.imread(self._input_path)
+        if before is None:
+            self._log.insert("end", f"원본 이미지를 못 읽음: {self._input_path}\n")
+            return
         self._view.show(before, after)
+
+    def _on_error(self, exc):
+        self._log.insert("end", f"실행 실패: {exc}\n")
 
 
 def build_tab(master):
