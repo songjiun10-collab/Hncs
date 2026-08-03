@@ -2,12 +2,13 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.tabs import brand_preview, hybrid_convert, raw_pipeline_tab
+from gui.tabs import brand_preview, hybrid_convert, lens_correction_tab, raw_pipeline_tab
 
 TABS = [
     ("브랜드 Look", brand_preview.build_tab),
     ("hybrid_engine 변환", hybrid_convert.build_tab),
     ("RAW→Log", raw_pipeline_tab.build_tab),
+    ("렌즈 보정", lens_correction_tab.build_tab),
 ]
 
 
