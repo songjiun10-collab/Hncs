@@ -7,3 +7,4 @@ colour-science
 lensfunpy
 OpenEXR
 imageio-ffmpeg
+Pillow
