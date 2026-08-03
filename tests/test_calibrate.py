@@ -179,5 +179,118 @@ class TestGenerationBreakdown(unittest.TestCase):
         self.assertEqual(gens, sorted(gens))
 
 
+# 실제 74쌍 regularize LOO 재실행 기록값(2026-08,
+# /tmp/calibrate_regularize_74pair_v2.log, run_regularize()의 폴드별
+# print에서 추출) - brands/hasselblad_learned.py와 docs/measurements.md의
+# "하이브리드(regularize) 재검증(2026-08)" 절에 실린 것과 정확히 같다
+# (v12(λ=0, _build_lut_from_counts의 평균 기반 근사) vs 최적
+# 하이브리드(λ=1e9 = 사실상 순수 파라메트릭 v11)).
+# (name, v12_e, hybrid_e)
+_RECORDED_HYBRID_VS_V12_RUN = [
+    ("x1d-II-sample-02.jpg", 17.543, 18.438),
+    ("x1d-II-sample-09.jpg", 0.341, 1.000),
+    ("B0000994.jpg", 42.646, 57.454),
+    ("B0001395.jpg", 34.917, 33.980),
+    ("x1d-xcd45-01.jpg", 6.016, 27.854),
+    ("x1d-xcd45-03.jpg", 28.792, 4.540),
+    ("x1d-xcd45-04.jpg", 42.197, 33.340),
+    ("x1d-ii-xcd45p-01.jpg", 34.052, 10.930),
+    ("x1d-ii-xcd45p-02.jpg", 29.138, 12.972),
+    ("x1d-II-sample-01.jpg", 20.495, 41.387),
+    ("x1d-II-sample-06.jpg", 23.824, 25.120),
+    ("02709.jpg", 27.901, 3.604),
+    ("00378.jpg", 31.852, 20.314),
+    ("local-mixed-2026-07__6507810936", 43.551, 31.482),
+    ("local-mixed-2026-07__0149725587", 39.817, 2.499),
+    ("local-mixed-2026-07__8204307982", 38.787, 1.471),
+    ("local-mixed-2026-07__3832345792", 1.931, 4.132),
+    ("local-mixed-2026-07__5537240075", 30.789, 8.622),
+    ("local-mixed-2026-07__0587181218", 22.838, 8.396),
+    ("local-mixed-2026-07__7971015535", 33.828, 9.288),
+    ("local-mixed-2026-07__6311094775", 24.940, 8.814),
+    ("local-mixed-2026-07__6787000086", 33.051, 8.554),
+    ("local-mixed-2026-07__7826992126", 25.784, 20.639),
+    ("local-mixed-2026-07__5533274085", 32.816, 24.387),
+    ("local-mixed-2026-07__1094220000", 27.880, 8.845),
+    ("local-mixed-2026-07__8082395282", 36.786, 2.727),
+    ("local-mixed-2026-07__1932636179", 33.788, 19.695),
+    ("local-mixed-2026-07__3953661245", 32.780, 8.649),
+    ("local-mixed-2026-07__8127122405", 45.766, 15.180),
+    ("local-mixed-2026-07__5746737497", 40.795, 7.380),
+    ("local-mixed-2026-07__9515423899", 43.119, 2.596),
+    ("local-mixed-2026-07__6454535758", 31.798, 24.725),
+    ("local-mixed-2026-07__8742913299", 37.747, 10.858),
+    ("local-mixed-2026-07__7492975828", 42.760, 6.441),
+    ("local-mixed-2026-07__7321006825", 32.784, 24.362),
+    ("local-mixed-2026-07__6660888354", 35.786, 4.511),
+    ("local-mixed-2026-07__4236625428", 37.794, 21.017),
+    ("local-mixed-2026-07__8581844385", 28.912, 20.724),
+    ("local-mixed-2026-07__7121592185", 38.727, 18.974),
+    ("local-mixed-2026-07__3766372330", 29.969, 22.000),
+    ("local-mixed-2026-07__7732046028", 23.790, 7.211),
+    ("local-mixed-2026-07__0908944042", 26.826, 24.461),
+    ("local-mixed-2026-07__1917191504", 37.784, 6.555),
+    ("local-mixed-2026-07__9011626130", 36.513, 8.928),
+    ("local-mixed-2026-07__5310704161", 22.555, 28.474),
+    ("local-mixed-2026-07__3683076943", 24.823, 6.622),
+    ("local-mixed-2026-07__7406451876", 35.801, 8.568),
+    ("local-mixed-2026-07__6519755969", 0.805, 24.409),
+    ("local-mixed-2026-07__3333340029", 2.234, 22.644),
+    ("local-mixed-2026-07__9479682988", 33.353, 19.602),
+    ("local-mixed-2026-07__5385314660", 32.787, 6.345),
+    ("local-mixed-2026-07__9247740424", 42.490, 1.710),
+    ("local-mixed-2026-07__5715595764", 30.549, 12.458),
+    ("local-mixed-2026-07__6704898202", 38.782, 22.613),
+    ("local-mixed-2026-07__6340134840", 33.864, 8.054),
+    ("local-mixed-2026-07__9928856380", 36.909, 22.409),
+    ("local-mixed-2026-07__0758706524", 22.991, 22.482),
+    ("local-mixed-2026-07__4087418227", 0.739, 0.000),
+    ("local-mixed-2026-07__1063588653", 22.769, 12.167),
+    ("local-mixed-2026-07__1755788551", 35.811, 4.511),
+    ("local-mixed-2026-07__9070200412", 38.802, 4.727),
+    ("local-mixed-2026-07__9318140329", 37.789, 3.727),
+    ("local-mixed-2026-07__4589763049", 32.788, 20.788),
+    ("local-mixed-2026-07__0229019868", 37.786, 11.345),
+    ("local-mixed-2026-07__9063680763", 39.785, 5.727),
+    ("local-mixed-2026-07__0550549226", 39.846, 2.471),
+    ("local-mixed-2026-07__3153320186", 41.524, 5.482),
+    ("local-mixed-2026-07__6762931572", 36.690, 49.904),
+    ("local-mixed-2026-07__6661213999", 51.228, 61.383),
+    ("local-mixed-2026-07__5983653715", 52.756, 57.371),
+    ("local-mixed-2026-07__1372685658", 38.784, 26.014),
+    ("local-mixed-2026-07__3528755502", 39.488, 30.273),
+    ("local-mixed-2026-07__7278483295", 38.690, 55.906),
+    ("local-mixed-2026-07__8647104982", 33.785, 13.977),
+]
+
+
+class TestSummarizeRecordedRun(unittest.TestCase):
+    """brands/hasselblad_learned.py·docs/measurements.md에 기록된 실제
+    74쌍 regularize LOO 결과(v12(λ=0) vs 최적 하이브리드(λ=1e9=v11))를
+    재현하는 회귀 테스트."""
+
+    def test_reproduces_documented_means(self):
+        from tools.calibrate import summarize
+        s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
+        self.assertAlmostEqual(s["mean_a"], 31.716, places=3)
+        self.assertAlmostEqual(s["mean_b"], 16.989, places=3)
+
+    def test_reproduces_documented_improvement_pct(self):
+        from tools.calibrate import summarize
+        s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
+        self.assertAlmostEqual(s["improvement_pct"], 46.4, places=1)
+
+    def test_reproduces_documented_win_loss(self):
+        from tools.calibrate import summarize
+        s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
+        self.assertEqual(s["b_wins"], 60)
+        self.assertEqual(s["a_wins"], 14)
+
+    def test_reproduces_documented_sign_test_p(self):
+        from tools.calibrate import summarize
+        s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
+        self.assertAlmostEqual(s["sign_test_p"], 6.22176141634788e-08, places=9)
+
+
 if __name__ == "__main__":
     unittest.main()
