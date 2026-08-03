@@ -209,7 +209,83 @@ Capture One의 XCD 렌즈 보정 프로파일이 "초점거리 정보가 3FR에 
    완전히 다른 종류의 데이터(예: 실제 Phocus HDR TIFF 출력을 타깃으로
    삼아 "진짜 HNCS"에 대한 ΔE를 재는 것)로 가는 게 나을 수 있음.
 
-## 6. 참고 문서 목록
+## 6. Phocus 4.1.1 앱 번들 1차 실측 (2026-08-03)
+
+위 5-3에서 제안한 "완전히 다른 종류의 데이터" 방향을 렌더 결과물이
+아니라 **Phocus 앱 자체**로 시도해본 기록. 이 절의 출처는 블로그/포럼이
+아니라 실제 설치한 Phocus 4.1.1(`brew install --cask phocus`) 바이너리
+자체이므로, 이 문서의 다른 절보다 근거 등급이 다르다(1차 소스) - 단,
+방법을 정적 리소스 파일 열람과 `strings`/`otool -L`으로만 제한했다
+(디스어셈블/디컴파일은 라이선스 경계를 이유로 하지 않음). 그래서
+"구조가 존재한다"는 확인은 되지만 실제 매트릭스/LUT 숫자값은 얻지
+못했다 - 아래 6-2의 한계 그대로.
+
+### 6-1. ICC 프로파일 = HNCS 룩과 무관 (음성 결과)
+
+`Contents/Frameworks/HBImageProcessing.framework/Versions/A/Resources/Profiles/`에
+번들된 8개 `.icc`(`Hasselblad RGB`, `HasselbladLStarRGB`/`v1`,
+`Hasselblad Rec709`, `Hasselblad Rec2100PQ`, `Hasselblad Lab`,
+`Hasselblad Gray`, 필름스캔용 `330Skel 30K75`/`350Skel 30K90`)를 raw
+바이너리 태그(`wtpt`/`rTRC`/`rXYZ` 등)까지 직접 파싱했다. 결과:
+
+- `Hasselblad RGB.icc`: 순수 감마 2.1992, wtpt≈D50(0.964, 1.0, 0.825)
+- `Hasselblad Rec709.icc`: 순수 감마 1.9609, wtpt≈D65
+- `HasselbladLStarRGB(v1).icc`: TRC가 700점 LUT(CIE L* 곡선과 일치하는
+  형태) - ProPhoto의 L* 변형과 같은 컨셉
+
+전부 **범용 컬러매니지먼트 워킹스페이스**(ProPhoto RGB류) 정의이지,
+"이 사진을 이렇게 톤/색으로 그려라"는 HNCS 룩 자체가 아니다.
+`Settings/Standard/Standard.xml`(기본 프리셋)도 확인해보니
+`ColorCorr` 배열이 전부 0 - 프리셋 자체는 중립 조정값만 담고 있고
+베이스 룩은 여기 없다(1-3절의 "프리셋은 색과 무관, 샤프닝+톤커브뿐"
+결론과 일치 - 프리셋 XML에 색 로직이 없는 이유가 애초에 그게 있을
+자리가 아니었기 때문이라는 게 이번에 더 명확해짐).
+
+### 6-2. 바이너리 strings 조사 - 1-2절의 "광원별 매트릭스+LUT" 구조를 직접 확인
+
+`HBRawCorrections.framework`(1.2MB)에 `strings -a` + 관련 포맷 문자열을
+뒤진 결과, 다음 심볼/포맷 문자열 이름이 나왔다(디버그/코드덤프용
+`%s`/`%.1ff` 템플릿으로 보임 - 실제 카메라별 숫자값은 컴파일된 데이터
+섹션에 있어 텍스트로 안 잡힘):
+
+```
+kMatrixFlash, kMatrixTungsten, kMatrixLowTungsten          # 조명별 3x3 매트릭스
+kLUTTableFlashCb/Cr, kLUTTableTungstenCb/Cr                # 조명별 Cb/Cr 크로마 LUT
+kColorTempFlash, kColorTempTungsten, kColorTempLowTungsten # 조명별 색온도 상수
+kNeutralVector                                             # (조명별로 보이는) 중립점 벡터
+```
+
+**1-2절과의 대조**: 포럼 스레드는 "Tungsten/Low-Tungsten/Flash/
+Flash-Daylight 4광원, 각각 고유 매트릭스, 크로마 LUT는 Tungsten/Flash
+2개에만 존재(Low-Tungsten/Flash-Daylight는 LUT 없음)"이라고 주장했다.
+이번 실측에서 나온 심볼이 정확히 **매트릭스는 Flash/Tungsten/
+LowTungsten 3개, LUT는 Flash/Tungsten 2개뿐**(LowTungsten용
+`kLUTTableLowTungsten*`은 없음) - LUT가 있는 조명이 정확히 어느
+것들인지까지 블로그/포럼의 주장과 구조적으로 일치한다. `strings`
+결과에서 4번째 광원(Daylight/Flash-Daylight)에 해당하는 별도 이름은
+못 찾았다 - 접미사 없는 "기본값"으로 존재하거나, 다른 이름 규칙을
+쓰거나, 문자열 추출 한계일 수 있음(미확인).
+
+**한계**: 위 이름들은 전부 소스코드 심볼/디버그 포맷 문자열이지 실제
+데이터가 아니다 - 실제 3x3 매트릭스 9개 float, LUT 테이블 값은
+바이너리 데이터 섹션의 특정 주소에 있고 이걸 읽으려면 심볼이 어느
+주소를 가리키는지부터 알아야 해서(디스어셈블 필요) 이번 조사
+범위(strings/otool만) 밖이다. 사용자와 상의해 여기서 멈췄다 -
+Phocus EULA의 리버스엔지니어링 금지 조항을 넘어서는 작업이라고
+판단했기 때문.
+
+### 6-3. 우리 프로젝트와의 관계
+
+`apply_hncs()`(v11)는 여전히 조명 매트릭스 없이 **단일 파라메트릭
+톤+채도 커브**다 - 이번 실측으로 "실제 HNCS가 조명별 매트릭스+
+크로마LUT 구조를 갖고 있다"는 1-2절의 외부 주장이 (블로그 저자의
+추론이 아니라) 실제 배포된 바이너리의 내부 명명으로 한 번 더
+뒷받침됐다. 다만 이게 `apply_hncs()`를 바꿔야 한다는 뜻은 아니다 -
+숫자값이 없으니 이 구조를 모사할 근거 자체가 없고, 설령 있어도
+raw_calib_cache 13쌍에 촬영 광원(색온도) 라벨이 없어 조명별로 나눠
+검증할 수도 없다(이 자체가 후속 조치 후보 - 이 문서 스코프 밖).
+
+## 7. 참고 문서 목록
 
 **직접 인용/심층 분석**:
 - Konrad Michels, "How HNCS Actually Works: Hasselblad's Color Science
@@ -222,6 +298,11 @@ Capture One의 XCD 렌즈 보정 프로파일이 "초점거리 정보가 3FR에 
 - Luminous Landscape Forums, "Hasselblad Natural Color Solution
   (HNCS) - how it works (probably)" (forum.luminous-landscape.com,
   topic 96679)
+- Hasselblad Phocus 4.1.1 앱 번들 (Homebrew cask `phocus`, 2026-08-03
+  설치) - 정적 리소스 파일(`.icc`, `.xml`, `Targets/*.txt`) 열람 +
+  `HBRawCorrections.framework`/`HBImageProcessing.framework`에
+  `strings -a`/`otool -L`만 적용(디스어셈블/디컴파일 없음). 1차 소스,
+  6절 참고.
 
 **훑어봤으나 색과학과 직접 관련 없음(UI/워크플로우/HDR 별도 파이프라인)**:
 - "Phocus Histogram vs Capture One Levels" (2026-01-10)
