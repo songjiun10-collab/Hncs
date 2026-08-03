@@ -323,6 +323,12 @@ numbers to base such a change on, and even if there were,
 possible either (a follow-up candidate in its own right, outside this
 document's scope).
 
+(Same-session follow-up: not a per-illuminant breakdown, but all 13
+`raw_calib_cache` pairs were run through real Phocus to compare
+`apply_hncs()` directly against a **genuine Phocus render**, not just the
+camera JPEG - see `docs/measurements.en.md`'s "First check against a real
+Phocus render (2026-08)" section.)
+
 ## 7. Reference list
 
 **Directly cited / analyzed in depth**:

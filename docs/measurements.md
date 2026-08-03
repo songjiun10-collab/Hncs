@@ -324,3 +324,72 @@ ridge 하이브리드, `lut = (sums + λ·prior)/(counts + λ)`)도 재실행.
 **결론: 하이브리드는 도움이 안 된다.** v11이 이미 v12를 압도적으로
 이기는 상황이라 둘을 섞을 이유가 없고, 그리드서치 자체가 그걸
 정량적으로 확인해줬다. 재현: `python3 -m tools.calibrate regularize`.
+
+## Phocus 실제 렌더 대조 (2026-08, 최초)
+
+지금까지 `apply_hncs()`의 정답지는 항상 카메라 내장 JPEG(`raw_calib_cache/
+*.target.jpg`)이었지, Phocus(Hasselblad 공식 데스크톱 RAW 컨버터) 자체의
+출력은 아니었다. 이번에 처음으로 raw_calib_cache 13쌍 전부를 실제
+Phocus 4.1.1(`brew install --cask phocus`)로 Import → (기본 Standard
+프리셋, 조정 없음) → Export해서 진짜 HNCS 렌더 TIFF를 얻었다 - 배경은
+`hncs_external_sources_analysis.md` 6절 참고.
+
+**방법**: `tools/calibrate.py`의 `load_neutral_render()`와 동일한 레시피
+(`rawpy.postprocess(use_camera_wb=True, no_auto_bright=True, output_bps=8,
+gamma=(2.222, 4.5))`)로 raw를 "무가공 중립" 베이스라인으로 디코드해
+`apply_hncs()`에 입력, `hybrid_engine.utils.evaluate.mean_delta_e`
+(CIEDE2000)로 세 이미지(카메라 JPEG target / Phocus 실제 렌더 / apply_hncs
+출력)를 서로 비교. 메모리 때문에 세 이미지 전부 긴 변 512px로 축소 후
+비교(기존 `evaluate_*.py` 스크립트들의 `DOWNSAMPLE_MAX_DIM` 컨벤션과
+동일 - global-statistics ΔE는 다운샘플에 왜곡되지 않는다는 전제).
+
+| 페어 | target vs apply_hncs | target vs Phocus실제 | Phocus실제 vs apply_hncs |
+|---|---|---|---|
+| 00378 | 5.195 | 2.573 | 5.395 |
+| 02709 | 11.684 | 2.929 | 11.248 |
+| B0000994 | 10.333 | 11.437 | 6.230 |
+| B0001395 | 16.931 | 21.277 | 12.603 |
+| x1d-II-sample-01 | 8.422 | 5.844 | 8.112 |
+| x1d-II-sample-02 | 11.566 | 6.707 | 11.419 |
+| x1d-II-sample-06 | 9.647 | 3.309 | 11.404 |
+| x1d-II-sample-09 | 16.356 | 6.905 | 22.427 |
+| x1d-ii-xcd45p-01 | 9.336 | 5.028 | 8.088 |
+| x1d-ii-xcd45p-02 | 9.909 | 6.219 | 11.682 |
+| x1d-xcd45-01 | 12.047 | 4.115 | 14.885 |
+| x1d-xcd45-03 | 4.247 | 3.897 | 3.264 |
+| x1d-xcd45-04 | 3.364 | 3.443 | 3.109 |
+| **평균(n=13)** | **9.926** | **6.437** | **9.990** |
+| **중앙값** | **9.909** | **5.028** | **11.248** |
+
+**읽는 법**:
+- **target vs Phocus실제(평균 6.44)가 target vs apply_hncs(평균
+  9.93)보다 낮다** - 예상대로 Phocus 데스크톱 렌더가 카메라 내장
+  JPEG(둘 다 "진짜 HNCS" 계열)에 더 가깝고, 우리 파라메트릭 근사가
+  그보다 한 단계 더 멀다. 다만 완전히 일치하지도 않는다(0이 아님) -
+  데스크톱 렌더와 인카메라 렌더 사이에도 실제 차이가 있다는 뜻(펌웨어/
+  Phocus 버전 차이, 혹은 일부 target.jpg 자체의 편집 오염 가능성 -
+  `hncs_external_sources_analysis.md`의 "Phocus 오염 재검증" 사례처럼
+  이 13쌍도 개별 검증된 적은 없다).
+- **phocus실제 vs apply_hncs(평균 9.99)가 target vs apply_hncs(9.93)와
+  거의 같다** - 정답지를 카메라 JPEG에서 진짜 Phocus 렌더로 바꿔도
+  결론(우리 근사와 진짜 HNCS 사이엔 여전히 격차가 있다)은 안 바뀐다는
+  뜻.
+- **B0000994/B0001395 두 페어가 뚜렷한 이상치**(target vs Phocus실제가
+  11.4/21.3로 나머지 페어의 2~4배) - n=13 중 2개뿐이라 전체 평균을
+  왜곡할 수 있다. 이 두 페어의 target.jpg가 실제로 순정 카메라 렌더가
+  맞는지(위 우려 그대로) 별도 검증 없이는 위 평균 수치에 과도한 확신을
+  두지 않는 게 맞다.
+- **표본 수(n=13)가 작고, 이건 어디까지나 1회 실측**(부트스트랩/부호검정
+  등 `hybrid_engine/CLAUDE.md`급 통계 처리는 안 함 - "A가 B를 이긴다"는
+  판정이 아니라 "이 정도 격차가 있다"는 서술적 기록이라서다).
+
+재현: Phocus에서 `raw_calib_cache/*.3FR`/`*.fff` 13개를 Import(기본
+Standard 프리셋) → TIFF Export 후, 이 문서를 생성한 1회성 스크립트
+(경로는 세션 스크래치 - 재현 시 `tools/calibrate.py`의
+`load_neutral_render()` + `hybrid_engine.utils.evaluate.mean_delta_e` +
+`hybrid_engine.utils.io.load_image_linear`를 조합하면 동일 로직).
+
+**하우스키핑**: Phocus로 `raw_calib_cache/`를 직접 Import하면 그 폴더에
+`*.phos` 사이드카 파일이 새로 생긴다(Phocus의 조정값 저장 파일) -
+`raw_calib_cache/`는 이미 `.gitignore` 대상이라 커밋에는 안 잡히지만,
+로컬에 남아있다는 점은 기록해둔다.

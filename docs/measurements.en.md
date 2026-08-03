@@ -321,3 +321,80 @@ the v11 column above, even though λ=1e9 is effectively pure v11):
 **Conclusion: the hybrid doesn't help.** v11 already beats v12 by a wide
 margin, so there's no upside to blending them, and the grid search itself
 confirms that quantitatively. Reproduce: `python3 -m tools.calibrate regularize`.
+
+## First check against a real Phocus render (2026-08)
+
+Until now, `apply_hncs()`'s ground truth has always been the camera's own
+embedded JPEG (`raw_calib_cache/*.target.jpg`), never the output of Phocus
+itself (Hasselblad's official desktop RAW converter). For the first time,
+all 13 `raw_calib_cache` pairs were run through real Phocus 4.1.1
+(`brew install --cask phocus`) - Import → (default Standard preset, no
+adjustments) → Export - to get genuine HNCS-rendered TIFFs. See
+`hncs_external_sources_analysis.en.md` section 6 for how this came about.
+
+**Method**: decode each RAW to a "raw/neutral" baseline using the same
+recipe as `tools/calibrate.py`'s `load_neutral_render()`
+(`rawpy.postprocess(use_camera_wb=True, no_auto_bright=True, output_bps=8,
+gamma=(2.222, 4.5))`), feed that into `apply_hncs()`, then compare all
+three images (camera-JPEG target / real Phocus render / `apply_hncs()`
+output) pairwise with `hybrid_engine.utils.evaluate.mean_delta_e`
+(CIEDE2000). All three are downsampled to a 512px long edge before
+comparing, for memory - the same `DOWNSAMPLE_MAX_DIM` convention the
+`evaluate_*.py` scripts already use (global-statistics ΔE isn't distorted
+by downsampling).
+
+| Pair | target vs apply_hncs | target vs real Phocus | real Phocus vs apply_hncs |
+|---|---|---|---|
+| 00378 | 5.195 | 2.573 | 5.395 |
+| 02709 | 11.684 | 2.929 | 11.248 |
+| B0000994 | 10.333 | 11.437 | 6.230 |
+| B0001395 | 16.931 | 21.277 | 12.603 |
+| x1d-II-sample-01 | 8.422 | 5.844 | 8.112 |
+| x1d-II-sample-02 | 11.566 | 6.707 | 11.419 |
+| x1d-II-sample-06 | 9.647 | 3.309 | 11.404 |
+| x1d-II-sample-09 | 16.356 | 6.905 | 22.427 |
+| x1d-ii-xcd45p-01 | 9.336 | 5.028 | 8.088 |
+| x1d-ii-xcd45p-02 | 9.909 | 6.219 | 11.682 |
+| x1d-xcd45-01 | 12.047 | 4.115 | 14.885 |
+| x1d-xcd45-03 | 4.247 | 3.897 | 3.264 |
+| x1d-xcd45-04 | 3.364 | 3.443 | 3.109 |
+| **Mean (n=13)** | **9.926** | **6.437** | **9.990** |
+| **Median** | **9.909** | **5.028** | **11.248** |
+
+**Reading this**:
+- **target vs real-Phocus (mean 6.44) is lower than target vs apply_hncs
+  (mean 9.93)** - as expected, the desktop Phocus render sits closer to
+  the camera's embedded JPEG (both genuinely HNCS) than our parametric
+  approximation does. It isn't a perfect match either (not 0) - there's a
+  real difference between the desktop render and the in-camera one
+  (firmware/Phocus-version differences, or possibly some of these 13
+  `target.jpg` files carrying edit contamination themselves - like the
+  "Phocus contamination re-check" case in
+  `hncs_external_sources_analysis.en.md`, these 13 pairs have never been
+  individually checked for that).
+- **real-Phocus vs apply_hncs (mean 9.99) is essentially the same as
+  target vs apply_hncs (9.93)** - swapping the ground truth from the
+  camera JPEG to an actual Phocus render doesn't change the conclusion
+  (there's still a real gap between our approximation and genuine HNCS).
+- **B0000994/B0001395 are clear outliers** (target vs real-Phocus is
+  11.4/21.3, 2-4x every other pair) - only 2 of 13, but enough to skew the
+  overall mean. Without separately confirming whether these two
+  `target.jpg` files are genuinely unedited camera renders (the same
+  concern as above), the headline averages shouldn't be trusted too
+  precisely.
+- **Small sample (n=13), and this is a one-off measurement** - no
+  bootstrap/sign-test-grade statistics from `hybrid_engine/CLAUDE.md` were
+  applied, since this isn't an "A beats B" verdict, just a descriptive
+  record of the size of the gap.
+
+Reproduce: Import all 13 `raw_calib_cache/*.3FR`/`*.fff` files into Phocus
+(default Standard preset) → Export as TIFF, then combine
+`tools/calibrate.py`'s `load_neutral_render()` with
+`hybrid_engine.utils.evaluate.mean_delta_e` and
+`hybrid_engine.utils.io.load_image_linear` (the one-off script that
+produced this table lived in session scratch space, not the repo).
+
+**Housekeeping**: importing `raw_calib_cache/` directly into Phocus leaves
+new `*.phos` sidecar files in that folder (Phocus's own adjustment-state
+files) - `raw_calib_cache/` is already `.gitignore`d so these never reach
+a commit, but noting that they exist locally.
