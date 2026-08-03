@@ -237,7 +237,93 @@ limits:
    closer to "real HNCS" as the reference) — may be more productive
    than continuing to tune parameters on the same 13 images.
 
-## 6. Reference list
+## 6. Direct inspection of the Phocus 4.1.1 app bundle (2026-08-03)
+
+An attempt at the "entirely different kind of data" direction proposed
+in 5-3 above, but aimed at **the Phocus app itself** rather than a
+render output. This section's source isn't a blog or forum post but the
+actually-installed Phocus 4.1.1 binary (`brew install --cask phocus`) —
+a different tier of evidence than the rest of this document (a primary
+source), but the method was deliberately limited to reading static
+resource files plus `strings`/`otool -L` (no disassembly or
+decompilation, out of respect for the license boundary). So this
+confirms *that a structure exists*, not the actual matrix/LUT numbers —
+see the limitation in 6-2 below.
+
+### 6-1. ICC profiles are unrelated to the HNCS look (negative result)
+
+Directly parsed the raw binary tags (`wtpt`/`rTRC`/`rXYZ`, etc.) of the
+8 `.icc` files bundled under
+`Contents/Frameworks/HBImageProcessing.framework/Versions/A/Resources/Profiles/`
+(`Hasselblad RGB`, `HasselbladLStarRGB`/`v1`, `Hasselblad Rec709`,
+`Hasselblad Rec2100PQ`, `Hasselblad Lab`, `Hasselblad Gray`, and the
+film-scanning `330Skel 30K75`/`350Skel 30K90`). Results:
+
+- `Hasselblad RGB.icc`: pure gamma 2.1992, wtpt ≈ D50 (0.964, 1.0, 0.825)
+- `Hasselblad Rec709.icc`: pure gamma 1.9609, wtpt ≈ D65
+- `HasselbladLStarRGB(v1).icc`: TRC is a 700-point LUT (shaped like the
+  CIE L* curve) — the same idea as ProPhoto's L* variant
+
+All of these are **generic color-management working spaces** (the same
+concept as ProPhoto RGB), not the HNCS look itself — not "render this
+photo with this tone/color." `Settings/Standard/Standard.xml` (the
+default preset) confirms the same thing from another angle: its
+`ColorCorr` array is all zeros — the preset only carries neutral
+adjustment deltas, the base look isn't stored there at all (consistent
+with section 1-3's finding that presets differ only in sharpening +
+tone curve, never color — it's now clearer *why*: the preset XML was
+never the place color logic could live).
+
+### 6-2. Binary strings confirm the "per-illuminant matrix + LUT" structure from section 1-2
+
+Running `strings -a` against `HBRawCorrections.framework` (1.2MB) and
+grepping for related format strings surfaced the following
+symbol/format-string names (they look like debug/code-dump templates
+using `%s`/`%.1ff` placeholders — the actual per-camera numeric values
+live in the compiled data section and don't show up as text):
+
+```
+kMatrixFlash, kMatrixTungsten, kMatrixLowTungsten          # per-illuminant 3x3 matrices
+kLUTTableFlashCb/Cr, kLUTTableTungstenCb/Cr                # per-illuminant Cb/Cr chroma LUTs
+kColorTempFlash, kColorTempTungsten, kColorTempLowTungsten # per-illuminant color-temp constants
+kNeutralVector                                             # neutral-point vector (appears to be per-illuminant)
+```
+
+**Cross-check against section 1-2**: the forum thread claimed "4
+illuminants — Tungsten / Low-Tungsten / Flash / Flash-Daylight — each
+with its own matrix, and a chroma LUT existing only for Tungsten and
+Flash (Low-Tungsten/Flash-Daylight have none)." What this inspection
+found matches structurally down to the specific detail of *which*
+illuminants have a LUT: **3 matrices (Flash/Tungsten/LowTungsten), but
+only 2 LUTs (Flash/Tungsten — no `kLUTTableLowTungsten*`)**. No distinct
+name for a 4th illuminant (Daylight/Flash-Daylight) turned up — it may
+exist as an unsuffixed "default," under a different naming convention,
+or this may just be a limit of string extraction (unconfirmed).
+
+**Limitation**: all the names above are source-level symbols/debug
+format strings, not data. The actual 9 floats per 3x3 matrix and the LUT
+table values live at specific addresses in the binary's data section,
+and reading them requires knowing which address each symbol points to
+(i.e. disassembly) — out of scope for this pass (strings/otool only).
+Stopped here after checking with the user — going further would cross
+into what Phocus's EULA's anti-reverse-engineering clause most likely
+prohibits.
+
+### 6-3. Relationship to our project
+
+`apply_hncs()` (v11) is still a **single parametric tone+saturation
+curve** with no per-illuminant matrices — this inspection corroborates
+section 1-2's external claim that real HNCS has a per-illuminant
+matrix + chroma-LUT structure, this time from the actual shipped
+binary's internal naming rather than a blogger's inference. That
+doesn't mean `apply_hncs()` needs to change, though — there are no
+numbers to base such a change on, and even if there were,
+`raw_calib_cache`'s 13 pairs have no recorded shooting-illuminant
+(color-temperature) label, so a per-illuminant validation isn't
+possible either (a follow-up candidate in its own right, outside this
+document's scope).
+
+## 7. Reference list
 
 **Directly cited / analyzed in depth**:
 - Konrad Michels, "How HNCS Actually Works: Hasselblad's Color Science
@@ -250,6 +336,11 @@ limits:
 - Luminous Landscape Forums, "Hasselblad Natural Color Solution
   (HNCS) - how it works (probably)" (forum.luminous-landscape.com,
   topic 96679)
+- Hasselblad Phocus 4.1.1 app bundle (Homebrew cask `phocus`, installed
+  2026-08-03) — static resource files (`.icc`, `.xml`, `Targets/*.txt`)
+  plus `strings -a`/`otool -L` only on `HBRawCorrections.framework`/
+  `HBImageProcessing.framework` (no disassembly/decompilation). Primary
+  source, see section 6.
 
 **Skimmed, not directly relevant to color science (UI/workflow/separate HDR pipeline)**:
 - "Phocus Histogram vs Capture One Levels" (2026-01-10)
