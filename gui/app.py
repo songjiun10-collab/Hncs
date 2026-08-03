@@ -2,10 +2,11 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.tabs import brand_preview
+from gui.tabs import brand_preview, hybrid_convert
 
 TABS = [
     ("브랜드 Look", brand_preview.build_tab),
+    ("hybrid_engine 변환", hybrid_convert.build_tab),
 ]
 
 
