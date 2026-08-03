@@ -372,6 +372,23 @@ lives in `docs/`.
   this project's three structural experiments (all inconclusive/null
   at n=13)
 
+## GUI (Desktop App)
+
+A Tkinter desktop app that wraps the CLIs above into one window with 4
+tabs - brand look preview, hybrid_engine conversion, RAW->Log pipeline,
+and lens correction. Pure wrapper: no new color-science logic, just
+point-and-click over the same commands shown throughout this README.
+
+```
+pip install -r requirements.txt   # now includes Pillow, needed to display images in Tk
+python3 -m gui
+```
+
+Tkinter itself is in the Python standard library, but some distributions
+(e.g. Homebrew Python on macOS) split it into a separate system package
+(`python-tk`) - install that if `python3 -m gui` fails with a Tkinter
+import error.
+
 ## Contributing
 
 Issues and PRs are welcome. This project holds to a "no parameter change

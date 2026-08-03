@@ -493,6 +493,21 @@ README는 훑어보는 용도로 짧게 유지하고, 자세한 실측 기록은
   포럼 스레드) 분석, 이 프로젝트의 구조 실험 3건(전부 n=13에서 판정
   보류/무신호)과 교차 대조
 
+## GUI (데스크톱 앱)
+
+위 CLI들을 탭 4개(브랜드 Look 미리보기, hybrid_engine 변환, RAW→Log
+파이프라인, 렌즈 보정)로 묶은 Tkinter 데스크톱 앱. 순수 wrapper - 새로운
+색과학 로직 없이 이 README에 나온 커맨드를 클릭으로 실행할 뿐.
+
+```
+pip install -r requirements.txt   # Pillow 포함(Tk에 이미지 표시용)
+python3 -m gui
+```
+
+Tkinter 자체는 표준 라이브러리지만 일부 배포판(예: macOS Homebrew
+Python)은 별도 시스템 패키지(`python-tk`)로 분리돼 있음 - `python3 -m
+gui` 실행 시 Tkinter import 에러가 나면 설치할 것.
+
 ## 기여
 
 이슈나 PR은 언제든 환영. 이 프로젝트는 "실측 데이터 없이 파라미터를
