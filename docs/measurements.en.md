@@ -295,14 +295,20 @@ to add pairs, then `python3 -m tools.calibrate learn_curve` to retrain.
 **Hybrid (regularize) re-check (2026-08)** - re-ran `tools/calibrate.py`'s
 `regularize` mode (the v11↔v12 ridge hybrid, `lut = (sums + λ·prior)/(counts + λ)`)
 on the same 74 pairs as the two re-checks above. Best λ=1e9 (effectively pure
-parametric) - LOO RMSE decreased monotonically from 33.61 at λ=0 (pure learned
-LUT) to 22.18 at λ=1e9, with no intermediate point ever beating the endpoint.
-Significance test, best (=v11) vs v12 (λ=0): 46.4% improvement, 60 wins/14
-losses, sign-test p=0.000, bootstrap 95% CI [+35.5%, +56.4%] (excludes 0) -
-same direction as the learned-LUT re-check above (19.94 vs 22.20), though the
-absolute numbers aren't directly comparable since this script uses its own
-percentile-based LOO error, not the same metric. Per-generation RMSE
-breakdown (at λ=1e9):
+parametric) - LOO RMSE decreased monotonically from 33.61 at λ=0 (this λ=0
+arm isn't v12 itself - it's `_build_lut_from_counts`'s mean-based,
+prior-backfilled approximation of it; v12 itself is median-based with
+`np.interp`) to 22.18 at λ=1e9 (a 34.0% reduction on the overall LOO RMSE),
+with no intermediate point ever beating the endpoint. Significance test,
+best (=v11) vs v12 (λ=0): 46.4% improvement on a paired per-fold basis, 60
+wins/14 losses, sign-test p=0.000, bootstrap 95% CI [+35.5%, +56.4%]
+(excludes 0) - same direction as the learned-LUT re-check above (19.94 vs
+22.20), though the absolute numbers aren't directly comparable since this
+script uses its own percentile-based LOO error, not the same metric.
+Per-generation RMSE breakdown (at λ=1e9 - this table also uses this
+script's own LOO-percentile error, so it isn't directly comparable to the
+v11/v12 table above either. E.g. CFV 100C/907X is 15.37 here vs 10.82 in
+the v11 column above, even though λ=1e9 is effectively pure v11):
 
 | Camera | n | Hybrid (λ=1e9) RMSE |
 |---|---|---|

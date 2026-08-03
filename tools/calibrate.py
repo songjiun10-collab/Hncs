@@ -396,8 +396,17 @@ def _pair_counts_sums(neutral_l, target_l):
 def _build_lut_from_counts(counts, sums, prior, lam):
     """counts/sums(여러 페어를 이미 합친 것이든, 전체에서 한 페어를 뺀
     것이든 상관없이)로부터 ridge-정규화 LUT을 만든다. lam=0이면 순수
-    경험적 평균(빈 bin은 prior로 대체), lam이 크면 prior에 수렴."""
-    lut = np.where(counts > 0, (sums + lam * prior) / (counts + lam), prior)
+    경험적 평균(빈 bin은 prior로 대체), lam이 크면 prior에 수렴.
+
+    주의: 이건 v12(run_learn_curve)의 LUT 자체가 아니라 그 근사다 -
+    중앙값 대신 평균을 쓰고(폴드마다 반복 계산해야 해서 속도상 평균으로
+    근사), 빈 bin은 v12처럼 np.interp로 보간하는 대신 파라메트릭
+    prior로 대체한다. 그래서 lam=0 결과("v12(학습LUT)"로 표기되는 곳
+    포함)는 v12 구성 방식을 근사한 것이지 learn_curve가 실제로 학습한
+    LUT과 동일하지 않다."""
+    with np.errstate(invalid='ignore', divide='ignore'):
+        ridge = (sums + lam * prior) / (counts + lam)
+    lut = np.where(counts > 0, ridge, prior)
     lut = np.maximum.accumulate(lut)  # 단조 증가 보정
     return lut.astype(np.float32)
 
@@ -560,13 +569,19 @@ def run_regularize():
     best_fold = per_fold_by_lambda[best_lam]
     summaries = {}
     for baseline_lam, label in [(0, "v12(학습LUT)"), (1e9, "v11(파라메트릭)")]:
+        if baseline_lam not in per_fold_by_lambda:
+            print(f"\n{label} 기준선(lambda={baseline_lam})이 lambdas 스윕에 없음 - 비교 생략")
+            continue
         if baseline_lam == best_lam:
             print(f"\n최적 lambda가 {label}과 동일 - 비교 생략")
             continue
         baseline_fold = per_fold_by_lambda[baseline_lam]
-        paired = [(best_name, base_e, best_e)
-                  for (best_name, _, best_e), (_, _, base_e)
-                  in zip(best_fold, baseline_fold)]
+        print(f"\n--- 폴드별 오차: {label} vs 하이브리드(λ={best_lam}) ---")
+        paired = []
+        for (best_name, _, best_e), (_, _, base_e) in zip(best_fold, baseline_fold):
+            paired.append((best_name, base_e, best_e))
+            print(f"  [{best_name}] {label} e={base_e:.3f}  "
+                  f"하이브리드(λ={best_lam}) e={best_e:.3f}")
         summary = summarize(paired)
         summaries[label] = summary
         print(f"\n=== 최적 하이브리드(λ={best_lam}) vs {label} ===")
