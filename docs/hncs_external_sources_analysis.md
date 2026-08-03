@@ -285,6 +285,11 @@ Phocus EULA의 리버스엔지니어링 금지 조항을 넘어서는 작업이�
 raw_calib_cache 13쌍에 촬영 광원(색온도) 라벨이 없어 조명별로 나눠
 검증할 수도 없다(이 자체가 후속 조치 후보 - 이 문서 스코프 밖).
 
+(같은 세션 후속: 조명별 분해는 아니지만, raw_calib_cache 13쌍 전부를
+실제 Phocus로 Import/Export해서 apply_hncs()를 카메라 JPEG뿐 아니라
+**진짜 Phocus 렌더와도** 직접 대조하는 실측은 진행했다 -
+`docs/measurements.md` "Phocus 실제 렌더 대조 (2026-08, 최초)" 절.)
+
 ## 7. 참고 문서 목록
 
 **직접 인용/심층 분석**:
