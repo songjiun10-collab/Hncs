@@ -9,7 +9,9 @@ from tkinter import filedialog, ttk
 
 import cv2
 
-from gui.widgets.image_view import RAW_EXTS, ImageView, quick_raw_preview
+from gui.widgets.image_view import (
+    RAW_EXTS, ImageView, image_and_raw_filetypes, quick_raw_preview,
+)
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -70,7 +72,7 @@ class BrandPreviewTab(ttk.Frame):
         self._view.pack(fill="both", expand=True)
 
     def _choose_file(self):
-        path = filedialog.askopenfilename()
+        path = filedialog.askopenfilename(filetypes=image_and_raw_filetypes())
         if path:
             self._path = path
             self._status.configure(text=path)

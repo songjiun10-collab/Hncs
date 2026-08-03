@@ -4,7 +4,10 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from gui.widgets.image_view import RAW_EXTS, prepare_for_display, quick_raw_preview
+from gui.widgets.image_view import (
+    RAW_EXTS, image_and_raw_filetypes, prepare_for_display, quick_raw_preview,
+    raw_filetypes,
+)
 from tools.lens_correction import _RAW_EXTS
 
 
@@ -48,6 +51,25 @@ class TestQuickRawPreview(unittest.TestCase):
             use_camera_wb=True, no_auto_bright=True, output_bps=8, half_size=True)
         self.assertEqual(out[0, 0, 2], 255)
         self.assertEqual(out[0, 0, 0], 0)
+
+
+class TestRawFiletypes(unittest.TestCase):
+    def test_covers_every_raw_ext(self):
+        label, pattern = raw_filetypes()[0]
+        for ext in RAW_EXTS:
+            self.assertIn(f"*{ext}", pattern)
+
+    def test_has_all_files_fallback(self):
+        self.assertEqual(raw_filetypes()[1], ("모든 파일", "*.*"))
+
+
+class TestImageAndRawFiletypes(unittest.TestCase):
+    def test_covers_every_raw_ext_and_common_image_exts(self):
+        label, pattern = image_and_raw_filetypes()[0]
+        for ext in RAW_EXTS:
+            self.assertIn(f"*{ext}", pattern)
+        for ext in (".jpg", ".png", ".tif"):
+            self.assertIn(f"*{ext}", pattern)
 
 
 class TestRawExtsDrift(unittest.TestCase):

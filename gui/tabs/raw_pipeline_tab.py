@@ -10,7 +10,8 @@ import cv2
 
 from core.log_pipeline import LOG_SPACES
 from gui.tabs._cli_runner import CliRunner
-from gui.widgets.image_view import ImageView, quick_raw_preview
+from gui.theme import apply_log_colors
+from gui.widgets.image_view import ImageView, quick_raw_preview, raw_filetypes
 
 LOG_SPACE_CHOICES = sorted(LOG_SPACES)
 AUTO_EXPOSE_MODES = ["없음", "average", "highlight_safe", "matrix"]
@@ -55,6 +56,7 @@ class RawPipelineTab(ttk.Frame):
 
         self._progress = ttk.Progressbar(self, mode="indeterminate")
         self._log = tk.Text(self, height=6)
+        apply_log_colors(self._log)
         self._log.pack(fill="x", padx=4)
         self._view = ImageView(self)
         self._view.pack(fill="both", expand=True)
@@ -62,7 +64,7 @@ class RawPipelineTab(ttk.Frame):
         self._runner = CliRunner(self, self._run_button, self._choose_button, self._progress)
 
     def _choose_file(self):
-        path = filedialog.askopenfilename()
+        path = filedialog.askopenfilename(filetypes=raw_filetypes())
         if path:
             self._input_path = path
             self._log.insert("end", f"입력: {path}\n")

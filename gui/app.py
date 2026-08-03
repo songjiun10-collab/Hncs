@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from gui.tabs import brand_preview, hybrid_convert, lens_correction_tab, raw_pipeline_tab
+from gui.theme import apply_dark_theme
 
 TABS = [
     ("브랜드 Look", brand_preview.build_tab),
@@ -13,6 +14,7 @@ TABS = [
 
 
 def build_app(root):
+    apply_dark_theme(root)
     notebook = ttk.Notebook(root)
     notebook.pack(fill="both", expand=True)
     for label, build_tab in TABS:

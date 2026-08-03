@@ -10,7 +10,10 @@ from tkinter import filedialog, ttk
 import cv2
 
 from gui.tabs._cli_runner import CliRunner
-from gui.widgets.image_view import RAW_EXTS, ImageView, quick_raw_preview
+from gui.theme import apply_log_colors
+from gui.widgets.image_view import (
+    RAW_EXTS, ImageView, image_and_raw_filetypes, quick_raw_preview,
+)
 
 _EXIF_TAGS = ["Make", "Model", "LensModel", "LensID", "LensInfo",
               "FocalLength", "FNumber", "ApertureValue"]
@@ -93,6 +96,7 @@ class LensCorrectionTab(ttk.Frame):
 
         self._progress = ttk.Progressbar(self, mode="indeterminate")
         self._log = tk.Text(self, height=6)
+        apply_log_colors(self._log)
         self._log.pack(fill="x", padx=4)
         self._view = ImageView(self)
         self._view.pack(fill="both", expand=True)
@@ -100,7 +104,7 @@ class LensCorrectionTab(ttk.Frame):
         self._runner = CliRunner(self, self._run_button, self._choose_button, self._progress)
 
     def _choose_file(self):
-        path = filedialog.askopenfilename()
+        path = filedialog.askopenfilename(filetypes=image_and_raw_filetypes())
         if not path:
             return
         self._input_path = path
