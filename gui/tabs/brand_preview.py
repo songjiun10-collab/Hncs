@@ -9,7 +9,7 @@ from tkinter import filedialog, ttk
 
 import cv2
 
-from gui.widgets.image_view import ImageView
+from gui.widgets.image_view import RAW_EXTS, ImageView, quick_raw_preview
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,6 +29,15 @@ def list_shipped_looks():
                     and "video_frame" not in node.name):
                 out.append((module, node.name))
     return out
+
+
+def load_image(path):
+    """RAW 확장자(RAW_EXTS)면 quick_raw_preview()로, 아니면 cv2.imread로
+    읽는다 - hybrid_convert/raw_pipeline_tab의 RAW 분기와 동일한
+    RAW_EXTS를 재사용."""
+    if os.path.splitext(path)[1].lower() in RAW_EXTS:
+        return quick_raw_preview(path)
+    return cv2.imread(path)
 
 
 def run_brand_preview(module_name, func_name, img):
@@ -71,7 +80,7 @@ class BrandPreviewTab(ttk.Frame):
             self._status.configure(text="이미지를 먼저 선택하세요")
             return
         module_name, func_name = self._choice.get().rsplit(".", 1)
-        img = cv2.imread(self._path)
+        img = load_image(self._path)
         if img is None:
             self._status.configure(text=f"이미지를 못 읽음: {self._path}")
             return
