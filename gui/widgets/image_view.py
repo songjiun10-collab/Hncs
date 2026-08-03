@@ -9,6 +9,22 @@ import rawpy
 from PIL import Image, ImageTk
 
 RAW_EXTS = {".cr2", ".cr3", ".nef", ".arw", ".raf", ".rw2", ".orf", ".3fr", ".fff", ".dng"}
+_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp"}
+
+
+def raw_filetypes():
+    """파일선택 다이얼로그용 filetypes - RAW 확장자만. 값이 RAW_EXTS
+    하나에서 파생돼 드리프트가 없다."""
+    return [("RAW 파일", " ".join(f"*{ext}" for ext in sorted(RAW_EXTS))),
+            ("모든 파일", "*.*")]
+
+
+def image_and_raw_filetypes():
+    """파일선택 다이얼로그용 filetypes - 일반 이미지 + RAW 둘 다 받는
+    탭용."""
+    patterns = sorted(_IMAGE_EXTS | RAW_EXTS)
+    return [("이미지 + RAW", " ".join(f"*{ext}" for ext in patterns)),
+            ("모든 파일", "*.*")]
 
 
 def prepare_for_display(img, max_width=480):
