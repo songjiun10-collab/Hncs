@@ -4,7 +4,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 
-from gui.widgets.image_view import prepare_for_display, quick_raw_preview
+from gui.widgets.image_view import RAW_EXTS, prepare_for_display, quick_raw_preview
+from tools.lens_correction import _RAW_EXTS
 
 
 class TestPrepareForDisplay(unittest.TestCase):
@@ -47,6 +48,11 @@ class TestQuickRawPreview(unittest.TestCase):
             use_camera_wb=True, no_auto_bright=True, output_bps=8, half_size=True)
         self.assertEqual(out[0, 0, 2], 255)
         self.assertEqual(out[0, 0, 0], 0)
+
+
+class TestRawExtsDrift(unittest.TestCase):
+    def test_matches_tools_lens_correction(self):
+        self.assertEqual(RAW_EXTS, _RAW_EXTS)
 
 
 if __name__ == "__main__":

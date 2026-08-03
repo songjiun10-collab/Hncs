@@ -5,7 +5,8 @@ images. 12 brands. `brands/*.py`'s `apply_*` functions are the shipped
 artifact; everything else is research feeding them.
 
 Area rules live next to what they govern: `brands/`, `tools/`,
-`hybrid_engine/`, `docs/`, `tests/`, `datasets/` each have a `CLAUDE.md`.
+`hybrid_engine/`, `docs/`, `gui/`, `tests/`, `datasets/` each have a
+`CLAUDE.md`.
 
 ## Working with this user
 

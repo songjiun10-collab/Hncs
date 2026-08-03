@@ -1,4 +1,5 @@
 import json
+import subprocess
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -39,6 +40,35 @@ class TestReadExifFields(unittest.TestCase):
     @patch("gui.tabs.lens_correction_tab.subprocess.run")
     def test_exiftool_failure_returns_empty(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stdout="")
+        self.assertEqual(read_exif_fields("dummy.RAF"), {})
+
+    @patch("gui.tabs.lens_correction_tab.subprocess.run")
+    def test_passes_env(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=1, stdout="")
+        read_exif_fields("dummy.RAF")
+        self.assertIn("env", mock_run.call_args.kwargs)
+
+    @patch("gui.tabs.lens_correction_tab.subprocess.run")
+    def test_exiftool_not_found_returns_empty_and_reports_error(self, mock_run):
+        mock_run.side_effect = FileNotFoundError("no exiftool")
+        errors = []
+        fields = read_exif_fields("dummy.RAF", on_error=errors.append)
+        self.assertEqual(fields, {})
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], FileNotFoundError)
+
+    @patch("gui.tabs.lens_correction_tab.subprocess.run")
+    def test_timeout_returns_empty_and_reports_error(self, mock_run):
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="exiftool", timeout=60)
+        errors = []
+        fields = read_exif_fields("dummy.RAF", on_error=errors.append)
+        self.assertEqual(fields, {})
+        self.assertEqual(len(errors), 1)
+        self.assertIsInstance(errors[0], subprocess.TimeoutExpired)
+
+    @patch("gui.tabs.lens_correction_tab.subprocess.run")
+    def test_no_on_error_does_not_raise(self, mock_run):
+        mock_run.side_effect = FileNotFoundError("no exiftool")
         self.assertEqual(read_exif_fields("dummy.RAF"), {})
 
 

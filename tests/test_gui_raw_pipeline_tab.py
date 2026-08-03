@@ -1,12 +1,20 @@
 import unittest
 
 from core.log_pipeline import LOG_SPACES
-from gui.tabs.raw_pipeline_tab import LOG_SPACE_CHOICES, build_raw_pipeline_command
+from gui.tabs.raw_pipeline_tab import (
+    AUTO_EXPOSE_MODES, LOG_SPACE_CHOICES, build_raw_pipeline_command,
+)
+from tools.raw_pipeline import _AUTO_EXPOSE_MODES
 
 
 class TestLogSpaceChoices(unittest.TestCase):
     def test_matches_core_log_pipeline(self):
         self.assertEqual(LOG_SPACE_CHOICES, sorted(LOG_SPACES))
+
+
+class TestAutoExposeModesDrift(unittest.TestCase):
+    def test_matches_tools_raw_pipeline_modes(self):
+        self.assertEqual(set(AUTO_EXPOSE_MODES), {"없음"} | set(_AUTO_EXPOSE_MODES.keys()))
 
 
 class TestBuildRawPipelineCommand(unittest.TestCase):

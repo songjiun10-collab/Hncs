@@ -389,6 +389,11 @@ Tkinter itself is in the Python standard library, but some distributions
 (`python-tk`) - install that if `python3 -m gui` fails with a Tkinter
 import error.
 
+The lens-correction tab's usefulness depends entirely on the bundled
+lensfun camera/lens database's coverage - e.g. it only has 4 old
+Hasselblad camera entries with zero lens data, so it fails with
+`lens_not_found` on every Hasselblad RAW sample.
+
 ## Contributing
 
 Issues and PRs are welcome. This project holds to a "no parameter change
