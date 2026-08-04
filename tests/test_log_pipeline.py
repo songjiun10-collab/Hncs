@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 
 from core.log_pipeline import (
-    LOG_SPACES, apply_exposure, auto_exposure_average, auto_exposure_highlight_safe,
+    LOG_SPACES, HDR_SPACES, apply_exposure, auto_exposure_average, auto_exposure_highlight_safe,
     auto_exposure_matrix, estimate_wb_shades_of_gray, estimate_wb_white_patch,
-    raw_to_prophoto_linear, to_log_space, apply_cube_lut, to_16bit_bgr, write_exr,
+    raw_to_prophoto_linear, to_log_space, to_hdr_space, apply_cube_lut, to_16bit_bgr, write_exr,
 )
 
 _IDENTITY_CUBE = """TITLE "Identity"
@@ -192,6 +192,63 @@ class TestToLogSpace(unittest.TestCase):
                 out = to_log_space(img, name)
                 self.assertEqual(out.shape, img.shape)
                 self.assertTrue(np.all(np.isfinite(out)))
+
+
+class TestToHdrSpace(unittest.TestCase):
+    def test_unknown_hdr_space_raises(self):
+        img = np.full((4, 4, 3), 0.18)
+        with self.assertRaises(ValueError):
+            to_hdr_space(img, "not-a-real-hdr-space")
+
+    def test_non_positive_peak_nits_raises(self):
+        img = np.full((4, 4, 3), 0.18)
+        with self.assertRaises(ValueError):
+            to_hdr_space(img, "PQ", peak_nits=0.0)
+        with self.assertRaises(ValueError):
+            to_hdr_space(img, "PQ", peak_nits=-100.0)
+
+    def test_preserves_shape(self):
+        img = np.random.default_rng(0).uniform(0, 1, size=(6, 5, 3))
+        for name in HDR_SPACES:
+            with self.subTest(hdr_space=name):
+                out = to_hdr_space(img, name)
+                self.assertEqual(out.shape, img.shape)
+
+    def test_all_hdr_spaces_resolve_without_error(self):
+        img = np.full((2, 2, 3), 0.18)
+        for name in HDR_SPACES:
+            with self.subTest(hdr_space=name):
+                out = to_hdr_space(img, name)
+                self.assertTrue(np.all(np.isfinite(out)))
+
+    def test_reference_white_maps_near_peak_for_pq(self):
+        # linear 1.0(기준 화이트) * peak_nits=10000이면 PQ 시스템피크와
+        # peak_nits가 일치하므로 코드값이 1.0 근처여야 한다.
+        img = np.full((2, 2, 3), 1.0)
+        out = to_hdr_space(img, "PQ", peak_nits=10000.0)
+        self.assertTrue(np.all(out > 0.99))
+
+    def test_pq_output_scales_with_peak_nits(self):
+        img = np.full((2, 2, 3), 0.18)
+        low = to_hdr_space(img, "PQ", peak_nits=500.0)
+        high = to_hdr_space(img, "PQ", peak_nits=4000.0)
+        self.assertTrue(np.all(high > low))
+
+    def test_hlg_output_changes_with_peak_nits(self):
+        # HLG도 L_W=peak_nits를 그대로 받아쓰므로(처음 가정과 달리 절대
+        # 기준점이 필요 없지 않음 - to_hdr_space() docstring 참고) peak_nits
+        # 를 바꾸면 같은 입력이라도 출력이 달라져야 한다.
+        img = np.full((2, 2, 3), 0.18)
+        a = to_hdr_space(img, "HLG", peak_nits=500.0)
+        b = to_hdr_space(img, "HLG", peak_nits=1000.0)
+        self.assertFalse(np.allclose(a, b))
+
+    def test_brighter_input_gives_higher_pq_code_value(self):
+        dark = np.full((2, 2, 3), 0.05)
+        bright = np.full((2, 2, 3), 0.5)
+        out_dark = to_hdr_space(dark, "PQ")
+        out_bright = to_hdr_space(bright, "PQ")
+        self.assertTrue(np.all(out_bright > out_dark))
 
 
 class TestApplyCubeLut(unittest.TestCase):

@@ -200,6 +200,50 @@ def to_log_space(linear_prophoto_rgb, log_space):
     return colour.log_encoding(gamut_linear, curve_name)
 
 
+# 이름 -> colour.cctf_encoding()용 함수 이름. Log 커브와 달리 둘 다
+# BT.2020(=Rec.2100과 같은 프라이머리) 색역 하나만 쓴다.
+HDR_SPACES = {
+    "PQ": "ITU-R BT.2100 PQ",
+    "HLG": "ITU-R BT.2100 HLG",
+}
+_HDR_GAMUT = "ITU-R BT.2020"
+
+
+def to_hdr_space(linear_prophoto_rgb, hdr_space, peak_nits=1000.0):
+    """ProPhoto RGB Linear -> BT.2020 색역의 PQ(SMPTE ST 2084) 또는
+    HLG(Hybrid Log-Gamma) 인코딩. Log 커브(scene-referred, 절대 밝기
+    기준점 없음)와 달리 PQ/HLG는 둘 다 **절대 cd/m^2(nits) 입력을
+    기대하는 display-referred 함수**다(colour-science의
+    `eotf_inverse_ST2084`/`eotf_inverse_BT2100_HLG` 실측 확인 - "HLG는
+    PQ와 달리 절대기준 불필요"라는 처음 가정은 틀렸음, HLG도 nominal peak
+    luminance(L_W)를 요구한다). 그래서 linear의 1.0(기준 화이트)이
+    peak_nits cd/m^2에 대응한다고 보고 그 값을 곱해서 넘긴다 - PQ는
+    ST 2084 스펙상 항상 10000nit 시스템피크를 가정하므로 peak_nits는
+    "1.0이 몇 nit인가"만 결정하고, HLG는 `L_W=peak_nits`를 직접 전달해
+    같은 값을 시스템 피크로도 쓴다.
+
+    반환값은 [0, 1] 근방의 PQ/HLG 인코딩된 RGB (Log 커브와 마찬가지로
+    색역 밖 값은 클리핑하지 않음 - 저장 단계에서 처리).
+
+    **미검증**: 실제 HDR10/HLG 대응 디스플레이나 DaVinci Resolve 등에서
+    이 출력이 의도한 대로 보이는지는 확인 못 함 - colour-science 함수
+    정의를 그대로 신뢰한 것으로, 이 프로젝트의 다른 "미검증" 항목과 같은
+    성격의 caveat."""
+    if hdr_space not in HDR_SPACES:
+        raise ValueError(f"지원하지 않는 hdr_space: {hdr_space} "
+                          f"(지원: {sorted(HDR_SPACES)})")
+    if peak_nits <= 0:
+        raise ValueError(f"peak_nits는 0보다 커야 함: {peak_nits}")
+
+    curve_name = HDR_SPACES[hdr_space]
+    target_gamut = colour.RGB_COLOURSPACES[_HDR_GAMUT]
+    gamut_linear = colour.RGB_to_RGB(linear_prophoto_rgb, _PROPHOTO, target_gamut)
+    gamut_linear = np.clip(gamut_linear, 0.0, None)  # 음수(색역 밖) 방지
+    nits = gamut_linear * peak_nits
+    kwargs = {"L_W": peak_nits} if hdr_space == "HLG" else {}
+    return colour.cctf_encoding(nits, function=curve_name, **kwargs)
+
+
 def apply_cube_lut(rgb_float, lut_path):
     """.cube 3D LUT 파일을 로드해서 적용 (trilinear 보간, colour-science
     LUT3D.apply 사용)."""

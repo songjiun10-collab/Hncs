@@ -1,5 +1,5 @@
 """
-RAW -> Log 색공간 -> (선택) LUT 적용 CLI. core/log_pipeline.py 참고.
+RAW -> Log 또는 HDR(PQ/HLG) 색공간 -> (선택) LUT 적용 CLI. core/log_pipeline.py 참고.
 
 출력 확장자로 형식을 정한다 - .tif/.tiff는 16비트 정수(범용, 뷰어 호환성
 좋음), .exr는 32비트 float OpenEXR(씬 참조 워크플로우 실제 업계 표준,
@@ -14,6 +14,12 @@ DaVinci Resolve/Nuke 등이 직접 읽음 - 클리핑 없이 Log/HDR 값을 그�
   python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space V-Log --auto-expose-mode matrix
   python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space S-Log3 --auto-wb-mode white_patch
   python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space S-Log3 --auto-wb-mode shades_of_gray
+  python3 -m tools.raw_pipeline input.CR3 output.tiff --hdr-space HLG
+  python3 -m tools.raw_pipeline input.CR3 output.exr --hdr-space PQ --hdr-peak-nits 4000
+
+--log-space와 --hdr-space는 상호배타(그레이딩용 Log 커브 vs BT.2020
+PQ/HLG HDR 인코딩 - core/log_pipeline.py의 to_hdr_space() docstring 참고,
+미검증 항목)이고 --lut는 --log-space 전용이다.
 """
 import argparse
 import os
@@ -24,9 +30,9 @@ import cv2
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.log_pipeline import (
-    LOG_SPACES, raw_to_prophoto_linear, apply_exposure, auto_exposure_average,
+    LOG_SPACES, HDR_SPACES, raw_to_prophoto_linear, apply_exposure, auto_exposure_average,
     auto_exposure_highlight_safe, auto_exposure_matrix, estimate_wb_shades_of_gray,
-    estimate_wb_white_patch, to_log_space, apply_cube_lut, to_16bit_bgr, write_exr,
+    estimate_wb_white_patch, to_log_space, to_hdr_space, apply_cube_lut, to_16bit_bgr, write_exr,
 )
 
 _AUTO_EXPOSE_MODES = {
@@ -48,9 +54,24 @@ def main():
     parser = argparse.ArgumentParser(description="RAW를 Log 색공간으로 변환 (+ 선택적 LUT 적용)")
     parser.add_argument("input", help="입력 RAW 파일 경로")
     parser.add_argument("output", help="출력 경로 (.tif/.tiff 또는 .exr)")
-    parser.add_argument("--log-space", required=True, choices=sorted(LOG_SPACES),
-                         help="타깃 Log 색공간")
-    parser.add_argument("--lut", default=None, help="적용할 .cube LUT 파일 경로 (선택)")
+    target_group = parser.add_mutually_exclusive_group(required=True)
+    target_group.add_argument("--log-space", choices=sorted(LOG_SPACES),
+                               help="타깃 Log 색공간 (--hdr-space와 동시 사용 불가)")
+    target_group.add_argument("--hdr-space", choices=sorted(HDR_SPACES),
+                               help="타깃 HDR 색공간(PQ/HLG, BT.2020 색역) - "
+                                    "--log-space와 동시 사용 불가. 그레이딩용 중간산물이 "
+                                    "목적으로, 실제 HDR10/HLG 디스플레이나 DaVinci 등에서 "
+                                    "확인된 적은 없음(미검증)")
+    parser.add_argument("--hdr-peak-nits", type=float, default=1000.0,
+                         help="--hdr-space에서 linear 1.0(기준 화이트)이 대응하는 절대 "
+                              "밝기(cd/m^2, 기본 1000 - 그레이딩 업계 관례). PQ는 ST 2084 "
+                              "스펙상 10000nit 시스템피크가 고정이라 이 값은 '1.0이 몇 "
+                              "nit인가'만 정하고, HLG는 이 값을 nominal peak luminance로도 "
+                              "그대로 씀")
+    parser.add_argument("--lut", default=None,
+                         help="적용할 .cube LUT 파일 경로 (--log-space 전용, --hdr-space와 "
+                              "동시 사용 불가 - PQ/HLG 인코딩된 값에 Log용 LUT을 얹는 건 "
+                              "의미가 불분명해서 범위 밖)")
     parser.add_argument("--exposure", type=float, default=0.0,
                          help="수동 노출 보정 (EV 스탑, 기본 0)")
     parser.add_argument("--auto-expose-mode", choices=sorted(_AUTO_EXPOSE_MODES), default=None,
@@ -88,6 +109,11 @@ def main():
         print(f"지원하지 않는 출력 확장자: {ext!r} (.tif/.tiff 또는 .exr만 지원)")
         sys.exit(1)
 
+    if args.hdr_space and args.lut:
+        print("--hdr-space는 --lut와 동시 사용 불가 (Log용 LUT을 PQ/HLG 값에 적용하는 건 "
+              "의미가 불분명해서 범위 밖)")
+        sys.exit(1)
+
     mode = args.auto_expose_mode or ("average" if args.auto_expose else None)
 
     print(f"RAW 디코드 중... ({args.input})")
@@ -101,8 +127,12 @@ def main():
         linear = _AUTO_EXPOSE_MODES[mode](linear, args)
     linear = apply_exposure(linear, args.exposure)
 
-    print(f"Log 변환 중... (log_space={args.log_space})")
-    log_img = to_log_space(linear, args.log_space)
+    if args.hdr_space:
+        print(f"HDR 변환 중... (hdr_space={args.hdr_space}, peak_nits={args.hdr_peak_nits})")
+        log_img = to_hdr_space(linear, args.hdr_space, peak_nits=args.hdr_peak_nits)
+    else:
+        print(f"Log 변환 중... (log_space={args.log_space})")
+        log_img = to_log_space(linear, args.log_space)
 
     if args.lut:
         print(f"LUT 적용 중... ({args.lut})")
