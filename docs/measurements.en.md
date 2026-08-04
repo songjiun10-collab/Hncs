@@ -522,3 +522,22 @@ use** - not a substitute for the camera's own white balance, only useful
 for experimenting with a "different feel" in a creative workflow with no
 illuminant information available. Reproduce: repeat the method above
 across all 13 `raw_calib_cache` files (one-off script, not in the repo).
+
+**Related finding (a different subsystem)**: this failure isn't new -
+it's a re-confirmation of a limitation this project already knew about.
+`hybrid_engine/EVALUATION.md` ("Protocol 2: Cross-camera generalization"
+section, around follow-up measurements 12-19) extensively measured Gray
+World (the "the whole scene averages to neutral" assumption) and its
+variants (robust/percentile, luma-zoned, strength-tuned) as well as Gray
+Edge (spatial-derivative-based, van de Weijer 2007) for `hybrid_engine`'s
+own color-cast correction stage, and reached the same conclusion - a
+global "the scene is roughly neutral" assumption breaks down structurally
+on night scenes and color-dominated real photos (removing Gray World
+entirely made ΔE nearly double, 9.687 -> 18.431, so having *some* version
+was better than none - but every attempt to refine it further stayed
+within a meaningless +0.7%). White Patch/Shades of Gray just tried the
+same global neutral-surface assumption with a different algorithm and hit
+the same wall. It's the same class of problem as the metamerism
+limitation already stated in README.md ("...the sensor's spectral
+sensitivity isn't exactly proportional to the CIE standard observer...
+the residual can only be reduced via a ΔE loop").
