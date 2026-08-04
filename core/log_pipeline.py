@@ -37,17 +37,28 @@ LOG_SPACES = {
 _PROPHOTO = colour.RGB_COLOURSPACES["ProPhoto RGB"]
 
 
-def raw_to_prophoto_linear(raw_path):
+def raw_to_prophoto_linear(raw_path, use_camera_wb=True):
     """RAW -> ProPhoto RGB Linear, float64 [0, 1] 범위 (근사 - 하이라이트는
-    1을 넘을 수 있음), shape (H, W, 3), RGB 순서."""
+    1을 넘을 수 있음), shape (H, W, 3), RGB 순서.
+
+    use_camera_wb=False면 카메라 WB 게인을 아예 안 걸고(rawpy user_wb를
+    항등[1,1,1,1]로 고정) 디모자이크한다 - White Patch/Shades of Gray
+    같은 이미지 기반 화이트밸런스 추정 알고리즘은 카메라 WB가 이미
+    적용된 상태에 걸면 이중 보정이 되어 의미가 없으므로, 그 알고리즘을
+    쓰는 쪽(estimate_wb_*)이 이 플래그로 원본 채널 비율을 먼저 받아야
+    한다."""
     with rawpy.imread(raw_path) as raw:
-        rgb16 = raw.postprocess(
-            use_camera_wb=True,
+        kwargs = dict(
             no_auto_bright=True,
             output_bps=16,
             output_color=rawpy.ColorSpace.ProPhoto,
             gamma=(1, 1),  # 순수 linear - 톤커브 없음
         )
+        if use_camera_wb:
+            kwargs["use_camera_wb"] = True
+        else:
+            kwargs["user_wb"] = [1.0, 1.0, 1.0, 1.0]
+        rgb16 = raw.postprocess(**kwargs)
     return rgb16.astype(np.float64) / 65535.0
 
 
@@ -116,6 +127,36 @@ def auto_exposure_matrix(linear_rgb, target_gray=0.18, center_weight=3.0, n_zone
     if weighted_mean <= 0:
         return linear_rgb
     return linear_rgb * (target_gray / weighted_mean)
+
+
+def estimate_wb_white_patch(linear_rgb, percentile=99.9):
+    """White Patch(Max-RGB Retinex) 화이트밸런스 추정 - 채널별 상위
+    percentile(기본 99.9 - 순수 100은 핫픽셀/센서노이즈 한두 개에
+    흔들리기 쉬워 살짝 낮춤) 밝기가 조명색을 반사한 흰/회색 표면이라고
+    가정하고, 그 값이 1(흰색)이 되도록 채널마다 독립적으로 게인을
+    건다(Land의 Retinex 이론에서 나온 고전적 색항상성 알고리즘).
+    raw_to_prophoto_linear(..., use_camera_wb=False)로 카메라 WB 없이
+    디코드한 결과에 적용해야 의미가 있다 - 이미 WB된 이미지에 걸면
+    이중보정이 된다."""
+    flat = linear_rgb.reshape(-1, 3)
+    channel_patch = np.percentile(flat, percentile, axis=0)
+    channel_patch = np.where(channel_patch <= 0, 1.0, channel_patch)
+    return linear_rgb / channel_patch
+
+
+def estimate_wb_shades_of_gray(linear_rgb, p=6):
+    """Shades of Gray(Finlayson & Trezzi 2004) 화이트밸런스 추정 - Gray
+    World(p=1, 채널별 산술평균)와 White Patch/Max-RGB(p->무한대)를
+    민코프스키 p-노름 하나로 일반화한 방법. 채널별 (mean(x^p))^(1/p)을
+    조명색 추정치로 쓰고, 그 추정치 벡터를 자기 노름으로 정규화해
+    나눠서(전체 밝기는 유지한 채 색만 중화) 게인을 건다. 기본 p=6은
+    원 논문이 여러 조명 이미지셋 실측으로 고른 값. White Patch와 마찬가지로
+    use_camera_wb=False로 디코드한 결과에 적용해야 한다."""
+    flat = np.clip(linear_rgb.reshape(-1, 3), 0, None)
+    illuminant = np.power(np.mean(np.power(flat, p), axis=0), 1.0 / p)
+    illuminant = np.where(illuminant <= 0, 1.0, illuminant)
+    illuminant = illuminant / np.linalg.norm(illuminant)
+    return linear_rgb / illuminant
 
 
 def to_log_space(linear_prophoto_rgb, log_space):

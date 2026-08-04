@@ -1,12 +1,14 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
 from core.log_pipeline import (
     LOG_SPACES, apply_exposure, auto_exposure_average, auto_exposure_highlight_safe,
-    auto_exposure_matrix, to_log_space, apply_cube_lut, to_16bit_bgr, write_exr,
+    auto_exposure_matrix, estimate_wb_shades_of_gray, estimate_wb_white_patch,
+    raw_to_prophoto_linear, to_log_space, apply_cube_lut, to_16bit_bgr, write_exr,
 )
 
 _IDENTITY_CUBE = """TITLE "Identity"
@@ -105,6 +107,62 @@ class TestAutoExposureMatrix(unittest.TestCase):
         img = np.zeros((10, 10, 3))
         out = auto_exposure_matrix(img)
         np.testing.assert_array_equal(out, img)
+
+
+class TestEstimateWbWhitePatch(unittest.TestCase):
+    def test_uniform_color_cast_neutralized(self):
+        # 순수 회색 장면에 (2, 1, 0.5) 조명색이 곱해진 상황을 시뮬레이션
+        img = np.full((8, 8, 3), 0.4) * np.array([2.0, 1.0, 0.5])
+        out = estimate_wb_white_patch(img, percentile=100)
+        # 채널별 max가 정확히 1이 되어야 함(장면 전체가 균일해서 percentile=max)
+        np.testing.assert_allclose(out.reshape(-1, 3).max(axis=0), [1.0, 1.0, 1.0])
+
+    def test_all_zero_channel_avoids_division_by_zero(self):
+        img = np.zeros((4, 4, 3))
+        out = estimate_wb_white_patch(img)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+
+class TestEstimateWbShadesOfGray(unittest.TestCase):
+    def test_uniform_color_cast_neutralized_to_equal_channels(self):
+        img = np.full((8, 8, 3), 0.4) * np.array([2.0, 1.0, 0.5])
+        out = estimate_wb_shades_of_gray(img, p=6)
+        result_channels = out.reshape(-1, 3)[0]
+        # 셋 다 같은 값으로 돌아와야 함(균일 장면이라 p 값에 무관하게
+        # 완전히 중화됨)
+        self.assertAlmostEqual(result_channels[0], result_channels[1], places=6)
+        self.assertAlmostEqual(result_channels[1], result_channels[2], places=6)
+
+    def test_all_zero_channel_avoids_division_by_zero(self):
+        img = np.zeros((4, 4, 3))
+        out = estimate_wb_shades_of_gray(img)
+        self.assertTrue(np.all(np.isfinite(out)))
+
+
+class TestRawToProphotoLinearWhiteBalanceFlag(unittest.TestCase):
+    @patch("core.log_pipeline.rawpy.imread")
+    def test_camera_wb_true_passes_use_camera_wb(self, mock_imread):
+        mock_raw = MagicMock()
+        mock_raw.postprocess.return_value = np.zeros((4, 4, 3), dtype=np.uint16)
+        mock_imread.return_value.__enter__.return_value = mock_raw
+
+        raw_to_prophoto_linear("dummy.CR3", use_camera_wb=True)
+
+        kwargs = mock_raw.postprocess.call_args.kwargs
+        self.assertEqual(kwargs.get("use_camera_wb"), True)
+        self.assertNotIn("user_wb", kwargs)
+
+    @patch("core.log_pipeline.rawpy.imread")
+    def test_camera_wb_false_passes_identity_user_wb(self, mock_imread):
+        mock_raw = MagicMock()
+        mock_raw.postprocess.return_value = np.zeros((4, 4, 3), dtype=np.uint16)
+        mock_imread.return_value.__enter__.return_value = mock_raw
+
+        raw_to_prophoto_linear("dummy.CR3", use_camera_wb=False)
+
+        kwargs = mock_raw.postprocess.call_args.kwargs
+        self.assertEqual(kwargs.get("user_wb"), [1.0, 1.0, 1.0, 1.0])
+        self.assertNotIn("use_camera_wb", kwargs)
 
 
 class TestToLogSpace(unittest.TestCase):
