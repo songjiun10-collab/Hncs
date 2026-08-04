@@ -1,9 +1,15 @@
 """
-기여 데이터셋(datasets/hasselblad/contributed/<세트>/) 자동 검증 CLI.
-규격은 datasets/hasselblad/contributed/README.md 참고.
+기여 데이터셋(datasets/<브랜드>/contributed/<세트>/) 자동 검증 CLI.
+규격은 datasets/hasselblad/contributed/README.md 참고(브랜드 무관 공통
+스키마 - datasets/leica/contributed/README.md는 그 스키마를 그대로
+가리킨다).
 
   python3 -m tools.verify_contributed_pairs datasets/hasselblad/contributed/kmichels-x2dii-2026-07
-"""
+  python3 -m tools.verify_contributed_pairs datasets/leica/contributed/<세트> --make Leica
+
+--make 기본값은 Hasselblad(기존 호출 하위호환) - EXIF Make가 이 문자열을
+포함해야 통과한다."""
+import argparse
 import csv
 import json
 import os
@@ -18,6 +24,7 @@ from tools.analyze import _check_genuine_bytes
 REQUIRED_COLUMNS = {"filename_raw", "filename_jpeg", "camera", "lens", "iso",
                      "wb_setting", "scene_type", "download_url"}
 PAIR_SYNC_TOLERANCE_SEC = 2
+DEFAULT_EXPECTED_MAKE = "Hasselblad"
 
 
 def _exif(path, tags):
@@ -49,8 +56,9 @@ def _model_matches(exif_model, manifest_camera):
     return bool(a) and (a in b or b in a)
 
 
-def verify_row(set_dir, row):
-    """manifest 한 행 검증 - 문제 목록(비면 통과)을 반환."""
+def verify_row(set_dir, row, expected_make=DEFAULT_EXPECTED_MAKE):
+    """manifest 한 행 검증 - 문제 목록(비면 통과)을 반환. expected_make는
+    EXIF Make에 포함돼야 할 제조사명(기본 Hasselblad, 대소문자 무관)."""
     problems = []
 
     raw_path = os.path.join(set_dir, "raw", row["filename_raw"])
@@ -64,8 +72,8 @@ def verify_row(set_dir, row):
     # EXIF Make/Model 대조
     for label, path in (("raw", raw_path), ("jpeg", jpeg_path)):
         d = _exif(path, ["Make", "Model"])
-        if "hasselblad" not in (d.get("Make") or "").lower():
-            problems.append(f"{label} EXIF Make가 Hasselblad가 아님: {d.get('Make')!r}")
+        if expected_make.lower() not in (d.get("Make") or "").lower():
+            problems.append(f"{label} EXIF Make가 {expected_make}가 아님: {d.get('Make')!r}")
         if not _model_matches(d.get("Model"), row["camera"]):
             problems.append(
                 f"{label} EXIF Model({d.get('Model')!r})이 manifest camera({row['camera']!r})와 불일치")
@@ -89,10 +97,13 @@ def verify_row(set_dir, row):
 
 
 def main():
-    if len(sys.argv) != 2:
-        print(__doc__)
-        sys.exit(1)
-    set_dir = sys.argv[1]
+    parser = argparse.ArgumentParser(description="기여 데이터셋 manifest 검증")
+    parser.add_argument("set_dir", help="datasets/<브랜드>/contributed/<세트> 경로")
+    parser.add_argument("--make", default=DEFAULT_EXPECTED_MAKE,
+                         help=f"기대하는 EXIF Make (기본 {DEFAULT_EXPECTED_MAKE})")
+    args = parser.parse_args()
+    set_dir = args.set_dir
+
     manifest_path = os.path.join(set_dir, "manifest.csv")
     if not os.path.exists(manifest_path):
         print(f"manifest.csv 없음: {manifest_path}")
@@ -108,7 +119,7 @@ def main():
 
     passed, failed = 0, 0
     for i, row in enumerate(rows):
-        problems = verify_row(set_dir, row)
+        problems = verify_row(set_dir, row, expected_make=args.make)
         status = "PASS" if not problems else "FAIL"
         print(f"[{i + 1}/{len(rows)}] {row['filename_raw']} + {row['filename_jpeg']}: {status}")
         for p in problems:

@@ -62,7 +62,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/export_lut.py` | 포토샵/DaVinci Resolve/Lightroom용 `.cube` 3D LUT 내보내기 CLI - `python3 -m tools.export_lut --list` / `python3 -m tools.export_lut hasselblad out.cube [--size 33] [--install-lightroom [--group NAME]]` (`hybrid_engine.core.preset_inverse.TARGET_FUNCS` 레지스트리 재사용) |
 | `tools/classify_brand.py` | 브랜드 시그니처 판별기 CLI - `python3 -m tools.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]`(기본, LOO 리포트) / `python3 -m tools.classify_brand predict photo.jpg [--html out.html]`(재미용, 새 사진 브랜드 순위) |
 | `tools/analyze_camera_native_matrix.py` | 카메라 네이티브 공간 색매트릭스 피팅 실험 CLI - `python3 -m tools.analyze_camera_native_matrix` (차트 10장을 `decode_raw_native()`로 디코드 -> XYZ(D50) 참조값에 피팅 -> libraw 내장 매트릭스와 leave-one-image-out 교차검증 비교, 리포트 JSON 저장) |
-| `tools/verify_contributed_pairs.py` | 기여 데이터셋 자동 검증 CLI(manifest-EXIF 대조, raw/jpeg 동시촬영 확인, 편집 오염 검사) - 규격은 `datasets/hasselblad/contributed/README.md` |
+| `tools/verify_contributed_pairs.py` | 기여 데이터셋 자동 검증 CLI(manifest-EXIF 대조, raw/jpeg 동시촬영 확인, 편집 오염 검사) - 규격은 `datasets/hasselblad/contributed/README.md`. `--make` 인자로 브랜드 무관(2026-08부터 Leica 등도 지원, 기본값 Hasselblad) |
 | `tools/highlight_rolloff_signal.py` | 브랜드별 shoulder_start/clahe_clip 추정 가능성 탐색(결론: 근거 부족, 기본값 유지 - `core/engine.py` docstring 참고) |
 | `tools/lens_correction.py` | 렌즈 왜곡 보정 CLI - EXIF(Make/Model/LensModel/FocalLength/FNumber)로 lensfun DB를 매치해 지오메트릭 왜곡만 보정, RAW/일반 이미지 둘 다 입력 - `python3 -m tools.lens_correction input.RAF output.jpg [--lens NAME --focal-length N --aperture N]` |
 | `tools/upscale.py` | AI 업스케일 CLI(`core/upscale.py`) - `python3 -m tools.upscale input.jpg output.png [--scale 2\|4] [--engine onnx\|pytorch] [--tile-size N] [--tile-pad N]` |
@@ -70,7 +70,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/iso_noise.py` | 핫셀블라드 공식 샘플의 ISO별 노이즈 수준 분석 - 캐시본은 다운로드 단계 리사이즈에서 EXIF가 날아간 상태라 ISO를 CSV/파일명으로 역추적한다 |
 | `tools/analyze_pixel_errors.py` | hybrid_engine v1.2가 "어느 픽셀에서" 틀리는지 진단 - 13쌍의 픽셀별 ΔE00을 L(밝기)/hue(색상각) 구간별로 pooling(`evaluation/fidelity.py`의 페어 단위 요약 뒤를 파고드는 용도) |
 | `tools/analyze_colorchecker_matrix.py` | [GitHub 이슈 #4 지적 4번] 기여받은 X2D II ColorChecker 차트 10장으로 raw 베이스라인의 실제 색채측정 오차를 재고 차트 최소자승 매트릭스의 개선폭을 확인(ΔE00 7.58 -> 2.78, leave-one-image-out 교차검증) |
-| `tools/build_local_manifest.py` | 로컬 사진 라이브러리에서 EXIF DateTimeOriginal로 raw+jpeg 페어를 찾아 기여 `manifest.csv`를 만드는 CLI - `tools.verify_contributed_pairs`의 `verify_row`로 즉시 재검증해 FAIL 행(편집본/셔터 비동기)을 자동 제거하므로 PASS 행만 남는다 |
+| `tools/build_local_manifest.py` | 로컬 사진 라이브러리에서 EXIF DateTimeOriginal로 raw+jpeg 페어를 찾아 기여 `manifest.csv`를 만드는 CLI - `tools.verify_contributed_pairs`의 `verify_row`로 즉시 재검증해 FAIL 행(편집본/셔터 비동기)을 자동 제거하므로 PASS 행만 남는다. RAW 확장자 `.3fr`/`.fff`/`.dng`(Leica) 인식, `--make`로 브랜드 지정(기본 Hasselblad) |
 | `tools/evaluate_chromatic_aberration.py` | 연구용 - rawpy `chromatic_aberration`(R/B 채널 스케일링) 9x9 격자 그리드서치 + 13쌍 leave-one-out 교차검증 - 결과: 13폴드 전부가 "보정 없음"`(1.0, 1.0)`을 최적으로 선택한 완전 무신호(포지티브 컨트롤로 파라미터 자체는 정상 동작 확인). 결과 기록: `hybrid_engine/EVALUATION.md` |
 | `tools/evaluate_hncs_blend.py` | 연구용 - 조명 하드분류 대신 연속 블렌딩(R/B 선형 / CCT mired 두 가중치 공식)이 나은지 가중 최소자승 피팅 + 13쌍 LOO로 비교 - 결과: 두 공식 다 하드클러스터 대비 판정 보류, 서로 간에도 판정 보류. 결과 기록: `hybrid_engine/EVALUATION.md` |
 | `tools/simulate_pair_count_power.py` | 부트스트랩 표본 확대 시뮬레이션 - 이미 기록된 13개 페어드 차이를 복원추출해 "n=60이면 유의해지는가"를 투영한다(**실제 새 데이터가 아니라 통계적 투영**). 결과: 세 비교 다 n=60에서도 안정적으로 유의해지지 않는다 |

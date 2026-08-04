@@ -84,6 +84,17 @@ ColorChecker 차트 반복 촬영이라 그 데이터로는 미실행이었다 -
   `tools/build_local_manifest.py`로 EXIF 시각 매칭 + 자동 검증까지
   한 번에 생성 - 후보 104쌍 중 43쌍(41%)이 Lightroom/Photoshop 편집
   흔적으로 탈락. 위 1번 항목(세대 간 pooling 판정)에 사용됨.
+- **`owner-x2dii-2026-08/`** (프로젝트 소유자, Google Drive 폴더로 공유):
+  X2D II 100C raw 9장(2025-08-28~09-02, 여러 날에 걸친 실촬영, 렌즈
+  XCD 55V) - **jpeg가 별도로 없어서 RAW 내장 프리뷰(rawpy
+  `extract_thumb()`)를 jpeg 대신 씀**. 원본 11904x8842 대비 프리뷰는
+  2918x3888로 훨씬 작고, 프리뷰 자체의 EXIF Software가 `dcraw v9.26`이라
+  카메라 순정 임베디드 프리뷰인지 확실치 않음(각 행 manifest notes에
+  명시) - 다른 세트의 "진짜 동시촬영 풀해상도 카메라 JPEG"보다 약한
+  근거이니 분석에 쓸 때 이 점을 감안할 것. `verify_contributed_pairs`는
+  9/9 PASS(단, DateTimeOriginal은 프리뷰에 없어서 raw 값을 그대로
+  복사해 넣은 것 - 페어 자체가 raw에서 뽑은 프리뷰라 실제 촬영시각과
+  다르지 않음).
 
 별개로, **hybrid_engine 자체 캘리브레이션 데이터셋에 챠트 페어를
 직접 pooling하는 실험은 실행했고 실제로 배포까지 됐다** - 챠트 10장
