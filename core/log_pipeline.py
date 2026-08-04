@@ -144,7 +144,15 @@ def estimate_wb_white_patch(linear_rgb, percentile=99.9):
     기준 카메라 실제 AsShotNeutral 대비 평균 ΔE00 15.80(ΔE00<2.0이 "구별
     안 됨" 기준이라 명백히 다른 색감) - 장면 안에 진짜 중립 표면이
     있다는 전제가 실사진에서 자주 깨져서(밝은 색유리/하늘 등이 있으면
-    채널비가 1.000으로 saturate) 실사용 권장 안 함."""
+    채널비가 1.000으로 saturate) 실사용 권장 안 함.
+
+    후속 실측(2026-08, docs/measurements.md "ΔE00 낮추기 시도"/"노이즈가
+    ΔE00의 원인인가"): 채도 높은 픽셀 제외, 앙상블(shades_of_gray와 평균)
+    둘 다 개선 안 됨(오히려 소폭 악화) - 파라미터/알고리즘 변경 없음.
+    결과물의 노이즈 증폭(채널 게인이 그 채널 센서노이즈를 비례증폭)은
+    실재하지만, 74쌍 전체 픽셀 단위 블러 테스트에서 노이즈 제거가 평균
+    ΔE00을 낮추지 못함(오히려 평균 -3.9%로 소폭 악화) - 위 ΔE00은 노이즈가
+    아니라 순수 체계적 색편차."""
     flat = linear_rgb.reshape(-1, 3)
     channel_patch = np.percentile(flat, percentile, axis=0)
     channel_patch = np.where(channel_patch <= 0, 1.0, channel_patch)
@@ -162,7 +170,15 @@ def estimate_wb_shades_of_gray(linear_rgb, p=6):
 
     실측(2026-08, docs/measurements.md 같은 절): raw_calib_cache 13장
     기준 평균 ΔE00 14.04 - White Patch보다 근소하게 낫지만 마찬가지로
-    실사용 권장 안 함(자세한 수치/원인은 White Patch 쪽 docstring 참고)."""
+    실사용 권장 안 함(자세한 수치/원인은 White Patch 쪽 docstring 참고).
+
+    후속 실측(2026-08, docs/measurements.md "ΔE00 낮추기 시도"/"노이즈가
+    ΔE00의 원인인가"): 채도 높은 픽셀 제외, 앙상블 둘 다 개선 안 됨(자세한
+    수치는 White Patch 쪽 docstring 참고) - 파라미터(p=6) 변경 없음. 이
+    함수의 게인이 채널별 센서노이즈를 비례증폭하는 것도 실재하지만,
+    74쌍 전체 블러 테스트에서 노이즈 제거가 평균 ΔE00을 낮추지 못함(평균
+    -3.9%로 오히려 소폭 악화) - 위 ΔE00은 노이즈가 아니라 순수 체계적
+    색편차."""
     flat = np.clip(linear_rgb.reshape(-1, 3), 0, None)
     illuminant = np.power(np.mean(np.power(flat, p), axis=0), 1.0 / p)
     illuminant = np.where(illuminant <= 0, 1.0, illuminant)

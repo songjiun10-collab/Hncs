@@ -453,13 +453,15 @@ class TestApplyHncsVideoFrame(unittest.TestCase):
         self.assertFalse(np.array_equal(photo_out, video_out))
 
     def test_matches_manual_reconstruction_without_clahe(self):
+        # 2026-08 v11 재보정(brands/hasselblad.py docstring) 이후 기본값:
+        # exposure_gamma=0.8, toe_lift=0.0, shoulder_start=0.5, white_point=1.0
         lab = cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
         x = np.arange(256, dtype=np.float32) / 255.0
-        exp_lut = np.clip((x ** 0.7) * 255, 0, 255).astype(np.uint8)
+        exp_lut = np.clip((x ** 0.8) * 255, 0, 255).astype(np.uint8)
         l = cv2.LUT(l, exp_lut)
         x2 = np.arange(256, dtype=np.float32) / 255.0
-        lut = np.clip(film_curve(x2, 0.001, 0.78, 1.0) * 255, 0, 255).astype(np.uint8)
+        lut = np.clip(film_curve(x2, 0.0, 0.5, 1.0) * 255, 0, 255).astype(np.uint8)
         l = cv2.LUT(l, lut)
         expected = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
