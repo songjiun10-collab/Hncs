@@ -99,6 +99,22 @@ raw+jpeg 페어가 X1D 13장(공식)에서 X2D/907X·CFV 실사진 61장이 추�
 `docs/measurements.md` 참고)는 방향은 안 바뀌지만 n=4라 통계적 의미는
 없음 - 재캘리브레이션 여부는 아직 결정하지 않았고 이 함수는 이번에
 손대지 않았다.
+
+v11 파라미터 재보정(2026-08, 65쌍 - 공식 오염제외 4 + 로컬 기여
+61 - `tools.calibrate grid_search`/`grid_search_loo`): 이번엔 실제로
+채택했다. 그리드서치 최적값이 **exposure_gamma=0.7->0.8, toe_lift=
+0.001->0.0, shoulder_start=0.78->0.5**(white_point=1.0은 그대로)로
+나왔는데, 바로 이 shoulder_start~0.5 값은 v11 원래 이력(위 문단)에서
+그림자유효 8장 표본에 과적합 위험으로 채택 안 했던 바로 그 값이라 -
+이번엔 leave-one-out(폴드마다 파라미터를 다시 피팅해 안 본 1쌍에만
+평가, `grid_search_loo` 모드)으로 먼저 검증했다: 기존 파라미터(이
+65쌍으로 피팅된 적 없어 이미 out-of-sample) 평균오차 14.948 ->
+LOO최적화 9.960(33.4% 개선), 폴드 55승8패, 부호검정 p<0.001, 부트스트랩
+95% CI [+26.0%,+40.5%](0 안 걸침), drop-one 32.5~35.3%(부호 안 뒤집힘),
+65폴드 중 64폴드가 정확히 같은 조합에 수렴(나머지 1폴드도
+exposure_gamma만 0.9로 거의 동일) - 표본이 8장->65장(4세대)으로 커지면서
+그때의 과적합 우려가 실제로 해소됐다고 판단해 채택. `apply_hncs_video_frame()`
+도 동일하게 갱신(두 함수는 원래 같은 기본값을 공유하는 설계).
 """
 import cv2
 import numpy as np
@@ -106,8 +122,8 @@ import numpy as np
 from core.curve import film_curve
 
 
-def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
-               white_point=1.0, clahe_clip=1.25, exposure_gamma=0.7):
+def apply_hncs(img_bgr, toe_lift=0.0, shoulder_start=0.5,
+               white_point=1.0, clahe_clip=1.25, exposure_gamma=0.8):
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
@@ -133,8 +149,8 @@ def apply_hncs(img_bgr, toe_lift=0.001, shoulder_start=0.78,
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
 
-def apply_hncs_video_frame(img_bgr, toe_lift=0.001, shoulder_start=0.78,
-                            white_point=1.0, exposure_gamma=0.7):
+def apply_hncs_video_frame(img_bgr, toe_lift=0.0, shoulder_start=0.5,
+                            white_point=1.0, exposure_gamma=0.8):
     """apply_hncs()의 비디오 전용 변형 - CLAHE를 생략해 프레임 간
     깜빡임을 피한다. 사진 모드와 동일한 출력이 아니다."""
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)

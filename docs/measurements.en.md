@@ -344,6 +344,69 @@ the v11 column above, even though λ=1e9 is effectively pure v11):
 margin, so there's no upside to blending them, and the grid search itself
 confirms that quantitatively. Reproduce: `python3 -m tools.calibrate regularize`.
 
+## v11 parameter recalibration - 65-pair grid search + LOO validation, actually adopted (2026-08)
+
+All the re-checks above kept `apply_hncs()`'s **existing parameters**
+fixed (toe_lift=0.001, shoulder_start=0.78, white_point=1.0,
+exposure_gamma=0.7 - the values adopted back in v10/v11) and only
+compared v12/the hybrid against them. This time the parameters of
+`apply_hncs` itself were re-searched on the 65 pairs (4 clean official +
+61 local-contributed).
+
+**Step 1 - in-sample grid search** (modified `tools/calibrate.py`'s
+`run_grid_search()` to use `_resolve_pairs()` (65 pairs) instead of
+`collect_pairs()` (13 official only); same parameter grid as before:
+7 exposure_gamma values x 3 toe_lift x 7 shoulder_start x 3 white_point =
+441 combinations):
+
+| | exposure_gamma | toe_lift | shoulder_start | white_point | RMSE |
+|---|---|---|---|---|---|
+| Existing defaults | 0.7 | 0.001 | 0.78 | 1.0 | 19.11 |
+| Grid search optimum | 0.8 | 0.0 | 0.5 | 1.0 | 13.56 |
+
+**Caveat**: this 13.56 is an in-sample number - parameters fit on the 65
+pairs, then measured on the same 65 pairs - so it can't rule out
+overfitting. And this particular shoulder_start≈0.5 is exactly the value
+v11's original history (`brands/hasselblad.py` docstring) held back on
+adopting, over overfitting risk with only 8 shadow-valid samples. So it
+went through leave-one-out validation before adoption.
+
+**Step 2 - leave-one-out validation** (new `run_grid_search_loo()` -
+computes the 65-pairs x 441-combos error matrix once, then for each fold
+picks the combo with the lowest mean error over the other 64 pairs via
+subtraction, and evaluates only on the held-out pair -
+`TestFoldBestComboMatchesRecompute` confirms the subtraction result
+matches full recomputation, the same pattern as
+`TestSubtractionLooMatchesRecompute`). The comparison baseline (A) is the
+**existing parameters as-is** - never fit on these 65 pairs, so already
+out-of-sample:
+
+- Mean error: existing 14.948 -> LOO-optimized 9.960 (**33.4%
+  improvement**)
+- Fold win/loss: LOO-optimized wins 55, loses 8, ties 2 (ties at zero
+  error)
+- Sign test (two-sided) p < 0.001
+- Bootstrap 95% CI (improvement): [+26.0%, +40.5%] (excludes 0)
+- Drop-one sensitivity: improvement stays within 32.5%-35.3% (sign never
+  flips)
+- **64 of 65 folds converge on the exact same combo**
+  (exposure_gamma=0.8, toe_lift=0.0, shoulder_start=0.5, white_point=1.0);
+  the remaining fold differs only in exposure_gamma (0.9) - not being
+  dragged around by a handful of pairs.
+
+**Conclusion - adopted.** This clears every bar in
+`hybrid_engine/CLAUDE.md`'s statistics rules (paired t-test, sign test,
+bootstrap CI, drop-one), and the original overfitting concern from v11's
+history is judged resolved now that the sample grew from 8 to 65 pairs
+across 4 generations. Actually updated `apply_hncs()`/
+`apply_hncs_video_frame()`'s defaults in `brands/hasselblad.py`
+(exposure_gamma 0.7->0.8, toe_lift 0.001->0.0, shoulder_start 0.78->0.5,
+white_point unchanged at 1.0) - see that file's docstring for the full
+rationale. Confirmed the full test suite (613 tests) still passes.
+
+Reproduce: `python3 -m tools.calibrate grid_search` (in-sample) /
+`python3 -m tools.calibrate grid_search_loo` (LOO validation).
+
 ## First check against a real Phocus render (2026-08)
 
 Until now, `apply_hncs()`'s ground truth has always been the camera's own
@@ -541,3 +604,88 @@ the same wall. It's the same class of problem as the metamerism
 limitation already stated in README.md ("...the sensor's spectral
 sensitivity isn't exactly proportional to the CIE standard observer...
 the residual can only be reduced via a ΔE loop").
+
+## Trying to lower ΔE00 - both ideas failed (2026-08)
+
+Tested two ways to lower the result above (mean 14-16):
+
+1. **Exclude high-saturation pixels** (`robust_divisor`): drop pixels with
+   saturation (`(max-min)/max`) above 0.15 from the set used to estimate
+   the white/gray reference, then recompute (falls back to the full set
+   if fewer than 100 pixels remain). The idea: stop saturated primary-color
+   surfaces from masquerading as a "fake neutral."
+2. **Ensemble**: simply average the white_patch and shades_of_gray
+   divisors, hoping their different failure modes would cancel out.
+
+Reproduced on the 13 `raw_calib_cache` files (ΔE00 against camera_wb, mean):
+
+| Method | Mean | Median | Min | Max |
+|---|---|---|---|---|
+| white_patch | 15.80 | 14.72 | 4.28 | 26.07 |
+| **shades_of_gray (previous best)** | **14.04** | 11.83 | 3.66 | 24.74 |
+| white_patch + saturation exclusion | 15.84 | 14.72 | 4.28 | 26.07 |
+| shades_of_gray + saturation exclusion | 14.44 | 11.83 | 3.66 | 27.23 |
+| ensemble (original divisors) | 14.33 | 12.86 | 5.68 | 24.06 |
+| ensemble (saturation-excluded divisors) | 14.50 | 12.86 | 5.68 | 24.06 |
+
+**Conclusion**: neither helps. Saturation exclusion barely changed the
+divisor for most pairs (most scenes already have few pixels above 0.15
+saturation), and the one pair where it changed a lot,
+x1d-II-sample-09, got worse (22.00 -> 27.23). The ensemble just lands
+between white_patch (15.80) and shades_of_gray (14.04) at 14.33 - the
+failure modes don't cancel, they just average out. Plain
+shades_of_gray (p=6) alone remains the best option, so **no parameter
+or algorithm change** - `estimate_wb_white_patch`/
+`estimate_wb_shades_of_gray` are left as-is.
+
+## Is noise the cause of the high ΔE00? - No (2026-08)
+
+Measured why the output looks excessively noisy, and how much that noise
+actually contributes to the ΔE00 (14-16) measured above.
+
+**Cause of the noise**: shades_of_gray divides each channel by a
+different divisor (= a different gain per channel). Comparing the
+standard deviation in the same shadow region (camera_wb's bottom 5-30th
+luma percentile, the identical mask applied to all three variants) shows
+the gain amplifies R by 1.4x, G by 1.9x, B by 1.0x relative to camera_wb
+on x1d-II-sample-09.jpg.3FR - a basic signal-processing fact: **a
+channel's gain proportionally amplifies that channel's own sensor
+noise**. `raw_to_prophoto_linear` applies pure division (gain) with no
+noise-suppression step at all (a real camera ISP/Phocus applies WB gain
+and noise reduction together), so this amplification shows through
+directly.
+
+**Is noise the main driver of the ΔE00 gap?** Checked in two stages.
+
+1. **Single pair** (x1d-II-sample-09, shades_of_gray's worst case at ΔE00
+   =22.00): Gaussian-blur both the camera_wb and shades_of_gray images
+   (removes noise while preserving color/structure) and recompute ΔE00.
+   No blur 22.01 -> 5px 21.96 -> 15px 21.88 -> 31px 21.81 -> 61px (heavy)
+   21.76 - even wiping out essentially all the noise only drops it 1.1%.
+2. **All 74 pairs** (13 official + 61 local-contributed, via
+   `tools/calibrate.py`'s `collect_pairs()` + `collect_local_pairs()` -
+   no jpeg target is used here so the EXIF contamination filter is
+   irrelevant), comparing the full per-pixel ΔE00 distribution before/after
+   a 61px blur (camera_wb vs shades_of_gray):
+
+   | | mean | median | p90 | p99 | max | % pixels ΔE00>20 |
+   |---|---|---|---|---|---|---|
+   | No blur | 11.37 | 11.29 | 15.93 | 19.28 | 26.50 | 16.74% |
+   | 61px blur | 11.77 | 11.66 | 15.70 | 18.38 | 19.78 | 17.35% |
+
+   Per-file mean ΔE00 change: mean **-3.90%** (i.e. blur makes it
+   slightly *worse* on average), median -3.32%, range -13.92% to +2.35% -
+   73 of 74 files stayed flat or got worse; only 1 improved.
+
+**Conclusion**: on both the single pair and the much larger 74-pair
+sample, blurring away the noise does not lower mean/median ΔE00 (on the
+74-pair sample it makes the mean slightly worse on average) - **the
+"noise causes the high ΔE00" hypothesis is rejected**. p99/max do drop
+noticeably with blur (19.28 -> 18.38, 26.50 -> 19.78) - a handful of
+extreme noisy pixels are real, but the bulk of the error at the mean
+level is pure systematic color-cast (the "global neutral-assumption
+breakdown" from the section above), not noise. The noise amplification
+itself is a real, separate image-quality issue worth noting, but it's
+unrelated to lowering these algorithms' ΔE00. Reproduce: both scripts are
+one-off (not in the repo), method exactly as described in the tables
+above.

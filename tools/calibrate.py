@@ -2,9 +2,10 @@
 핫셀블라드 raw+jpeg 페어 기반 캘리브레이션 스크립트 모음 - CLI로 모드를
 골라 실행한다.
 
-  python3 -m tools.calibrate grid_search   # apply_hncs 파라미터 그리드서치 (원래 calibrate_from_raw.py, v10/v11)
-  python3 -m tools.calibrate learn_curve   # 파라메트릭 가정 없이 LUT 직접 학습 (원래 learn_tone_curve.py, v12)
-  python3 -m tools.calibrate regularize    # 학습 LUT 정규화 + leave-one-out 교차검증 (원래 regularized_lut_loocv.py, 음성 결과)
+  python3 -m tools.calibrate grid_search       # apply_hncs 파라미터 그리드서치 (원래 calibrate_from_raw.py, v10/v11)
+  python3 -m tools.calibrate grid_search_loo   # 위 그리드서치 결과를 leave-one-out으로 과적합 검증 (2026-08)
+  python3 -m tools.calibrate learn_curve       # 파라메트릭 가정 없이 LUT 직접 학습 (원래 learn_tone_curve.py, v12)
+  python3 -m tools.calibrate regularize        # 학습 LUT 정규화 + leave-one-out 교차검증 (원래 regularized_lut_loocv.py, 음성 결과)
 
 raw_url+jpeg_url이 둘 다 있는 CSV 행을 rawpy로 중립 렌더링해서 "그레이딩
 전" 베이스라인으로 쓰고, 같은 행의 공식 JPEG을 타깃으로 삼는 진짜 전/후
@@ -147,29 +148,32 @@ def gray_stats(img):
 # grid_search: apply_hncs 파라미터 그리드서치 (v10/v11)
 # ============================================================
 def run_grid_search():
-    pairs = collect_pairs()
+    # 2026-08: 원래 공식 13쌍(collect_pairs())만 썼던 걸 learn_curve(v12)와
+    # 같은 확장 풀(_resolve_pairs() - 편집 오염 9쌍 제외 공식 4 + 로컬
+    # 기여 61 = 65쌍)로 넓혔다 - v11이 더 많은/다양한 데이터에서도 최적
+    # 파라미터가 안정적인지, RMSE가 어떻게 나오는지 보기 위함.
+    pairs = _resolve_pairs()
     print(f"raw+jpeg 페어 후보: {len(pairs)}개")
 
     dataset = []
     for r in pairs:
-        raw_url = r['raw_url'].strip()
-        jpeg_url = r['jpeg_url'].strip()
-        ext = os.path.splitext(raw_url)[1]
-        raw_path = os.path.join(CACHE_DIR, r['filename'] + ext)
-        jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
-
-        print(f"[{r['filename']}] raw 다운로드중...")
-        if not download(raw_url, raw_path):
+        raw_path = r['raw_path']
+        jpeg_path = r['jpeg_path']
+        if not (os.path.exists(raw_path) and os.path.exists(jpeg_path)):
             continue
+
+        print(f"[{r['filename']}] 처리중...")
         try:
             neutral = load_neutral_render(raw_path)
         except Exception as e:
             print(f"  raw 디코드 실패: {e}")
             continue
 
-        target_img = load_jpeg(jpeg_url, jpeg_path)
-        if target_img is None:
+        target_img = cv2.imread(jpeg_path)
+        if target_img is None or not is_image_array_usable(target_img):
+            print(f"  jpeg 로드 실패")
             continue
+        target_img = _resize_to_max_dim(target_img, 2000)
 
         target_stats = gray_stats(target_img)
         shadow_valid = target_stats['dark_pct'] > 5
@@ -227,6 +231,111 @@ def run_grid_search():
         best_err += pair_error(d, new)
     print(f"\n기존 파라미터 RMSE={(cur_err / len(dataset)) ** 0.5:.2f}")
     print(f"신규 파라미터 RMSE={(best_err / len(dataset)) ** 0.5:.2f}")
+
+
+# ============================================================
+# grid_search_loo: run_grid_search()의 in-sample RMSE는 과적합을 못
+# 걸러낸다 - v11 자체가 과거(v10->v11, 그림자유효 8장 기준) shoulder_start
+# ~0.5가 RMSE를 더 낮췄지만 표본이 작아 과적합 위험으로 채택 안 한 전례가
+# 있다(hasselblad.py 모듈 docstring 참고). 65쌍으로 늘어난 지금도 같은
+# 파라미터가 다시 나왔으므로, 채택 전에 leave-one-out으로 정말 일반화
+# 되는지 검증한다.
+# ============================================================
+def run_grid_search_loo():
+    pairs = _resolve_pairs()
+    print(f"raw+jpeg 페어 후보: {len(pairs)}개")
+
+    dataset = []
+    for r in pairs:
+        raw_path = r['raw_path']
+        jpeg_path = r['jpeg_path']
+        if not (os.path.exists(raw_path) and os.path.exists(jpeg_path)):
+            continue
+        print(f"[{r['filename']}] 처리중...")
+        try:
+            neutral = load_neutral_render(raw_path)
+        except Exception as e:
+            print(f"  raw 디코드 실패: {e}")
+            continue
+        target_img = cv2.imread(jpeg_path)
+        if target_img is None or not is_image_array_usable(target_img):
+            print(f"  jpeg 로드 실패")
+            continue
+        target_img = _resize_to_max_dim(target_img, 2000)
+        target_stats = gray_stats(target_img)
+        dataset.append(dict(name=r['filename'], neutral=neutral, target=target_stats,
+                             shadow_valid=target_stats['dark_pct'] > 5))
+
+    n = len(dataset)
+    print(f"\n사용 가능한 페어: {n}개 (그림자유효 {sum(d['shadow_valid'] for d in dataset)}개)")
+    if not dataset:
+        return
+
+    def pair_error(d, s):
+        err = (s['w995'] - d['target']['w995']) ** 2
+        if d['shadow_valid']:
+            err += (s['b2'] - d['target']['b2']) ** 2
+        return err
+
+    combos = _grid_search_combos()
+    print(f"\n{len(combos)}개 파라미터 조합 x {n}쌍 - 오차 행렬 계산중...")
+    sqerr = np.zeros((len(combos), n), dtype=np.float64)
+    for ci, (eg, tl, ss, wp) in enumerate(combos):
+        for pi, d in enumerate(dataset):
+            graded = apply_hncs(d['neutral'], toe_lift=tl, shoulder_start=ss,
+                                 white_point=wp, exposure_gamma=eg)
+            sqerr[ci, pi] = pair_error(d, gray_stats(graded))
+
+    # 기존 apply_hncs() 기본값 - 이 65쌍으로 피팅된 적 없는 값이라
+    # 폴드마다 다시 구할 필요 없이 그대로가 이미 out-of-sample 기준선이다.
+    baseline_sqerr = np.array([pair_error(d, gray_stats(apply_hncs(d['neutral'])))
+                                for d in dataset])
+
+    print(f"\n{'페어':32s} {'기존(out-of-sample)':>10s} {'LOO 최적화':>10s}  최적 조합")
+    paired = []
+    chosen_combo_counts = {}
+    for i, d in enumerate(dataset):
+        best_ci = _fold_best_combo(sqerr, i)
+        loo_e, base_e = sqerr[best_ci, i], baseline_sqerr[i]
+        paired.append((d['name'], base_e ** 0.5, loo_e ** 0.5))
+        chosen_combo_counts[combos[best_ci]] = chosen_combo_counts.get(combos[best_ci], 0) + 1
+        print(f"  {d['name']:30s} {base_e ** 0.5:10.2f} {loo_e ** 0.5:10.2f}  {combos[best_ci]}")
+
+    summary = summarize(paired)
+    print("\n=== 기존 파라미터(out-of-sample) vs 그리드서치 LOO ===")
+    print_summary(summary, label_a="기존", label_b="LOO최적화")
+
+    print(f"\n=== 폴드별로 선택된 조합 빈도 (한 조합에 쏠릴수록 과적합이 아니라는 근거) ===")
+    for combo, cnt in sorted(chosen_combo_counts.items(), key=lambda kv: -kv[1]):
+        print(f"  {cnt:3d}/{n}  exposure_gamma={combo[0]}, toe_lift={combo[1]}, "
+              f"shoulder_start={combo[2]}, white_point={combo[3]}")
+
+    return summary
+
+
+_GS_EXPOSURE_GAMMAS = (0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3)
+_GS_TOE_LIFTS = (0.0, 0.005, 0.02)
+_GS_SHOULDER_STARTS = (0.50, 0.58, 0.66, 0.70, 0.74, 0.78, 0.82)
+_GS_WHITE_POINTS = (0.90, 0.95, 1.0)
+
+
+def _grid_search_combos():
+    return [(eg, tl, ss, wp)
+            for eg in _GS_EXPOSURE_GAMMAS
+            for tl in _GS_TOE_LIFTS
+            for ss in _GS_SHOULDER_STARTS
+            for wp in _GS_WHITE_POINTS]
+
+
+def _fold_best_combo(sqerr_matrix, held_out_idx):
+    """sqerr_matrix: (조합 수, 페어 수) 배열. held_out_idx를 뺀 나머지의
+    평균오차가 최소인 조합의 인덱스를 리턴 - 폴드마다 (조합 수 x 페어수-1)
+    을 통째로 재계산하는 대신, 전체 합계에서 held-out 열 하나만 빼는
+    O(조합 수) 뺄셈으로 처리(TestSubtractionLooMatchesRecompute와 같은
+    패턴)."""
+    n = sqerr_matrix.shape[1]
+    train_mean = (sqerr_matrix.sum(axis=1) - sqerr_matrix[:, held_out_idx]) / (n - 1)
+    return int(np.argmin(train_mean))
 
 
 # ============================================================
@@ -621,9 +730,11 @@ if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
     if mode == "grid_search":
         run_grid_search()
+    elif mode == "grid_search_loo":
+        run_grid_search_loo()
     elif mode == "learn_curve":
         run_learn_curve()
     elif mode == "regularize":
         run_regularize()
     else:
-        print("usage: python3 -m tools.calibrate [grid_search|learn_curve|regularize]")
+        print("usage: python3 -m tools.calibrate [grid_search|grid_search_loo|learn_curve|regularize]")

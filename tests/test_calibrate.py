@@ -140,6 +140,40 @@ class TestSubtractionLooMatchesRecompute(unittest.TestCase):
             np.testing.assert_array_equal(lut_sub, lut_full)
 
 
+class TestFoldBestComboMatchesRecompute(unittest.TestCase):
+    """grid_search_loo()의 _fold_best_combo()가 쓰는 뺄셈 트릭(전체 합계에서
+    held-out 열 하나만 빼기)이 매 폴드 재계산(held-out 뺀 나머지로 처음부터
+    평균)과 동일한 폴드별 최적 조합을 고르는지 - TestSubtractionLooMatchesRecompute
+    와 같은 성격의 검증."""
+
+    def test_subtraction_equals_full_recompute(self):
+        from tools.calibrate import _fold_best_combo
+
+        rng = np.random.default_rng(7)
+        n_combos, n_pairs = 12, 6
+        sqerr = rng.random((n_combos, n_pairs))
+
+        for held_out in range(n_pairs):
+            got = _fold_best_combo(sqerr, held_out)
+
+            train_idx = [j for j in range(n_pairs) if j != held_out]
+            train_mean_full = sqerr[:, train_idx].mean(axis=1)
+            expected = int(np.argmin(train_mean_full))
+
+            self.assertEqual(got, expected)
+
+    def test_picks_the_combo_with_lower_error_on_remaining_pairs(self):
+        from tools.calibrate import _fold_best_combo
+
+        # combo 0이 페어 1에서만 나쁘고 나머지에선 좋음 - held_out=1을 빼면
+        # combo 0이 이겨야 한다.
+        sqerr = np.array([
+            [1.0, 100.0, 1.0],  # combo 0
+            [5.0, 5.0, 5.0],    # combo 1
+        ])
+        self.assertEqual(_fold_best_combo(sqerr, 1), 0)
+
+
 class TestSignTestP(unittest.TestCase):
     def test_no_pairs_is_p_one(self):
         from tools.calibrate import _sign_test_p
