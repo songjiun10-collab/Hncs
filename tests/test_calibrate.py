@@ -1,12 +1,36 @@
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.calibrate import _generation_for
+from tools.calibrate import _CONTAMINATED_OFFICIAL_PAIRS, _generation_for, _resolve_pairs
+
+
+class TestResolvePairsExcludesContaminated(unittest.TestCase):
+    """2026-08 EXIF Software 태그 재검증(docs/measurements.md)에서 확인된
+    편집 오염 9쌍이 _resolve_pairs()의 반환값에서 실제로 빠지는지 -
+    네트워크(download)와 로컬 기여 데이터셋(collect_local_pairs)은 CI에
+    없으므로 모킹한다(tests/CLAUDE.md)."""
+
+    @patch("tools.calibrate.collect_local_pairs", return_value=[])
+    @patch("tools.calibrate.download", return_value=True)
+    def test_contaminated_official_pairs_excluded(self, mock_download, mock_local):
+        pairs = _resolve_pairs()
+        names = {p["filename"] for p in pairs}
+        self.assertTrue(names.isdisjoint(_CONTAMINATED_OFFICIAL_PAIRS))
+
+    @patch("tools.calibrate.collect_local_pairs", return_value=[])
+    @patch("tools.calibrate.download", return_value=True)
+    def test_exactly_four_clean_official_pairs_remain(self, mock_download, mock_local):
+        pairs = _resolve_pairs()
+        self.assertEqual(len(pairs), 4)
+        self.assertEqual({p["filename"] for p in pairs},
+                          {"00378.jpg", "02709.jpg", "x1d-ii-xcd45p-01.jpg",
+                           "x1d-ii-xcd45p-02.jpg"})
 
 
 class TestGenerationFor(unittest.TestCase):

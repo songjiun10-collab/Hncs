@@ -278,6 +278,28 @@ pairs = 74 total. RMSE broken down by generation:
 | X1D | 1 | 8.25 | 32.45 |
 | **Overall** | **74** | **19.94** | **22.20** |
 
+**Re-check (2026-08, re-run after excluding 9 edit-contaminated pairs
+from the official 13)** - the 9 edit-contaminated pairs confirmed in the
+correction under "First check against a real Phocus render" above
+(irrelevant for the local 61 - `verify_contributed_pairs` already
+filtered on the same criterion, rejecting 43 of 104 candidates for
+exactly this reason, see "Methodology" above) are now excluded in
+`tools/calibrate.py`'s `_resolve_pairs()` (the `_CONTAMINATED_OFFICIAL_PAIRS`
+constant). Re-ran `learn_curve` on the resulting 65 pairs (4 clean
+official + 61 local):
+
+```
+Parametric (v11) RMSE=19.11
+Learned LUT RMSE=21.85
+```
+
+74 pairs (contaminated included) 19.94 vs 22.20 → 65 pairs
+(contaminated excluded) 19.11 vs 21.85 - **the conclusion's direction is
+unchanged** (v11 still beats v12), and both improve slightly (read as:
+comparing against a cleaner ground truth improves the apparent fit for
+either model). Didn't re-run the per-generation breakdown this time
+(reproduce with the same command above).
+
 **Conclusion - the cross-generation pooling premise is rejected by measurement.** On the
 original 10-pair, X1D-only sample, `apply_hncs_learned` (v12) beat the parametric curve (RMSE
 15.4 vs 23.3, recorded above). Once real X2D/CFV data is added, that reverses - on CFV
