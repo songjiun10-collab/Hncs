@@ -39,3 +39,4 @@ datasets/hasselblad/contributed/*/jpeg/
 datasets/hasselblad/contributed/*/phocus_tiff/
 datasets/hasselblad/contributed/*/chart/
 eval_reports/
+models/upscale/
