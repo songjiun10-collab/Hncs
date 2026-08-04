@@ -12,6 +12,8 @@ DaVinci Resolve/Nuke 등이 직접 읽음 - 클리핑 없이 Log/HDR 값을 그�
   python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space S-Log3 --exposure 1.5
   python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space V-Log --auto-expose-mode highlight_safe
   python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space V-Log --auto-expose-mode matrix
+  python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space S-Log3 --auto-wb-mode white_patch
+  python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space S-Log3 --auto-wb-mode shades_of_gray
 """
 import argparse
 import os
@@ -23,8 +25,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.log_pipeline import (
     LOG_SPACES, raw_to_prophoto_linear, apply_exposure, auto_exposure_average,
-    auto_exposure_highlight_safe, auto_exposure_matrix, to_log_space, apply_cube_lut,
-    to_16bit_bgr, write_exr,
+    auto_exposure_highlight_safe, auto_exposure_matrix, estimate_wb_shades_of_gray,
+    estimate_wb_white_patch, to_log_space, apply_cube_lut, to_16bit_bgr, write_exr,
 )
 
 _AUTO_EXPOSE_MODES = {
@@ -32,6 +34,13 @@ _AUTO_EXPOSE_MODES = {
     "highlight_safe": lambda linear, args: auto_exposure_highlight_safe(
         linear, percentile=args.highlight_percentile, target=args.highlight_target),
     "matrix": lambda linear, args: auto_exposure_matrix(linear),
+}
+
+_AUTO_WB_MODES = {
+    "white_patch": lambda linear, args: estimate_wb_white_patch(
+        linear, percentile=args.wb_percentile),
+    "shades_of_gray": lambda linear, args: estimate_wb_shades_of_gray(
+        linear, p=args.wb_minkowski_p),
 }
 
 
@@ -55,6 +64,17 @@ def main():
                          help="highlight_safe 모드에서 지킬 백분위수 (기본 99.5)")
     parser.add_argument("--highlight-target", type=float, default=0.9,
                          help="highlight_safe 모드에서 그 백분위수가 위치할 linear 값 (기본 0.9)")
+    parser.add_argument("--auto-wb-mode", choices=sorted(_AUTO_WB_MODES), default=None,
+                         help="자동 화이트밸런스 모드 - white_patch(채널별 최고밝기를 흰색으로) / "
+                              "shades_of_gray(Gray World~White Patch를 잇는 민코프스키 p-노름 "
+                              "일반화, Finlayson&Trezzi 2004). 지정하면 카메라 WB 없이 디코드한 "
+                              "뒤 이 알고리즘으로 화이트밸런스를 대신 추정한다(카메라 WB와 이중 "
+                              "적용 방지) - 자동노출/수동노출보다 먼저 적용")
+    parser.add_argument("--wb-percentile", type=float, default=99.9,
+                         help="white_patch 모드에서 '흰 패치'로 볼 채널별 백분위수 (기본 99.9)")
+    parser.add_argument("--wb-minkowski-p", type=float, default=6.0,
+                         help="shades_of_gray 모드의 민코프스키 노름 차수 (기본 6, "
+                              "Finlayson&Trezzi 논문 권장값)")
     parser.add_argument("--exr-compression", default="zip",
                          help=".exr 출력 압축 방식 (기본 zip) - "
                               "none/rle/zips/zip/piz/pxr24/b44/b44a/dwaa/dwab")
@@ -68,7 +88,11 @@ def main():
     mode = args.auto_expose_mode or ("average" if args.auto_expose else None)
 
     print(f"RAW 디코드 중... ({args.input})")
-    linear = raw_to_prophoto_linear(args.input)
+    linear = raw_to_prophoto_linear(args.input, use_camera_wb=not args.auto_wb_mode)
+
+    if args.auto_wb_mode:
+        print(f"자동 화이트밸런스 추정 중... (auto_wb_mode={args.auto_wb_mode})")
+        linear = _AUTO_WB_MODES[args.auto_wb_mode](linear, args)
 
     if mode:
         linear = _AUTO_EXPOSE_MODES[mode](linear, args)
