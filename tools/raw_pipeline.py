@@ -69,7 +69,10 @@ def main():
                               "shades_of_gray(Gray World~White Patch를 잇는 민코프스키 p-노름 "
                               "일반화, Finlayson&Trezzi 2004). 지정하면 카메라 WB 없이 디코드한 "
                               "뒤 이 알고리즘으로 화이트밸런스를 대신 추정한다(카메라 WB와 이중 "
-                              "적용 방지) - 자동노출/수동노출보다 먼저 적용")
+                              "적용 방지) - 자동노출/수동노출보다 먼저 적용. 실측(2026-08, "
+                              "docs/measurements.md): raw_calib_cache 13장 기준 카메라 실제 "
+                              "화이트밸런스 대비 평균 ΔE00 14~16(명백히 다른 색감) - 실사용 "
+                              "권장 안 함, 조명정보 없는 창작 실험용")
     parser.add_argument("--wb-percentile", type=float, default=99.9,
                          help="white_patch 모드에서 '흰 패치'로 볼 채널별 백분위수 (기본 99.9)")
     parser.add_argument("--wb-minkowski-p", type=float, default=6.0,
