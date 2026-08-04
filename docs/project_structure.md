@@ -42,6 +42,7 @@ docs/         상세 문서 (이 디렉토리)
 | `core/photo_signature.py` | "재미용" 예측기의 입력 전처리 - 임의의 새 사진에서 tone/color/gamut 시그니처 필드를 계산(`compute_signature`). texture는 브랜드별 계산 공식 유실로 제외. 원본 계산 스크립트를 복원한 게 아니라 methodology 필드 기반 근사 재구현(설계 근거: `docs/superpowers/specs/2026-07-25-brand-predict-fun-design.md`) |
 | `core/lens_correction.py` | 렌즈 왜곡 보정 - lensfunpy(lensfun DB, pip 설치만으로 카메라 948종/렌즈 1304종 번들) 기반. EXIF의 Make/Model/LensModel/FocalLength/FNumber로 프로파일을 찾아 지오메트릭 왜곡만 보정한다(비네팅/색수차는 범위 밖 - `ModifyFlags.DISTORTION`). 순수 기하 연산이라 색 파이프라인(`core/curve.py` 등)과 독립 |
 | `core/dcp_export.py` | Adobe DCP(카메라 프로필) 쓰기 - 카메라 네이티브 색매트릭스를 Lightroom Classic/Camera Raw가 읽는 `.dcp`로 내보낸다(`write_dcp`/`read_dcp`). DCP는 TIFF 구조라 표준 `struct`로 직접 쓴다(새 의존성 0). `.cube`(룩)와 달리 RAW 디모자이크 직후 색변환 단계용 색채측정 보정. Lightroom 실제 렌더링은 미검증(구조·수치 검증만) |
+| `core/upscale.py` | Real-ESRGAN(RRDBNet) AI 업스케일, PyTorch/ONNX Runtime 둘 다 지원(`upscale()`) - `realesrgan`/`basicsr` 공식 pip 패키지는 의존 안 함(`basicsr` 1.4.2가 최신 torchvision과 깨짐, 2026-08 실측 확인), RRDBNet 아키텍처만 그 소스에서 직접 옮겨왔다. 가중치는 xinntao 공식 GitHub Release 1차 소스(`models/upscale/`, git 추적 안 함, 최초 호출 시 자동 다운로드); ONNX 엔진은 그 가중치를 `torch.onnx.export()`로 최초 1회만 변환해서 캐시. 100MP급 원본 대응을 위한 타일 단위 추론 포함 |
 | `datasets/hasselblad/hasselblad_sample_images.csv` | 핫셀블라드 공식 샘플 메타데이터 (카메라/렌즈/작가/jpeg_url/raw_url) |
 | `datasets/hasselblad/texture_signature_recomputed.json` | 기존 `texture_signature.json`은 파일명이 `orig_N.jpg`뿐이라 CSV 행 매칭이 불확실(순번 추정, 78개 검증 중 3개 불일치) - CSV의 jpeg_url로 원본을 처음부터 다시 받아 파일명이 정확히 일치하는 새 세트로 재구축(n=123, noise off-by-one 수정 반영). 기존 파일은 원본 기록 보존 목적으로 그대로 둠 |
 | `datasets/fuji/fuji_sample_pages.csv` | mirrorlesscomparison.com 후지 갤러리의 RAW/JPEG Google Drive 링크 |
@@ -64,6 +65,8 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/verify_contributed_pairs.py` | 기여 데이터셋 자동 검증 CLI(manifest-EXIF 대조, raw/jpeg 동시촬영 확인, 편집 오염 검사) - 규격은 `datasets/hasselblad/contributed/README.md` |
 | `tools/highlight_rolloff_signal.py` | 브랜드별 shoulder_start/clahe_clip 추정 가능성 탐색(결론: 근거 부족, 기본값 유지 - `core/engine.py` docstring 참고) |
 | `tools/lens_correction.py` | 렌즈 왜곡 보정 CLI - EXIF(Make/Model/LensModel/FocalLength/FNumber)로 lensfun DB를 매치해 지오메트릭 왜곡만 보정, RAW/일반 이미지 둘 다 입력 - `python3 -m tools.lens_correction input.RAF output.jpg [--lens NAME --focal-length N --aperture N]` |
+| `tools/upscale.py` | AI 업스케일 CLI(`core/upscale.py`) - `python3 -m tools.upscale input.jpg output.png [--scale 2\|4] [--engine onnx\|pytorch] [--tile-size N] [--tile-pad N]` |
+| `gui/tabs/upscale_tab.py` | GUI "AI 업스케일" 탭 - `tools.upscale`을 subprocess로 실행(다른 subprocess 탭과 동일하게 `_cli_runner.CliRunner` 공유) |
 | `tools/iso_noise.py` | 핫셀블라드 공식 샘플의 ISO별 노이즈 수준 분석 - 캐시본은 다운로드 단계 리사이즈에서 EXIF가 날아간 상태라 ISO를 CSV/파일명으로 역추적한다 |
 | `tools/analyze_pixel_errors.py` | hybrid_engine v1.2가 "어느 픽셀에서" 틀리는지 진단 - 13쌍의 픽셀별 ΔE00을 L(밝기)/hue(색상각) 구간별로 pooling(`evaluation/fidelity.py`의 페어 단위 요약 뒤를 파고드는 용도) |
 | `tools/analyze_colorchecker_matrix.py` | [GitHub 이슈 #4 지적 4번] 기여받은 X2D II ColorChecker 차트 10장으로 raw 베이스라인의 실제 색채측정 오차를 재고 차트 최소자승 매트릭스의 개선폭을 확인(ΔE00 7.58 -> 2.78, leave-one-image-out 교차검증) |

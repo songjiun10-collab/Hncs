@@ -8,3 +8,6 @@ lensfunpy
 OpenEXR
 imageio-ffmpeg
 Pillow
+torch
+onnxruntime
+onnx

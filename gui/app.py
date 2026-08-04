@@ -2,7 +2,9 @@
 import tkinter as tk
 from tkinter import ttk
 
-from gui.tabs import brand_preview, hybrid_convert, lens_correction_tab, raw_pipeline_tab
+from gui.tabs import (
+    brand_preview, hybrid_convert, lens_correction_tab, raw_pipeline_tab, upscale_tab,
+)
 from gui.theme import apply_dark_theme
 
 TABS = [
@@ -10,6 +12,7 @@ TABS = [
     ("hybrid_engine 변환", hybrid_convert.build_tab),
     ("RAW→Log", raw_pipeline_tab.build_tab),
     ("렌즈 보정", lens_correction_tab.build_tab),
+    ("AI 업스케일", upscale_tab.build_tab),
 ]
 
 

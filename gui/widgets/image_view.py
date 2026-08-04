@@ -27,6 +27,13 @@ def image_and_raw_filetypes():
             ("모든 파일", "*.*")]
 
 
+def image_filetypes():
+    """파일선택 다이얼로그용 filetypes - 일반 이미지만(RAW 미지원 탭용,
+    예: tools.upscale는 cv2.imread만 쓰고 RAW 디코드를 안 함)."""
+    return [("이미지", " ".join(f"*{ext}" for ext in sorted(_IMAGE_EXTS))),
+            ("모든 파일", "*.*")]
+
+
 def prepare_for_display(img, max_width=480):
     """np.ndarray(BGR 3채널, 그레이스케일 2채널, 8/16비트 전부 허용)를
     화면 표시용 8비트 RGB PIL.Image로 변환한다. 16비트는 8비트로
