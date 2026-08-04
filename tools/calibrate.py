@@ -31,6 +31,18 @@ from core.validation import is_image_array_usable
 CACHE_DIR = "raw_calib_cache"
 CSV_PATH = "datasets/hasselblad/hasselblad_sample_images.csv"
 
+# 2026-08 EXIF Software 태그 재검증(docs/measurements.md "정정" 절)에서
+# 확인된, target.jpg가 Adobe Photoshop/Lightroom Classic으로 편집된
+# 공식 페어 9개 - _resolve_pairs()가 학습/평가에서 제외한다. 원본
+# raw_calib_cache/*.3FR·*.fff 파일 자체는 그대로 둠(캐시 삭제 아님),
+# 이 목록만 필터링 기준으로 쓴다.
+_CONTAMINATED_OFFICIAL_PAIRS = {
+    "B0000994.jpg", "B0001395.jpg",
+    "x1d-II-sample-01.jpg", "x1d-II-sample-02.jpg",
+    "x1d-II-sample-06.jpg", "x1d-II-sample-09.jpg",
+    "x1d-xcd45-01.jpg", "x1d-xcd45-03.jpg", "x1d-xcd45-04.jpg",
+}
+
 _GENERATION_MAP = {
     "Hasselblad X1D II 50C": "X1D II 50C",
     "Hasselblad X1D": "X1D",
@@ -227,7 +239,11 @@ def _resolve_pairs():
     한 버킷 "공식 샘플(X1D 계열)", 로컬은 카메라별)."""
     os.makedirs(CACHE_DIR, exist_ok=True)
     resolved = []
+    n_excluded = 0
     for r in collect_pairs():
+        if r['filename'] in _CONTAMINATED_OFFICIAL_PAIRS:
+            n_excluded += 1
+            continue
         ext = os.path.splitext(r['raw_url'])[1]
         raw_path = os.path.join(CACHE_DIR, r['filename'] + ext)
         jpeg_path = os.path.join(CACHE_DIR, r['filename'] + '.target.jpg')
@@ -237,7 +253,8 @@ def _resolve_pairs():
     n_official = len(resolved)
     local_pairs = collect_local_pairs()
     resolved.extend(local_pairs)
-    print(f"공식 샘플 페어 {n_official}개 + 로컬 기여 페어 {len(local_pairs)}개 = 총 {len(resolved)}개")
+    print(f"공식 샘플 페어 {n_official}개(편집 오염 {n_excluded}개 제외) + "
+          f"로컬 기여 페어 {len(local_pairs)}개 = 총 {len(resolved)}개")
     return resolved
 
 
