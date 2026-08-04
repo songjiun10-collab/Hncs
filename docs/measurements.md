@@ -396,6 +396,81 @@ shoulder_start 0.78→0.5, white_point 1.0 그대로) - 자세한 근거는 그
 재현: `python3 -m tools.calibrate grid_search`(in-sample) /
 `python3 -m tools.calibrate grid_search_loo`(LOO 검증).
 
+### 독립 검증 - ΔE00(실사진 + ColorChecker 차트)로 재확인 (2026-08)
+
+위 33.4%는 `grid_search_loo`가 쓰는 b2/w995 percentile 오차(그리드서치
+목적함수)라 이 프로젝트 표준 지표인 ΔE00(CIEDE2000)은 아니다. 신구
+파라미터를 `apply_hncs()`에 직접 통과시켜 ΔE00으로 두 번 더 쟀다.
+
+**1) 65쌍 실사진 target.jpg 대비** (`hybrid_engine.utils.evaluate`와 같은
+방식 - sRGB cctf_decoding 후 Lab, CIEDE2000):
+
+| | 평균 ΔE00 |
+|---|---|
+| 기존 파라미터 | 7.457 |
+| 신규 파라미터 | 6.861 |
+| 개선폭 | 8.0% |
+
+53승12패, 부호검정 p<0.001, 부트스트랩 95% CI [+3.9%,+12.2%], drop-one
+7.6~8.8%.
+
+**2) ColorChecker Classic 차트** (kmichels-x2dii-2026-07, X2D II 100C raw
+9장, GitHub 이슈 #4 제보 - 장면 내용/구도 편차 없이 순수 톤커브 영향만
+격리). `hybrid_engine.core.chart_baseline`으로 24패치 자동 검출(neutral
+렌더에서 한 번만 검출해 old/new 양쪽에 같은 좌표 재사용 - 검출 노이즈가
+비교를 흔들지 않게), 공식 분광측정 참조값과 비교:
+
+| | 평균 ΔE00(24패치) |
+|---|---|
+| 기존 파라미터 | 7.927 |
+| 신규 파라미터 | 6.563 |
+| 개선폭 | 17.2% |
+
+9전9승, 부호검정 p=0.004, 부트스트랩 95% CI [+12.6%,+21.4%], drop-one
+16.1~18.0%.
+
+**패치별 분해(차트, 9장 pooled)** - 균일한 개선이 아니다:
+
+| 패치 | 기존 | 신규 |
+|---|---|---|
+| dark skin | 7.778 | 5.192 |
+| light skin | 7.646 | 6.224 |
+| blue sky | 7.162 | 5.565 |
+| foliage | 6.358 | 4.040 |
+| blue flower | 8.968 | 8.331 |
+| bluish green | 7.994 | 8.517 |
+| orange | 5.677 | 2.618 |
+| purplish blue | 8.143 | 5.065 |
+| moderate red | 10.501 | 7.301 |
+| purple | 6.908 | 5.222 |
+| yellow green | 4.609 | 3.712 |
+| orange yellow | 2.880 | 3.725 |
+| blue | 3.267 | 4.032 |
+| green | 9.564 | 4.812 |
+| red | 9.695 | 6.614 |
+| yellow | 3.493 | 3.554 |
+| magenta | 9.978 | 7.516 |
+| cyan | 14.319 | 9.162 |
+| white 9.5 (.05 D) | 11.586 | 10.796 |
+| neutral 8 (.23 D) | 11.115 | 11.742 |
+| neutral 6.5 (.44 D) | 10.197 | 11.758 |
+| neutral 5 (.70 D) | 9.311 | 8.491 |
+| neutral 3.5 (1.05 D) | 8.133 | 7.088 |
+| **black 2 (1.5 D)** | **4.964** | **6.425** |
+
+**결론**: 세 지표(33.4%/8.0%/17.2%) 전부 같은 방향이지만 스케일이 크게
+다르다 - 그리드서치 목적함수가 실제 지각적 개선폭을 과대추정한다는 뜻.
+대다수 패치(dark skin/foliage/orange/green/cyan 등)는 크게 개선됐지만
+**가장 어두운 패치(black 2)는 오히려 악화**됐고, neutral 6.5/8·bluish
+green·blue·orange yellow도 소폭 악화 - exposure_gamma 0.7→0.8(중간톤
+리프트 감소)이 일부 어둡거나 무채색에 가까운 패치를 반대 방향으로 밀어낸
+것으로 보인다. 채택 결정 자체는 유지(평균/폴드 단위로는 일관되게,
+통계적으로 이김) - 다만 "모든 톤/색상에서 고르게 나아졌다"는 아니다.
+
+재현: 차트 raw는 `datasets/hasselblad/contributed/kmichels-x2dii-2026-07/
+manifest.csv`의 download_url(Google Drive, gdown)로 받음 - 두 스크립트
+모두 1회성(리포에는 없음).
+
 ## Phocus 실제 렌더 대조 (2026-08, 최초)
 
 지금까지 `apply_hncs()`의 정답지는 항상 카메라 내장 JPEG(`raw_calib_cache/
