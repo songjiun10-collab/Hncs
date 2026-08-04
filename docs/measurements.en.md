@@ -771,3 +771,77 @@ itself is a real, separate image-quality issue worth noting, but it's
 unrelated to lowering these algorithms' ΔE00. Reproduce: both scripts are
 one-off (not in the repo), method exactly as described in the tables
 above.
+
+## Does splitting by generation beat pooling? (2026-08)
+
+Actually broke v11's "pool the whole X system into one curve" design (fit
+each generation separately) to see whether it does better within that
+generation. Based on 74 pairs (CFV 100C/907X 30, X2D 100C 24, X1D II 50C
+6, X1D 1, official X1D-series 4 - the last three skipped, below the
+minimum-10 sample threshold).
+
+**v11 (parametric) side - `grid_search_loo_per_generation`** (grid search
++ LOO within the generation only; baseline is the existing pooled
+defaults, never fit on this generation):
+
+| Generation | n | Existing (pooled) | Generation-only | Improvement | Sign test p | Bootstrap CI | Verdict |
+|---|---|---|---|---|---|---|---|
+| CFV 100C/907X | 30 | 6.445 | 5.665 | 12.1% | 0.036 | [-3.2%,+27.7%] | Inconclusive |
+| X2D 100C | 24 | 9.018 | 7.392 | 18.0% | 0.011 | [+1.3%,+33.2%] | B (generation-only) wins |
+
+X2D 100C's generation-only optimum is exposure_gamma=0.9 (everything else
+matches the current defaults: toe_lift=0.0, shoulder_start=0.5,
+white_point=1.0) - re-checked with real ΔE00 on just the 24 X2D 100C
+pairs (against target.jpg, CIEDE2000):
+
+| | Mean ΔE00 |
+|---|---|
+| Pooled (current defaults) | 5.341 |
+| X2D 100C-only (exposure_gamma=0.9 only) | 5.001 |
+| Improvement | 6.4% |
+
+18 wins/6 losses, sign test p=0.023, bootstrap 95% CI [+2.4%,+10.4%]
+(excludes 0), drop-one 5.8%-7.4% - smaller than the grid search's own
+metric suggested (18.0%), but a real, statistically solid win. That said,
+the only parameter difference is exposure_gamma 0.8->0.9, and shipping it
+would require camera-generation detection logic `apply_hncs()` doesn't
+have today (a real break from the design philosophy) - not adopted this
+round, recorded only.
+
+**v12 (learned LUT) side - `regularize_per_generation`** (pure empirical
+LUT, lam=0, trained via LOO within the generation only, vs the fixed
+parametric v11):
+
+| Generation | n | v11 (fixed) | v12 (generation-only LOO) | Improvement | Win/loss | Sign test p | Bootstrap CI | Verdict |
+|---|---|---|---|---|---|---|---|---|
+| CFV 100C/907X | 30 | 12.212 | 34.147 | -179.6% | v12 4W/26L | 0.000 | [-339%,-92%] | v11 wins decisively |
+| X2D 100C | 24 | 11.855 | 4.682 | +60.5% | v12 15W/9L | **0.307 (not significant)** | [+40.4%,+73.3%] | B (v12) wins (see caveat below) |
+
+**Don't take the X2D 100C result at face value**: the bootstrap CI
+excludes 0, but the sign test isn't remotely significant (p=0.307 - 15
+wins out of 24 isn't statistically distinguishable from 50/50). The
+median improvement (+1.752) being far smaller than the mean (+7.173) is
+the same signal - a handful of pairs won by a huge margin and dragged the
+mean/CI up, not a consistent edge across most pairs. `summarize()`'s
+automatic verdict only looks at the bootstrap CI, so it says "won" - but
+factoring in the sign test, this case is too weak to call a clean win.
+
+**Why CFV is so bad**: cross-referencing the manifest's ISO column shows
+CFV's 30 pairs span ISO 64-25,600 (median 1200, 20 lowlight/10 daylight),
+far wider and skewed toward high ISO than X2D 100C's 24 pairs (ISO
+64-1,600, median 64, 14 daylight/10 lowlight). v12 (lam=0) uses the
+**mean** target_L across pairs for each neutral_L bin - ISO 64 and ISO
+25,600 get very different in-camera noise reduction and tone compression,
+so folding them into one L->L mapping produces a compromise curve that
+fits neither well. High-ISO sensor noise itself also jitters each bin's
+mean (the same class of problem as the "channel gain amplifies sensor
+noise" finding earlier in this session). X2D 100C is almost entirely
+low-ISO, so this problem is far weaker there - the same mechanism running
+in opposite directions for the two generations.
+
+**Conclusion**: splitting by generation gives a different answer for each
+generation (CFV gets worse if split; X2D 100C improves, but the evidence
+is weak) - neither is clean enough to adopt right now. `apply_hncs()`
+stays as-is. Reproduce: `python3 -m tools.calibrate
+grid_search_loo_per_generation` / `regularize_per_generation`, both
+auto-skip generations under min_n=10.

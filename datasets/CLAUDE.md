@@ -5,7 +5,7 @@
 Committed: manifest CSVs, signature JSONs, analysis reports.
 Git-ignored: `raw_calib_cache*/`, `downloaded_samples*/`,
 `hasselblad/contributed/*/{raw,jpeg,phocus_tiff,chart}/`,
-`*_stats_result.csv`.
+`leica/contributed/*/{raw,jpeg,chart}/`, `*_stats_result.csv`.
 
 **A manifest committed by another session may have no images in this
 container.** Check the files exist before planning an experiment around
@@ -14,12 +14,17 @@ them — some contributed sets came from a personal library with no
 
 ## Contributed data intake
 
-`hasselblad/contributed/<set-name>/` with a `manifest.csv` matching the
-schema in that directory's `README.md`. Nothing enters analysis until
-`python3 -m tools.verify_contributed_pairs <dir>` passes: required
-columns, files present, EXIF Make/Model vs. manifest, RAW/JPEG
-`DateTimeOriginal` within 2s, and no Photoshop/Lightroom signature in the
-JPEG's EXIF Software tag.
+`<brand>/contributed/<set-name>/` (currently `hasselblad/` and `leica/`)
+with a `manifest.csv` matching the schema in
+`hasselblad/contributed/README.md` (brand-agnostic; `leica/contributed/README.md`
+points back to it and adds Leica-specific notes). Nothing enters analysis
+until `python3 -m tools.verify_contributed_pairs <dir> [--make Leica]`
+passes: required columns, files present, EXIF Make (default expects
+"Hasselblad"; pass `--make` for anything else) /Model vs. manifest,
+RAW/JPEG `DateTimeOriginal` within 2s, and no Photoshop/Lightroom
+signature in the JPEG's EXIF Software tag. `tools/build_local_manifest.py`
+takes the same `--make` flag and recognizes `.3fr`/`.fff`/`.dng` as RAW
+extensions (2026-08, generalized from Hasselblad-only).
 
 Record provenance in the manifest — source, capture conditions, camera,
 lens, WB setting. Data whose origin can't be stated doesn't get used.

@@ -1,11 +1,15 @@
 """
 로컬 사진 라이브러리(원본 폴더에 raw+jpeg가 뒤섞여 있는 상태)에서
-EXIF DateTimeOriginal로 raw+jpeg 페어를 찾아 datasets/hasselblad/contributed/
+EXIF DateTimeOriginal로 raw+jpeg 페어를 찾아 datasets/<브랜드>/contributed/
 <세트>/manifest.csv에 추가하고, tools.verify_contributed_pairs의 verify_row로
 바로 재검증해서 FAIL 행(대부분 Lightroom/Photoshop 편집본, 또는 셔터 비동기)을
 자동으로 제거하는 CLI. manifest.csv에는 항상 PASS한 행만 남는다.
 
   python3 -m tools.build_local_manifest ~/Downloads datasets/hasselblad/contributed/local-mixed-2026-07
+  python3 -m tools.build_local_manifest ~/Downloads datasets/leica/contributed/<세트> --make Leica
+
+--make 기본값은 Hasselblad(기존 호출 하위호환) - drop_failed() 단계에서
+verify_row()에 그대로 넘겨 EXIF Make 대조에 쓴다.
 
 같은 셔터의 raw/jpeg인데도 DateTimeOriginal이 정수 시간 단위로 어긋나는
 카메라/펌웨어가 있었다(2017년 X1D 파일 일부 - raw가 jpeg보다 정확히 7시간
@@ -13,6 +17,7 @@ EXIF DateTimeOriginal로 raw+jpeg 페어를 찾아 datasets/hasselblad/contribut
 정수 오프셋도 함께 탐색한다 - 분·초까지 우연히 일치할 확률은 사실상 0이라
 오프셋이 걸리면 안전한 매칭으로 간주한다.
 """
+import argparse
 import csv
 import json
 import os
@@ -21,7 +26,8 @@ import subprocess
 import sys
 from datetime import date, datetime, timedelta
 
-RAW_EXT = {".3fr", ".fff"}
+# .3fr/.fff=Hasselblad, .dng=Leica(M/SL/Q 전 라인업 공식 RAW 포맷)
+RAW_EXT = {".3fr", ".fff", ".dng"}
 JPEG_EXT = {".jpg", ".jpeg"}
 OFFSET_HOURS = list(range(-12, 13))
 COLUMNS = ["filename_raw", "filename_jpeg", "camera", "lens", "iso", "wb_setting",
@@ -132,7 +138,7 @@ def append_manifest(set_dir, pairs, src_dir, download_note):
             ))
 
 
-def drop_failed(set_dir):
+def drop_failed(set_dir, expected_make="Hasselblad"):
     """manifest.csv 전체를 verify_row로 재검증해서 FAIL 행+파일을 제거하고
     PASS만 남긴다 (verify_contributed_pairs 자체는 리포트만 찍고 정리는
     안 하므로, 두 단계를 한 번에 묶어 재현 가능하게 만든 것)."""
@@ -145,7 +151,7 @@ def drop_failed(set_dir):
 
     keep, dropped = [], []
     for row in rows:
-        problems = verify_row(set_dir, row)
+        problems = verify_row(set_dir, row, expected_make=expected_make)
         (keep if not problems else dropped).append((row, problems))
 
     for row, problems in dropped:
@@ -165,11 +171,14 @@ def drop_failed(set_dir):
 
 
 def main():
-    if len(sys.argv) != 3:
-        print(__doc__)
-        sys.exit(1)
-    src_dir, set_dir = sys.argv[1], os.path.expanduser(sys.argv[2])
-    src_dir = os.path.expanduser(src_dir)
+    parser = argparse.ArgumentParser(description="로컬 사진 라이브러리에서 raw+jpeg 페어를 찾아 manifest에 추가")
+    parser.add_argument("src_dir", help="raw+jpeg가 뒤섞여 있는 원본 폴더")
+    parser.add_argument("set_dir", help="datasets/<브랜드>/contributed/<세트> 경로")
+    parser.add_argument("--make", default="Hasselblad",
+                         help="EXIF Make 검증에 쓸 기대 제조사명 (기본 Hasselblad)")
+    args = parser.parse_args()
+    src_dir = os.path.expanduser(args.src_dir)
+    set_dir = os.path.expanduser(args.set_dir)
 
     already_raw = set(os.listdir(os.path.join(set_dir, "raw"))) \
         if os.path.isdir(os.path.join(set_dir, "raw")) else set()
@@ -183,7 +192,7 @@ def main():
     append_manifest(set_dir, pairs, src_dir,
                      f"local (owner personal library, downloaded {date.today().isoformat()})")
     print("자동 검증(Lightroom/Photoshop 편집 오염 + 셔터 동기 재확인) 진행...")
-    drop_failed(set_dir)
+    drop_failed(set_dir, expected_make=args.make)
 
 
 if __name__ == "__main__":

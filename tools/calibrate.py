@@ -4,8 +4,10 @@
 
   python3 -m tools.calibrate grid_search       # apply_hncs 파라미터 그리드서치 (원래 calibrate_from_raw.py, v10/v11)
   python3 -m tools.calibrate grid_search_loo   # 위 그리드서치 결과를 leave-one-out으로 과적합 검증 (2026-08)
+  python3 -m tools.calibrate grid_search_loo_per_generation  # 풀링 대신 세대별로 따로 피팅했을 때 나아지는지 (2026-08)
   python3 -m tools.calibrate learn_curve       # 파라메트릭 가정 없이 LUT 직접 학습 (원래 learn_tone_curve.py, v12)
   python3 -m tools.calibrate regularize        # 학습 LUT 정규화 + leave-one-out 교차검증 (원래 regularized_lut_loocv.py, 음성 결과)
+  python3 -m tools.calibrate regularize_per_generation  # v11 vs v12를 세대 내부에서만 LOO 비교 (2026-08)
 
 raw_url+jpeg_url이 둘 다 있는 CSV 행을 rawpy로 중립 렌더링해서 "그레이딩
 전" 베이스라인으로 쓰고, 같은 행의 공식 JPEG을 타깃으로 삼는 진짜 전/후
@@ -313,6 +315,109 @@ def run_grid_search_loo():
     return summary
 
 
+# ============================================================
+# grid_search_loo_per_generation: v11은 X 시스템 전체를 하나의 커브로
+# 풀링한다는 설계 판단(hasselblad.py 모듈 docstring, "카메라 개체차를
+# 노이즈로 상쇄") 위에 서 있다 - "세대별로 각각 학습한 LUT이 세대
+# 내에서는 더 나을 수 있지만(미검증), 세대당 표본이 아직 30장 안팎이라
+# 이번엔 시도하지 않았다"(docs/measurements.md "세대 간 pooling 첫
+# 실측")고 미뤄뒀던 가설을 이번 65쌍(CFV 100C/907X 30, X2D 100C 24)으로
+# 실제로 검증한다 - 세대 전용으로 그리드서치+LOO 하면 기존 풀링 파라미터
+# 보다 그 세대 안에서 더 나은지.
+# ============================================================
+def run_grid_search_loo_per_generation(min_n=10):
+    pairs = _resolve_pairs()
+    print(f"raw+jpeg 페어 후보: {len(pairs)}개")
+
+    dataset = []
+    for r in pairs:
+        raw_path = r['raw_path']
+        jpeg_path = r['jpeg_path']
+        if not (os.path.exists(raw_path) and os.path.exists(jpeg_path)):
+            continue
+        print(f"[{r['filename']}] 처리중...")
+        try:
+            neutral = load_neutral_render(raw_path)
+        except Exception as e:
+            print(f"  raw 디코드 실패: {e}")
+            continue
+        target_img = cv2.imread(jpeg_path)
+        if target_img is None or not is_image_array_usable(target_img):
+            print(f"  jpeg 로드 실패")
+            continue
+        target_img = _resize_to_max_dim(target_img, 2000)
+        target_stats = gray_stats(target_img)
+        dataset.append(dict(name=r['filename'], neutral=neutral, target=target_stats,
+                             shadow_valid=target_stats['dark_pct'] > 5,
+                             generation=r['generation']))
+
+    n = len(dataset)
+    print(f"\n사용 가능한 페어: {n}개")
+    if not dataset:
+        return
+
+    def pair_error(d, s):
+        err = (s['w995'] - d['target']['w995']) ** 2
+        if d['shadow_valid']:
+            err += (s['b2'] - d['target']['b2']) ** 2
+        return err
+
+    combos = _grid_search_combos()
+    print(f"\n{len(combos)}개 파라미터 조합 x {n}쌍 - 오차 행렬 계산중...")
+    sqerr = np.zeros((len(combos), n), dtype=np.float64)
+    for ci, (eg, tl, ss, wp) in enumerate(combos):
+        for pi, d in enumerate(dataset):
+            graded = apply_hncs(d['neutral'], toe_lift=tl, shoulder_start=ss,
+                                 white_point=wp, exposure_gamma=eg)
+            sqerr[ci, pi] = pair_error(d, gray_stats(graded))
+
+    baseline_sqerr = np.array([pair_error(d, gray_stats(apply_hncs(d['neutral'])))
+                                for d in dataset])
+
+    by_gen = {}
+    for i, d in enumerate(dataset):
+        by_gen.setdefault(d['generation'], []).append(i)
+
+    summaries = {}
+    for gen in sorted(by_gen):
+        idxs = by_gen[gen]
+        if len(idxs) < min_n:
+            print(f"\n{gen}: n={len(idxs)} - 최소 {min_n} 미달이라 세대 전용 피팅 생략")
+            continue
+
+        gen_sqerr = sqerr[:, idxs]  # (조합 수, 이 세대 페어 수) 부분행렬
+        paired = []
+        chosen_combo_counts = {}
+        for local_i, global_i in enumerate(idxs):
+            best_ci = _fold_best_combo(gen_sqerr, local_i)  # LOO를 이 세대 안에서만
+            loo_e = gen_sqerr[best_ci, local_i]
+            base_e = baseline_sqerr[global_i]
+            paired.append((dataset[global_i]['name'], base_e ** 0.5, loo_e ** 0.5))
+            chosen_combo_counts[combos[best_ci]] = chosen_combo_counts.get(combos[best_ci], 0) + 1
+
+        summary = summarize(paired)
+        summaries[gen] = summary
+        print(f"\n=== {gen} (n={len(idxs)}) - 기존(풀링) vs 세대 전용 LOO ===")
+        print_summary(summary, label_a="기존(풀링)", label_b=f"{gen} 전용")
+
+        print(f"  폴드별 선택 조합 빈도:")
+        for combo, cnt in sorted(chosen_combo_counts.items(), key=lambda kv: -kv[1]):
+            print(f"    {cnt:3d}/{len(idxs)}  exposure_gamma={combo[0]}, toe_lift={combo[1]}, "
+                  f"shoulder_start={combo[2]}, white_point={combo[3]}")
+
+        # 실사용 후보 - LOO가 아니라 이 세대 전체(held-out 없이)로 피팅한
+        # in-sample 최적 조합. 실제로 이 세대 전용 파라미터를 배포한다면
+        # 쓸 값이 이거다(LOO는 검증용, 배포용 조합은 항상 가진 데이터
+        # 전체로 다시 피팅한다).
+        in_sample_best_ci = int(np.argmin(gen_sqerr.mean(axis=1)))
+        best_combo = combos[in_sample_best_ci]
+        print(f"  전체 {len(idxs)}쌍으로 피팅한 in-sample 최적 조합(배포 후보): "
+              f"exposure_gamma={best_combo[0]}, toe_lift={best_combo[1]}, "
+              f"shoulder_start={best_combo[2]}, white_point={best_combo[3]}")
+
+    return summaries
+
+
 _GS_EXPOSURE_GAMMAS = (0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3)
 _GS_TOE_LIFTS = (0.0, 0.005, 0.02)
 _GS_SHOULDER_STARTS = (0.50, 0.58, 0.66, 0.70, 0.74, 0.78, 0.82)
@@ -465,10 +570,14 @@ def run_learn_curve():
 # ============================================================
 # regularize: 학습 LUT 정규화 + leave-one-out 교차검증 (음성 결과)
 # ============================================================
-# v11 파라메트릭 기본값 (exposure_gamma 선적용 + film curve) - 정규화 사전으로 사용
-_EXPOSURE_GAMMA = 0.7
-_TOE_LIFT = 0.001
-_SHOULDER_START = 0.78
+# v11 파라메트릭 기본값 (exposure_gamma 선적용 + film curve) - 정규화 사전으로 사용.
+# 2026-08 재보정(65쌍 그리드서치+LOO, brands/hasselblad.py docstring 참고)으로
+# 실제 apply_hncs() 기본값이 바뀌어서 여기 사전값도 맞춰 갱신함(이전 값
+# 0.7/0.001/0.78은 재보정 전 v11 기본값이라 그대로 두면 이 하이브리드
+# 비교의 "파라메트릭" 기준선이 이미 폐기된 파라미터를 쓰는 셈이었음).
+_EXPOSURE_GAMMA = 0.8
+_TOE_LIFT = 0.0
+_SHOULDER_START = 0.5
 _WHITE_POINT = 1.0
 
 
@@ -726,15 +835,84 @@ def run_regularize():
     return per_fold_by_lambda, best_lam, summaries
 
 
+# ============================================================
+# regularize_per_generation: grid_search_loo_per_generation과 같은 질문을
+# v12(학습 LUT) 쪽에서도 확인한다 - v12가 세대 간 pooling에서 참패한 건
+# 이미 알려져 있지만(X1D로 학습해 X2D/CFV에 그대로 적용), "같은 세대
+# 안에서만 학습+LOO 검증하면" v12(순수 학습 LUT, lam=0)이 v11(고정
+# 파라메트릭)을 이기는지는 아직 안 봤다 - CFV/X2D 100C 각각 세대 내부에서.
+# ============================================================
+def run_regularize_per_generation(min_n=10):
+    dataset = _collect_pair_pixels()
+    prior = _parametric_prior()
+    print(f"\n{len(dataset)}장 로드 완료\n")
+
+    for d in dataset:
+        d['counts'], d['sums'] = _pair_counts_sums(d['neutral_l'], d['target_l'])
+
+    def pair_error(d, pred_stats):
+        e = (pred_stats['w995'] - d['w995']) ** 2
+        if d['shadow_valid']:
+            e += (pred_stats['b2'] - d['b2']) ** 2
+        return e
+
+    by_gen = {}
+    for d in dataset:
+        by_gen.setdefault(d['generation'], []).append(d)
+
+    summaries = {}
+    for gen in sorted(by_gen):
+        members = by_gen[gen]
+        if len(members) < min_n:
+            print(f"\n{gen}: n={len(members)} - 최소 {min_n} 미달이라 세대 전용 학습 생략")
+            continue
+
+        gen_counts_all = sum(d['counts'] for d in members)
+        gen_sums_all = sum(d['sums'] for d in members)
+
+        paired = []
+        for held_out in members:
+            train_counts = gen_counts_all - held_out['counts']
+            train_sums = gen_sums_all - held_out['sums']
+
+            # v11: 고정 파라메트릭(prior 그대로) - 이 쌍들로 피팅된 적
+            # 없는 값이라 폴드마다 다시 구할 필요 없이 이미 out-of-sample.
+            v11_pred = prior[held_out['neutral_l'].astype(np.int32)]
+            v11_stats = dict(b2=np.percentile(v11_pred, 2), w995=np.percentile(v11_pred, 99.5))
+
+            # v12: 이 세대 안에서만 LOO로 학습한 순수 경험적 LUT(lam=0).
+            v12_lut = _build_lut_from_counts(train_counts, train_sums, prior, lam=0)
+            v12_pred = v12_lut[held_out['neutral_l'].astype(np.int32)]
+            v12_stats = dict(b2=np.percentile(v12_pred, 2), w995=np.percentile(v12_pred, 99.5))
+
+            e_v11 = pair_error(held_out, v11_stats)
+            e_v12 = pair_error(held_out, v12_stats)
+            paired.append((held_out['name'], e_v11 ** 0.5, e_v12 ** 0.5))
+
+        summary = summarize(paired)
+        summaries[gen] = summary
+        print(f"\n=== {gen} (n={len(members)}) - v11(파라메트릭, 고정) vs "
+              f"v12(세대 전용 LOO 학습LUT) ===")
+        print_summary(summary, label_a="v11(파라메트릭)", label_b=f"v12 {gen}전용")
+
+    return summaries
+
+
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else ""
     if mode == "grid_search":
         run_grid_search()
     elif mode == "grid_search_loo":
         run_grid_search_loo()
+    elif mode == "grid_search_loo_per_generation":
+        run_grid_search_loo_per_generation()
     elif mode == "learn_curve":
         run_learn_curve()
     elif mode == "regularize":
         run_regularize()
+    elif mode == "regularize_per_generation":
+        run_regularize_per_generation()
     else:
-        print("usage: python3 -m tools.calibrate [grid_search|grid_search_loo|learn_curve|regularize]")
+        print("usage: python3 -m tools.calibrate [grid_search|grid_search_loo|"
+              "grid_search_loo_per_generation|learn_curve|regularize|"
+              "regularize_per_generation]")

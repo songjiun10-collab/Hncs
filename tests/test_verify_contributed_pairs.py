@@ -78,6 +78,21 @@ class TestVerifyRow(unittest.TestCase):
         problems = verify_row(self.set_dir, self._row())
         self.assertTrue(any("편집 도구" in p for p in problems))
 
+    def test_expected_make_defaults_to_hasselblad(self):
+        self._make_pair(raw_kwargs={"make": "Leica"}, jpeg_kwargs={"make": "Leica"})
+        problems = verify_row(self.set_dir, self._row())
+        self.assertTrue(any("Hasselblad가 아님" in p for p in problems))
+
+    def test_expected_make_leica_passes_leica_pair(self):
+        self._make_pair(raw_kwargs={"make": "Leica"}, jpeg_kwargs={"make": "Leica"})
+        problems = verify_row(self.set_dir, self._row(), expected_make="Leica")
+        self.assertEqual(problems, [])
+
+    def test_expected_make_leica_rejects_hasselblad_pair(self):
+        self._make_pair()  # 기본값이 Hasselblad
+        problems = verify_row(self.set_dir, self._row(), expected_make="Leica")
+        self.assertTrue(any("Leica가 아님" in p for p in problems))
+
 
 class TestHelpers(unittest.TestCase):
     def test_model_matches_ignores_spacing_and_case(self):

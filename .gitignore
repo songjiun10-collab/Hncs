@@ -38,5 +38,8 @@ datasets/hasselblad/contributed/*/raw/
 datasets/hasselblad/contributed/*/jpeg/
 datasets/hasselblad/contributed/*/phocus_tiff/
 datasets/hasselblad/contributed/*/chart/
+datasets/leica/contributed/*/raw/
+datasets/leica/contributed/*/jpeg/
+datasets/leica/contributed/*/chart/
 eval_reports/
 models/upscale/
