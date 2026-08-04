@@ -407,6 +407,88 @@ rationale. Confirmed the full test suite (613 tests) still passes.
 Reproduce: `python3 -m tools.calibrate grid_search` (in-sample) /
 `python3 -m tools.calibrate grid_search_loo` (LOO validation).
 
+### Independent check - re-confirmed with ΔE00 (real photos + a ColorChecker chart) (2026-08)
+
+The 33.4% above is the b2/w995 percentile error `grid_search_loo` uses (the
+grid search's own objective), not this project's standard ΔE00 (CIEDE2000)
+metric. So the old and new parameters were run through `apply_hncs()`
+directly and measured with ΔE00 two more times.
+
+**1) Against the 65 real-photo target.jpg files** (same method as
+`hybrid_engine.utils.evaluate` - sRGB cctf_decoding, then Lab, CIEDE2000):
+
+| | Mean ΔE00 |
+|---|---|
+| Existing parameters | 7.457 |
+| New parameters | 6.861 |
+| Improvement | 8.0% |
+
+53 wins/12 losses, sign test p<0.001, bootstrap 95% CI [+3.9%,+12.2%],
+drop-one 7.6%-8.8%.
+
+**2) A ColorChecker Classic chart** (kmichels-x2dii-2026-07, 9 X2D II 100C
+raws, contributed via GitHub issue #4 - isolates the pure tone-curve effect
+with no scene-content/framing variance). Auto-detected the 24 patches via
+`hybrid_engine.core.chart_baseline` (detected once on the neutral render
+and reused the same coordinates for both old/new, so detection noise
+doesn't confound the comparison), compared against the official
+spectrophotometric reference values:
+
+| | Mean ΔE00 (24 patches) |
+|---|---|
+| Existing parameters | 7.927 |
+| New parameters | 6.563 |
+| Improvement | 17.2% |
+
+9 wins out of 9, sign test p=0.004, bootstrap 95% CI [+12.6%,+21.4%],
+drop-one 16.1%-18.0%.
+
+**Per-patch breakdown (chart, pooled across 9 images)** - not a uniform
+improvement:
+
+| Patch | Existing | New |
+|---|---|---|
+| dark skin | 7.778 | 5.192 |
+| light skin | 7.646 | 6.224 |
+| blue sky | 7.162 | 5.565 |
+| foliage | 6.358 | 4.040 |
+| blue flower | 8.968 | 8.331 |
+| bluish green | 7.994 | 8.517 |
+| orange | 5.677 | 2.618 |
+| purplish blue | 8.143 | 5.065 |
+| moderate red | 10.501 | 7.301 |
+| purple | 6.908 | 5.222 |
+| yellow green | 4.609 | 3.712 |
+| orange yellow | 2.880 | 3.725 |
+| blue | 3.267 | 4.032 |
+| green | 9.564 | 4.812 |
+| red | 9.695 | 6.614 |
+| yellow | 3.493 | 3.554 |
+| magenta | 9.978 | 7.516 |
+| cyan | 14.319 | 9.162 |
+| white 9.5 (.05 D) | 11.586 | 10.796 |
+| neutral 8 (.23 D) | 11.115 | 11.742 |
+| neutral 6.5 (.44 D) | 10.197 | 11.758 |
+| neutral 5 (.70 D) | 9.311 | 8.491 |
+| neutral 3.5 (1.05 D) | 8.133 | 7.088 |
+| **black 2 (1.5 D)** | **4.964** | **6.425** |
+
+**Conclusion**: all three metrics (33.4%/8.0%/17.2%) point the same
+direction but at very different scales - the grid search's objective
+function overstates the real perceptual improvement. Most patches (dark
+skin, foliage, orange, green, cyan, etc.) improved substantially, but
+**the darkest patch (black 2) actually got worse** (4.964 -> 6.425), and
+neutral 6.5/8, bluish green, blue, and orange yellow also regressed
+slightly - exposure_gamma going from 0.7 to 0.8 (less midtone lift) seems
+to push some dark or near-neutral patches the wrong way. The adoption
+decision stands (it wins consistently and statistically at the
+mean/fold level) - but it did not improve every tone/color uniformly.
+
+Reproduce: the chart raws come from
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/manifest.csv`'s
+download_url (Google Drive, via gdown) - both scripts are one-off (not in
+the repo).
+
 ## First check against a real Phocus render (2026-08)
 
 Until now, `apply_hncs()`'s ground truth has always been the camera's own
