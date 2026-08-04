@@ -826,6 +826,21 @@ mean/CI up, not a consistent edge across most pairs. `summarize()`'s
 automatic verdict only looks at the bootstrap CI, so it says "won" - but
 factoring in the sign test, this case is too weak to call a clean win.
 
+**Exactly which X2D 100C pairs does v12 win?** (direct per-pair v11/v12
+error comparison across the 24 pairs): ISO/scene_type isn't the
+explanatory variable here (unlike CFV - both v11 and v12 wins show up
+within ISO 64 daylight). Instead there's a clear pattern: **the 11 pairs
+v12 won by a large margin (+14 to +26) all had large v11 error to begin
+with (11.67-32.06), and the 9 pairs v11 won all had small v11 error to
+begin with (0.29-7.89)**. In other words, the fixed curve already fits
+X2D 100C's "typical" exposures/scenes well, but is systematically way off
+for a specific exposure pattern - and that subset misses in a similar
+way, so a LUT learned from the other photos fixes exactly those cases
+(while nudging the already-good cases slightly worse as they get folded
+into the average). It's not "most pairs improve a little" - it's "a few
+get fixed a lot, the rest stay flat or regress slightly" - which explains
+why the sign test wasn't significant.
+
 **Why CFV is so bad**: cross-referencing the manifest's ISO column shows
 CFV's 30 pairs span ISO 64-25,600 (median 1200, 20 lowlight/10 daylight),
 far wider and skewed toward high ISO than X2D 100C's 24 pairs (ISO
