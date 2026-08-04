@@ -137,7 +137,14 @@ def estimate_wb_white_patch(linear_rgb, percentile=99.9):
     건다(Land의 Retinex 이론에서 나온 고전적 색항상성 알고리즘).
     raw_to_prophoto_linear(..., use_camera_wb=False)로 카메라 WB 없이
     디코드한 결과에 적용해야 의미가 있다 - 이미 WB된 이미지에 걸면
-    이중보정이 된다."""
+    이중보정이 된다.
+
+    실측(2026-08, docs/measurements.md "White Patch/Shades of Gray 자동
+    화이트밸런스 정확도"): raw_calib_cache 13장(실사진, 컬러차트 아님)
+    기준 카메라 실제 AsShotNeutral 대비 평균 ΔE00 15.80(ΔE00<2.0이 "구별
+    안 됨" 기준이라 명백히 다른 색감) - 장면 안에 진짜 중립 표면이
+    있다는 전제가 실사진에서 자주 깨져서(밝은 색유리/하늘 등이 있으면
+    채널비가 1.000으로 saturate) 실사용 권장 안 함."""
     flat = linear_rgb.reshape(-1, 3)
     channel_patch = np.percentile(flat, percentile, axis=0)
     channel_patch = np.where(channel_patch <= 0, 1.0, channel_patch)
@@ -151,7 +158,11 @@ def estimate_wb_shades_of_gray(linear_rgb, p=6):
     조명색 추정치로 쓰고, 그 추정치 벡터를 자기 노름으로 정규화해
     나눠서(전체 밝기는 유지한 채 색만 중화) 게인을 건다. 기본 p=6은
     원 논문이 여러 조명 이미지셋 실측으로 고른 값. White Patch와 마찬가지로
-    use_camera_wb=False로 디코드한 결과에 적용해야 한다."""
+    use_camera_wb=False로 디코드한 결과에 적용해야 한다.
+
+    실측(2026-08, docs/measurements.md 같은 절): raw_calib_cache 13장
+    기준 평균 ΔE00 14.04 - White Patch보다 근소하게 낫지만 마찬가지로
+    실사용 권장 안 함(자세한 수치/원인은 White Patch 쪽 docstring 참고)."""
     flat = np.clip(linear_rgb.reshape(-1, 3), 0, None)
     illuminant = np.power(np.mean(np.power(flat, p), axis=0), 1.0 / p)
     illuminant = np.where(illuminant <= 0, 1.0, illuminant)

@@ -468,3 +468,57 @@ a commit, but noting that they exist locally.
 > this Phocus comparison itself, and whether v11 needs recalibrating is a
 > separate decision outside this document's scope (`apply_hncs()` itself
 > was not touched this session).
+
+## White Patch / Shades of Gray auto-white-balance accuracy (2026-08)
+
+Measured how accurate `tools/raw_pipeline.py --auto-wb-mode
+{white_patch,shades_of_gray}` (new, in `core/log_pipeline.py`) actually is
+against the camera's real AsShotNeutral (DNG spec, treated as ground
+truth) across the 13 `raw_calib_cache` RAWs (real-world photos, not color
+charts).
+
+**Method**: decode each RAW twice - (a) `use_camera_wb=True` (the
+camera's real WB, the reference) and (b) `use_camera_wb=False`
+(uncorrected). Apply `estimate_wb_white_patch`/`estimate_wb_shades_of_gray`
+to (b) to get the two estimated renders, and compare each against (a) with
+ΔE00 (CIEDE2000, in ProPhoto RGB Linear - `hybrid_engine.utils.
+evaluate.mean_delta_e` assumes sRGB so doesn't apply to this module; same
+logic copied for ProPhoto). Also measured the R/G, B/G channel-ratio
+(the white-balance gain itself) relative error against AsShotNeutral as a
+secondary metric.
+
+| Pair | ΔE00 (white_patch) | ΔE00 (shades_of_gray) |
+|---|---|---|
+| 00378 | 14.72 | 5.23 |
+| 02709 | 21.06 | 21.67 |
+| B0000994 | 13.92 | 18.30 |
+| B0001395 | 23.53 | 24.71 |
+| x1d-II-sample-01 | 16.75 | 7.19 |
+| x1d-II-sample-02 | 6.50 | 7.57 |
+| x1d-II-sample-06 | 26.07 | 17.56 |
+| x1d-II-sample-09 | 20.14 | 22.00 |
+| x1d-ii-xcd45p-01 | 8.15 | 10.42 |
+| x1d-ii-xcd45p-02 | 4.28 | 7.67 |
+| x1d-xcd45-01 | 14.14 | 11.83 |
+| x1d-xcd45-03 | 22.54 | 24.74 |
+| x1d-xcd45-04 | 13.56 | 3.66 |
+| **Mean (n=13)** | **15.80** | **14.04** |
+| **Median** | 14.72 | 11.83 |
+
+R/G+B/G relative error % (secondary metric): white_patch mean 100.1%
+(median 78.8%), shades_of_gray mean 95.7% (median 101.6%) - same
+direction as ΔE00 (both large, shades_of_gray marginally better).
+
+**Conclusion**: this project treats ΔE00 < 2.0 as "imperceptible to the
+human eye" - an average of 14-16 is **an obviously different color
+cast**. Both algorithms depend on the assumption that the scene contains
+a genuinely neutral (white/gray) surface, which breaks down often on
+`raw_calib_cache` since it's real photos, not color charts - white_patch
+in particular fully saturates its channel ratio to 1.000/1.000 whenever a
+bright colored surface (glass, sky, a light source) dominates the frame
+(B0001395, x1d-xcd45-03, x1d-II-sample-09 hit 150-214% relative error on
+the R/G,B/G metric for exactly this reason). **Not recommended for real
+use** - not a substitute for the camera's own white balance, only useful
+for experimenting with a "different feel" in a creative workflow with no
+illuminant information available. Reproduce: repeat the method above
+across all 13 `raw_calib_cache` files (one-off script, not in the repo).

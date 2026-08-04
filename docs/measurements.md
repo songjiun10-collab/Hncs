@@ -455,3 +455,51 @@ Standard 프리셋) → TIFF Export 후, 이 문서를 생성한 1회성 스크�
 > 비교 실험보다 훨씬 근본적인 문제이고, v11 자체의 재캘리브레이션
 > 여부는 이 문서 스코프 밖의 별도 결정이다(`apply_hncs()`는 이 세션에서
 > 손대지 않았다).
+
+## White Patch / Shades of Gray 자동 화이트밸런스 정확도 (2026-08)
+
+`tools/raw_pipeline.py --auto-wb-mode {white_patch,shades_of_gray}`(신규,
+`core/log_pipeline.py`)가 raw_calib_cache 13장(실사진, 컬러차트 아님)에서
+카메라의 실제 AsShotNeutral(DNG 스펙, 정답으로 취급) 대비 얼마나
+정확한지 실측.
+
+**방법**: 각 RAW를 (a) `use_camera_wb=True`(카메라 실제 WB, 기준)와 (b)
+`use_camera_wb=False`(무보정) 두 번 디코드. (b)에 `estimate_wb_white_patch`/
+`estimate_wb_shades_of_gray`를 적용해 두 추정 렌더를 만들고, (a)와
+ΔE00(CIEDE2000, ProPhoto RGB Linear 색공간 - `hybrid_engine.utils.
+evaluate.mean_delta_e`는 sRGB 가정이라 이 모듈에는 못 쓰고 같은 로직을
+ProPhoto로 복사)로 비교. 별도로 R/G, B/G 채널비(화이트밸런스 게인 자체)의
+AsShotNeutral 대비 상대오차%도 같이 쟀다.
+
+| 페어 | ΔE00(white_patch) | ΔE00(shades_of_gray) |
+|---|---|---|
+| 00378 | 14.72 | 5.23 |
+| 02709 | 21.06 | 21.67 |
+| B0000994 | 13.92 | 18.30 |
+| B0001395 | 23.53 | 24.71 |
+| x1d-II-sample-01 | 16.75 | 7.19 |
+| x1d-II-sample-02 | 6.50 | 7.57 |
+| x1d-II-sample-06 | 26.07 | 17.56 |
+| x1d-II-sample-09 | 20.14 | 22.00 |
+| x1d-ii-xcd45p-01 | 8.15 | 10.42 |
+| x1d-ii-xcd45p-02 | 4.28 | 7.67 |
+| x1d-xcd45-01 | 14.14 | 11.83 |
+| x1d-xcd45-03 | 22.54 | 24.74 |
+| x1d-xcd45-04 | 13.56 | 3.66 |
+| **평균(n=13)** | **15.80** | **14.04** |
+| **중앙값** | 14.72 | 11.83 |
+
+R/G+B/G 상대오차%(보조 지표): white_patch 평균 100.1%(중앙값 78.8%),
+shades_of_gray 평균 95.7%(중앙값 101.6%) - 방향은 ΔE00과 일치(둘 다
+큰 오차, shades_of_gray가 근소하게 나음).
+
+**결론**: 이 프로젝트 기준 ΔE00 < 2.0이 "사람 눈에 구별 안 됨"인데,
+평균 14~16이면 **명백히 다른 색감**이다. 두 알고리즘 다 "장면 안에
+진짜 중립(흰/회색) 표면이 있다"는 전제에 의존하는데, raw_calib_cache가
+컬러차트가 아니라 실사진이라 이 전제가 자주 깨진다 - 특히 white_patch는
+밝은 색유리/하늘/조명이 있으면 채널 비율이 1.000/1.000으로 완전
+saturate(B0001395, x1d-xcd45-03, x1d-II-sample-09에서 R/G,B/G 상대오차
+150~214%)되는 사례가 여러 건. **실사용 권장 안 함** - 카메라 자체
+화이트밸런스를 대체하는 용도가 아니라, 조명 정보 없이 "다른 느낌"을
+실험해보는 창작 워크플로우용으로만 의미가 있다. 재현: 위 방법 그대로
+raw_calib_cache 13장에 대해 반복(1회성 스크립트, 리포에는 없음).
