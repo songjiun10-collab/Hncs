@@ -1,6 +1,6 @@
 """rawpy postprocess()의 chromatic_aberration=(red_scale, blue_scale)
-파라미터가 핫셀블라드 13쌍(raw+jpeg)의 ΔE(CIEDE2000)를 줄이는지
-leave-one-out 교차검증으로 확인한다. 설계 근거:
+파라미터가 핫셀블라드 74쌍(공식 13 + 로컬 기여 61, raw+jpeg)의
+ΔE(CIEDE2000)를 줄이는지 leave-one-out 교차검증으로 확인한다. 설계 근거:
 docs/superpowers/specs/2026-07-31-chromatic-aberration-correction-design.md
 
   python3 -m tools.evaluate_chromatic_aberration
@@ -13,14 +13,24 @@ docs/superpowers/specs/2026-07-31-chromatic-aberration-correction-design.md
 미스) ~19.6초, 같은 파일을 다시 열 때(캐시 히트) ~2~4.6초 걸린다.
 (1.0, 1.0)은 인자를 아예 안 넘긴 것과 바이트 단위로 동일한 결과를
 낸다(실측 확인) - 그래서 베이스라인도 그리드의 (1.0, 1.0) 지점 재사용.
-디코드+축소본을 (pair명, red_scale, blue_scale)로 캐시해서 13개 LOO
-폴드 전체에서 같은 조합을 한 번만 디코드한다 - 총 13쌍 x 81격자점 =
-1053회 디코드, 실측 총 실행시간 ~60~70분. 반드시 백그라운드로 돌릴 것.
+
+**74쌍으로 확장하며 추가한 것(2026-08)**: (pair, red_scale, blue_scale)
+ΔE는 어느 LOO 폴드에서 계산하든 값이 같다(폴드 구성과 무관) - 원래는
+이걸 디코드만 캐시하고 ΔE는 폴드마다 다시 계산해서, 13쌍에서는
+그냥 넘어갈 정도였지만 74쌍(폴드 74개 x 조합 81개 x 학습쌍 ~73개)으로
+그대로 확장하면 델타E 계산만 수십만 번 반복하는 꼴이라 감당이 안 된다.
+그래서 `_build_delta_e_table()`이 폴드 루프 진입 전에 (pair, red, blue)
+조합 74*81=5994개 전부를 **딱 한 번씩만** 계산해 테이블로 만들고, LOO는
+그 테이블에서 평균만 내는 순수 조회로 바뀌었다(계산 결과는 이전과
+수학적으로 동일 - 그리드서치가 무엇을 최적으로 고르는지는 바뀌지
+않는다). 그 5994회 디코드가 여전히 무거워서(개당 ~2~4초) 프로세스
+풀로 병렬화한다(기본 CPU-1, 최대 9개 워커).
 """
 import csv
 import glob
 import itertools
 import math
+import multiprocessing as mp
 import os
 import sys
 
@@ -31,6 +41,9 @@ import numpy as np
 
 from hybrid_engine.utils.evaluate import mean_delta_e
 from hybrid_engine.utils.io import decode_raw, load_image_linear
+from hybrid_engine.utils.pairs import combine_pairs
+
+N_WORKERS = max(1, min(3, (os.cpu_count() or 3) - 2))  # 16GB 메모리에서 워커당 페어 전체 캐시(~1.3GB)를 감당할 만큼만
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE_DIR = os.path.join(_ROOT, "raw_calib_cache")
@@ -83,7 +96,8 @@ def _decoded_and_target(pair, red_scale, blue_scale):
     key = (pair["name"], red_scale, blue_scale)
     if key not in _DECODE_CACHE:
         decoded = decode_raw(pair["raw_path"],
-                              chromatic_aberration=(red_scale, blue_scale))
+                              chromatic_aberration=(red_scale, blue_scale),
+                              half_size=True)
         _DECODE_CACHE[key] = _resize_max_dim(decoded, DOWNSAMPLE_MAX_DIM)
     decoded = _DECODE_CACHE[key]
     name = pair["name"]
@@ -98,12 +112,50 @@ def delta_e_for(pair, red_scale, blue_scale):
     return mean_delta_e(decoded, target)
 
 
-def grid_search(train_pairs):
+def _delta_e_task(args):
+    """워커 프로세스 안에서 실행 - 디코드+ΔE를 한 번에 끝내고 (키, 값)만
+    돌려준다(np 배열을 부모 프로세스로 되돌리지 않아 IPC 비용이 작다).
+
+    _build_delta_e_table()이 (pair, red, blue) 조합마다 이 함수를 딱
+    한 번씩만 호출하므로(폴드 구성과 무관한 값이라 재사용할 일이 없음),
+    _decoded_and_target()이 채운 _DECODE_CACHE 항목은 이 호출이 끝나면
+    다시 쓰일 일이 없다 - 74쌍(81콤보)으로 확장한 뒤 이걸 안 지우면
+    워커 하나가 자기 몫(~2000개)을 전부 캐시에 남겨 최대 ~9GB까지
+    쌓여 스왑을 유발한다(13쌍짜리 구버전은 폴드마다 같은 조합을 재방문해서
+    캐시가 필요했지만 지금 구조에서는 순수 낭비)."""
+    pair, red_scale, blue_scale = args
+    result = delta_e_for(pair, red_scale, blue_scale)
+    _DECODE_CACHE.pop((pair["name"], red_scale, blue_scale), None)
+    return (pair["name"], red_scale, blue_scale), result
+
+
+def _build_delta_e_table(pairs, n_workers=N_WORKERS):
+    """(pair, red_scale, blue_scale) 5994(=74*81)개 조합 전부의 ΔE를 LOO
+    폴드 루프 진입 전에 한 번씩만 계산한다 - 폴드 구성과 무관한 값이라
+    폴드마다 다시 구할 이유가 없다."""
+    tasks = [(p, r, b) for p in pairs for r, b in itertools.product(RED_GRID, BLUE_GRID)]
+    table = {}
+    if n_workers <= 1:
+        for i, task in enumerate(tasks):
+            key, de = _delta_e_task(task)
+            table[key] = de
+            if (i + 1) % 200 == 0:
+                print(f"  [table] {i + 1}/{len(tasks)}", flush=True)
+        return table
+    with mp.Pool(processes=n_workers) as pool:
+        for i, (key, de) in enumerate(pool.imap_unordered(_delta_e_task, tasks, chunksize=4)):
+            table[key] = de
+            if (i + 1) % 200 == 0:
+                print(f"  [table] {i + 1}/{len(tasks)}", flush=True)
+    return table
+
+
+def grid_search(train_pairs, table):
     """train_pairs 평균 ΔE(CIEDE2000)가 최소인 (red_scale, blue_scale)
-    반환 - 9x9=81 전 조합 탐색."""
+    반환 - 9x9=81 전 조합 탐색(사전계산된 table에서 조회만 한다)."""
     best_params, best_de = (1.0, 1.0), float("inf")
     for red_scale, blue_scale in itertools.product(RED_GRID, BLUE_GRID):
-        des = [delta_e_for(p, red_scale, blue_scale) for p in train_pairs]
+        des = [table[(p["name"], red_scale, blue_scale)] for p in train_pairs]
         mean_de = float(np.mean(des))
         if mean_de < best_de:
             best_de, best_params = mean_de, (red_scale, blue_scale)
@@ -111,13 +163,17 @@ def grid_search(train_pairs):
 
 
 def run_loocv():
-    pairs = load_pairs()
+    pairs = combine_pairs(load_pairs())
+    print(f"페어 {len(pairs)}개 (공식 + 로컬 기여) - ΔE 테이블 사전계산 시작"
+          f"({len(pairs) * len(RED_GRID) * len(BLUE_GRID)}개 조합, {N_WORKERS}개 워커)",
+          flush=True)
+    table = _build_delta_e_table(pairs)
     per_fold = []
     for i, held_out in enumerate(pairs):
         train = pairs[:i] + pairs[i + 1:]
-        best_red, best_blue = grid_search(train)
-        de_baseline = delta_e_for(held_out, 1.0, 1.0)
-        de_corrected = delta_e_for(held_out, best_red, best_blue)
+        best_red, best_blue = grid_search(train, table)
+        de_baseline = table[(held_out["name"], 1.0, 1.0)]
+        de_corrected = table[(held_out["name"], best_red, best_blue)]
         per_fold.append((held_out["name"], de_baseline, de_corrected,
                           best_red, best_blue))
         print(f"  [{held_out['name']}] baseline ΔE={de_baseline:.3f} "
