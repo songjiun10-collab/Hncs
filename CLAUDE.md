@@ -84,6 +84,12 @@ Minimum code that solves the problem. Nothing speculative.
   No unrequested configurability. No error handling for impossible cases.
 - 200 lines that could be 50 → rewrite it.
 - "Would a senior engineer call this overcomplicated?" If yes, simplify.
+- **One-off analysis/scratch code that produced a real result still gets
+  saved as a file** (e.g. under `tools/`), not left only in a shell
+  history or `/tmp`. Simple and unabstracted is fine — disposable isn't.
+  The task the script did will very likely recur (a new brand, a new
+  chart, a new demo image); the next session shouldn't re-derive it from
+  scratch.
 
 ### Surgical changes
 
