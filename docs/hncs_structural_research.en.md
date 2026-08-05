@@ -20,6 +20,49 @@ research - design rationale:
     contrast, no rich-saturation manipulation, no skin-tone hue/saturation
     manipulation, consistent application across the X System.
     **Does not disclose the exact pipeline stage count or implementation.**
+
+> **Correction (2026-08-05, verified against the full page text the
+> owner pasted directly)**: "no rich-saturation manipulation" and "no
+> skin-tone hue/saturation manipulation" above don't match the actual
+> page. Verbatim: *"The colour data undergoes a series of
+> transformations that remap the captured values. This ensures true
+> contrast, **rich saturation**, and tricky subtle tones – like skin
+> tones – are kept smooth, even between highlights and shadows."* -
+> rich saturation isn't a product of leaving the channel alone, it's
+> stated as the **result of the transformation**. The skin-tone
+> protection claim appears twice: once in that same passage ("kept
+> smooth" during initial rendering), and again in the Phocus
+> post-editing section: *"The data is also optimised to keep skin tones
+> as unaffected as possible even after applying curves and contrast
+> changes."* - that second one means skin tones move **less than the
+> rest of the image when you edit curves/contrast afterward**, not that
+> initial rendering never touches hue/saturation at all. "No
+> manipulation" was an overread.
+>
+> What the page actually discloses as the pipeline's makeup: **"an
+> independently developed Hasselblad look-up-table (LUT), Hasselblad
+> Film Curve, and unique colour processing that together adapts to any
+> illumination."** The three named pieces (LUT / film curve / other
+> processing) line up with this project's 3-stage approximation, but
+> the exact algorithm per stage and the illuminant-matrix-selection
+> logic remain undisclosed - the "exact stage count/implementation not
+> disclosed" conclusion still stands. Newly confirmed facts: (1) the
+> camera's own pixel-level sensor calibration is a manufacturing-stage
+> correction separate from the colour pipeline ("stringent pixel-level
+> calibration"); (2) Phocus offers two working spaces - Hasselblad RGB
+> (linear gamma) and Hasselblad L\*RGB (perceptual lightness, covers
+> nearly the whole Lab gamut) - plus a "colour calibration tool" for
+> user-made custom calibrations; (3) the project started in 2004 during
+> medium-format digital camera development.
+>
+> **`brands/hasselblad.py`'s docstring cites the same "no manipulation"
+> phrasing** (the `문서화된 HNCS 설계 원칙 (hasselblad.com):` block,
+> items 3-4) - `apply_hncs()` is out of scope for this research document,
+> so it wasn't changed here. The near-zero measured hue/saturation
+> change is this project's own independent finding (the v8/v9 skin-tone
+> hue verification), so it stands on its own regardless - but citing it
+> as "because that's the official design principle" is inaccurate and
+> needs separate attention.
 - blog.tonalphoto.com, "How HNCS Actually Works" - an independent
   technical analysis based on a byte-level diff of Phocus `.phos`
   sidecars. The author explicitly states in the post that this is

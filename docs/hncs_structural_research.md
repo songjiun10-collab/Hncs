@@ -18,6 +18,40 @@ HNCS 파이프라인을 3단계로 단순화한 근사다. 이 문서는 실제 
   - "필름커브 톤, 지각보상 대비, rich saturation 무조작, 스킨톤
     hue/채도 무조작, X시스템 전체 일관 적용" 5개 설계 원칙을 공개.
     **파이프라인의 정확한 단계 수/구현 방식은 공개하지 않음.**
+
+> **정정(2026-08-05, 사용자가 이 페이지 원문 전체를 직접 붙여넣어
+> 검증)**: 위 "rich saturation 무조작"/"스킨톤 hue/채도 무조작"은 실제
+> 페이지 문구와 안 맞는다. 원문: *"The colour data undergoes a series
+> of transformations that remap the captured values. This ensures true
+> contrast, **rich saturation**, and tricky subtle tones – like skin
+> tones – are kept smooth, even between highlights and shadows."* -
+> rich saturation은 "안 건드려서" 나오는 게 아니라 **변환이 만들어내는
+> 결과**라고 명시돼 있다. 스킨톤 보호 문구는 두 번 나오는데, 하나는 위
+> 인용문(초기 렌더링에서 "부드럽게 유지"), 다른 하나는 Phocus 후처리
+> 절: *"The data is also optimised to keep skin tones as unaffected as
+> possible even after applying curves and contrast changes."* - 이건
+> **커브/대비를 편집해도 스킨톤이 덜 흔들린다**는 뜻이지, 초기 렌더링이
+> hue/채도를 아예 안 건드린다는 뜻이 아니다. "무조작"은 과도한 해석이었다.
+>
+> 원문이 실제로 밝히는 구성: **"an independently developed Hasselblad
+> look-up-table (LUT), Hasselblad Film Curve, and unique colour
+> processing that together adapts to any illumination"** - 이름 3개
+> (LUT/필름커브/기타 처리)는 이 프로젝트의 3단계 근사와 맞아떨어지지만,
+> 각 단계의 정확한 알고리즘·조명별 매트릭스 선택 로직은 여전히 비공개 -
+> "정확한 단계 수/구현 방식 비공개"라는 결론 자체는 그대로 유효하다.
+> 추가로 확인된 사실: (1) 카메라 자체의 픽셀 레벨 센서 캘리브레이션은
+> 색 파이프라인과 별개인 제조 단계 보정("stringent pixel-level
+> calibration"), (2) Phocus는 Hasselblad RGB(선형 감마)/Hasselblad
+> L\*RGB(지각 명도, LAB 대부분 색역 포함) 두 작업공간을 제공하고
+> "colour calibration tool"로 사용자 커스텀 캘리브레이션도 지원, (3)
+> 2004년 중형 디지털 카메라 개발 중 시작.
+>
+> **`brands/hasselblad.py`의 docstring도 이 "무조작" 표현을 그대로
+> 인용하고 있다** (`문서화된 HNCS 설계 원칙 (hasselblad.com):` 3/4번
+> 항목) - `apply_hncs()`는 이 리서치 문서의 범위 밖이라 여기서 수정하지
+> 않았다. hue/채도가 실제로 거의 안 변한다는 건 이 프로젝트가 직접 측정한
+> 결과(v8/v9 스킨톤 hue 검증)라 독자적으로 유효하지만, "그게 공식
+> 설계 원칙이라서"라는 인용 근거는 부정확하다 - 별도 확인 필요.
 - blog.tonalphoto.com, "How HNCS Actually Works" - Phocus `.phos`
   사이드카를 바이트 단위로 diff한 독립 기술 분석. 저자 본인이 글
   안에서 "공식 지원/가이드가 아니라 개인적 조사와 테스트"라고 명시.
