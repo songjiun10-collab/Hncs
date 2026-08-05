@@ -68,13 +68,6 @@ Biased toward caution over speed. Use judgment on trivial tasks.
 - Simpler approach exists → say so. Push back when warranted.
 - Confused → stop, name what's confusing, ask. Don't hide it.
   (Exception under `/goal` — see Commands.)
-- **Genuinely stuck** — not first-attempt friction, actually out of ideas
-  — consulting another vendor's AI is allowed, and better than guessing.
-  The route is a Cowork/desktop session driving a browser with computer
-  use, so it doesn't apply in a remote container like this one. Ask about
-  approach, algorithm, or library semantics; typing into someone else's
-  chat window publishes it, so contributed datasets and unpublished
-  results stay out.
 
 ### Simplicity first
 
