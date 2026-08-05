@@ -8,7 +8,12 @@ CLIs and research scripts. Nothing here is imported by shipped code.
   loader instead. Keeps experiments from coupling as they accumulate.
 - Data: `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` +
   `raw_calib_cache/`. Files are `{jpeg_basename}.{raw_ext}` and
-  `{jpeg_basename}.target.jpg`.
+  `{jpeg_basename}.target.jpg`. 13 official pairs.
+- To also use contributed pairs (`datasets/hasselblad/contributed/`),
+  wrap the official list in `hybrid_engine.utils.pairs.combine_pairs()` —
+  as of `local-mixed-2026-07`, official+contributed is 74 pairs. Not
+  every `evaluate_*.py` does this; check whether a script calls
+  `combine_pairs()` before assuming its pair count.
 - `_resize_max_dim(img, DOWNSAMPLE_MAX_DIM)` **immediately after decode**.
   A 100MP float64 Hasselblad frame OOMs the box — this already happened.
   Global-statistics ΔE isn't distorted by downsampling.

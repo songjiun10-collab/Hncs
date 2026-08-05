@@ -5,7 +5,7 @@ file answers "where does the project actually stand right now," so a new
 session doesn't have to re-derive it from git log or ask. Append dated
 entries below; don't rewrite old ones.
 
-## Snapshot (2026-08-02, branch `claude/unknown-character-0x48vp`)
+## Snapshot (2026-08-03, branch `claude/unknown-character-0x48vp`)
 
 - 12 shipped brands (`brands/*.py`, excluding `__init__.py` and the
   `hasselblad_day`/`hasselblad_night`/`hasselblad_learned` legacy/
@@ -28,10 +28,17 @@ entries below; don't rewrite old ones.
 - CLAUDE.md was just restructured: short root file + per-directory
   `CLAUDE.md` in `brands/`, `tools/`, `hybrid_engine/`, `docs/`,
   `tests/`, `datasets/`.
-- 60/61-pair dpreview-sourced dataset: referenced by the user, not
-  present in this container (git-ignored, no `download_url`; dpreview.com
-  blocks both `curl` and headless fetch). Another session was handling
-  it as of the last check-in here — don't duplicate.
+- The 61-pair personal-library dataset (not dpreview — that source was a
+  dead end, blocked by the site) landed as `datasets/hasselblad/
+  contributed/local-mixed-2026-07/` (CFV 100C/907X 30, X2D 100C 24, X1D
+  II 50C 6, X1D 1). Another session used it to re-run the HNCS
+  illuminant-blend experiment at 74 pairs (13 official + 61 contributed):
+  `tools/evaluate_hncs_blend.py`, recorded in `hybrid_engine/
+  EVALUATION.md`. Result flipped from the 13-pair "inconclusive" verdict
+  — both RB and CCT blending now beat hard-cluster classification by
+  +1.8%, statistically significant but close to the boundary (RB sign
+  test p=0.047, CCT bootstrap CI lower bound +0.017). RB vs. CCT is still
+  inconclusive. `apply_hncs()` itself was not touched.
 
 ## Open threads
 
