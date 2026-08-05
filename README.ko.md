@@ -27,7 +27,7 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 
 ![Before/After - apply_hncs 적용 예시](docs/images/before_after_hncs.jpg)
 
-![HNCS 프리셋 데모 - 사진 한 장에 apply_* 25개 전부 적용](docs/images/preset_demo.jpg)
+![HNCS 프리셋 데모 - 사진 한 장에 apply_* 24개(+원본) 전부 적용](docs/images/preset_demo.jpg)
 
 *동일한 소스 사진(Nikon D5300 야경샷, 데모용으로 제공받음) 한 장에
 `brands/*.py`의 사진용 `apply_*` 룩 24개(+원본)를 그대로 돌린 결과. 공식

@@ -26,7 +26,7 @@ A project that measures official (or near-official) sample images from camera/di
 
 ![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
 
-![HNCS preset demo - all 25 apply_* looks on one photo](docs/images/preset_demo.jpg)
+![HNCS preset demo - 24 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
 *All 24 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
 on the same source photo (a Nikon D5300 night shot, provided for this
