@@ -23,6 +23,20 @@ apply_hncs의 전체 population 타깃에 거의 수렴해서, 별도 프리셋�
    세대를 섞어서 풀링하는 것이 오히려 "카메라 개체차"를 노이즈로 상쇄시켜
    "X 시스템 공통 색과학"을 더 안정적으로 드러냄 (설계 판단, 2026-07)
 
+정정(2026-08-05, hasselblad.com 원문 직접 대조): 위 3/4번의 "채도/
+hue 무조작"은 원문과 안 맞는다. 원문(hasselblad.com/learn/
+hasselblad-natural-colour-solution/): "The colour data undergoes a
+series of transformations that remap the captured values. This ensures
+true contrast, rich saturation, and tricky subtle tones – like skin
+tones – are kept smooth" - rich saturation은 안 건드려서 나오는 게
+아니라 변환이 만들어내는 결과라고 명시돼 있다. 스킨톤 문구도 "커브/
+대비 편집 후에도 덜 흔들림"(Phocus 후처리 절)이지 초기 렌더링에서
+hue/채도를 아예 안 건드린다는 뜻이 아니다. 자세한 대조는
+docs/hncs_structural_research.md 참고. 다만 이 프로젝트가 직접 측정한
+"hue가 거의 안 변한다"(v8/v9, 아래 이력)는 결과 자체는 이 정정과
+무관하게 유효 - 근거로 삼은 인용이 부정확했을 뿐, apply_hncs()의
+실측 검증과 계수는 이 정정으로 바뀌지 않는다.
+
 === apply_hncs 실측 검증 이력 ===
 
 v8 (공식 샘플 19~20장): 인물 6장 서브셋 재검증 결과 타깃 전체(13.5/222.1)
