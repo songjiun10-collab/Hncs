@@ -11,7 +11,20 @@ entries below; don't rewrite old ones.
   `hasselblad_day`/`hasselblad_night`/`hasselblad_learned` legacy/
   experimental variants): Hasselblad, Canon, Fujifilm, Leica, Nikon,
   Olympus, Panasonic, Pentax, Phase One, Ricoh GR, Sigma, Sony.
-- `python3 -m unittest discover -s tests` → 534 tests, ~35s, all green.
+- `python3 -m unittest discover -s tests` → 615 tests. 8 currently error
+  in this container on `ModuleNotFoundError: torch` (upscale) and
+  missing GUI deps (`gui/` tabs) — not a code regression, just packages
+  this container never installed. Everything else green.
+- Other sessions landed a lot on this branch concurrently while this one
+  was running: a `gui/` desktop wrapper (PyQt, tabs for brand-look
+  preview/hybrid convert/lens correction/RAW-Log/upscale), AI
+  super-resolution (`core/upscale.py`, Real-ESRGAN via PyTorch or ONNX),
+  SD-card deleted-photo recovery (`core/sdcard_undelete.py` +
+  `core/sdcard_carve.py`, `tools/recover_sdcard.py`), PQ/HLG HDR output
+  alongside the Log pipeline, White Patch/Shades-of-Gray AWB modes in
+  `raw_pipeline`, and a v11 hybrid-engine recalibration on 65 pairs. None
+  of this was reviewed by this session — treat `docs/project_structure.md`
+  as the source of truth for what each new file does, not this bullet.
 - `apply_hncs()` (Hasselblad) is the only calibration-fit brand; the
   other 11 population-fit brands are docstring-measured from
   imaging-resource.com galleries.
