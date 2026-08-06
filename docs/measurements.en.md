@@ -1138,3 +1138,52 @@ significant, opposite-direction signal against CFV/X2D.
 per-generation branch is a separate decision. Reproduce: `python3 -m
 tools.evaluate_exposure_gamma_x2dii` (95 pairs, ~5 min - reuses
 `tools.calibrate.load_neutral_render`/`gray_stats`).
+
+### X2D II-only parameters, LOO/5-fold - inconclusive (2026-08)
+
+The table above compared **two fixed parameter sets** (main vs.
+candidate) against each other. Separately, tested - within the 41 X2D II
+pairs alone - whether a generation-only grid-searched parameter set beats
+the pooled main default, using the same methodology as
+`tools.calibrate.run_grid_search_loo_per_generation`
+(`tools/evaluate_x2dii_generation_loo.py`, new - 441-combo grid; all 41
+pairs are clean, no contamination filter needed).
+
+**LOO (41 outer folds)**: 36.0% improvement (RMSE 19.88->12.73), 27
+wins/14 losses, sign test p=0.060, bootstrap 95% CI [+18.6%,+49.1%], 39/41
+folds converge to the same combo (eg=0.3, tl=0.02, ss=0.82, wp=0.95) -
+the CI alone says "won," but the sign test falls just short of the
+conventional 0.05 threshold.
+
+**Re-checked with 5-fold (5 outer folds, shrinking the training set from
+40 to ~33)** - since all 441 candidates are fixed constants (nothing
+adaptively fit), adding an inner CV layer wouldn't change the numbers (the
+outer LOO is already leak-free), but shrinking the training set gives a
+more conservative check of selection stability:
+
+| | LOO (n=41) | 5-fold (n=41) |
+|---|---|---|
+| Improvement | 36.0% | 34.7% |
+| Win/loss | 27/14 | 24/17 |
+| **Sign test p** | **0.060** | **0.349** |
+| Bootstrap 95% CI | [+18.6%, +49.1%] | [+16.9%, +47.9%] |
+| Combo chosen per fold | 39/41 identical | splits 25/41 vs 16/41 (ss=0.82 vs 0.5) |
+
+**LOO's "near-significance" wasn't stable.** Shrinking the training set
+from 40 to ~33 was enough for 2 of the 5 folds to pick a different combo
+(shoulder_start=0.5), and the sign test p jumps to 0.349, losing
+significance entirely. The improvement/CI still point the same direction
+(both methods' CIs exclude 0), but with only 41 samples the grid
+selection itself is this sensitive to training-set size - the claim that
+"an X2D II-only parameter set is statistically a clear win" doesn't
+survive the more conservative check.
+
+**Verdict: inconclusive.** The direction (X2D II wants a different curve
+than the other generations) shows up consistently across several
+independent signals this session (the 8-hypothesis investigation above,
+the per-generation main-vs-candidate head-to-head, this LOO/5-fold check)
+- but it isn't statistically robust enough to justify adopting an X2D
+II-only parameter set. The 41-pair sample size itself is the limiting
+factor. **Revisit once more X2D II raw+jpeg pairs from a different
+reviewer/shooting session are available.** Reproduce: `python3 -m
+tools.evaluate_x2dii_generation_loo`.
