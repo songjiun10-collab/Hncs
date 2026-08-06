@@ -30,6 +30,16 @@ LOO)가 공통으로 가리키는 방향 중, **표본 크기에 안정적으로
 
 재현: `python3 -m tools.evaluate_exposure_gamma_x2dii` (95쌍, X2D II
 세대만 골라 읽으면 이 함수의 exposure_gamma=0.7 쪽 결과).
+
+**갱신(2026-08, 사용자 명시적 지시로 풀그리드 최적값 전체 채택)**:
+위에서 통계적 견고함 부족으로 일부러 뺐던
+`shoulder_start=0.82/toe_lift=0.02/white_point=0.95`를 이번엔 그대로
+반영했다 - 통계가 바뀐 게 아니라(LOO 부호검정 p=0.060, 5-fold에서
+p=0.349로 유의성 소실이라는 판정은 그대로 유효, 41쌍 전용 in-sample
+최적값에 불과함), 사용자가 그 트레이드오프를 알고도 "필름 커브,
+노출 다 따로 X2D II를 위한 모델로"라고 명시적으로 지시해서 반영한
+것이다. 재현: `python3 -m tools.evaluate_x2dii_generation_loo`
+("전체 41쌍으로 피팅한 in-sample 최적 조합" 줄).
 """
 import cv2
 import numpy as np
@@ -37,8 +47,8 @@ import numpy as np
 from core.curve import film_curve
 
 
-def apply_hncs_x2dii(img_bgr, toe_lift=0.0, shoulder_start=0.5,
-                      white_point=1.0, clahe_clip=1.25, exposure_gamma=0.7):
+def apply_hncs_x2dii(img_bgr, toe_lift=0.02, shoulder_start=0.82,
+                      white_point=0.95, clahe_clip=1.25, exposure_gamma=0.3):
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 

@@ -1237,3 +1237,15 @@ matrix stage isn't included either (rejected above).
 Callers must detect X2D II themselves (e.g. via EXIF) and choose this
 function instead of `apply_hncs()` - this file has no model-detection
 logic of its own. `apply_hncs()` is unchanged by adding this function.
+
+**Update - adopted the full grid optimum (2026-08, explicit user
+direction)**: the user explicitly asked to "give the film curve and
+exposure their own separate model for X2D II too," so
+`shoulder_start=0.82`/`toe_lift=0.02`/`white_point=0.95` - deliberately
+left out above for lacking statistical robustness - were adopted as-is.
+**The statistics themselves haven't changed** - the verdict above (LOO
+sign test p=0.060, losing significance at p=0.349 under 5-fold) still
+stands; these values remain the 41-pair in-sample optimum only.
+`apply_hncs_x2dii()` defaults are now: `exposure_gamma=0.3,
+toe_lift=0.02, shoulder_start=0.82, white_point=0.95`. The 3x3 matrix
+remains excluded (rejected above).
