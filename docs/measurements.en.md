@@ -910,6 +910,186 @@ decode stage, unrelated to the tone-curve stage).
 Reproduce: `python3 -m tools.evaluate_chromatic_aberration` (95 pairs ×
 81 combos, ~1 hour).
 
+## v13: 135-pair dpreview revalidation (5 gens incl. X2D II) - candidate (2026-08)
+
+Below is the full history behind the "candidate" side of `apply_hncs()`'s
+two competing parameter sets. This narrative used to live only in the
+docstring of a separate branch (`claude/hncs-v13-apply-hncs-candidate`)
+of `brands/hasselblad.py`; it was ported here before that branch was
+cleaned up. The parameter values themselves were already compared against
+main in the "exposure_gamma head-to-head" section below - this section is
+the record of the **process** that produced them.
+
+Re-validated `apply_hncs` against real raw+jpeg pairs pulled from
+dpreview.com's review sample galleries. **Note: an earlier working draft
+mislabeled this data as "the owner's own photography" - it was actually
+review-site samples (confirmed directly via the download-source URL in
+macOS's kMDItemWhereFroms xattr, corrected here)** - v8 through v12 were
+all constrained to either official samples (mostly already-graded images)
+or a mere 10 raw+jpeg pairs (mostly X1D), and this data largely lifted
+that constraint.
+
+**How the data was sourced**: 5 dpreview.com galleries (one camera per
+gallery, distinguished by the `sample_galleries/L-<ID>/` URL path) - X1D
+(60 photos), X1D II 50C (12), X2D 100C (49), CFV 100C/907X (83), and
+**X2D II 100C (83)**. Raw<->jpeg pairing used EXIF `ImageUniqueID` as the
+primary match with a `DateTimeOriginal` fallback (raw/jpeg sometimes mix
+ISO8601 T-separated and EXIF colon-separated formats like
+`2022:09:20 21:47:30`, so format normalization was required - skipping it
+silently drops valid pairs, which happened once and was recovered). The
+X2D II gallery was missed entirely at first (downloaded but never moved
+into the working folder) - 135 pairs total (by camera: CFV 34, X1D 30,
+X2D 24, X1D II 6, X2D II 41), one excluded for a raw-decode I/O error,
+n=134 used.
+
+**Re-ran grid_search (n=134, all 5 generations)**: optimum at
+exposure_gamma=0.7, toe_lift=0.005, shoulder_start=0.5, white_point=1.0
+(RMSE 19.87; evaluating the real v11 parameters on the same 134 pairs
+gives RMSE 23.00). **shoulder_start=0.5 is the single most confidently
+established conclusion here** - it came out optimal with zero exceptions
+across every subset tried (88, 94, 134 pairs) - confirming that the value
+v11 deferred on ("only 8 shadow-valid samples, overfitting risk") was
+right all along. exposure_gamma reverted to v11's original value (0.7),
+and toe_lift's 0.001->0.005 move is effectively negligible - so this
+revalidation's only real change is shoulder_start 0.78->0.5.
+
+**Splitting the grid search by body (5 generations) to re-test the
+pooling assumption itself** - this is where an important counterexample
+surfaced:
+
+| Generation | n | Body-only optimum | RMSE (body-only) | RMSE (real v11) |
+|---|---|---|---|---|
+| CFV 100C/907X | 33 | eg=0.9, tl=0.0, ss=0.5, wp=1.0 | 7.41 | 11.69 |
+| X2D 100C | 24 | eg=0.9, tl=0.0, ss=0.5, wp=1.0 | 9.90 | 19.27 |
+| X1D | 30 | eg=0.6, tl=0.0, ss=0.5, wp=1.0 | 22.36 | 27.80 |
+| X1D II 50C | 6 | eg=0.6, tl=0.0, ss=0.5, wp=1.0 | 30.39 | 41.94 |
+| **X2D II 100C** | **41** | **eg=0.3, tl=0.02, ss=0.82, wp=0.95** | 14.15 | 24.06 |
+
+CFV/X2D/X1D/X1D II unanimously agree on shoulder_start=0.5, toe_lift=0.0,
+white_point=1.0 (only exposure_gamma varies by generation, 0.6-0.9) -
+which looked like it supported design principle 5 ("pooling across body
+generations still surfaces a stable, common X-System color science").
+**But X2D II - the largest single generation (n=41) - wants a completely
+different shape**: shoulder_start=0.82 (closer to v11's original 0.78),
+exposure_gamma=0.3 (less than half the other generations'), white_point=0.95.
+
+**Root-cause investigation - 8 hypotheses tested**: using
+`docs/hncs_external_sources_analysis.md` sections 1-2 (a Konrad Michels
+blog-based reverse-engineering writeup confirming HNCS auto-selects and
+blends among at least 4 illuminant-specific 3x3 matrices by white
+balance, none of which `apply_hncs` models) as a starting thread, tested
+8 hypotheses in order:
+
+1. EXIF `AsShotNeutral` R/B ratio (illuminant bias) - rejected: X2D II
+   (0.661) and CFV (0.663) are nearly identical, yet their optimal
+   exposure_gamma is opposite (0.3 vs 0.9)
+2. Neutral-render-to-target brightness gap - rejected: X2D II (+44.3) and
+   X1D (+41.1) are similar, yet optimal exposure_gamma differs (0.3/0.6)
+3. Blown-highlight fraction (w995>=254) - rejected: X2D II (4.9%) is
+   actually lower than CFV (12.1%)/X2D (20.8%)
+4. **Edit contamination (jpeg EXIF Software) - confirmed, decisive**:
+   96.7% (29/30) of X1D pairs and 32.4% (11/34) of CFV pairs are
+   Lightroom/Camera Raw exports - the same class of contamination
+   `docs/measurements.md`'s "Phocus contamination re-verification"
+   section above flagged, found here for the first time in this dataset
+   too. X2D/X2D II/X1D II were 100% genuine (only firmware version
+   strings, no Adobe signature)
+5. Lens diversity (EXIF LensModel) - all 41 X2D II photos use **a single
+   lens** (XCD 35-100E, zoom position varies only), vs. 2 for CFV and 4
+   for X2D - X2D II is far more uniform
+6. Shooting period - X2D II's shots span 11 days (mildly at odds with a
+   single-session theory)
+7. Exposure-compensation (EV) habit - X2D II averages **0.00** (no
+   compensation used), while CFV/X2D/X1D run -1.15 to -1.78 (an
+   underexposure-for-highlight-protection habit) - X2D II stands out
+   distinctly
+8. Coefficient of variation of target JPEG saturation within generation
+   (a scene-diversity proxy) - X2D II is lowest at 22.0% (CFV 46.4%, X2D
+   33.0%, X1D 29.5%) - the most uniform shooting style
+
+**Re-ran the per-body grid search on the clean 95 pairs (excluding the 40
+edit-contaminated pairs out of 135, 30%) per finding #4** - X1D's clean
+sample collapses to just **1**, statistically meaningless (expected given
+96.7% contamination); CFV drops from 34 to 22. X2D/X2D II were
+uncontaminated to begin with, so their results are unchanged:
+
+| Generation | n (clean) | Body-only optimum |
+|---|---|---|
+| X2D 100C | 24 | eg=0.9, ss=0.5 (same as before contamination filter) |
+| CFV 100C/907X | 22 (down from 34) | eg=0.9, ss=0.5 (**unchanged even after removing contamination**) |
+| X1D II 50C | 6 | eg=0.6, ss=0.5 (had no contamination, unchanged) |
+| X1D | 1 (collapsed from 30) | statistically meaningless |
+| X2D II 100C | 41 (unchanged) | eg=0.3, ss=0.82 (**still an outlier**) |
+
+So the shoulder_start=0.5 consensus was not an illusion created by
+contaminated data - it holds on clean data (X2D/CFV/X1D II) too - and
+X2D II remains a solid counterexample. That said, the original framing of
+"4-generation consensus vs. X2D II alone" was itself inaccurate (X1D's
+sample was down to 1, uncountable to begin with). Weighing findings
+5/6/7/8 (single lens, uniform exposure-compensation habit, low scene
+diversity) together, the most plausible explanation is **"the 41 X2D II
+photos are, in effect, a correlated sample from one reviewer's one
+shooting period (a shooting-style artifact, not a camera-generation
+difference) - so their true independence is lower than it looks
+statistically"** - but a genuine camera-generation difference can't be
+fully ruled out either (both possibilities remain open; distinguishing
+them needs additional X2D II raw+jpeg pairs from a different reviewer).
+
+**origin (main) already had much deeper related work** - it had already
+run essentially the same "does pooling across generations hold up"
+experiment on local raw+jpeg pairs (CFV 30/X2D 24/X1D II 6/X1D 1, 61
+pairs) and reached the same-direction conclusion (the parametric curve
+beats the learned LUT, by almost 2x on CFV - see the "First empirical
+test of cross-generation pooling with a local-contributed dataset"
+section above). But main had no real X2D II raw+jpeg photo pairs at that
+time (`kmichels-x2dii-2026-07/` is only a ColorChecker burst - the same
+chart shot 10 times over 94 seconds, no scene diversity) - the 41 X2D II
+photos from dpreview (real, diverse scenes) were data main didn't have
+either. main had already least-squares fit a camera-to-XYZ 3x3 matrix
+from the X2D II ColorChecker chart, getting ΔE00 7.58->2.78 (-63.3%,
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/colorchecker_matrix_report.json`),
+but had never applied that matrix to real, diverse scenes rather than the
+chart itself.
+
+**Cross-validated the ColorChecker matrix against the 41 real X2D II
+photos**: applied main's chart matrix (`chart_matrix_in_sample`, taken
+verbatim from the report above) to a raw pure-linear decode (`rawpy`,
+`gamma=(1,1)`, `use_camera_wb=True` - the same color-space definition as
+`hybrid_engine/utils/io.py`'s `decode_raw()`, with `half_size=True` only
+for speed), then compared against the real camera JPEG via ΔE00 (n=41):
+
+| | Mean ΔE00 |
+|---|---|
+| No correction (linear->sRGB gamma only) | 13.48 |
+| Chart matrix only | 12.76 (-5.3%) |
+| apply_hncs tone curve only (no matrix) | 11.23 (-16.7%, best) |
+| Chart matrix + apply_hncs tone curve | 12.32 (-8.6%) |
+
+The chart matrix does generalize somewhat to real (non-chart) scenes
+(-5.3%, not pure noise). But the apply_hncs tone curve alone does better,
+and **simply chaining the two (matrix, then tone curve) is actually worse
+than the tone curve alone** (11.23->12.32) - the matrix and the tone
+curve were each tuned under different assumptions (the former on
+pure-linear input; apply_hncs's tone curve is fit assuming
+gamma-2.222/4.5 neutral-render input), so naively chaining them doesn't
+work - they'd need to be re-fit together to get any synergy. This session
+didn't attempt that joint re-fit; it only confirmed that chaining the two
+corrections independently has no support.
+
+**ΔE2000 cross-check (88 pairs, 4 generations, X2D II excluded)**:
+re-measured with scikit-image CIEDE2000
+
+| | Mean ΔE00 | Median |
+|---|---|---|
+| apply_hncs (real v11) | 7.05 | 6.33 |
+| apply_hncs (candidate, ss=0.5 applied) | 6.80 | 5.67 |
+| apply_hncs_learned (88-pair LUT) | 8.09 | 7.67 |
+
+The direction matches RMSE, but the improvement is much smaller (~19%
+RMSE reduction vs. ~3.5% ΔE00 reduction) - apply_hncs only touches the L
+channel's tone curve and leaves hue/saturation alone, so the tone curve
+can only ever explain a small share of total ΔE00 (an expected result).
+
 ## exposure_gamma head-to-head by generation - main vs candidate (2026-08)
 
 `apply_hncs()` currently has two independently re-calibrated candidates
