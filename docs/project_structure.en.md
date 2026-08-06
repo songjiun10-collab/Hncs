@@ -18,6 +18,7 @@ docs/         Detailed documentation (this directory)
 | `brands/hasselblad.py` | ⭐ Official Stable - `apply_hncs` (parametric approximation unifying the X System HNCS) |
 | `brands/hasselblad_learned.py` | Experimental - `apply_hncs_learned` (a LUT learned directly from raw+jpeg pairs; lower RMSE but only 10 samples) |
 | `brands/hasselblad_day.py` / `brands/hasselblad_night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (the day/night targets are converging toward `apply_hncs`'s overall population target, weakening the case for keeping them separate) |
+| `brands/hasselblad_x2dii.py` | Experimental - `apply_hncs_x2dii` (X2D II 100C only, changes just exposure_gamma 0.8->0.7 - callers must detect the model themselves; with only 41 samples the other parameters like shoulder_start were left untouched) |
 | `brands/fuji.py` | 10 Fujifilm-style film simulation presets (Astia, PRO Neg, Eterna, Acros, Classic Negative, etc.) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative are verified against real population data; Pro Neg Hi/Eterna Cinema/Nostalgic Neg have been further verified/recalibrated against same-scene comparison charts (n=1-3 samples, low confidence) |
 | `brands/leica.py` | Leica color approximation - `apply_leica_look()` (population-fit, v1) |
 | `brands/phaseone.py` | Phase One (Capture One's default rendering) color approximation - `apply_phaseone_look()` |

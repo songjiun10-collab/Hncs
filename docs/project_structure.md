@@ -18,6 +18,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/hasselblad.py` | ⭐ 공식 Stable - `apply_hncs`(X 시스템 통합 HNCS 파라메트릭 근사) |
 | `brands/hasselblad_learned.py` | Experimental - `apply_hncs_learned` (raw+jpeg 페어에서 직접 학습한 LUT, RMSE는 더 낮지만 표본 10장) |
 | `brands/hasselblad_day.py` / `brands/hasselblad_night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (day/night 타깃이 apply_hncs 전체 population 타깃에 수렴 중이라 유지 근거 약해지는 중) |
+| `brands/hasselblad_x2dii.py` | Experimental - `apply_hncs_x2dii` (X2D II 100C 전용, exposure_gamma만 0.8->0.7 - 호출부가 모델 판별해서 골라 써야 함, 표본 41장이라 shoulder_start 등 나머지 파라미터는 안 건드림) |
 | `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 10종 (Astia, PRO Neg, Eterna, Acros, Classic Negative 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 population 실측 검증됨, Pro Neg Hi/Eterna Cinema/Nostalgic Neg는 동일장면 비교차트로 추가 검증·재보정(표본 n=1~3, 저신뢰) |
 | `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
