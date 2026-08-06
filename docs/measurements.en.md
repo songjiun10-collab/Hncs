@@ -909,3 +909,52 @@ decode stage, unrelated to the tone-curve stage).
 
 Reproduce: `python3 -m tools.evaluate_chromatic_aberration` (95 pairs ×
 81 combos, ~1 hour).
+
+## exposure_gamma head-to-head by generation - main vs candidate (2026-08)
+
+`apply_hncs()` currently has two independently re-calibrated candidates
+(see the v13 history in `brands/hasselblad.py` and the "v11 parameter
+recalibration" section above for full background):
+
+- **main (origin, currently shipped)**: `toe_lift=0.0,
+  shoulder_start=0.5, white_point=1.0, exposure_gamma=0.8` - fit on 65
+  pairs (4 clean official + 61 local-contributed); X2D II was only
+  represented by 9 ColorChecker chart raws, no real photos
+- **candidate (local v13, separate branch)**: `toe_lift=0.005,
+  shoulder_start=0.5, white_point=1.0, exposure_gamma=0.7` - fit on 135
+  dpreview pairs (5 generations), including 41 real X2D II photos
+
+`shoulder_start`/`white_point` already agree, so the only real point of
+disagreement is `exposure_gamma` (0.8 vs 0.7). `tools/evaluate_exposure_gamma_x2dii.py`
+(new) put both candidates head-to-head on **the 95 clean dpreview pairs
+including the 41 X2D II photos** - a combination neither candidate had
+seen before. Since both parameter sets are fixed (no fitting), this is a
+paired comparison, not LOO - reused `tools/calibrate.py`'s `summarize()`
+(sign test, paired t, bootstrap 95% CI, drop-one) as-is.
+
+| Generation | n | Result | Sign test p | Bootstrap 95% CI (improvement) |
+|---|---|---|---|---|
+| CFV 100C/907X | 22 | **main wins** - candidate 88.8% worse | <0.001 | [-140.4%, -46.7%] |
+| X2D 100C | 24 | **main wins** - candidate 93.5% worse | <0.001 | [-157.1%, -55.2%] |
+| X1D II 50C | 6 | Inconclusive (candidate +15.1%, small n) | 0.688 | [-3.5%, +23.8%] |
+| **X2D II 100C** | **41** | **candidate wins** - 24.8% improvement | <0.001 | [+18.0%, +29.7%] |
+| Pooled overall | 94 | Inconclusive (candidate +10.5%) | 0.251 | [-3.7%, +18.4%] |
+
+**Conclusion: exposure_gamma splits in opposite directions by
+generation.** `exposure_gamma=0.8` (main) wins decisively for CFV/X2D
+(both p<0.001, CI entirely negative, excluding 0), while
+`exposure_gamma=0.7` (candidate) wins decisively for X2D II (p<0.001, CI
+entirely positive, excluding 0). **The pooled "inconclusive" result comes
+from these two opposite signals cancelling out**, not from genuine
+uncertainty about which parameter is right - neither main nor candidate
+is a "global answer" that covers all 5 generations, and **this experiment
+rejects the premise that a single `exposure_gamma` can serve the whole X
+System pool**. This is the first time the unresolved suspicion left by the
+X2D II grid search in the v13 history above ("can't rule out a real
+camera-generation difference") gets confirmed as a statistically
+significant, opposite-direction signal against CFV/X2D.
+
+`apply_hncs()` is not changed by this experiment - whether to introduce a
+per-generation branch is a separate decision. Reproduce: `python3 -m
+tools.evaluate_exposure_gamma_x2dii` (95 pairs, ~5 min - reuses
+`tools.calibrate.load_neutral_render`/`gray_stats`).

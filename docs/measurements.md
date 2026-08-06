@@ -848,3 +848,48 @@ no-op 처리될 가능성) 별도 확인 - 동일 파일을 (0.98,0.98) vs (1.02
 
 재현: `python3 -m tools.evaluate_chromatic_aberration` (95쌍×81콤보,
 약 1시간).
+
+## exposure_gamma 세대별 직접 맞대결 - main vs candidate (2026-08)
+
+`apply_hncs()`에 두 개의 독립적으로 재보정된 후보가 있다 (자세한 경위는
+`brands/hasselblad.py`의 v13 이력과 이 문서 위쪽 "v11 파라미터 재보정"
+절 참고):
+
+- **main(origin, 현재 shipped)**: `toe_lift=0.0, shoulder_start=0.5,
+  white_point=1.0, exposure_gamma=0.8` - 65쌍(공식 클린 4 + 로컬 기여
+  61) 기준, X2D II는 ColorChecker 챠트 9장만 있고 실사진은 없었음
+- **candidate(로컬 v13, 별도 브랜치)**: `toe_lift=0.005,
+  shoulder_start=0.5, white_point=1.0, exposure_gamma=0.7` - dpreview
+  135쌍(5세대) 기준, X2D II 실사진 41장 포함
+
+`shoulder_start`/`white_point`는 이미 일치, 실질 쟁점은
+`exposure_gamma`(0.8 vs 0.7)뿐이라 `tools/evaluate_exposure_gamma_x2dii.py`
+(신규)로 두 후보를 **X2D II 41장을 포함한 dpreview 클린 95쌍**(둘 중
+어느 쪽도 그동안 갖고 있지 않았던 조합)에 직접 맞대결시켰다. 학습 없이
+고정된 두 파라미터셋을 페어드 비교만 하므로 LOO는 아니고, 통계는
+`tools/calibrate.py`의 `summarize()`(부호검정, 페어드 t, 부트스트랩
+95% CI, drop-one)를 그대로 재사용.
+
+| 세대 | n | 결과 | 부호검정 p | 부트스트랩 95% CI(개선폭) |
+|---|---|---|---|---|
+| CFV 100C/907X | 22 | **main 승** - candidate 88.8% 더 나쁨 | <0.001 | [-140.4%, -46.7%] |
+| X2D 100C | 24 | **main 승** - candidate 93.5% 더 나쁨 | <0.001 | [-157.1%, -55.2%] |
+| X1D II 50C | 6 | 보류 (candidate +15.1%, n 작음) | 0.688 | [-3.5%, +23.8%] |
+| **X2D II 100C** | **41** | **candidate 승** - 24.8% 개선 | <0.001 | [+18.0%, +29.7%] |
+| 전체 pooled | 94 | 보류 (candidate +10.5%) | 0.251 | [-3.7%, +18.4%] |
+
+**결론: exposure_gamma는 세대에 따라 정반대 방향으로 갈린다.** CFV/X2D는
+`exposure_gamma=0.8`(main)이 통계적으로 확실히 이기고(둘 다 p<0.001,
+CI가 0을 안 낀 채 전부 음의 방향), X2D II는 `exposure_gamma=0.7`
+(candidate)이 통계적으로 확실히 이긴다(p<0.001, CI가 0을 안 낀 채 전부
+양의 방향). **pooled 전체에서 "보류"로 나오는 건 두 반대 신호가 서로
+상쇄되기 때문**이지, 어느 쪽 파라미터가 옳은지 몰라서가 아니다 - main도
+candidate도 5세대 전체를 커버하는 "전역 정답"은 아니며, **단일
+exposure_gamma로 X 시스템 전 세대를 풀링하겠다는 전제 자체가 이
+실험으로 기각됐다**. 이는 위 v13 이력에서 X2D II 그리드서치가 남긴
+"카메라 세대 차이 가능성을 배제 못 함"이라는 미해결 심증을,
+CFV/X2D 대비 유의성 있는 반대 방향 신호로 처음 확정한 결과다.
+
+`apply_hncs()`는 이 실험으로 바꾸지 않는다 - 세대별 분기 도입 여부는
+별도 결정. 재현: `python3 -m tools.evaluate_exposure_gamma_x2dii`
+(95쌍, 약 5분 - `tools.calibrate.load_neutral_render`/`gray_stats` 재사용).
