@@ -1187,3 +1187,53 @@ II-only parameter set. The 41-pair sample size itself is the limiting
 factor. **Revisit once more X2D II raw+jpeg pairs from a different
 reviewer/shooting session are available.** Reproduce: `python3 -m
 tools.evaluate_x2dii_generation_loo`.
+
+### Re-fitting a 3x3 color matrix on the X2D II 41 photos - rejected (2026-08)
+
+The "Cross-validated the ColorChecker matrix against the 41 real X2D II
+photos" section in the v13 history above only applied a matrix that main
+had fit on a **chart** (kmichels-x2dii-2026-07) to the real photos
+(chaining the chart matrix + tone curve did worse than the tone curve
+alone, 11.23->12.32 ΔE00). This time, re-fit a fresh 3x3 matrix directly
+from **the 41 X2D II real photos themselves**, not the chart
+(`tools/evaluate_x2dii_color_matrix.py`, new - source is camera-native
+linear RGB white-balanced via `AsShotNeutral`, ridge=1.0 least squares),
+asking the same question again. LOO (41 folds, refitting the matrix on
+the other 40 pairs each time) - the tone curve chained after the matrix
+was pinned to `apply_hncs()`'s (main) defaults (toe_lift=0.0,
+shoulder_start=0.5, white_point=1.0) so only the matrix stage varied.
+
+| | Mean ΔE00 |
+|---|---|
+| apply_hncs (main, no matrix) | 10.790 |
+| LOO matrix + shared film curve | 12.292 (-13.9%, worse) |
+
+Win/loss=14/27, sign test p=0.060, bootstrap 95% CI (mean diff)=[-2.214,
+-0.778] - **entirely negative, excluding 0** (an even clearer win for
+apply_hncs than the chart-matrix experiment). **Conclusion: refitting the
+matrix on real photos instead of the chart doesn't change the outcome**
+- a second, independent experiment confirms X2D II's problem isn't
+spatial color distortion (what a matrix corrects) but tone/exposure.
+Reproduce: `python3 -m tools.evaluate_x2dii_color_matrix`.
+
+### apply_hncs_x2dii - new X2D II-only experimental function (2026-08)
+
+Combining the three findings above (the direct exposure_gamma comparison
+is robust, p<0.001; the 41-pair full-grid optimum is unstable, p=0.349 at
+5-fold; the matrix is rejected), added `apply_hncs_x2dii()` in a new file
+`brands/hasselblad_x2dii.py` - following the same pattern as
+`apply_hncs_learned`/`apply_hasselblad_day`/`night`: `apply_hncs()`
+(main) is left untouched, the variant lives in its own file/function,
+marked Experimental.
+
+**What this function adopts**: only `exposure_gamma=0.7`, changed from
+main's 0.8 - the one signal that held up robustly (p<0.001) in the direct
+main-vs-candidate comparison above. **Deliberately not adopted**:
+`shoulder_start=0.82`/`toe_lift=0.02`/`white_point=0.95` (the 41-pair
+full-grid optimum, which lost significance under 5-fold) -
+`shoulder_start`/`toe_lift`/`white_point` stay at main's values. The 3x3
+matrix stage isn't included either (rejected above).
+
+Callers must detect X2D II themselves (e.g. via EXIF) and choose this
+function instead of `apply_hncs()` - this file has no model-detection
+logic of its own. `apply_hncs()` is unchanged by adding this function.

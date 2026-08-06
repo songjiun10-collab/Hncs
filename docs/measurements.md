@@ -1091,3 +1091,50 @@ CFV/X2D 대비 유의성 있는 반대 방향 신호로 처음 확정한 결과�
 크기 자체가 한계다. **서로 다른 리뷰어/촬영 세션의 X2D II raw+jpeg
 페어가 추가로 확보되면 재확정**한다. 재현: `python3 -m
 tools.evaluate_x2dii_generation_loo`.
+
+### 3x3 컬러 매트릭스를 X2D II 41장 자체로 재피팅 - 기각 (2026-08)
+
+위 v13 이력의 "ColorChecker 매트릭스를 X2D II 실사진 41장에
+교차검증" 절은 origin이 **챠트**(kmichels-x2dii-2026-07)로 피팅한
+매트릭스를 실사진에 그대로 적용만 해봤다(챠트 매트릭스+톤커브가
+톤커브 단독보다 오히려 나빠짐, 11.23->12.32 ΔE00). 이번엔 챠트가
+아니라 **X2D II 실사진 41장 자체**로 3x3 매트릭스를 새로 피팅해서
+(`tools/evaluate_x2dii_color_matrix.py`, 신규 - `AsShotNeutral`로
+화이트밸런스한 카메라 네이티브 linear RGB를 소스로, ridge=1.0
+최소자승) 같은 질문을 다시 물었다. LOO(41폴드, held-out 뺀 40쌍으로
+매트릭스 재피팅) - 매트릭스 뒤에 붙는 톤커브는 `apply_hncs()`(main)
+기본값과 동일(toe_lift=0.0, shoulder_start=0.5, white_point=1.0)로
+고정해 매트릭스 단계만 통제변수로 뺐다.
+
+| | 평균 ΔE00 |
+|---|---|
+| apply_hncs(main, 매트릭스 없음) | 10.790 |
+| LOO 매트릭스 + 공유 필름커브 | 12.292 (-13.9%, 악화) |
+
+승/패=14/27, 부호검정 p=0.060, 부트스트랩 95% CI(평균차)=[-2.214,
+-0.778] - **0을 안 낀 채 완전히 음수**(챠트 매트릭스 실험보다 오히려
+더 뚜렷하게 apply_hncs 우세). **결론: 매트릭스를 챠트가 아니라 실사진
+자체로 새로 피팅해도 결과는 안 바뀐다** - X2D II의 문제는 공간적
+색 왜곡(매트릭스가 고치는 것)이 아니라 톤/노출 쪽이라는 게 두 번째
+독립 실험으로도 확인됐다. 재현: `python3 -m
+tools.evaluate_x2dii_color_matrix`.
+
+### apply_hncs_x2dii - X2D II 전용 실험 함수 신설 (2026-08)
+
+위 세 갈래 결과(exposure_gamma 직접비교는 견고/p<0.001, 41쌍 자체
+풀그리드 최적화는 불안정/5-fold에서 p=0.349, 매트릭스는 기각)를 종합해
+`brands/hasselblad_x2dii.py`에 `apply_hncs_x2dii()`를 신설했다 -
+`apply_hncs_learned`/`apply_hasselblad_day`·`night`와 같은 패턴으로
+`apply_hncs()`(main)는 손대지 않고 별도 파일/함수로 분리, Experimental
+표시.
+
+**이 함수가 반영한 것**: `exposure_gamma=0.7`만 main(0.8)에서 바꿨다 -
+main-vs-candidate 직접비교(위 절)가 p<0.001로 견고했던 유일한 신호라서.
+**의도적으로 안 반영한 것**: `shoulder_start=0.82`/`toe_lift=0.02`/
+`white_point=0.95`(41쌍 전용 풀그리드 최적값, 5-fold에서 유의성
+소실) - `shoulder_start`/`toe_lift`/`white_point`는 main과 동일하게
+유지. 3x3 매트릭스 단계도 안 넣음(위 절에서 기각).
+
+호출부가 EXIF 등으로 X2D II 여부를 직접 판별해서 `apply_hncs()` 대신
+이 함수를 골라 써야 한다 - 이 파일 자체엔 모델 판별 로직이 없다.
+`apply_hncs()`는 이 함수 신설로 바뀌지 않았다.
