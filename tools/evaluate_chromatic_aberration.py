@@ -1,289 +1,218 @@
-"""rawpy postprocess()의 chromatic_aberration=(red_scale, blue_scale)
-파라미터가 핫셀블라드 74쌍(공식 13 + 로컬 기여 61, raw+jpeg)의
-ΔE(CIEDE2000)를 줄이는지 leave-one-out 교차검증으로 확인한다. 설계 근거:
+"""
+색수차 보정(chromatic_aberration) 실험 - rawpy raw.postprocess()의
+chromatic_aberration=(red_scale, blue_scale) 파라미터(기본 (1,1)=
+보정없음)로 렌즈 횡색수차를 보정하면 ΔE00이 줄어드는지 확인한다.
+
+origin 저장소(GitHub songjiun10-collab/Hncs)의
 docs/superpowers/specs/2026-07-31-chromatic-aberration-correction-design.md
+설계를 이 로컬 체크아웃(hybrid_engine 없음)에 맞게 재현 - 13쌍(X1D
+전용) 대신 dpreview.com에서 받은 편집 오염 제외 클린 95쌍(5세대 중
+4세대: CFV/X2D/X2D II/X1D II, X1D는 클린 표본 1장뿐이라 그리드서치
+자체가 무의미해서 제외)을 쓴다.
 
   python3 -m tools.evaluate_chromatic_aberration
 
-이번 세션에서 처음으로 "디코드 단계"(그 이전 20여 회의 모든 실험은
-디코드 이후 그레이월드/톤커브/LUT/공간연산만 조정)를 건드리는 실험이다.
-
-**측정된 성능 특성** (설계 문서에 근거 기록): chromatic_aberration이
-지정된 decode_raw() 호출은 같은 RAW 파일을 처음 열 때(OS 페이지캐시
-미스) ~19.6초, 같은 파일을 다시 열 때(캐시 히트) ~2~4.6초 걸린다.
-(1.0, 1.0)은 인자를 아예 안 넘긴 것과 바이트 단위로 동일한 결과를
-낸다(실측 확인) - 그래서 베이스라인도 그리드의 (1.0, 1.0) 지점 재사용.
-
-**74쌍으로 확장하며 추가한 것(2026-08)**: (pair, red_scale, blue_scale)
-ΔE는 어느 LOO 폴드에서 계산하든 값이 같다(폴드 구성과 무관) - 원래는
-이걸 디코드만 캐시하고 ΔE는 폴드마다 다시 계산해서, 13쌍에서는
-그냥 넘어갈 정도였지만 74쌍(폴드 74개 x 조합 81개 x 학습쌍 ~73개)으로
-그대로 확장하면 델타E 계산만 수십만 번 반복하는 꼴이라 감당이 안 된다.
-그래서 `_build_delta_e_table()`이 폴드 루프 진입 전에 (pair, red, blue)
-조합 74*81=5994개 전부를 **딱 한 번씩만** 계산해 테이블로 만들고, LOO는
-그 테이블에서 평균만 내는 순수 조회로 바뀌었다(계산 결과는 이전과
-수학적으로 동일 - 그리드서치가 무엇을 최적으로 고르는지는 바뀌지
-않는다). 그 5994회 디코드가 여전히 무거워서(개당 ~2~4초) 프로세스
-풀로 병렬화한다(기본 CPU-1, 최대 9개 워커).
+apply_hncs()는 건드리지 않는다(원본 스펙과 동일한 이유 - 이 실험은
+raw 디코드 단계 전용, 톤커브 단계와 무관).
 """
 import csv
-import glob
 import itertools
 import math
-import multiprocessing as mp
 import os
 import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import time
 
 import cv2
 import numpy as np
+import rawpy
+from skimage.color import rgb2lab, deltaE_ciede2000
 
-from hybrid_engine.utils.evaluate import mean_delta_e
-from hybrid_engine.utils.io import decode_raw, load_image_linear
-from hybrid_engine.utils.pairs import combine_pairs
-
-N_WORKERS = max(1, min(3, (os.cpu_count() or 3) - 2))  # 16GB 메모리에서 워커당 페어 전체 캐시(~1.3GB)를 감당할 만큼만
-
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CACHE_DIR = os.path.join(_ROOT, "raw_calib_cache")
-CSV_PATH = os.path.join(_ROOT, "datasets", "hasselblad", "hasselblad_raw_jpeg_pairs.csv")
-
-RED_GRID = [0.98, 0.985, 0.99, 0.995, 1.0, 1.005, 1.01, 1.015, 1.02]
-BLUE_GRID = [0.98, 0.985, 0.99, 0.995, 1.0, 1.005, 1.01, 1.015, 1.02]
-
+RAW_DIR = "/Users/songjiun/Documents/raw pair"
+MANIFEST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                         "datasets", "hasselblad", "dpreview_raw_jpeg_pairs_clean.csv")
 DOWNSAMPLE_MAX_DIM = 512
+SCALES = [0.98, 0.985, 0.99, 0.995, 1.0, 1.005, 1.01, 1.015, 1.02]
+COMBOS = list(itertools.product(SCALES, SCALES))  # (red_scale, blue_scale), 81개
 
-_DECODE_CACHE = {}
-_TARGET_CACHE = {}
 
-
-def _resize_max_dim(img, max_dim):
-    """긴 변이 max_dim을 넘으면 종횡비 유지한 채 축소. 이미 작으면
-    그대로 반환(no-op)."""
+def _resize_max_dim(img, max_dim=DOWNSAMPLE_MAX_DIM):
     h, w = img.shape[:2]
-    scale = min(1.0, max_dim / max(h, w))
-    if scale >= 1.0:
-        return img
-    new_w, new_h = max(1, int(round(w * scale))), max(1, int(round(h * scale)))
-    resized = cv2.resize(img.astype(np.float32), (new_w, new_h),
-                          interpolation=cv2.INTER_AREA)
-    return resized.astype(np.float64)
+    scale = max_dim / max(h, w)
+    if scale < 1:
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+    return img
 
 
-def load_pairs(csv_path=CSV_PATH, cache_dir=CACHE_DIR):
-    """CSV의 jpeg_url basename 13개를 읽어 raw/target 경로와 함께
-    dict 리스트로 반환."""
-    pairs = []
-    with open(csv_path, newline="") as f:
-        for row in csv.DictReader(f):
-            name = os.path.basename(row["jpeg_url"])
-            matches = [m for m in glob.glob(os.path.join(cache_dir, name + ".*"))
-                       if not m.endswith(".target.jpg")]
-            if len(matches) != 1:
-                raise FileNotFoundError(f"raw for {name}: expected 1 match, got {matches}")
-            pairs.append({
-                "name": name,
-                "raw_path": matches[0],
-                "target_path": os.path.join(cache_dir, name + ".target.jpg"),
-            })
-    return pairs
+def decode_raw(raw_path, chromatic_aberration=None, max_dim=DOWNSAMPLE_MAX_DIM):
+    """rawpy 기본 색공간(camera_wb, sRGB, gamma=(1,1) pure linear) -
+    hybrid_engine/utils/io.py의 decode_raw()와 동일 정의. half_size=True로
+    데모자이크를 건너뛰어 81콤보 x 95쌍 규모 그리드서치 속도를 확보한다
+    (색수차는 전역 채널 스케일링이라 다운샘플/half_size가 결과를 실질적
+    으로 왜곡하지 않는다는 게 원본 스펙의 판단, 이 세션의 다른 실험에서도
+    반복 확인된 가정)."""
+    kwargs = dict(
+        use_camera_wb=True,
+        no_auto_bright=True,
+        output_bps=16,
+        output_color=rawpy.ColorSpace.sRGB,
+        gamma=(1, 1),
+        half_size=True,
+    )
+    if chromatic_aberration is not None:
+        kwargs["chromatic_aberration"] = chromatic_aberration
+    with rawpy.imread(raw_path) as raw:
+        rgb16 = raw.postprocess(**kwargs)
+    rgb16 = _resize_max_dim(rgb16, max_dim)
+    return rgb16.astype(np.float64) / 65535.0
 
 
-def _decoded_and_target(pair, red_scale, blue_scale):
-    """(디코드+축소본, 축소된 타깃) - (name, red_scale, blue_scale)로
-    캐시해서 LOO 폴드 간 같은 조합의 RAW 재디코드를 막는다."""
-    key = (pair["name"], red_scale, blue_scale)
-    if key not in _DECODE_CACHE:
-        decoded = decode_raw(pair["raw_path"],
-                              chromatic_aberration=(red_scale, blue_scale),
-                              half_size=True)
-        _DECODE_CACHE[key] = _resize_max_dim(decoded, DOWNSAMPLE_MAX_DIM)
-    decoded = _DECODE_CACHE[key]
-    name = pair["name"]
-    if name not in _TARGET_CACHE:
-        _TARGET_CACHE[name] = load_image_linear(pair["target_path"],
-                                                  resize_to=decoded.shape[:2])
-    return decoded, _TARGET_CACHE[name]
+def load_target_srgb(jpeg_path, shape_hw):
+    bgr = cv2.imread(jpeg_path)
+    if bgr is None:
+        return None
+    bgr = cv2.resize(bgr, (shape_hw[1], shape_hw[0]), interpolation=cv2.INTER_AREA)
+    return bgr[:, :, ::-1]
 
 
-def delta_e_for(pair, red_scale, blue_scale):
-    decoded, target = _decoded_and_target(pair, red_scale, blue_scale)
-    return mean_delta_e(decoded, target)
+def linear_to_srgb8(rgb_linear):
+    # 별도 colour-science 의존 없이 표준 sRGB OETF를 직접 구현
+    x = np.clip(rgb_linear, 0.0, 1.0)
+    low = x <= 0.0031308
+    out = np.where(low, x * 12.92, 1.055 * np.power(np.maximum(x, 1e-8), 1 / 2.4) - 0.055)
+    return (np.clip(out, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
 
 
-def _delta_e_task(args):
-    """워커 프로세스 안에서 실행 - 디코드+ΔE를 한 번에 끝내고 (키, 값)만
-    돌려준다(np 배열을 부모 프로세스로 되돌리지 않아 IPC 비용이 작다).
-
-    _build_delta_e_table()이 (pair, red, blue) 조합마다 이 함수를 딱
-    한 번씩만 호출하므로(폴드 구성과 무관한 값이라 재사용할 일이 없음),
-    _decoded_and_target()이 채운 _DECODE_CACHE 항목은 이 호출이 끝나면
-    다시 쓰일 일이 없다 - 74쌍(81콤보)으로 확장한 뒤 이걸 안 지우면
-    워커 하나가 자기 몫(~2000개)을 전부 캐시에 남겨 최대 ~9GB까지
-    쌓여 스왑을 유발한다(13쌍짜리 구버전은 폴드마다 같은 조합을 재방문해서
-    캐시가 필요했지만 지금 구조에서는 순수 낭비)."""
-    pair, red_scale, blue_scale = args
-    result = delta_e_for(pair, red_scale, blue_scale)
-    _DECODE_CACHE.pop((pair["name"], red_scale, blue_scale), None)
-    return (pair["name"], red_scale, blue_scale), result
+def mean_delta_e(rgb_a_u8, rgb_b_u8):
+    lab_a = rgb2lab(rgb_a_u8.astype(np.float64) / 255.0)
+    lab_b = rgb2lab(rgb_b_u8.astype(np.float64) / 255.0)
+    return float(np.mean(deltaE_ciede2000(lab_a, lab_b)))
 
 
-def _build_delta_e_table(pairs, n_workers=N_WORKERS):
-    """(pair, red_scale, blue_scale) 5994(=74*81)개 조합 전부의 ΔE를 LOO
-    폴드 루프 진입 전에 한 번씩만 계산한다 - 폴드 구성과 무관한 값이라
-    폴드마다 다시 구할 이유가 없다."""
-    tasks = [(p, r, b) for p in pairs for r, b in itertools.product(RED_GRID, BLUE_GRID)]
-    table = {}
-    if n_workers <= 1:
-        for i, task in enumerate(tasks):
-            key, de = _delta_e_task(task)
-            table[key] = de
-            if (i + 1) % 200 == 0:
-                print(f"  [table] {i + 1}/{len(tasks)}", flush=True)
-        return table
-    with mp.Pool(processes=n_workers) as pool:
-        for i, (key, de) in enumerate(pool.imap_unordered(_delta_e_task, tasks, chunksize=4)):
-            table[key] = de
-            if (i + 1) % 200 == 0:
-                print(f"  [table] {i + 1}/{len(tasks)}", flush=True)
-    return table
-
-
-def grid_search(train_pairs, table):
-    """train_pairs 평균 ΔE(CIEDE2000)가 최소인 (red_scale, blue_scale)
-    반환 - 9x9=81 전 조합 탐색(사전계산된 table에서 조회만 한다)."""
-    best_params, best_de = (1.0, 1.0), float("inf")
-    for red_scale, blue_scale in itertools.product(RED_GRID, BLUE_GRID):
-        des = [table[(p["name"], red_scale, blue_scale)] for p in train_pairs]
-        mean_de = float(np.mean(des))
-        if mean_de < best_de:
-            best_de, best_params = mean_de, (red_scale, blue_scale)
-    return best_params
-
-
-def run_loocv():
-    pairs = combine_pairs(load_pairs())
-    print(f"페어 {len(pairs)}개 (공식 + 로컬 기여) - ΔE 테이블 사전계산 시작"
-          f"({len(pairs) * len(RED_GRID) * len(BLUE_GRID)}개 조합, {N_WORKERS}개 워커)",
-          flush=True)
-    table = _build_delta_e_table(pairs)
-    per_fold = []
-    for i, held_out in enumerate(pairs):
-        train = pairs[:i] + pairs[i + 1:]
-        best_red, best_blue = grid_search(train, table)
-        de_baseline = table[(held_out["name"], 1.0, 1.0)]
-        de_corrected = table[(held_out["name"], best_red, best_blue)]
-        per_fold.append((held_out["name"], de_baseline, de_corrected,
-                          best_red, best_blue))
-        print(f"  [{held_out['name']}] baseline ΔE={de_baseline:.3f} "
-              f"corrected ΔE={de_corrected:.3f} "
-              f"params=({best_red}, {best_blue})", flush=True)
-    return per_fold
-
-
-def _sign_test_p(wins, losses):
-    """부호검정 양측 p값(정확 이항, 무승부 제외). scipy 의존 없이
-    math.comb으로 직접 계산한다."""
-    n = wins + losses
+def _sign_test_p(n_better, n_worse):
+    n = n_better + n_worse
     if n == 0:
         return 1.0
-    k = min(wins, losses)
-    tail = sum(math.comb(n, i) for i in range(k + 1)) / (2.0 ** n)
-    return min(1.0, 2.0 * tail)
+    k = min(n_better, n_worse)
+    total = sum(math.comb(n, i) for i in range(0, k + 1))
+    return min(1.0, 2 * total / (2 ** n))
 
 
-def summarize(per_fold, n_bootstrap=20000, seed=0):
-    """폴드별 (name, de_baseline, de_corrected, red_scale, blue_scale)
-    리스트 -> 요약 통계 dict. 평균 차이 하나로 승패를 선언하지 않는다 -
-    부호검정, 부트스트랩 신뢰구간, drop-one 민감도를 같이 내고 0을
-    포함하면 '판정 보류'로 보고한다. 순수 함수라 기록된 폴드 결과만
-    으로도 재현할 수 있다(tests/test_evaluate_chromatic_aberration.py)."""
-    baseline = np.array([row[1] for row in per_fold], dtype=np.float64)
-    corrected = np.array([row[2] for row in per_fold], dtype=np.float64)
-    n = len(per_fold)
-    diff = baseline - corrected  # 양수 = 보정이 그 폴드에서 더 좋음(ΔE 감소)
-    mean_baseline = float(baseline.mean())
-    mean_corrected = float(corrected.mean())
-    improvement_pct = (mean_baseline - mean_corrected) / mean_baseline * 100.0
+def _bootstrap_ci(diffs, n_resamples=10000, seed=0):
+    rng = np.random.RandomState(seed)
+    diffs = np.asarray(diffs)
+    means = np.empty(n_resamples)
+    n = len(diffs)
+    for i in range(n_resamples):
+        idx = rng.randint(0, n, n)
+        means[i] = diffs[idx].mean()
+    lo, hi = np.percentile(means, [2.5, 97.5])
+    return float(lo), float(hi)
 
-    wins = int((diff > 0).sum())
-    losses = int((diff < 0).sum())
-    sd_diff = float(diff.std(ddof=1)) if n > 1 else 0.0
-    sem_diff = sd_diff / math.sqrt(n) if n > 1 else 0.0
-    t_stat = float(diff.mean() / sem_diff) if sem_diff > 0 else 0.0
 
-    rng = np.random.default_rng(seed)
-    boot_diff, boot_pct = [], []
-    for _ in range(n_bootstrap):
-        idx = rng.integers(0, n, n)
-        boot_diff.append(float(diff[idx].mean()))
-        boot_pct.append(float((baseline[idx].mean() - corrected[idx].mean())
-                              / baseline[idx].mean() * 100.0))
-    ci_diff = tuple(float(v) for v in np.percentile(boot_diff, [2.5, 97.5]))
-    ci_pct = tuple(float(v) for v in np.percentile(boot_pct, [2.5, 97.5]))
+def _paired_t(diffs):
+    diffs = np.asarray(diffs)
+    n = len(diffs)
+    mean = diffs.mean()
+    se = diffs.std(ddof=1) / math.sqrt(n)
+    return mean / se if se > 0 else float("inf")
 
-    dropone = []
-    for i in range(n):
-        keep = np.ones(n, dtype=bool)
-        keep[i] = False
-        dropone.append(float((baseline[keep].mean() - corrected[keep].mean())
-                             / baseline[keep].mean() * 100.0))
 
-    inconclusive = ci_diff[0] <= 0.0 <= ci_diff[1]
-    if inconclusive:
-        verdict = ("판정 보류 - 평균 차이가 0과 구분되지 않는다"
-                   "(95% 부트스트랩 CI가 0을 포함)")
-    elif improvement_pct > 0:
-        verdict = "색수차 보정이 이겼다"
-    else:
-        verdict = "보정 없음(기존 decode_raw())이 더 낫다"
+def summarize(baseline_de, best_de, names):
+    diffs = np.asarray(baseline_de) - np.asarray(best_de)  # 양수 = 보정이 더 나음
+    n_better = int((diffs > 1e-9).sum())
+    n_worse = int((diffs < -1e-9).sum())
+    n_tie = len(diffs) - n_better - n_worse
+    p = _sign_test_p(n_better, n_worse)
+    t = _paired_t(diffs)
+    ci_lo, ci_hi = _bootstrap_ci(diffs)
+    rel_pct = float(diffs.mean() / np.mean(baseline_de) * 100)
 
-    return {
-        "n": n,
-        "mean_baseline": mean_baseline,
-        "mean_corrected": mean_corrected,
-        "mean_diff": float(diff.mean()),
-        "median_diff": float(np.median(diff)),
-        "improvement_pct": improvement_pct,
-        "corrected_wins": wins,
-        "baseline_wins": losses,
-        "sd_diff": sd_diff,
-        "sem_diff": sem_diff,
-        "t_stat": t_stat,
-        "sign_test_p": _sign_test_p(wins, losses),
-        "ci_diff": ci_diff,
-        "ci_pct": ci_pct,
-        "dropone_pct_min": min(dropone),
-        "dropone_pct_max": max(dropone),
-        "dropone_flips_sign": min(dropone) <= 0.0 <= max(dropone),
-        "inconclusive": inconclusive,
-        "verdict": verdict,
-    }
+    drop_one = []
+    for i in range(len(diffs)):
+        rest = np.delete(diffs, i)
+        drop_one.append(float(rest.mean()))
+
+    return dict(
+        n=len(diffs), mean_baseline=float(np.mean(baseline_de)), mean_best=float(np.mean(best_de)),
+        mean_diff=float(diffs.mean()), rel_pct=rel_pct, n_better=n_better, n_worse=n_worse, n_tie=n_tie,
+        sign_test_p=p, t_stat=t, ci_lo=ci_lo, ci_hi=ci_hi,
+        drop_one_min=min(drop_one), drop_one_max=max(drop_one),
+    )
 
 
 def print_summary(s):
-    print()
-    print(f"평균 baseline ΔE (CIEDE2000, n={s['n']}): {s['mean_baseline']:.3f}")
-    print(f"평균 corrected ΔE (CIEDE2000, n={s['n']}): {s['mean_corrected']:.3f}")
-    print(f"개선폭: {s['improvement_pct']:.1f}%")
-    print(f"폴드 승패: 보정 {s['corrected_wins']}승 {s['baseline_wins']}패")
-    print(f"페어드 차이: 평균 {s['mean_diff']:+.3f} / 중앙값 "
-          f"{s['median_diff']:+.3f} / 표준편차 {s['sd_diff']:.3f} "
-          f"(t={s['t_stat']:.2f}, df={s['n'] - 1})")
-    print(f"부호검정 양측 p = {s['sign_test_p']:.3f}")
-    print(f"부트스트랩 95% CI - 평균 ΔE 차이: "
-          f"[{s['ci_diff'][0]:+.3f}, {s['ci_diff'][1]:+.3f}] / "
-          f"개선폭: [{s['ci_pct'][0]:+.1f}%, {s['ci_pct'][1]:+.1f}%]")
-    print(f"drop-one 민감도: 한 쌍을 빼면 개선폭이 "
-          f"{s['dropone_pct_min']:.1f}% ~ {s['dropone_pct_max']:.1f}% 사이로 움직인다"
-          + (" (부호가 뒤집힌다)" if s["dropone_flips_sign"] else ""))
-    print(f"판정: {s['verdict']}")
+    print(f"\n=== 요약 (n={s['n']}) ===")
+    print(f"보정없음 평균 ΔE00={s['mean_baseline']:.3f}  LOO 최적보정 평균 ΔE00={s['mean_best']:.3f}")
+    print(f"평균 개선폭={s['mean_diff']:+.3f} ({s['rel_pct']:+.2f}%)")
+    print(f"승/패/동률={s['n_better']}/{s['n_worse']}/{s['n_tie']}  부호검정 p={s['sign_test_p']:.4f}")
+    print(f"대응표본 t={s['t_stat']:.3f}")
+    print(f"부트스트랩 95% CI=[{s['ci_lo']:+.3f}, {s['ci_hi']:+.3f}]")
+    print(f"drop-one 민감도 범위=[{s['drop_one_min']:+.3f}, {s['drop_one_max']:+.3f}]")
+    if s['ci_lo'] <= 0 <= s['ci_hi']:
+        print("판정: 보류 (95% CI가 0을 포함)")
+    else:
+        direction = "개선" if s['mean_diff'] > 0 else "악화"
+        print(f"판정: 방향 있음 - 색수차 보정이 평균 {abs(s['rel_pct']):.2f}% {direction}")
 
 
 def main():
-    per_fold = run_loocv()
-    print_summary(summarize(per_fold))
+    rows = list(csv.DictReader(open(MANIFEST)))
+    print(f"페어 {len(rows)}개, 콤보 {len(COMBOS)}개 (red_scale x blue_scale) - "
+          f"총 {len(rows) * len(COMBOS)}회 디코드 예정", flush=True)
+
+    # matrix[i][combo_idx] = 그 콤보로 디코드했을 때의 ΔE00
+    matrix = np.zeros((len(rows), len(COMBOS)), dtype=np.float64)
+    names = []
+    t0 = time.time()
+    for i, r in enumerate(rows):
+        raw_path = os.path.join(RAW_DIR, r["raw_file"])
+        jpg_path = os.path.join(RAW_DIR, r["jpeg_file"])
+        names.append(r["raw_file"])
+        target_u8 = None
+        for j, combo in enumerate(COMBOS):
+            try:
+                linear = decode_raw(raw_path, chromatic_aberration=combo)
+            except Exception as e:
+                print(f"  [{i+1}/{len(rows)}] {r['raw_file']} combo={combo} 디코드 실패: {e}", flush=True)
+                matrix[i, j] = np.nan
+                continue
+            if target_u8 is None:
+                target_u8 = load_target_srgb(jpg_path, linear.shape[:2])
+                if target_u8 is None:
+                    print(f"  [{i+1}/{len(rows)}] {r['jpeg_file']} 타깃 로드 실패", flush=True)
+                    break
+            out_u8 = linear_to_srgb8(linear)
+            matrix[i, j] = mean_delta_e(out_u8, target_u8)
+        elapsed = time.time() - t0
+        eta = elapsed / (i + 1) * (len(rows) - i - 1)
+        print(f"  [{i+1}/{len(rows)}] {r['raw_file']} ({r['model']}) 완료  "
+              f"({elapsed:.0f}s경과, 예상잔여 {eta:.0f}s)", flush=True)
+
+    np.save("/tmp/ca_matrix.npy", matrix)
+    with open("/tmp/ca_names.txt", "w") as f:
+        f.write("\n".join(names))
+
+    baseline_idx = COMBOS.index((1.0, 1.0))
+    baseline_de = matrix[:, baseline_idx]
+
+    # LOO: 매 fold마다 나머지 n-1쌍 평균 ΔE가 최소인 콤보를 훈련데이터로 선택
+    best_de = np.zeros(len(rows))
+    chosen_combos = []
+    for i in range(len(rows)):
+        train_mask = np.ones(len(rows), dtype=bool)
+        train_mask[i] = False
+        train_means = np.nanmean(matrix[train_mask], axis=0)
+        best_combo_idx = int(np.nanargmin(train_means))
+        chosen_combos.append(COMBOS[best_combo_idx])
+        best_de[i] = matrix[i, best_combo_idx]
+
+    print("\n=== 페어별 (보정없음 ΔE00, LOO 최적보정 ΔE00, 선택된 콤보) ===")
+    for i, r in enumerate(rows):
+        print(f"  {r['raw_file']:20s} ({r['model']:16s})  base={baseline_de[i]:6.3f}  "
+              f"best={best_de[i]:6.3f}  combo={chosen_combos[i]}")
+
+    s = summarize(baseline_de, best_de, names)
+    print_summary(s)
 
 
 if __name__ == "__main__":

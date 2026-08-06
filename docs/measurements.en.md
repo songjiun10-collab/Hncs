@@ -860,3 +860,52 @@ is weak) - neither is clean enough to adopt right now. `apply_hncs()`
 stays as-is. Reproduce: `python3 -m tools.calibrate
 grid_search_loo_per_generation` / `regularize_per_generation`, both
 auto-skip generations under min_n=10.
+
+## Chromatic aberration (`chromatic_aberration`) LOO experiment - a clean null result (2026-08)
+
+Tested whether rawpy's `raw.postprocess()` `chromatic_aberration=
+(red_scale, blue_scale)` parameter (default (1,1) = no correction) for
+lateral chromatic aberration reduces ΔE00. Reproduced the original spec
+(`docs/superpowers/specs/2026-07-31-chromatic-aberration-correction-design.md`,
+13 pairs, X1D-only) at larger scale using the local dpreview-sourced
+clean 95 pairs (4 generations: CFV/X2D/X2D II/X1D II; X1D excluded - only
+1 clean sample) via `tools/evaluate_chromatic_aberration.py` (new -
+self-contained, since this checkout has no `hybrid_engine`).
+
+**Method**: rawpy decode with `half_size=True` (speed) and `gamma=(1,1)`
+pure linear. Grid search over 9×9=81 `(red_scale, blue_scale)` combos
+(0.98-1.02, 0.005 step). Each combo is encoded to sRGB and compared
+against the camera JPEG via ΔE00 (CIEDE2000, skimage); LOO (pick the
+combo with the lowest mean ΔE00 over the other 94 files, evaluate on the
+held-out file) gives an out-of-sample estimate. **Sanity check**: verified
+`chromatic_aberration` actually changes the image under `half_size=True`
+(it could in principle be a no-op internally) - decoding the same file at
+(0.98,0.98) vs (1.02,1.02) gave `mean|diff|=1374.6` (vs 1390.0 under
+`half_size=False`, essentially the same effect size) - the parameter is
+genuinely active.
+
+**Result: a clean null.** Excluding one corrupted file
+(`4589763049.3fr`, CFV), the LOO-optimal combo converged to exactly
+`(1.0, 1.0)` (no correction) for **all 94** valid pairs - zero exceptions.
+
+| | Value |
+|---|---|
+| Mean ΔE00, no correction | 9.436 |
+| Mean ΔE00, LOO-optimal correction | 9.436 (identical) |
+| Win/loss/tie | 0/0/94 |
+| Improvement | 0.000% |
+
+Bootstrap CI / sign test are moot here - every per-pair difference is
+exactly zero, so the variance is also zero. This is an unambiguous
+negative result.
+
+**Conclusion**: within this parameter range (±2%), correcting chromatic
+aberration at the raw-decode stage does not reduce ΔE00 against the
+camera JPEG at all. The original spec's premise - that lateral chromatic
+aberration is a meaningful component of the color error - is rejected on
+this dataset (4 generations, 94 pairs). `apply_hncs()` is untouched (same
+rationale as the original spec - this experiment is scoped to the raw
+decode stage, unrelated to the tone-curve stage).
+
+Reproduce: `python3 -m tools.evaluate_chromatic_aberration` (95 pairs ×
+81 combos, ~1 hour).
