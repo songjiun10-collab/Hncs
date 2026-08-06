@@ -27,6 +27,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/canon.py` | Canon 색감 근사(EOS R5/R6/R8/R3/R 5바디 population) - `apply_canon_look()` |
 | `brands/nikon.py` | Nikon 색감 근사(Z6/Z6 II/D780 3바디 population - Z9/D850 갤러리는 EXIF 빠진 자리표시자 이미지뿐이라 제외) - `apply_nikon_look()` |
 | `brands/sony.py` | Sony 색감 근사(A7/A7R/A7S/A7 III/A7 IV 5바디 population, 바디당 23장) - `apply_sony_look()` |
+| `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V 전용, raw+jpeg 58쌍 기반 첫 raw 캘리브레이션, ΔE00 직접 그리드서치로 +0.53% 개선) |
 | `brands/panasonic.py` | Panasonic(Lumix) 색감 근사(GH5/GH6/G9 MFT + S5/S1 풀프레임 5바디 population, n=120) - `apply_panasonic_look()` |
 | `brands/olympus.py` | Olympus(현 OM System) 색감 근사(OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F 5바디 population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma 색감 근사(Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill 5바디 population, n=83) - `apply_sigma_look()` |

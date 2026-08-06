@@ -27,6 +27,7 @@ docs/         Detailed documentation (this directory)
 | `brands/canon.py` | Canon color approximation (EOS R5/R6/R8/R3/R, 5-body population) - `apply_canon_look()` |
 | `brands/nikon.py` | Nikon color approximation (Z6/Z6 II/D780, 3-body population - the Z9/D850 galleries only had placeholder images with stripped EXIF, so they were excluded) - `apply_nikon_look()` |
 | `brands/sony.py` | Sony color approximation (A7/A7R/A7S/A7 III/A7 IV, 5-body population, 23 photos per body) - `apply_sony_look()` |
+| `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V only, the first raw-based calibration from 58 raw+jpeg pairs, +0.53% over the direct-ΔE00 grid search) |
 | `brands/panasonic.py` | Panasonic (Lumix) color approximation (GH5/GH6/G9 MFT + S5/S1 full-frame, 5-body population, n=120) - `apply_panasonic_look()` |
 | `brands/olympus.py` | Olympus (now OM System) color approximation (OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F, 5-body population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma color approximation (Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill, 5-body population, n=83) - `apply_sigma_look()` |
