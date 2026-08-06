@@ -1188,6 +1188,39 @@ factor. **Revisit once more X2D II raw+jpeg pairs from a different
 reviewer/shooting session are available.** Reproduce: `python3 -m
 tools.evaluate_x2dii_generation_loo`.
 
+#### Verdict resolved after expanding the sample (41->63->70 pairs), shoulder_start corrected (2026-08)
+
+The additional X2D II raw+jpeg pairs this section was waiting on arrived
+in two batches - apparently the rest of the same dpreview gallery (same
+lens, XCD 35-100E), all with a Software tag that's just a firmware
+version string (no Adobe signature), so no edit contamination. The
+original 41 photos all used 0.00 exposure compensation (the "distinctly
+different habit" from the 8-hypothesis investigation above), but the
+new pairs mix in -2/3, -4/3, etc. - so this isn't quite the same single
+shooting session either. Expanded the manifest 41->63 (+22, one was a
+duplicate file, so +21 net) ->70 (+7) pairs and re-ran
+`tools/evaluate_x2dii_generation_loo.py` unchanged:
+
+| n | LOO improvement | LOO sign test p | 5-fold sign test p | Dominant combo |
+|---|---|---|---|---|
+| 41 | 36.0% | 0.060 | 0.349 (loses significance) | eg=0.3, tl=0.02, **ss=0.82**, wp=0.95 (39/41) |
+| 63 | 41.8% | 0.011 | 0.005 | eg=0.3, tl=0.02, **ss=0.5**, wp=0.95 (61/63) |
+| 70 | 44.1% | 0.003 | 0.003 (identical to LOO) | eg=0.3, tl=0.02, **ss=0.5**, wp=0.95 (**70/70, unanimous**) |
+
+**`shoulder_start=0.82` was an artifact of the small 41-pair sample** -
+as the sample grew, it converged to `0.5`, the same value the other 4
+generations (CFV/X2D/X1D/X1D II) already use. At n=70, LOO and 5-fold
+results match to the decimal point (44.1% improvement, bootstrap 95% CI
+[+31.9%,+53.6%]), and drop-one sensitivity is a stable 42.3-45.7% - the
+"selection sensitive to training-set size" problem flagged above is
+resolved.
+
+**Verdict: settled.** `exposure_gamma=0.3`/`toe_lift=0.02`/`white_point=0.95`
+stay as they were; `brands/hasselblad_x2dii.py`'s `apply_hncs_x2dii()`
+had its `shoulder_start` corrected from 0.82 to 0.5. `apply_hncs()`
+(main) is unaffected - only the X2D II-only experimental function
+changes. Reproduce: same command as above, against the 70-pair manifest.
+
 ### Re-fitting a 3x3 color matrix on the X2D II 41 photos - rejected (2026-08)
 
 The "Cross-validated the ColorChecker matrix against the 41 real X2D II

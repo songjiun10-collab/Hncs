@@ -40,6 +40,27 @@ p=0.349로 유의성 소실이라는 판정은 그대로 유효, 41쌍 전용 in
 노출 다 따로 X2D II를 위한 모델로"라고 명시적으로 지시해서 반영한
 것이다. 재현: `python3 -m tools.evaluate_x2dii_generation_loo`
 ("전체 41쌍으로 피팅한 in-sample 최적 조합" 줄).
+
+**갱신(2026-08, 표본 41->70쌍으로 확장 후 shoulder_start 정정)**:
+사용자가 X2D II raw+jpeg 페어를 두 차례 더 추가해서(같은 dpreview
+갤러리의 나머지 분량으로 보임, 전부 Software=펌웨어 버전 문자열만
+있고 Adobe 서명 없음 - 편집 오염 없음 확인) 41->63->70쌍으로 커졌다.
+재검증 결과 **`shoulder_start=0.82`는 41쌍짜리 작은 표본의
+아티팩트였다** - 표본이 늘어날수록 다른 4세대와 같은 `0.5`로
+수렴했다:
+
+| n | LOO 부호검정 p | 5-fold 부호검정 p | 지배적 shoulder_start |
+|---|---|---|---|
+| 41 | 0.060 | 0.349(유의성 소실) | 0.82 (39/41) |
+| 63 | 0.011 | 0.005 | 0.5 (61/63) |
+| 70 | 0.003 | 0.003(LOO와 완전 동일) | **0.5 (70/70, 만장일치)** |
+
+70쌍에서는 LOO와 5-fold 결과가 소수점까지 완전히 일치하고(개선폭
+44.1%, CI [+31.9%,+53.6%]), drop-one도 42.3~45.7%로 안정적 - 위
+"통계적 견고함 부족" 문제 자체가 해소됐다. `exposure_gamma=0.3`/
+`toe_lift=0.02`/`white_point=0.95`는 그대로, **`shoulder_start`만
+0.82->0.5로 정정**한다. 재현: `python3 -m
+tools.evaluate_x2dii_generation_loo`(70쌍 기준 매니페스트로 재실행).
 """
 import cv2
 import numpy as np
@@ -47,7 +68,7 @@ import numpy as np
 from core.curve import film_curve
 
 
-def apply_hncs_x2dii(img_bgr, toe_lift=0.02, shoulder_start=0.82,
+def apply_hncs_x2dii(img_bgr, toe_lift=0.02, shoulder_start=0.5,
                       white_point=0.95, clahe_clip=1.25, exposure_gamma=0.3):
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
