@@ -199,3 +199,67 @@ See the "HNCS Structural Experiment" section of hybrid_engine/EVALUATION.md for 
 - **Does not replace `apply_hncs()`** - even if this experiment wins, it
   is not promoted to Stable within this plan's scope (that's a separate
   discussion).
+
+## Revalidation (2026-08, 94 local pairs + blending variant + 1024-combo grid)
+
+Re-checked the 13-pair result above ("a draw - 4.1% improvement but the
+CI includes 0") at much larger scale. `tools/evaluate_hncs_structural.py`
+(new - self-contained reimplementation of
+`hybrid_engine/research/hncs_structural.py` +
+`tools/evaluate_hncs_structural.py`, since this checkout has no
+`hybrid_engine`) expanded two things at once, using the local
+dpreview-sourced clean 95 pairs minus one corrupted file
+(`4589763049.3fr`) - **94 pairs**:
+
+1. In addition to the existing **hard cluster** split (`AsShotNeutral`
+   R/B ratio, threshold 0.9, `cluster_a`/`cluster_b`), a new **continuous
+   blending variant** (`compute_blend_weight_rb`, normalizing the R/B
+   ratio itself into a blend weight between the two cluster
+   matrices/chroma LUTs)
+2. The chroma LUT grid was expanded from the original 49 combos
+   (`sat_mult`/`hue_shift`, 7 values each) to **1024 combos** (32 values
+   each)
+3. Switched from LOO (13 runs) to **5-fold CV** (compute cost - LOO over
+   94 pairs × 1024 combos is impractical)
+
+The film curve stayed pinned to `apply_hncs()`'s v13 defaults
+(`toe_lift=0.005, shoulder_start=0.5, white_point=1.0`), as before.
+Cluster split: 88 (`cluster_a`) vs. 6 (`cluster_b`).
+
+**Result: same direction, still inconclusive.**
+
+| Comparison | Improvement | Win/loss | Sign test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| Hard cluster vs `apply_hncs()` | +3.81% (10.355→9.960) | 54/40 | 0.180 | [-0.306, +1.075] | Inconclusive |
+| Blend vs `apply_hncs()` | +2.62% (10.355→10.083) | 53/41 | 0.256 | [-0.408, +0.936] | Inconclusive |
+| Hard cluster vs blend (direct) | Blend is 1.24% worse (9.960→10.083) | 27/67 | <0.0001 | [-0.187, -0.059] | **Hard cluster wins, significantly** |
+
+Comparing 13 pairs (+4.1%, CI [-15.8%,+22.9%]) against 94 pairs (+3.81%,
+CI [-0.306,+1.075]) side by side, both the point estimate and the CI
+width tightened (expected with 7x the sample) - but **the sign stayed
+consistently positive and the CI still includes 0**, meaning the "weak
+but directionally consistent" signal has stabilized just short of
+significance rather than resolving either way. The 13-pair warning
+("don't cite the 4.1% figure as a conclusion") still holds at 94 pairs.
+
+**New finding - continuous blending is clearly worse than hard
+clustering.** This was tested for the first time here, on the hypothesis
+that softly blending across the illuminant boundary instead of a hard cut
+would be more accurate - the result is the opposite: blending is 1.24%
+worse than hard clustering, and this time the CI excludes 0
+(statistically significant). If the minority cluster (`cluster_b`, 6
+pairs) really does represent a distinct illuminant condition, this
+suggests a clean split beats a smooth blend across it - though as
+repeatedly noted elsewhere in this document ("Limitations" above), whether
+`cluster_b` is genuinely a separate illuminant population has never
+actually been verified.
+
+**What this revalidation does not change** in the "Limitations" section
+above: the ground truth is still the camera JPEG (not real HNCS output),
+the comparison is still asymmetric (`apply_hncs()`'s own parameters were
+grid-searched against these same pairs), and this remains a fresh fit
+unrelated to Phocus's actual matrix/LUT values - all of that still
+applies.
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural` (94 pairs × 1024
+combos × 5-fold, ~1 hour).

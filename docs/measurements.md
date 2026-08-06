@@ -804,3 +804,47 @@ target_L **평균**을 쓰는데, ISO 64와 25,600은 카메라 내부 노이즈
 만큼 명확하지 않다. `apply_hncs()`는 그대로 유지. 재현: `python3 -m
 tools.calibrate grid_search_loo_per_generation` / `regularize_per_generation`,
 둘 다 min_n=10 미만 세대는 자동 생략.
+
+## 색수차 보정(chromatic_aberration) LOO 실험 - 완전한 무효과 (2026-08)
+
+rawpy `raw.postprocess()`의 `chromatic_aberration=(red_scale, blue_scale)`
+파라미터(기본 (1,1)=보정없음)로 렌즈 횡색수차를 보정하면 ΔE00이
+줄어드는지 실측. 원본 스펙(`docs/superpowers/specs/
+2026-07-31-chromatic-aberration-correction-design.md`, 13쌍·X1D 전용)을
+로컬 dpreview 클린 95쌍(4세대: CFV/X2D/X2D II/X1D II, X1D는 클린 표본
+1장뿐이라 제외)으로 확대 재현했다(`tools/evaluate_chromatic_aberration.py`,
+신규 - 이 체크아웃엔 `hybrid_engine`이 없어 자체 구현).
+
+**방법**: `half_size=True`(속도), `gamma=(1,1)` pure linear로 rawpy
+디코드. `(red_scale, blue_scale)` 9×9=81콤보(0.98~1.02, 0.005 간격)를
+그리드서치. 콤보별 sRGB 인코딩 후 카메라 JPEG과 ΔE00(CIEDE2000, skimage)
+비교, LOO(파일 1개를 제외한 나머지 94개 평균 ΔE00이 최소인 콤보를 골라
+그 held-out 파일에 평가)로 out-of-sample 검증. **sanity check**: `half_size=True`
+모드에서 `chromatic_aberration`이 실제로 이미지를 바꾸는지(내부적으로
+no-op 처리될 가능성) 별도 확인 - 동일 파일을 (0.98,0.98) vs (1.02,1.02)로
+디코드해 `mean|diff|=1374.6`(`half_size=False`의 1390.0과 거의 동일)을
+확인, 파라미터는 정상 작동함.
+
+**결과: 완전한 무효과.** 손상 파일(`4589763049.3fr`, CFV) 1개를 제외한
+94개 유효 페어 **전부**에서 LOO 최적 콤보가 정확히 `(1.0, 1.0)`(보정
+없음)으로 수렴했다 - 예외 0건.
+
+| | 값 |
+|---|---|
+| 보정없음 평균 ΔE00 | 9.436 |
+| LOO 최적보정 평균 ΔE00 | 9.436 (완전히 동일) |
+| 승/패/동률 | 0/0/94 |
+| 개선폭 | 0.000% |
+
+부트스트랩 CI·부호검정 같은 통계 검정 자체가 무의미하다(페어별 차이가
+전부 정확히 0이라 분산도 0) - 판정에 애매함이 전혀 없는 명확한 음성
+결과다.
+
+**결론**: 이 파라미터 범위(±2%)에서 rawpy 디코드 단계의 색수차 보정은
+카메라 JPEG 대비 ΔE00을 전혀 줄이지 않는다. 원본 스펙이 전제한 "렌즈
+횡색수차가 색 오차의 유의미한 성분"이라는 가정이 이 데이터셋(4세대,
+94쌍)에서는 기각된다. `apply_hncs()`는 손대지 않음(원본 스펙과 동일한
+이유 - 이 실험은 raw 디코드 단계 전용, 톤커브 단계와 무관).
+
+재현: `python3 -m tools.evaluate_chromatic_aberration` (95쌍×81콤보,
+약 1시간).
