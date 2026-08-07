@@ -1282,3 +1282,47 @@ stands; these values remain the 41-pair in-sample optimum only.
 `apply_hncs_x2dii()` defaults are now: `exposure_gamma=0.3,
 toe_lift=0.02, shoulder_start=0.82, white_point=0.95`. The 3x3 matrix
 remains excluded (rejected above).
+
+### apply_hncs_x2dii final correction - percentile RMSE objective rejected, direct ΔE00 grid search (2026-08)
+
+`shoulder_start` was corrected from 0.82 to 0.5 as the sample grew from
+41 to 70 pairs (see "X2D II-only parameters, LOO/5-fold" above), but
+every one of those checks still used b2/w995 percentile RMSE as the
+objective - `apply_hncs()` (main) had never been put head-to-head
+against `apply_hncs_x2dii()` on real ΔE00 until now.
+
+**Direct head-to-head (3000px, minimal downsampling) - result:
+essentially a wash** (`tools/evaluate_full_pixel_de00_confirm.py`,
+n=70): -5.13% (main slightly ahead), win/loss 34/36, bootstrap 95% CI
+[-1.679, +0.292] (includes 0) - **the "44.1% improvement" the percentile
+RMSE grid search reported was a defect in the objective itself** - the
+exact same pattern hit in Sony a7V (`brands/sony_a7v.py` history) showed
+up in X2D II's core parameters (exposure_gamma/shoulder_start) too. This
+result also matches, exactly, the visual problem the user flagged after
+looking at real renders (exposure_gamma=0.3 output was "too bright,
+noisy, and hazy").
+
+**Re-ran the 441-combo grid search with ΔE00 itself as the objective**
+(`tools/evaluate_x2dii_de00_grid.py`, new - low-res 200px for per-fold
+combo selection, 3000px for the final LOO evaluation): **+12.99%
+improvement over `apply_hncs()` (main), 61 wins/9 losses, sign test
+p<0.0001, bootstrap 95% CI [+1.421, +2.065]** (excludes 0, genuinely
+significant this time) - optimal combo `exposure_gamma=0.6,
+toe_lift=0.02, shoulder_start=0.58, white_point=0.95` (dominant in
+58/70 folds). exposure_gamma moving from the extreme 0.3 to a much
+milder 0.6 lines up exactly with the visual feedback.
+
+**Final adoption**: updated `apply_hncs_x2dii()`'s defaults to
+`exposure_gamma=0.6, toe_lift=0.02, shoulder_start=0.58,
+white_point=0.95`. `apply_hncs()` (main) is unaffected by this
+correction - only this function changes. The lesson that kept repeating
+this session: **the bigger the "improvement" a percentile-RMSE grid
+search reports, the more suspicious it should be** - Sony a7V
+(+52.7% -> actually -1.12%) and X2D II (+44.1% -> actually -5.13%) both
+followed the same pattern. Optimizing ΔE00 directly tends to produce
+smaller but trustworthy improvements (Sony +0.53%, Leica +0.6-2.8%) -
+except when the original objective was pointing in a completely wrong
+direction, as with X2D II, where a genuinely large improvement (+12.99%)
+was there all along. The size of the number was never the point - the
+objective function was. Reproduce: `python3 -m
+tools.evaluate_x2dii_de00_grid`.

@@ -61,6 +61,29 @@ p=0.349로 유의성 소실이라는 판정은 그대로 유효, 41쌍 전용 in
 `toe_lift=0.02`/`white_point=0.95`는 그대로, **`shoulder_start`만
 0.82->0.5로 정정**한다. 재현: `python3 -m
 tools.evaluate_x2dii_generation_loo`(70쌍 기준 매니페스트로 재실행).
+
+**재정정(2026-08, exposure_gamma=0.3 기각 - percentile RMSE와 ΔE00이
+정반대로 나옴, Sony a7V와 같은 패턴)**: 위 모든 검증은 b2/w995
+percentile RMSE를 목적함수로 삼은 그리드서치였다 - `apply_hncs()`
+(main) 대 `apply_hncs_x2dii()`를 실제 ΔE00으로 직접 맞대결시킨 적은
+없었다. `tools/evaluate_full_pixel_de00_confirm.py`(3000px, 다운샘플
+최소화)로 처음 직접 비교해보니 **-5.13%로 오히려 main이 근소 우세,
+CI가 0을 포함해 판정 보류**(승/패 34/36) - 이전까지의 모든 "44.1%
+개선" 등은 percentile RMSE 목적함수 자체의 결함이었다. 사용자가 눈으로
+직접 확인한 시각적 문제(exposure_gamma=0.3 렌더가 "너무 밝고 노이즈
+있고 뿌옇다")와도 일치하는 결과 - 그리드서치가 실제 지각 품질과 무관한
+좁은 지표만 맞추고 있었다는 뜻.
+
+**ΔE00을 직접 목적함수로 441콤보 그리드서치 재실행**
+(`tools/evaluate_x2dii_de00_grid.py`, 신규 - 저해상도(200px)로 폴드별
+콤보 선택, 3000px로 최종 LOO 평가) - `apply_hncs()`(main) 대비
+**개선폭 +12.99%, 61승9패, 부호검정 p<0.0001, 부트스트랩 95% CI
+[+1.421, +2.065]**(0 미포함, 이번엔 진짜 유의미) - 최적 조합
+**`exposure_gamma=0.6, toe_lift=0.02, shoulder_start=0.58,
+white_point=0.95`**(58/70 폴드 지배, 나머지는 shoulder_start만
+0.5/0.66로 인접). exposure_gamma가 0.3에서 0.6으로 훨씬 덜 극단적으로
+바뀐 게 시각적 피드백과 정확히 들어맞는다 - **최종 채택값을 이걸로
+갱신**. 재현: `python3 -m tools.evaluate_x2dii_de00_grid`.
 """
 import cv2
 import numpy as np
@@ -68,8 +91,8 @@ import numpy as np
 from core.curve import film_curve
 
 
-def apply_hncs_x2dii(img_bgr, toe_lift=0.02, shoulder_start=0.5,
-                      white_point=0.95, clahe_clip=1.25, exposure_gamma=0.3):
+def apply_hncs_x2dii(img_bgr, toe_lift=0.02, shoulder_start=0.58,
+                      white_point=0.95, clahe_clip=1.25, exposure_gamma=0.6):
     lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 

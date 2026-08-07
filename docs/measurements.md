@@ -1178,3 +1178,41 @@ p=0.349로 유의성 소실이라는 위 판정은 그대로 유효하고, 이 �
 41쌍 자체의 in-sample 최적값일 뿐이다. `apply_hncs_x2dii()` 기본값:
 `exposure_gamma=0.3, toe_lift=0.02, shoulder_start=0.82,
 white_point=0.95`. 3x3 매트릭스는 여전히 제외(위에서 기각).
+
+### apply_hncs_x2dii 최종 정정 - percentile RMSE 목적함수 기각, ΔE00 직접 그리드서치 (2026-08)
+
+표본이 41->70쌍으로 확장되면서 `shoulder_start`는 0.82->0.5로
+정정됐지만(위 "X2D II 전용 파라미터 LOO/5-fold" 절), 이 모든 검증은
+여전히 b2/w995 percentile RMSE가 목적함수였다 - `apply_hncs()`(main)
+대 `apply_hncs_x2dii()`를 실제 ΔE00으로 직접 맞대결시킨 적은 이때까지
+한 번도 없었다.
+
+**직접 맞대결(3000px, 다운샘플 최소화) - 결과는 보류, 사실상 무승부**
+(`tools/evaluate_full_pixel_de00_confirm.py`, n=70): 개선폭 -5.13%
+(main이 근소 우세), 승/패 34/36, 부트스트랩 95% CI [-1.679, +0.292]
+(0 포함) - **percentile RMSE 그리드서치가 냈던 "44.1% 개선"은
+목적함수 자체의 결함이었다** - Sony a7V(`brands/sony_a7v.py` 이력)에서
+겪은 것과 완전히 같은 패턴이 X2D II의 핵심 파라미터(exposure_gamma/
+shoulder_start)에도 있었던 것. 이 결과는 사용자가 직접 렌더링을 보고
+지적한 시각적 문제(exposure_gamma=0.3 렌더가 "너무 밝고 노이즈 있고
+뿌옇다")와도 정확히 일치한다.
+
+**ΔE00을 직접 목적함수로 441콤보 그리드서치 재실행**
+(`tools/evaluate_x2dii_de00_grid.py`, 신규 - 저해상도 200px로 폴드별
+콤보 선택, 3000px로 최종 LOO 평가): `apply_hncs()`(main) 대비 **개선폭
++12.99%, 61승9패, 부호검정 p<0.0001, 부트스트랩 95% CI [+1.421,
++2.065]**(0 미포함, 이번엔 진짜 유의미) - 최적 조합
+`exposure_gamma=0.6, toe_lift=0.02, shoulder_start=0.58,
+white_point=0.95`(58/70 폴드 지배). exposure_gamma가 0.3에서 훨씬 덜
+극단적인 0.6으로 바뀐 게 시각적 피드백과 정확히 들어맞는다.
+
+**최종 채택**: `apply_hncs_x2dii()` 기본값을 `exposure_gamma=0.6,
+toe_lift=0.02, shoulder_start=0.58, white_point=0.95`로 갱신.
+`apply_hncs()`(main)는 이 정정과 무관 - 이 함수만 바뀐다. 이번 세션의
+반복된 교훈: **percentile RMSE 그리드서치는 큰 "개선"을 보고할수록
+오히려 의심해야 한다** - Sony a7V(+52.7%→실제 -1.12%), X2D II
+(+44.1%→실제 -5.13%) 둘 다 같은 패턴. ΔE00을 직접 목적함수로 쓰면
+개선폭 자체는 작아지지만(Sony +0.53%, Leica +0.6~2.8%) 신뢰할 수
+있고, X2D II처럼 원래 목적함수가 완전히 잘못된 방향을 가리켰던 경우엔
+오히려 큰 개선(+12.99%)이 나올 수도 있다 - 크기가 아니라 목적함수
+자체가 핵심이다. 재현: `python3 -m tools.evaluate_x2dii_de00_grid`.
