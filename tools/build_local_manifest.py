@@ -26,8 +26,9 @@ import subprocess
 import sys
 from datetime import date, datetime, timedelta
 
-# .3fr/.fff=Hasselblad, .dng=Leica(M/SL/Q 전 라인업 공식 RAW 포맷)
-RAW_EXT = {".3fr", ".fff", ".dng"}
+# .3fr/.fff=Hasselblad, .dng=Leica(M/SL/Q 전 라인업 공식 RAW 포맷),
+# .arw=Sony, .cr3=Canon
+RAW_EXT = {".3fr", ".fff", ".dng", ".arw", ".cr3"}
 JPEG_EXT = {".jpg", ".jpeg"}
 OFFSET_HOURS = list(range(-12, 13))
 COLUMNS = ["filename_raw", "filename_jpeg", "camera", "lens", "iso", "wb_setting",

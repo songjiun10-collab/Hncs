@@ -1216,3 +1216,30 @@ toe_lift=0.02, shoulder_start=0.58, white_point=0.95`로 갱신.
 있고, X2D II처럼 원래 목적함수가 완전히 잘못된 방향을 가리켰던 경우엔
 오히려 큰 개선(+12.99%)이 나올 수도 있다 - 크기가 아니라 목적함수
 자체가 핵심이다. 재현: `python3 -m tools.evaluate_x2dii_de00_grid`.
+
+### apply_hncs_x1d50c 신설 - Hasselblad X1D-50c 전용 (2026-08)
+
+로컬 raw+jpeg 라이브러리에 X1D-50c 페어 20장이 새로 추가돼서(Adobe 편집
+오염 없음 확인), `apply_hncs()`(main) 대비 ΔE00을 직접 목적함수로
+그리드서치+LOO를 X2D II와 동일 방식으로 돌렸다
+(`tools/evaluate_hasselblad_body_de00_grid.py` - 200px로 폴드별 콤보
+선택, 400px로 확정, 이어서 `tools/evaluate_native_pixel_confirm.py`로
+원본 해상도(max_dim=3000) 재확인).
+
+| 검증 단계 | 개선폭 | 승/패 | 부호검정 p | 부트스트랩 95% CI |
+|---|---|---|---|---|
+| LOO(200px 선택/400px 평가) | +6.69% | 17/3 | 0.0026 | [+0.301, +0.972] |
+| 원본 픽셀(max_dim=3000) | +5.96% | 17/3 | 0.0026 | [+0.309, +0.906] |
+
+다운샘플 왜곡 없이 두 단계가 일치. 20/20 폴드 만장일치로 같은 조합
+선택: `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82,
+white_point=1.0` - X2D II(0.6/0.02/0.58/0.95)와는 다른 값이라 X2D II
+값을 가져오지 않고 이 20장으로 독립적으로 새로 찾았다. `brands/
+hasselblad_x1d50c.py`로 신설, `apply_hncs()`(main)는 무관.
+
+표본 20장은 X2D II(70장)보다 작아 통계적 견고함이 상대적으로 약함 -
+X1D-50c 페어가 더 추가되면 재검증 권장. 같은 배치에서 Sony a7R VI도
+전용 값(toe_lift=0.09, shoulder_start=0.7, white_point=0.85, 픽셀단위
++0.57%, CI[+0.021,+0.172])이 나왔지만 이번엔 X1D-50c만 채택 - Canon
+R6 Mark III는 개선폭이 +0.06%(CI[+0.009,+0.024])로 통계적으로는
+유의해도 실질적으로 무의미해 새 함수를 만들지 않았다.
