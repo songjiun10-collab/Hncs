@@ -1326,3 +1326,33 @@ direction, as with X2D II, where a genuinely large improvement (+12.99%)
 was there all along. The size of the number was never the point - the
 objective function was. Reproduce: `python3 -m
 tools.evaluate_x2dii_de00_grid`.
+
+### apply_hncs_x1d50c added - Hasselblad X1D-50c specific (2026-08)
+
+20 new X1D-50c raw+jpeg pairs were added to the local library (verified
+free of Adobe editing contamination). Ran the same ΔE00-native grid
+search + LOO as X2D II against `apply_hncs()` (main)
+(`tools/evaluate_hasselblad_body_de00_grid.py` - 200px for per-fold combo
+selection, 400px to confirm, then `tools/evaluate_native_pixel_confirm.py`
+for a native-resolution (max_dim=3000) re-check).
+
+| Stage | Improvement | Wins/Losses | Sign-test p | Bootstrap 95% CI |
+|---|---|---|---|---|
+| LOO (200px select / 400px eval) | +6.69% | 17/3 | 0.0026 | [+0.301, +0.972] |
+| Native pixels (max_dim=3000) | +5.96% | 17/3 | 0.0026 | [+0.309, +0.906] |
+
+Both stages agree with no downsample distortion. All 20/20 folds
+unanimously picked the same combo: `exposure_gamma=0.7, toe_lift=0.0,
+shoulder_start=0.82, white_point=1.0` - different from X2D II's
+(0.6/0.02/0.58/0.95), so this wasn't carried over from X2D II but
+re-derived independently from these 20 pairs. Shipped as new file
+`brands/hasselblad_x1d50c.py`; `apply_hncs()` (main) is unaffected.
+
+The 20-pair sample is smaller than X2D II's 70, so the statistical
+robustness is comparatively weaker - re-validate if more X1D-50c pairs
+get added. The same batch also found a distinct optimum for the Sony a7R
+VI (toe_lift=0.09, shoulder_start=0.7, white_point=0.85, native-pixel
++0.57%, CI[+0.021,+0.172]), but only X1D-50c was adopted this round.
+Canon EOS R6 Mark III's improvement (+0.06%, CI[+0.009,+0.024]) was
+statistically significant but practically negligible, so no new function
+was created for it.
