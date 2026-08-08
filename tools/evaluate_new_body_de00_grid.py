@@ -98,11 +98,18 @@ def main():
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--raw-dir", action="append", required=True, dest="raw_dirs")
     ap.add_argument("--model", action="append", dest="models", default=None)
-    ap.add_argument("--baseline", required=True, help="module.path.apply_fn")
+    ap.add_argument("--baseline", default=None, help="module.path.apply_fn")
+    ap.add_argument("--baseline-identity", action="store_true",
+                     help="비교할 기존 apply_* 함수가 없을 때(예: 필름시뮬레이션 프리셋 미보유) "
+                          "가공 없는 중립 렌더 자체를 baseline으로 삼는다")
     args = ap.parse_args()
 
-    mod_path, fn_name = args.baseline.rsplit(".", 1)
-    baseline_fn = getattr(importlib.import_module(mod_path), fn_name)
+    if args.baseline_identity:
+        baseline_fn = lambda img: img
+        args.baseline = "identity(no-op)"
+    else:
+        mod_path, fn_name = args.baseline.rsplit(".", 1)
+        baseline_fn = getattr(importlib.import_module(mod_path), fn_name)
 
     rows = list(csv.DictReader(open(args.manifest)))
     if args.models:

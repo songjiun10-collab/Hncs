@@ -1384,3 +1384,32 @@ edge of zero - held off this round pending more samples. Hasselblad
 X2D 100C (34 pairs, CI[-0.057,+0.433] includes 0), CFV 100C/907X (31
 pairs, CI[+0.015,+0.350] close to zero), and Canon EOS R1 (44 pairs,
 +0.14% negligible) also weren't adopted this round.
+
+### apply_provia added - Fuji GFX100RF/X-T30 III raw+jpeg pairs found (2026-08)
+
+`brands/fuji.py`'s top docstring long ago noted giving up on raw-based
+calibration for lack of genuinely paired raw+jpeg data (only 3 of 97
+mirrorlesscomparison.com samples actually shared a shooting timestamp).
+Tried again once GFX100RF (.raf) and X-T30 III (.raf) pairs landed in the
+local raw+jpeg library. Both bodies' JPEGs all used FilmMode "F0/Standard
+(Provia)", for which fuji.py had no matching preset - so instead of
+comparing against an existing function, used the unprocessed raw neutral
+render itself as the baseline (`tools/evaluate_new_body_de00_grid.py
+--baseline-identity`, new flag), ran a ΔE00-native grid search + LOO, then
+re-checked at native pixel resolution (max_dim=3000) with
+`tools/evaluate_native_pixel_confirm.py`.
+
+| Body | n | Improvement (LOO) | Improvement (native pixel) | Sign-test p | Bootstrap 95% CI (pixel) |
+|---|---|---|---|---|---|
+| GFX100RF | 38 | +20.16% | +18.82% | <0.0001 | [+2.792, +3.763] |
+| X-T30 III | 20 | +27.13% | +23.65% | <0.0001 | [+2.849, +3.927] |
+
+The improvement is naturally larger than other brands' (baseline is raw
+untouched, not a marginal step from an existing apply_* function) - but
+with all folds unanimous (38/38, 20/20) and CIs well clear of zero, it's
+trustworthy. The chosen combos are effectively identical - GFX100RF
+`toe_lift=0.0, shoulder_start=0.82, white_point=1.0` vs X-T30 III
+`toe_lift=0.02, shoulder_start=0.82, white_point=1.0` - and match exactly
+what `apply_leica_raw_look` converged to across all 4 Leica bodies
+(brands/leica_raw.py history). Shipped `apply_provia()` with the
+larger-sample GFX100RF values as defaults.
