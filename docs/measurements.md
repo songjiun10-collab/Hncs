@@ -1269,3 +1269,28 @@ M10을 추가(함수 자체 기본값은 이미 이 값이라 코드 변경 없�
 이번엔 보류 - 표본이 더 필요하다고 판단. Hasselblad X2D 100C(34쌍,
 CI[-0.057,+0.433] 0 포함)·CFV 100C/907X(31쌍, CI[+0.015,+0.350] 0에
 근접)·Canon EOS R1(44쌍, +0.14% 무의미)도 이번엔 채택하지 않음.
+
+### apply_provia 신설 - Fuji GFX100RF/X-T30 III raw+jpeg 페어 확보 (2026-08)
+
+`brands/fuji.py` 상단 문서는 오래전에 "raw+jpeg 페어를 못 구해서 population
+비교로 전환"이라 적어뒀었는데(mirrorlesscomparison.com 표본 97장 중 촬영시각이
+실제로 일치하는 페어가 3쌍뿐), 로컬 raw+jpeg 라이브러리에 GFX100RF(.raf)+
+X-T30 III(.raf)가 새로 들어오면서 재도전했다. 두 바디 JPEG 전부 FilmMode가
+"F0/Standard (Provia)"였는데 fuji.py엔 대응하는 프리셋이 없어서, 비교할
+기존 함수 없이 가공 없는 raw 중립 렌더 자체를 baseline으로 삼아
+(`tools/evaluate_new_body_de00_grid.py --baseline-identity`, 신규 옵션)
+ΔE00 직접 그리드서치+LOO를 돌리고 `tools/evaluate_native_pixel_confirm.py`로
+원본 픽셀(max_dim=3000) 재확인했다.
+
+| 바디 | n | 개선폭(LOO) | 개선폭(원본 픽셀) | 부호검정 p | 부트스트랩 95% CI(픽셀) |
+|---|---|---|---|---|---|
+| GFX100RF | 38 | +20.16% | +18.82% | <0.0001 | [+2.792, +3.763] |
+| X-T30 III | 20 | +27.13% | +23.65% | <0.0001 | [+2.849, +3.927] |
+
+baseline이 무가공 raw라 개선폭 자체는 다른 브랜드(기존 apply_* 대비 근소
+개선)보다 크게 나오는 게 당연 - 그래도 폴드 전원일치(38/38, 20/20)로
+CI가 0에서 확실히 멀어 신뢰할 수 있다. 선택된 조합이 GFX100RF `toe_lift=0.0,
+shoulder_start=0.82, white_point=1.0`, X-T30 III `toe_lift=0.02,
+shoulder_start=0.82, white_point=1.0`로 사실상 동일 - `apply_leica_raw_look`이
+4개 라이카 바디에서 수렴한 값과도 완전히 같다(brands/leica_raw.py 이력).
+표본이 더 큰 GFX100RF 값을 `apply_provia()` 기본값으로 채택.

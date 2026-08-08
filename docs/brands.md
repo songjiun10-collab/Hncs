@@ -39,6 +39,13 @@ population 통계를 비교해서 각 프리셋이 실측과 같은 방향으로
   커브(n=0.65)로 교체.
 - 수정 후 재검증: Astia 1/3 → 2/3 방향 일치, Pro Neg Std 0/3 → 3/3
   방향 일치.
+- **(2026-08 갱신)** 위에서 포기했던 raw+jpeg 페어 기반 캘리브레이션을
+  로컬 라이브러리에 GFX100RF/X-T30 III 진짜 페어(촬영시각 일치)가
+  들어오면서 재시도 - 둘 다 Provia였는데 대응 프리셋이 없어서 신규
+  `apply_provia()`를 raw 대비 ΔE00 그리드서치로 새로 만듦(원본 픽셀
+  개선폭 GFX100RF +18.8%/X-T30 III +23.7%). 자세한 수치는
+  [measurements.md](measurements.md#apply_provia-신설---fuji-gfx100rf-x-t30-iii-rawjpeg-페어-확보-2026-08)
+  참고.
 
 ## 라이카 (`brands/leica.py`)
 

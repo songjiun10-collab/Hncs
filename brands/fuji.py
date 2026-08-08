@@ -109,11 +109,40 @@ DCP LookTable은 Adobe가 카메라 JPEG 엔진과 별개로 만드는 "Look" �
 따르고 있어 재검토 우선순위가 높아졌고, Pro Neg Hi는 반대로 챠트+코드가
 "더 채도 높음"인데 DCP가 "더 낮음"이라는 새로운 모순이 생겼다 - 둘 다
 표본이 늘어나면 우선 재확인할 항목으로 남긴다.
+
+**Provia 추가 - raw+jpeg 페어 확보(2026-08)**: 위에서 "이 사이트는 애초에
+같은 촬영을 짝지어 올린 게 아니다"라며 포기했던 raw 기반 캘리브레이션을,
+로컬 raw+jpeg 라이브러리에 GFX100RF(.raf)+X-T30 III(.raf) 페어가 새로
+들어오면서 다시 시도했다 - 이번엔 EXIF DateTimeOriginal이 실제로
+일치하는 진짜 같은 촬영 페어. 두 바디 JPEG 전부 FilmMode가
+"F0/Standard (Provia)"였는데, 이 파일엔 Provia 프리셋이 아예 없었어서
+raw 신호로 직접 새로 그리드서치(`tools/evaluate_new_body_de00_grid.py`
+- baseline 없이 가공 없는 중립 렌더 자체를 기준으로 삼는
+`--baseline-identity`, 저해상도 선택 -> 400px 확정 ->
+`tools/evaluate_native_pixel_confirm.py`로 원본 픽셀(max_dim=3000)
+재확인)했다.
+
+| 바디 | n | 개선폭(LOO) | 개선폭(원본 픽셀) | 부호검정 p | 부트스트랩 95% CI(픽셀) |
+|---|---|---|---|---|---|
+| GFX100RF | 38 | +20.16% | +18.82% | <0.0001 | [+2.792, +3.763] |
+| X-T30 III | 20 | +27.13% | +23.65% | <0.0001 | [+2.849, +3.927] |
+
+baseline이 가공 없는 raw 중립 렌더라 개선폭 자체는 크게 나오는 게
+당연하지만(다른 브랜드처럼 기존 apply_* 함수와의 근소한 차이가 아니라
+"커브를 아예 안 씌운 것" 대비), 두 바디 모두 폴드 전원일치(38/38,
+20/20)로 나온 조합이 GFX100RF `toe_lift=0.0, shoulder_start=0.82,
+white_point=1.0`, X-T30 III `toe_lift=0.02, shoulder_start=0.82,
+white_point=1.0`로 사실상 같다 - `apply_leica_raw_look`의 4바디 수렴값과
+동일해서(brands/leica_raw.py 이력 참고) 우연이라 보기 어려움. 표본이
+더 작은 X-T30 III(n=20) 대신 GFX100RF(n=38) 값을 기본값으로 채택. 재현:
+`python3 -m tools.evaluate_new_body_de00_grid --label "Fuji GFX100RF
+Provia" --manifest datasets/fuji/fuji_new_pairs.csv --raw-dir
+"/Users/songjiun/local-work" --model GFX100RF --baseline-identity`.
 """
 import cv2
 import numpy as np
 
-from core.curve import apply_highlight_rolloff, s_curve
+from core.curve import apply_highlight_rolloff, film_curve, s_curve
 from core.lut import apply_lut, ensure_uint8
 
 
@@ -390,3 +419,22 @@ def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
     hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
     hsv[:, :, 1] = np.clip(hsv[:, :, 1] * sat_mult, 0, 255)
     return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+
+
+# ==========================================
+# 11. Provia/Standard (기본 필름모드) - raw+jpeg 페어 실측 검증됨(2026-08, GFX100RF n=38/X-T30 III n=20)
+# ==========================================
+def apply_provia(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)

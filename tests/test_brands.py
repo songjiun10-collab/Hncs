@@ -39,10 +39,12 @@ FUJI_COLOR_PRESETS = [
     "apply_nostalgic_neg",
     "apply_reala_ace",
     "apply_classic_negative",
+    "apply_provia",
 ]
 # 원래 여기 assertion을 9로 잘못 짰다가(README 오기를 그대로 베낌) 실제
-# 개수(10 - 위 8개 컬러 + acros/monochrome 2개)와 다른 걸 이 테스트로 발견,
-# README도 같이 고침(brands/fuji.py 자체 코드는 원래도 정확했음).
+# 개수(10 - 당시 8개 컬러 + acros/monochrome 2개)와 다른 걸 이 테스트로
+# 발견, README도 같이 고침(brands/fuji.py 자체 코드는 원래도 정확했음).
+# apply_provia 추가(2026-08)로 현재는 11개(컬러 9 + 모노 2).
 FUJI_MONO_PRESETS = ["apply_acros", "apply_monochrome"]
 
 # apply_pro_neg_hi_video_frame은 apply_pro_neg_hi의 CLAHE 생략 버전으로
@@ -119,7 +121,7 @@ class TestFujiPresets(unittest.TestCase):
                          if n.startswith("apply_") and n not in generic_helpers
                          and not n.endswith("_video_frame")}
         self.assertEqual(preset_names, set(FUJI_COLOR_PRESETS) | set(FUJI_MONO_PRESETS))
-        self.assertEqual(len(preset_names), 10)
+        self.assertEqual(len(preset_names), 11)
 
 
 if __name__ == "__main__":

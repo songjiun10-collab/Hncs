@@ -96,15 +96,20 @@ def main():
     ap.add_argument("--manifest", required=True)
     ap.add_argument("--raw-dir", action="append", required=True, dest="raw_dirs")
     ap.add_argument("--model", action="append", dest="models", default=None)
-    ap.add_argument("--baseline", required=True)
+    ap.add_argument("--baseline", default=None)
+    ap.add_argument("--baseline-identity", action="store_true")
     ap.add_argument("--toe-lift", type=float, required=True)
     ap.add_argument("--shoulder-start", type=float, required=True)
     ap.add_argument("--white-point", type=float, required=True)
     ap.add_argument("--exposure-gamma", type=float, default=None)
     args = ap.parse_args()
 
-    mod_path, fn_name = args.baseline.rsplit(".", 1)
-    baseline_fn = getattr(importlib.import_module(mod_path), fn_name)
+    if args.baseline_identity:
+        baseline_fn = lambda img: img
+        args.baseline = "identity(no-op)"
+    else:
+        mod_path, fn_name = args.baseline.rsplit(".", 1)
+        baseline_fn = getattr(importlib.import_module(mod_path), fn_name)
     candidate_fn = make_candidate(args.toe_lift, args.shoulder_start, args.white_point,
                                    args.exposure_gamma)
 

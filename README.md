@@ -290,7 +290,7 @@ python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
 
 - [x] Hasselblad raw-based parametric/learned calibration (`apply_hncs`,
       `apply_hncs_learned`)
-- [x] 10 Fujifilm film-simulation presets
+- [x] 11 Fujifilm film-simulation presets
 - [x] Population-fit color-approximation engine shared by 10 brands
       (`core/engine.py`)
 - [x] Pixel-level 5-part signature analysis (tone/color/texture/gamut/
