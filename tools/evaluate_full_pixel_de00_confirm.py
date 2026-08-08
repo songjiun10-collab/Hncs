@@ -1,13 +1,17 @@
 """
-이 세션에서 확정한 세 신규 함수(apply_hncs_x2dii/apply_sony_a7v_look/
-apply_leica_raw_look)의 ΔE00을 - 지금까지는 전부 그리드서치/LOO 선택
-단계에서 저해상도(160~400px)로 계산했었는데 - **원본 해상도(다운샘플
-없음)**로 다시 재확인한다. 그리드서치 자체를 원본 해상도로 재실행하는
-건 아니고(콤보 수 x 페어 수 x 원본해상도라 비현실적), 이미 확정된
-파라미터 1개씩만 원본 픽셀로 재측정 - 다운샘플이 결론을 왜곡했는지
-확인하는 용도.
+이 프로젝트에서 확정한 모든 raw+jpeg 기반 신규 함수의 ΔE00을 - 그리드서치/
+LOO 선택 단계에서는 전부 저해상도(160~400px)로 계산했으니 - **원본
+해상도(다운샘플 없음)**로 한 번에 재확인한다. 그리드서치 자체를 원본
+해상도로 재실행하는 건 아니고(콤보 수 x 페어 수 x 원본해상도라
+비현실적), 이미 확정된 파라미터 1개씩만 원본 픽셀로 재측정 - 다운샘플이
+결론을 왜곡했는지 확인하는 용도. 채택 안 한 함수(Sony a7R VI 전용값,
+Sigma BF, Hasselblad X2D 100C/CFV)는 포함 안 함 - shipped apply_*만 대상.
 
   python3 -m tools.evaluate_full_pixel_de00_confirm
+
+**갱신(2026-08)**: 로컬 raw+jpeg 라이브러리가 `~/Documents/raw pair`에서
+`~/local-work`로 옮겨져서 RAW_DIR을 갱신, apply_hncs_x1d50c/
+apply_leica_raw_look(SL2·M10 확장)/apply_provia 3건을 추가했다.
 """
 import csv
 import os
@@ -19,6 +23,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from brands.fuji import apply_provia
+from brands.hasselblad import apply_hncs
+from brands.hasselblad_x1d50c import apply_hncs_x1d50c
 from brands.hasselblad_x2dii import apply_hncs_x2dii
 from brands.leica import apply_leica_look
 from brands.leica_raw import apply_leica_raw_look
@@ -27,8 +34,9 @@ from brands.sony_a7v import apply_sony_a7v_look
 from core.validation import is_image_array_usable
 from tools.calibrate import load_neutral_render
 
-RAW_DIR = "/Users/songjiun/Documents/raw pair"
+RAW_DIR = "/Users/songjiun/local-work"
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_IDENTITY = lambda img: img
 
 
 def load_target_linear_native(jpg_path, shape_hw):
@@ -50,10 +58,16 @@ def mean_delta_e(linear_a, linear_b):
     return float(np.mean(deltaE_ciede2000(rgb2lab(a), rgb2lab(b))))
 
 
-def run(label, manifest_path, model_filter, old_fn, new_fn):
+def run(label, manifest_path, model_filter, old_fn, new_fn, film_mode_filter=None):
     rows = list(csv.DictReader(open(manifest_path)))
     if model_filter:
         rows = [r for r in rows if r['model'] == model_filter]
+    if film_mode_filter:
+        # fuji_new_pairs.csv 전용 컬럼 - 같은 바디라도 촬영자가 필름모드를
+        # 섞어 쓰면(Provia/Pro Neg Std/Reala 등) apply_provia는 Provia하고만
+        # 비교해야 함 - 안 걸러지면 X-T30 III 27개(Provia 20 + 다른 모드 7)
+        # 그대로 섞여 들어갔던 버그가 재발한다.
+        rows = [r for r in rows if r['film_mode'] == film_mode_filter]
     print(f"\n### {label} - 후보 {len(rows)}개 (원본 해상도, 다운샘플 없음) ###", flush=True)
 
     old_des, new_des = [], []
@@ -114,8 +128,14 @@ def main():
     run("X2D II (apply_hncs vs apply_hncs_x2dii)",
         os.path.join(BASE, "datasets", "hasselblad", "dpreview_raw_jpeg_pairs_clean.csv"),
         "X2D II 100C",
-        __import__("brands.hasselblad", fromlist=["apply_hncs"]).apply_hncs,
+        apply_hncs,
         apply_hncs_x2dii)
+
+    run("Hasselblad X1D-50c (apply_hncs vs apply_hncs_x1d50c)",
+        os.path.join(BASE, "datasets", "hasselblad", "hasselblad_new_pairs.csv"),
+        "Hasselblad X1D-50c",
+        apply_hncs,
+        apply_hncs_x1d50c)
 
     run("Sony a7V (apply_sony_look vs apply_sony_a7v_look)",
         os.path.join(BASE, "datasets", "sony", "a7v_raw_jpeg_pairs_clean.csv"),
@@ -134,6 +154,32 @@ def main():
         None,
         apply_leica_look,
         apply_leica_raw_look)
+
+    run("Leica SL2 (apply_leica_look vs apply_leica_raw_look)",
+        os.path.join(BASE, "datasets", "leica", "leica_new_pairs.csv"),
+        "LEICA SL2",
+        apply_leica_look,
+        apply_leica_raw_look)
+
+    run("Leica M10 (apply_leica_look vs apply_leica_raw_look)",
+        os.path.join(BASE, "datasets", "leica", "leica_new_pairs.csv"),
+        "LEICA M10",
+        apply_leica_look,
+        apply_leica_raw_look)
+
+    run("Fuji GFX100RF Provia (raw 무가공 vs apply_provia)",
+        os.path.join(BASE, "datasets", "fuji", "fuji_new_pairs.csv"),
+        "GFX100RF",
+        _IDENTITY,
+        apply_provia,
+        film_mode_filter="F0/Standard (Provia)")
+
+    run("Fuji X-T30 III Provia (raw 무가공 vs apply_provia)",
+        os.path.join(BASE, "datasets", "fuji", "fuji_new_pairs.csv"),
+        "X-T30 III",
+        _IDENTITY,
+        apply_provia,
+        film_mode_filter="F0/Standard (Provia)")
 
 
 if __name__ == "__main__":
