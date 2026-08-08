@@ -22,7 +22,7 @@ docs/         Detailed documentation (this directory)
 | `brands/hasselblad_x1d50c.py` | Experimental - `apply_hncs_x1d50c` (X1D-50c only, from 20 raw+jpeg pairs, +6-7% both in the ΔE00-native grid search/LOO and the native-pixel re-check - `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) |
 | `brands/fuji.py` | 10 Fujifilm-style film simulation presets (Astia, PRO Neg, Eterna, Acros, Classic Negative, etc.) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative are verified against real population data; Pro Neg Hi/Eterna Cinema/Nostalgic Neg have been further verified/recalibrated against same-scene comparison charts (n=1-3 samples, low confidence) |
 | `brands/leica.py` | Leica color approximation - `apply_leica_look()` (population-fit, v1) |
-| `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43 only, from 85 raw+jpeg pairs, both bodies improved via a direct-ΔE00 grid search) |
+| `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10 only, from 172 raw+jpeg pairs, all 4 bodies converge on the same values (toe=0/shoulder=0.82/wp=1.0) and improve via a direct-ΔE00 grid search) |
 | `brands/phaseone.py` | Phase One (Capture One's default rendering) color approximation - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax color approximation - `apply_pentax_look()` |
 | `brands/ricoh_gr.py` | Ricoh GR color approximation - `apply_ricoh_gr_look()` |

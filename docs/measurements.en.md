@@ -1356,3 +1356,31 @@ VI (toe_lift=0.09, shoulder_start=0.7, white_point=0.85, native-pixel
 Canon EOS R6 Mark III's improvement (+0.06%, CI[+0.009,+0.024]) was
 statistically significant but practically negligible, so no new function
 was created for it.
+
+### apply_leica_raw_look scope extended - SL2/M10 added (2026-08)
+
+55 SL2 and 32 M10 raw+jpeg pairs were newly added to the local library.
+Verified against `apply_leica_look()` (brands/leica.py) using the same
+methodology as SL3-P/Q3 43 (ΔE00-native grid search + LOO, low-res
+selection -> 400px confirm -> native-pixel (max_dim=3000) re-check).
+
+| Body | n | Improvement (LOO) | Improvement (native pixel) | Sign-test p | Bootstrap 95% CI (pixel) |
+|---|---|---|---|---|---|
+| SL2 | 55 | +2.29% | +1.89% | <0.0001 | [+0.138, +0.274] |
+| M10 | 32 | +2.03% | +1.53% | 0.0005 | [+0.079, +0.226] |
+
+Both bodies unanimously converged on the exact same combo as SL3-P/Q3 43
+(`toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) - with all 4
+bodies landing on identical values, this looks less like coincidence and
+more like an actual "Leica house look". Added SL2/M10 to
+`apply_leica_raw_look`'s (brands/leica_raw.py) coverage - no code change
+needed since the function's defaults already match, just the documented
+scope. M11 again had 0 clean pairs in this batch (all 49 contaminated by
+Adobe Camera Raw edits) - still unverifiable, still not included.
+
+The same batch also tested Sigma BF (51 pairs, a brand-new body), but its
+improvement (+0.53% native-pixel, CI[+0.007, +0.181]) sits right on the
+edge of zero - held off this round pending more samples. Hasselblad
+X2D 100C (34 pairs, CI[-0.057,+0.433] includes 0), CFV 100C/907X (31
+pairs, CI[+0.015,+0.350] close to zero), and Canon EOS R1 (44 pairs,
++0.14% negligible) also weren't adopted this round.
