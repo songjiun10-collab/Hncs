@@ -1480,3 +1480,16 @@ re-check during this session happened to use the 21-pair contaminated
 manifest. Leica M11 was the only case that nearly produced a genuinely
 wrong conclusion (a strong-looking improvement), caught here before it
 shipped.
+
+**Further correction - CFV 100C/907X's verdict flips entirely**: the
+contaminated 31-pair grid search read +3.33% / CI[+0.015, +0.350] ("wins" -
+already flagged as weak evidence given how close the CI lower bound sat to
+zero); re-checked on the clean 29 pairs (3 contaminated removed) it comes
+out to **+2.83% / CI[-0.030, +0.341] - CI now includes 0, flipping to
+"inconclusive."** Never adopted (always sat in "weak evidence, held back"
+territory), so no real-world impact, but it's a second case - alongside
+M11 - of contamination inflating a weak signal into a false win.
+Reproduce: `python3 -m tools.evaluate_hasselblad_body_de00_grid --label
+"Hasselblad CFV 100C/907X" --manifest
+datasets/hasselblad/hasselblad_new_pairs.csv --raw-dir
+"/Users/songjiun/local-work" --model "CFV 100C/907X"`.
