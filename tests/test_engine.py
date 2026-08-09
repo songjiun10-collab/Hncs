@@ -4,7 +4,10 @@ import cv2
 import numpy as np
 
 from core.curve import film_curve
-from core.engine import apply_population_fit_look, apply_population_fit_look_video_frame
+from core.engine import (
+    apply_population_fit_look, apply_population_fit_look_video_frame,
+    make_population_fit_look,
+)
 
 
 class TestApplyPopulationFitLook(unittest.TestCase):
@@ -97,6 +100,37 @@ class TestApplyPopulationFitLookVideoFrame(unittest.TestCase):
         video_out = apply_population_fit_look_video_frame(
             self.img, toe_lift=10 / 255, shoulder_start=0.78, white_point=230 / 255)
         self.assertFalse(np.array_equal(photo_out, video_out))
+
+
+class TestMakePopulationFitLook(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(42)
+        self.img = rng.integers(0, 255, (128, 128, 3), dtype=np.uint8)
+
+    def test_matches_direct_call_with_same_args(self):
+        fn = make_population_fit_look(toe_lift=10 / 255, shoulder_start=0.78,
+                                       white_point=230 / 255, clahe_clip=1.25)
+        direct = apply_population_fit_look(self.img, toe_lift=10 / 255, shoulder_start=0.78,
+                                            white_point=230 / 255, clahe_clip=1.25)
+        via_factory = fn(self.img)
+        np.testing.assert_array_equal(direct, via_factory)
+
+    def test_signature_exposes_bound_defaults(self):
+        import inspect
+        fn = make_population_fit_look(toe_lift=10 / 255, shoulder_start=0.78,
+                                       white_point=230 / 255, clahe_clip=1.25)
+        sig = inspect.signature(fn)
+        self.assertAlmostEqual(sig.parameters["toe_lift"].default, 10 / 255)
+        self.assertAlmostEqual(sig.parameters["shoulder_start"].default, 0.78)
+        self.assertAlmostEqual(sig.parameters["white_point"].default, 230 / 255)
+        self.assertAlmostEqual(sig.parameters["clahe_clip"].default, 1.25)
+
+    def test_caller_can_override_bound_defaults(self):
+        fn = make_population_fit_look(toe_lift=10 / 255, shoulder_start=0.78,
+                                       white_point=230 / 255, clahe_clip=1.25)
+        default_out = fn(self.img)
+        overridden_out = fn(self.img, toe_lift=20 / 255)
+        self.assertFalse(np.array_equal(default_out, overridden_out))
 
 
 if __name__ == "__main__":
