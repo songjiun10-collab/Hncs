@@ -162,5 +162,44 @@ class TestSummarizeRecordedRun(unittest.TestCase):
         self.assertAlmostEqual(s["sign_test_p"], 0.5810546875, places=9)
 
 
+# 실제 (kL,kC,kH)=(4.1,1.1,1.6) 재검증 재실행 기록값 - RB-vs-CCT
+# 직접비교만(하드클러스터 비교는 가중 모드에서 생략, 스펙 참고). 22쌍
+# (공식 13 + kmichels-x2dii-2026-07 9)에서 돌았다 - local-mixed-2026-07
+# raw/jpeg 파일이 이 컨테이너에 없어서 74쌍이 아니다(EVALUATION.md의
+# 새 하위절 참고). (name, de_rb, de_cct)
+_RECORDED_WEIGHTED_RB_VS_CCT = [
+    ("x1d-II-sample-02.jpg", 5.574, 5.585),
+    ("x1d-II-sample-09.jpg", 5.709, 5.411),
+    ("B0000994.jpg", 7.267, 7.069),
+    ("B0001395.jpg", 10.811, 10.815),
+    ("x1d-xcd45-01.jpg", 3.943, 4.000),
+    ("x1d-xcd45-03.jpg", 3.802, 3.872),
+    ("x1d-xcd45-04.jpg", 2.052, 2.105),
+    ("x1d-ii-xcd45p-01.jpg", 4.380, 4.390),
+    ("x1d-ii-xcd45p-02.jpg", 6.608, 6.621),
+    ("x1d-II-sample-01.jpg", 4.193, 4.161),
+    ("x1d-II-sample-06.jpg", 4.909, 4.902),
+    ("02709.jpg", 6.359, 6.138),
+    ("00378.jpg", 3.089, 3.051),
+    ("kmichels-x2dii-2026-07__B_31325", 5.010, 5.039),
+    ("kmichels-x2dii-2026-07__B_31326", 5.001, 5.032),
+    ("kmichels-x2dii-2026-07__B_31327", 4.981, 5.014),
+    ("kmichels-x2dii-2026-07__B_31328", 4.963, 4.998),
+    ("kmichels-x2dii-2026-07__B_31329", 4.884, 4.921),
+    ("kmichels-x2dii-2026-07__B_31330", 4.868, 4.906),
+    ("kmichels-x2dii-2026-07__B_31331", 4.873, 4.911),
+    ("kmichels-x2dii-2026-07__B_31332", 4.871, 4.909),
+    ("kmichels-x2dii-2026-07__B_31333", 4.869, 4.907),
+]
+
+
+class TestWeightedReverificationRecordedRun(unittest.TestCase):
+    def test_reproduces_documented_weighted_verdict(self):
+        s = summarize(_RECORDED_WEIGHTED_RB_VS_CCT)
+        self.assertAlmostEqual(s["mean_a"], 5.137, places=2)
+        self.assertAlmostEqual(s["mean_b"], 5.125, places=2)
+        self.assertAlmostEqual(s["sign_test_p"], 0.052478790283203125, places=9)
+
+
 if __name__ == "__main__":
     unittest.main()
