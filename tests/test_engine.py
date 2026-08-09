@@ -133,5 +133,70 @@ class TestMakePopulationFitLook(unittest.TestCase):
         self.assertFalse(np.array_equal(default_out, overridden_out))
 
 
+class TestMakeHasselbladBodyLook(unittest.TestCase):
+    def setUp(self):
+        rng = np.random.default_rng(42)
+        self.img = rng.integers(0, 255, (128, 128, 3), dtype=np.uint8)
+
+    def test_matches_hand_written_reference_implementation(self):
+        from core.engine import make_hasselblad_body_look
+        fn = make_hasselblad_body_look(toe_lift=0.02, shoulder_start=0.58,
+                                        white_point=0.95, clahe_clip=1.25,
+                                        exposure_gamma=0.6)
+        out = fn(self.img)
+
+        # 팩토리와 별개로 직접 구현한 참조 버전 - hasselblad_x2dii.py의
+        # 리팩토링 전 실제 본문을 그대로 복사한 것(팩토리 자체를 다시
+        # 안 쓰고 있어 순환 검증이 아니다).
+        lab = cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        x = np.arange(256, dtype=np.float32) / 255.0
+        exp_lut = np.clip((x ** 0.6) * 255, 0, 255).astype(np.uint8)
+        l_expected = cv2.LUT(l, exp_lut)
+        clahe = cv2.createCLAHE(clipLimit=1.25, tileGridSize=(8, 8))
+        l_expected = clahe.apply(l_expected)
+        lut = np.clip(film_curve(x, 0.02, 0.58, 0.95) * 255, 0, 255).astype(np.uint8)
+        l_expected = cv2.LUT(l_expected, lut)
+        expected = cv2.cvtColor(cv2.merge((l_expected, a, b)), cv2.COLOR_LAB2BGR)
+
+        np.testing.assert_array_equal(out, expected)
+
+    def test_signature_exposes_bound_defaults(self):
+        import inspect
+        from core.engine import make_hasselblad_body_look
+        fn = make_hasselblad_body_look(toe_lift=0.02, shoulder_start=0.58,
+                                        white_point=0.95, clahe_clip=1.25,
+                                        exposure_gamma=0.6)
+        sig = inspect.signature(fn)
+        self.assertAlmostEqual(sig.parameters["toe_lift"].default, 0.02)
+        self.assertAlmostEqual(sig.parameters["shoulder_start"].default, 0.58)
+        self.assertAlmostEqual(sig.parameters["white_point"].default, 0.95)
+        self.assertAlmostEqual(sig.parameters["clahe_clip"].default, 1.25)
+        self.assertAlmostEqual(sig.parameters["exposure_gamma"].default, 0.6)
+
+    def test_exposure_gamma_of_one_skips_exposure_lut(self):
+        from core.engine import make_hasselblad_body_look
+        fn = make_hasselblad_body_look(toe_lift=0.0, shoulder_start=0.82,
+                                        white_point=1.0, clahe_clip=1.25,
+                                        exposure_gamma=1.0)
+        out = fn(self.img)
+
+        # exposure_gamma=1.0이면 `if exposure_gamma != 1.0` 분기 전체를
+        # 건너뛰어야 한다 - 노출 LUT 단계 없이 CLAHE -> 필름커브만 적용한
+        # 참조 버전과 정확히 일치해야 그 분기가 실제로 스킵됐다고 말할 수
+        # 있다(부동소수점 근사 비교가 아니라 정확히 같은 코드 경로인지
+        # 확인하는 테스트).
+        lab = cv2.cvtColor(self.img, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=1.25, tileGridSize=(8, 8))
+        l_expected = clahe.apply(l)
+        x = np.arange(256, dtype=np.float32) / 255.0
+        lut = np.clip(film_curve(x, 0.0, 0.82, 1.0) * 255, 0, 255).astype(np.uint8)
+        l_expected = cv2.LUT(l_expected, lut)
+        expected = cv2.cvtColor(cv2.merge((l_expected, a, b)), cv2.COLOR_LAB2BGR)
+
+        np.testing.assert_array_equal(out, expected)
+
+
 if __name__ == "__main__":
     unittest.main()

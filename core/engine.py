@@ -57,6 +57,36 @@ def make_population_fit_look(toe_lift, shoulder_start, white_point, clahe_clip):
     return apply
 
 
+def make_hasselblad_body_look(toe_lift, shoulder_start, white_point, clahe_clip, exposure_gamma):
+    """Hasselblad 단독바디 apply_hncs_* 변형(hasselblad_x1d50c.py/
+    hasselblad_x2dii.py)이 공유하는 본문(노출감마 LUT -> CLAHE ->
+    필름커브 LUT)을 브랜드별 5개 파라미터로 고정해 반환한다.
+    population-fit 브랜드의 make_population_fit_look()과는 별개 팩토리 -
+    이쪽은 raw+jpeg 페어로 직접 캘리브레이션된 Hasselblad 바디 변형
+    전용이라 exposure_gamma 단계가 있고 컬러 매트릭스 단계가 없다.
+    brands/hasselblad.py 자체는 이 팩토리와 무관하게 그대로 둔다."""
+    def apply(img_bgr, toe_lift=toe_lift, shoulder_start=shoulder_start,
+              white_point=white_point, clahe_clip=clahe_clip, exposure_gamma=exposure_gamma):
+        lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+
+        if exposure_gamma != 1.0:
+            x = np.arange(256, dtype=np.float32) / 255.0
+            exp_lut = np.clip((x ** exposure_gamma) * 255, 0, 255).astype(np.uint8)
+            l = cv2.LUT(l, exp_lut)
+
+        clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+        l = clahe.apply(l)
+
+        x = np.arange(256, dtype=np.float32) / 255.0
+        lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                      0, 255).astype(np.uint8)
+        l = cv2.LUT(l, lut)
+
+        return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    return apply
+
+
 def apply_population_fit_look_video_frame(img_bgr, toe_lift, shoulder_start, white_point):
     """apply_population_fit_look()의 비디오 전용 변형 - CLAHE(프레임별
     적응형 로컬 대비 보정)를 생략하고 톤 LUT만 적용한다. CLAHE는 프레임마다
