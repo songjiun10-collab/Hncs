@@ -18,13 +18,18 @@ DBpia AI 요약카드로 확인한 값(정확한 (4.1, 1.1, 1.6))에 의존한�
 이 프로젝트는 `hybrid_engine/utils/evaluate.py`의 `mean_delta_e()`/
 `delta_e_map()`으로 ΔE(CIEDE2000)를 재는데, 전부 `colour.delta_E(...,
 method="CIE 2000")`를 인자 없이 호출해 (1,1,1)이 암묵적으로 쓰인다.
-이 함수를 직접 쓰는 곳이 10개 파일(`hybrid_engine/main.py`,
-`evaluation/metrics.py`, `calibrate_profile.py`,
-`tests/test_hybrid_engine.py`, `tools/evaluate_hncs_blend.py`,
-`evaluate_hncs_structural.py`, `evaluate_fuji_demosaic.py`,
-`evaluate_darktable_vs_rawpy.py`, `evaluate_chromatic_aberration.py`)고,
-`hybrid_engine/EVALUATION.md`에 기록된 수십 건의 실험 결과 전부 이
-기본값으로 측정됐다.
+이 글 작성 시점에 `mean_delta_e()`/`delta_e_map()`을 직접 쓰는 곳은
+7개 파일(`hybrid_engine/main.py`, `evaluation/metrics.py`,
+`calibrate_profile.py`, `tests/test_hybrid_engine.py`,
+`tools/evaluate_hncs_blend.py`, `evaluate_fuji_demosaic.py`,
+`evaluate_darktable_vs_rawpy.py`) - `evaluate_hncs_structural.py`/
+`evaluate_chromatic_aberration.py`는 이후 다른 세션이 `skimage` 기반으로
+재작성해서 더 이상 이 함수를 안 쓴다(아래 "재검증 범위" 절 참고).
+`hybrid_engine/core/chart_baseline.py`의 `patch_delta_e()`/
+`patch_delta_e_xyz_d50()`은 `colour.delta_E`를 별도로 직접 호출하는
+독립 경로라 이번 변경(선택 인자 추가)의 영향을 안 받는다 - 이 스펙
+범위 밖. `hybrid_engine/EVALUATION.md`에 기록된 수십 건의 실험 결과
+전부 (1,1,1) 기본값으로 측정됐다.
 
 ## 기술적 제약: colour-science가 임의 kL/kC/kH를 지원 안 함
 
@@ -85,50 +90,62 @@ kC=1.0, kH=1.0)`와 `delta_e_map(...)`은 `method=="CIE 2000"`일 때
 `delta_E_CIE2000_weighted`로 라우팅(다른 method는 지금처럼
 `colour.delta_E` 그대로 - kL/kC/kH가 의미 없는 다른 공식까지 건드리지
 않음). 전부 기본값 1.0이라 **기존 호출부(main.py, calibrate_profile.py
-등 10개 파일)는 전혀 안 바뀜** - 시그니처만 늘어난다.
+등 7개 파일)는 전혀 안 바뀜** - 시그니처만 늘어난다.
 
-### 2. 5개 재검증 대상 스크립트에 `--kl/--kc/--kh` 추가
+### 2. 재검증 범위: 5개 중 3개만 (2026-08-09 축소, 구현 전 발견)
 
-`evaluate_hncs_blend.py` / `evaluate_hncs_structural.py` /
-`evaluate_fuji_demosaic.py` / `evaluate_darktable_vs_rawpy.py` /
-`evaluate_chromatic_aberration.py` 각각에:
+원래 5개(`evaluate_hncs_blend.py`/`evaluate_hncs_structural.py`/
+`evaluate_fuji_demosaic.py`/`evaluate_darktable_vs_rawpy.py`/
+`evaluate_chromatic_aberration.py`) 전부를 대상으로 잡았으나, 스펙
+커밋 직후 다른 세션(사용자 로컬 macOS 환경)이 `evaluate_chromatic_aberration.py`와
+`evaluate_hncs_structural.py` 둘 다 이미 재작성해뒀다는 게 확인됐다
+(`git log`: `dc2f7c0`/`57c3d48`) - `hybrid_engine.utils.evaluate.mean_delta_e`
+대신 `skimage.color.deltaE_ciede2000`(kL/kC/kH 네이티브 지원)을 쓰고,
+`RAW_DIR = "/Users/songjiun/Documents/raw pair"`(사용자 로컬 경로
+하드코딩)와 dpreview.com 출처 95쌍 raw+jpeg 데이터를 참조한다. 이
+원격 컨테이너에는 `skimage`가 미설치(`requirements.txt`에도 없음)이고
+그 raw 파일들 자체가 없다 - **이 두 스크립트는 이 환경에서 실행
+불가**.
+
+**범위 축소**: `evaluate_hncs_blend.py`/`evaluate_fuji_demosaic.py`/
+`evaluate_darktable_vs_rawpy.py` **3개만** 대상. 이 셋은 여전히
+`hybrid_engine.utils.evaluate.mean_delta_e`를 그대로 쓰고, 필요한
+데이터(`raw_calib_cache/`, `raw_calib_cache_fuji/`,
+`datasets/hasselblad/contributed/local-mixed-2026-07/`)가 전부 이
+컨테이너에 있다. `evaluate_chromatic_aberration.py`/
+`evaluate_hncs_structural.py`는 "이 환경에서 검증 불가 - 로컬
+macOS + skimage 환경 필요"로 명시만 하고 스킵(사용자가 다음엔
+데이터를 GitHub에 올려두기로 함 - 그때 재추진).
+
+각 대상 스크립트에:
 - `argparse`에 `--kl/--kc/--kh`(기본 1.0) 추가
 - `mean_delta_e()`를 호출하는 leaf 함수들(`_blend_combo_mean`/
-  `run_loocv`/`fit_chroma_lut_params`/`structural_delta_e`/
-  `apply_hncs_delta_e`/`compare_pair`/`check_determinism`/
-  `delta_e_for` 등, 파일별로 다름)에 `kL=1.0, kC=1.0, kH=1.0` 파라미터를
-  추가해서 `main()`부터 그대로 흘려보냄 - 그리드서치 기준 자체가
-  ΔE이므로(예: `fit_weighted_chroma_lut`의 SAT_MULT_GRID x
+  `run_loocv`/`compare_pair`/`check_determinism`)에 `kL=1.0, kC=1.0,
+  kH=1.0` 파라미터를 추가해서 `main()`부터 그대로 흘려보냄 - 그리드서치
+  기준 자체가 ΔE이므로(예: `fit_weighted_chroma_lut`의 SAT_MULT_GRID x
   HUE_SHIFT_GRID 탐색) 최종 측정만이 아니라 피팅 전체가 새 가중치로
   다시 돈다.
 
-### 3. `evaluate_hncs_blend.py`의 하드클러스터 기준선 문제
+### 3. `evaluate_hncs_blend.py`의 하드클러스터 비교는 이번엔 스킵
 
 `HARD_CLUSTER_DE`(:79)는 **(1,1,1)로 측정된 하드코딩 상수**
-(`hybrid_engine/EVALUATION.md`에서 복사됨)다. 블렌딩 쪽만 새 가중치로
-재고 하드클러스터는 옛 상수를 그대로 쓰면 다른 자로 잰 두 값을
-비교하게 된다. 나머지 4개 스크립트는 비교 양쪽을 같은 실행 안에서
-라이브로 재므로 이 문제가 없다(직접 확인함 - `HARD_CLUSTER_DE` 같은
-패턴의 하드코딩 상수는 `evaluate_hncs_blend.py`에만 있음).
+(`hybrid_engine/EVALUATION.md`에서 복사됨)다. 원래 설계는
+`evaluate_hncs_structural.py`를 새 가중치로 먼저 돌려서 이 상수를
+갱신하는 것이었는데, 그 스크립트가 이 환경에서 실행 불가(위 2절)라
+**하드클러스터 대비 비교는 이번 재검증에서 뺀다** - 다른 자로 잰
+값끼리 비교하는 오류를 만들 바엔 아예 안 하는 게 낫다.
 
-**해결**: `evaluate_hncs_structural.py`의 새 가중치 실행(하드클러스터
-LOO ΔE를 계산하는 `run_loocv()`)을 먼저 끝내서 새
-`HARD_CLUSTER_DE_WEIGHTED` 값을 얻은 뒤, 그 값을
-`evaluate_hncs_blend.py`에 새 상수로 추가(`HARD_CLUSTER_DE`는 그대로
-두고 - 이건 기존 (1,1,1) 결과 재현용, 새 상수를 병행 추가)해서
-`--weighted` 모드일 때 그쪽을 쓰게 한다. 즉 실행 순서는
-`evaluate_hncs_structural.py`(가중) 완료 → 그 출력으로
-`evaluate_hncs_blend.py`(가중) 시작, 나머지 3개
-(`evaluate_fuji_demosaic.py`/`evaluate_darktable_vs_rawpy.py`/
-`evaluate_chromatic_aberration.py`)는 의존성 없이 처음부터 병렬.
+대신 `evaluate_hncs_blend.py` 안에서 **RB 블렌딩 vs CCT 블렌딩 직접
+비교**(`main()`의 세 번째 비교, 양쪽 다 같은 실행에서 라이브로 재므로
+기준선 문제 없음)만 새 가중치로 재검증한다. `--kl/--kc/--kh`가
+1.0이 아니면 하드클러스터 비교 두 개는 건너뛰고 RB-vs-CCT 비교만
+출력하도록 `main()`을 분기한다.
 
 ### 4. 실행
 
-5개 스크립트 전부 `nohup ... &`로 백그라운드(hncs_structural과 나머지
-3개는 즉시 시작, hncs_blend는 hncs_structural 완료 후 시작), `Monitor`로
-지켜본다. 실험당 원래 걸린 시간(hncs_blend 74쌍 4시간22분,
-chromatic_aberration 83쌍 약 60~70분 등)과 비슷하거나 조금 더 걸릴 수
-있음(그리드서치 자체를 다시 돌리므로) - 총 5시간 이상 예상.
+3개 스크립트를 `nohup ... &`로 동시 백그라운드 실행, `Monitor`로
+지켜본다. 실험당 원래 걸린 시간(hncs_blend 74쌍 4시간22분 등)과
+비슷하거나 조금 더 걸릴 수 있음(그리드서치 자체를 다시 돌리므로).
 
 ### 5. 기록
 
@@ -145,7 +162,7 @@ chromatic_aberration 83쌍 약 60~70분 등)과 비슷하거나 조금 더 걸�
 
 판정이 바뀐 실험이 하나라도 있으면(예: 판정 보류였던 게 유의미해지거나
 반대로 뒤집히는 경우) 구현 완료를 보고할 때 텍스트로 명시한다 - 별도
-요약 문서는 새로 안 만든다(5건이라 EVALUATION.md의 각 절만 봐도 충분).
+요약 문서는 새로 안 만든다(3건이라 EVALUATION.md의 각 절만 봐도 충분).
 
 ## 절대 안 건드리는 것
 
