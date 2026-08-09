@@ -25,12 +25,22 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
   캐시 이미지로 처음부터 재계산해도 그대로 나옴을 확인함(2026-07)
 - `unittest` 테스트 스위트 + GitHub Actions CI로 push/PR마다 자동 검증
 
+## 어디부터 읽을까
+
+처음이라면 이 순서로: 이 README의 [지원 브랜드](#지원-브랜드) 표로 뭐가
+있는지 확인 -> [docs/project_structure.md](docs/project_structure.md)로
+파일 단위 지도 확인 -> 건드릴 디렉토리의 `CLAUDE.md`(각 영역이 자기
+규칙을 직접 문서화함 - `brands/`/`core/`/`tools/`/`hybrid_engine/`/
+`gui/`/`tests/`/`datasets/`/`docs/`). 전체 디렉토리 지도 + "무엇을
+하려면 어디를 읽어야 하는지" 표는 [docs/START_HERE.md](docs/START_HERE.md)
+참고.
+
 ![Before/After - apply_hncs 적용 예시](docs/images/before_after_hncs.jpg)
 
-![HNCS 프리셋 데모 - 사진 한 장에 apply_* 24개(+원본) 전부 적용](docs/images/preset_demo.jpg)
+![HNCS 프리셋 데모 - 사진 한 장에 apply_* 29개(+원본) 전부 적용](docs/images/preset_demo.jpg)
 
 *동일한 소스 사진(Nikon D5300 야경샷, 데모용으로 제공받음) 한 장에
-`brands/*.py`의 사진용 `apply_*` 룩 24개(+원본)를 그대로 돌린 결과. 공식
+`brands/*.py`의 사진용 `apply_*` 룩 29개(+원본)를 그대로 돌린 결과. 공식
 캘리브레이션 소스 사진이 아니라 단순 데모용 - 실제 population 수치의
 근거는 [지원 브랜드](#지원-브랜드) 표에 링크된 문서를 참고.*
 

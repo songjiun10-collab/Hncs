@@ -75,7 +75,7 @@ population-fit 방식 유지.
 
 ## population 통계 재현성 감사 (2026-07)
 
-13개 브랜드 중 population-fit 방식 10개(leica/phaseone/pentax/ricoh_gr/
+12개 브랜드 중 population-fit 방식 10개(leica/phaseone/pentax/ricoh_gr/
 canon/sony/nikon/panasonic/olympus/sigma) 전부를 대상으로, 각 브랜드
 docstring에 적힌 population 수치가 지금 로컬에 캐시된 이미지로 처음부터
 다시 계산해도 재현되는지 `core.stats.image_stats()`로 전수 재검증했다

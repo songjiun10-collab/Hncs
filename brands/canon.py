@@ -85,14 +85,11 @@ Leica/Ricoh GR과 비슷한 자릿수로 맞춤), chroma_mean=16.39. hue/채도�
 Nikon(8~12대)과 달라서 그 브랜드들과 직접 비교하면 안 됨** (자세한 이유는
 texture_signature.json의 methodology 필드 참고).
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 15.0 / 255
 _WHITE_POINT = 239.1 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_canon_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                      white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_canon_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

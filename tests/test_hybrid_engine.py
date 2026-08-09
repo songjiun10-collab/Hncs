@@ -12,7 +12,7 @@ from hybrid_engine.core.color_core import (
 )
 from hybrid_engine.core.color_matrix import estimate_source_white_xy, unify_to_d65
 from hybrid_engine.pipeline.engine import HybridCameraEngine
-from hybrid_engine.utils.evaluate import mean_delta_e
+from hybrid_engine.utils.evaluate import delta_E_CIE2000_weighted, mean_delta_e
 
 
 class TestNormalizer(unittest.TestCase):
@@ -438,6 +438,58 @@ class TestEvaluate(unittest.TestCase):
         b = a.copy()
         b[..., 0] = 0.1  # 붉은기 뺌
         self.assertGreater(mean_delta_e(a, b), 0.0)
+
+
+class TestDeltaE2000Weighted(unittest.TestCase):
+    """delta_E_CIE2000_weighted()가 (1,1,1)에서 colour.delta_E()와
+    정확히 같은지, 그리고 mean_delta_e()의 kL/kC/kH 인자가 기본값일 때
+    기존 동작을 안 바꾸는지 확인."""
+
+    def test_matches_colour_science_default_at_111(self):
+        import colour
+        rng = np.random.default_rng(0)
+        Lab_1 = rng.uniform([0, -80, -80], [100, 80, 80], size=(200, 3))
+        Lab_2 = rng.uniform([0, -80, -80], [100, 80, 80], size=(200, 3))
+        official = colour.delta_E(Lab_1, Lab_2, method="CIE 2000")
+        mine = delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0)
+        np.testing.assert_allclose(mine, official, atol=1e-9)
+
+    def test_matches_colour_science_textiles_at_kl2(self):
+        import colour
+        rng = np.random.default_rng(1)
+        Lab_1 = rng.uniform([0, -80, -80], [100, 80, 80], size=(50, 3))
+        Lab_2 = rng.uniform([0, -80, -80], [100, 80, 80], size=(50, 3))
+        official_textiles = colour.delta_E(Lab_1, Lab_2, method="CIE 2000", textiles=True)
+        mine_kl2 = delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=2.0, kC=1.0, kH=1.0)
+        np.testing.assert_allclose(mine_kl2, official_textiles, atol=1e-9)
+
+    def test_higher_kl_reduces_lightness_dominated_delta_e(self):
+        # 순수 명도차만 있는 두 Lab 값 - kL을 올리면 ΔE가 줄어야 한다
+        Lab_1 = np.array([[50.0, 0.0, 0.0]])
+        Lab_2 = np.array([[70.0, 0.0, 0.0]])
+        de_default = delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0)
+        de_high_kl = delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=4.1, kC=1.1, kH=1.6)
+        self.assertLess(de_high_kl[0], de_default[0])
+
+
+class TestMeanDeltaEWeightedDefaultUnchanged(unittest.TestCase):
+    """mean_delta_e()/delta_e_map()에 kL/kC/kH 기본값(1.0)으로 호출하면
+    새 인자를 아예 안 넘긴 것과 결과가 완전히 같아야 한다 - 기존 7개
+    호출부의 동작이 이 변경으로 바뀌지 않는다는 회귀 증거."""
+
+    def test_mean_delta_e_default_matches_no_kwargs(self):
+        rng = np.random.default_rng(2)
+        a = rng.uniform(0.05, 0.9, size=(6, 6, 3))
+        b = rng.uniform(0.05, 0.9, size=(6, 6, 3))
+        self.assertEqual(mean_delta_e(a, b), mean_delta_e(a, b, kL=1.0, kC=1.0, kH=1.0))
+
+    def test_mean_delta_e_weighted_differs_from_default(self):
+        rng = np.random.default_rng(3)
+        a = rng.uniform(0.05, 0.9, size=(6, 6, 3))
+        b = rng.uniform(0.05, 0.9, size=(6, 6, 3))
+        default = mean_delta_e(a, b)
+        weighted = mean_delta_e(a, b, kL=4.1, kC=1.1, kH=1.6)
+        self.assertNotEqual(default, weighted)
 
 
 class TestLearnedToneLut(unittest.TestCase):

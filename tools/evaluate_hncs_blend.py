@@ -29,6 +29,7 @@ HARD_CLUSTER_DE 상수로 그대로 가져와 쓴다.
 (원래도 폴드당 재계산이었지 콤보와는 무관한 값이라 이 캐싱은 순수
 속도 최적화 - 계산 결과는 바뀌지 않는다).
 """
+import argparse
 import csv
 import glob
 import itertools
@@ -274,7 +275,8 @@ def fit_weighted_matrices(train_pairs, weights):
     return matrix_a, matrix_b
 
 
-def _blend_combo_mean(names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg):
+def _blend_combo_mean(names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg,
+                       kL=1.0, kC=1.0, kH=1.0):
     sum_a, total_a, sum_b, total_b = 0.0, 0.0, 0.0, 0.0
     for name in names:
         w = weights[name]
@@ -285,7 +287,7 @@ def _blend_combo_mean(names, weights, matrix_a, matrix_b, sat_mult, hue_shift_de
         result = film_curve(chroma_applied, toe_lift=FILM_CURVE_TOE_LIFT,
                              shoulder_start=FILM_CURVE_SHOULDER_START,
                              white_point=FILM_CURVE_WHITE_POINT)
-        de = mean_delta_e(result, target)
+        de = mean_delta_e(result, target, kL=kL, kC=kC, kH=kH)
         sum_a += (1.0 - w) * de
         total_a += (1.0 - w)
         sum_b += w * de
@@ -294,26 +296,30 @@ def _blend_combo_mean(names, weights, matrix_a, matrix_b, sat_mult, hue_shift_de
 
 
 def _blend_combo_task(args):
-    names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg = args
+    names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg, kL, kC, kH = args
     sum_a, total_a, sum_b, total_b = _blend_combo_mean(
-        names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg)
+        names, weights, matrix_a, matrix_b, sat_mult, hue_shift_deg, kL, kC, kH)
     return (sat_mult, hue_shift_deg), sum_a, total_a, sum_b, total_b
 
 
-def fit_weighted_chroma_lut(train_pairs, weights, matrix_a, matrix_b, pool=None):
+def fit_weighted_chroma_lut(train_pairs, weights, matrix_a, matrix_b, pool=None,
+                             kL=1.0, kC=1.0, kH=1.0):
     """앵커A/B용 (sat_mult, hue_shift_deg)를 각각 가중 평균 ΔE 최소화로
     그리드서치. 매트릭스는 이미 그 폴드에서 피팅된 blended matrix(각
     페어 자기 가중치로 블렌딩)를 먼저 적용한 뒤 후보 chroma 파라미터를
     얹어 평가한다 - apply_hncs_structural_blend()가 예측 시 실제로
     하는 순서와 일치시키기 위함. pool이 있으면 49개 콤보를 워커들에
-    나눠 계산한다(결과는 직렬 실행과 수학적으로 동일)."""
+    나눠 계산한다(결과는 직렬 실행과 수학적으로 동일). kL/kC/kH는
+    이 그리드서치의 선택 기준 자체를 바꾼다 - 기본(1,1,1)에서 벗어나면
+    최적 (sat_mult, hue_shift_deg)도 달라질 수 있다."""
     names = [p["name"] for p in train_pairs]
     combos = list(itertools.product(SAT_MULT_GRID, HUE_SHIFT_GRID))
     if pool is None:
-        results = [((s, h), *_blend_combo_mean(names, weights, matrix_a, matrix_b, s, h))
+        results = [((s, h), *_blend_combo_mean(names, weights, matrix_a, matrix_b, s, h,
+                                                 kL, kC, kH))
                    for s, h in combos]
     else:
-        tasks = [(names, weights, matrix_a, matrix_b, s, h) for s, h in combos]
+        tasks = [(names, weights, matrix_a, matrix_b, s, h, kL, kC, kH) for s, h in combos]
         results = pool.map(_blend_combo_task, tasks)
 
     best_a, best_a_score = (1.0, 0.0), float("inf")
@@ -330,19 +336,26 @@ def fit_weighted_chroma_lut(train_pairs, weights, matrix_a, matrix_b, pool=None)
     return best_a, best_b
 
 
-def run_loocv(weight_fn_name, pool=None):
+def run_loocv(weight_fn_name, pool=None, kL=1.0, kC=1.0, kH=1.0):
     """weight_fn_name: "rb" 또는 "cct". 74개 폴드 전부에 대해
-    (name, de_hard, de_blend, weight) 튜플 리스트를 반환한다."""
+    (name, de_hard, de_blend, weight) 튜플 리스트를 반환한다. kL/kC/kH가
+    (1,1,1)이 아니면 de_hard는 None이다 - HARD_CLUSTER_DE는 (1,1,1)
+    기준으로 측정된 상수라 다른 가중치에서는 안 맞다(사용하려면
+    evaluate_hncs_structural.py를 그 가중치로 다시 돌려야 하는데, 그
+    스크립트는 이 환경에서 실행 불가 - docs/superpowers/specs/2026-08-09-ciede2000-weighted-reverification-design.md
+    참고)."""
     pairs = combine_pairs(load_pairs())
     bounds = compute_population_bounds(pairs)
     weight_fn = pair_weight_rb if weight_fn_name == "rb" else pair_weight_cct
     weights = compute_weights_by_name(pairs, weight_fn, bounds)
+    is_weighted = (kL, kC, kH) != (1.0, 1.0, 1.0)
 
     per_fold = []
     for i, held_out in enumerate(pairs):
         train = pairs[:i] + pairs[i + 1:]
         matrix_a, matrix_b = fit_weighted_matrices(train, weights)
-        chroma_a, chroma_b = fit_weighted_chroma_lut(train, weights, matrix_a, matrix_b, pool)
+        chroma_a, chroma_b = fit_weighted_chroma_lut(train, weights, matrix_a, matrix_b, pool,
+                                                       kL, kC, kH)
 
         w_held = weights[held_out["name"]]
         wb_rgb, target = _pair_data(held_out)
@@ -356,11 +369,12 @@ def run_loocv(weight_fn_name, pool=None):
         result = film_curve(chroma_applied, toe_lift=FILM_CURVE_TOE_LIFT,
                              shoulder_start=FILM_CURVE_SHOULDER_START,
                              white_point=FILM_CURVE_WHITE_POINT)
-        de_blend = mean_delta_e(result, target)
-        de_hard = HARD_CLUSTER_DE[held_out["name"]]
+        de_blend = mean_delta_e(result, target, kL=kL, kC=kC, kH=kH)
+        de_hard = None if is_weighted else HARD_CLUSTER_DE[held_out["name"]]
 
         per_fold.append((held_out["name"], de_hard, de_blend, w_held))
-        print(f"  [{held_out['name']}] hard-cluster ΔE={de_hard:.3f} "
+        hard_str = "N/A(가중 모드)" if is_weighted else f"{de_hard:.3f}"
+        print(f"  [{held_out['name']}] hard-cluster ΔE={hard_str} "
               f"blend({weight_fn_name}) ΔE={de_blend:.3f} "
               f"weight={w_held:.3f}", flush=True)
     return per_fold
@@ -467,6 +481,14 @@ def print_summary(s, label_a="A", label_b="B"):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--kl", type=float, default=1.0, help="CIEDE2000 kL 가중치 (기본 1.0)")
+    parser.add_argument("--kc", type=float, default=1.0, help="CIEDE2000 kC 가중치 (기본 1.0)")
+    parser.add_argument("--kh", type=float, default=1.0, help="CIEDE2000 kH 가중치 (기본 1.0)")
+    args = parser.parse_args()
+    kL, kC, kH = args.kl, args.kc, args.kh
+    is_weighted = (kL, kC, kH) != (1.0, 1.0, 1.0)
+
     pairs = combine_pairs(load_pairs())
     print(f"페어 {len(pairs)}개 - 디코드 캐시 준비 중(메인 프로세스)", flush=True)
     _init_worker(pairs)  # 메인 프로세스도 fit_weighted_matrices()/held-out 평가용으로 필요
@@ -475,16 +497,22 @@ def main():
     if pool is not None:
         print(f"워커 {N_WORKERS}개에 디코드 캐시 배포 중 (RB/CCT 두 실행이 공유)", flush=True)
     try:
-        print("=== R/B 선형 블렌딩 vs 하드-클러스터 ===")
-        per_fold_rb = run_loocv("rb", pool)
-        summary_rb = summarize(per_fold_rb)
-        print_summary(summary_rb, label_a="하드클러스터", label_b="RB블렌딩")
+        if is_weighted:
+            print(f"=== 가중 모드 (kL={kL}, kC={kC}, kH={kH}) - 하드클러스터 비교 생략 ===")
+        else:
+            print("=== R/B 선형 블렌딩 vs 하드-클러스터 ===")
+        per_fold_rb = run_loocv("rb", pool, kL, kC, kH)
+        if not is_weighted:
+            summary_rb = summarize(per_fold_rb)
+            print_summary(summary_rb, label_a="하드클러스터", label_b="RB블렌딩")
 
         print()
-        print("=== CCT/mired 블렌딩 vs 하드-클러스터 ===")
-        per_fold_cct = run_loocv("cct", pool)
-        summary_cct = summarize(per_fold_cct)
-        print_summary(summary_cct, label_a="하드클러스터", label_b="CCT블렌딩")
+        if not is_weighted:
+            print("=== CCT/mired 블렌딩 vs 하드-클러스터 ===")
+        per_fold_cct = run_loocv("cct", pool, kL, kC, kH)
+        if not is_weighted:
+            summary_cct = summarize(per_fold_cct)
+            print_summary(summary_cct, label_a="하드클러스터", label_b="CCT블렌딩")
     finally:
         if pool is not None:
             pool.close()

@@ -64,14 +64,11 @@ hue/채도: population 통계로는 "라이카가 중립 대비 채도를 올리
 - M9(CCD, 2009)와 SL2(2019, CMOS) 사이 10년의 센서/파이프라인 차이를
   하나의 커브로 뭉뚱그리는 게 타당한지도 미검증
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 9.2 / 255
 _WHITE_POINT = 229.8 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_leica_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                      white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_leica_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

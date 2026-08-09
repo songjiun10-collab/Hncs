@@ -18,6 +18,7 @@ darktable-cli는 시스템 패키지(apt-get install darktable)로 설치돼야
 
   python3 -m tools.evaluate_darktable_vs_rawpy
 """
+import argparse
 import csv
 import glob
 import math
@@ -107,40 +108,40 @@ def load_all_pairs():
     return load_hasselblad_pairs() + load_fuji_pairs()
 
 
-def check_determinism(pair):
+def check_determinism(pair, kL=1.0, kC=1.0, kH=1.0):
     """같은 파일을 rawpy/darktable 각각 두 번 디코드해서 재현성
     노이즈 바닥을 ΔE(CIEDE2000) 단위로 잰다(두 디코드끼리 직접 비교,
     JPEG 타깃 없이) - 실제 비교(디코더 간 ΔE 차이)와 같은 단위라야
     "노이즈보다 큰가"를 판단할 수 있다."""
     rawpy_1 = _resize_max_dim(decode_raw(pair["raw_path"]), DOWNSAMPLE_MAX_DIM)
     rawpy_2 = _resize_max_dim(decode_raw(pair["raw_path"]), DOWNSAMPLE_MAX_DIM)
-    rawpy_noise_de = mean_delta_e(rawpy_1, rawpy_2)
+    rawpy_noise_de = mean_delta_e(rawpy_1, rawpy_2, kL=kL, kC=kC, kH=kH)
 
     dt_1 = _resize_max_dim(decode_raw_darktable(pair["raw_path"]), DOWNSAMPLE_MAX_DIM)
     dt_2 = _resize_max_dim(decode_raw_darktable(pair["raw_path"]), DOWNSAMPLE_MAX_DIM)
-    dt_noise_de = mean_delta_e(dt_1, dt_2)
+    dt_noise_de = mean_delta_e(dt_1, dt_2, kL=kL, kC=kC, kH=kH)
 
     print(f"  [{pair['name']}] rawpy 반복-디코드 ΔE={rawpy_noise_de:.6f}  "
           f"darktable 반복-디코드 ΔE={dt_noise_de:.6f}", flush=True)
     return rawpy_noise_de, dt_noise_de
 
 
-def compare_pair(pair):
+def compare_pair(pair, kL=1.0, kC=1.0, kH=1.0):
     """(rawpy ΔE, darktable ΔE) 반환 - 같은 카메라 JPEG 타깃 대비."""
     rawpy_linear = _resize_max_dim(decode_raw(pair["raw_path"]), DOWNSAMPLE_MAX_DIM)
     dt_linear = _resize_max_dim(decode_raw_darktable(pair["raw_path"]), DOWNSAMPLE_MAX_DIM)
     target_rawpy = load_image_linear_for_evaluate(pair["jpeg_path"], rawpy_linear.shape)
     target_dt = load_image_linear_for_evaluate(pair["jpeg_path"], dt_linear.shape)
-    de_rawpy = mean_delta_e(rawpy_linear, target_rawpy)
-    de_dt = mean_delta_e(dt_linear, target_dt)
+    de_rawpy = mean_delta_e(rawpy_linear, target_rawpy, kL=kL, kC=kC, kH=kH)
+    de_dt = mean_delta_e(dt_linear, target_dt, kL=kL, kC=kC, kH=kH)
     return de_rawpy, de_dt
 
 
-def run_comparison():
+def run_comparison(kL=1.0, kC=1.0, kH=1.0):
     pairs = load_all_pairs()
     results = []
     for pair in pairs:
-        de_rawpy, de_dt = compare_pair(pair)
+        de_rawpy, de_dt = compare_pair(pair, kL, kC, kH)
         improved = de_dt < de_rawpy
         results.append((pair["camera"], pair["name"], de_rawpy, de_dt, improved))
         print(f"  [{pair['camera']}/{pair['name']}] rawpy ΔE={de_rawpy:.3f} "
@@ -213,10 +214,18 @@ def print_summary(s):
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--kl", type=float, default=1.0, help="CIEDE2000 kL 가중치 (기본 1.0)")
+    parser.add_argument("--kc", type=float, default=1.0, help="CIEDE2000 kC 가중치 (기본 1.0)")
+    parser.add_argument("--kh", type=float, default=1.0, help="CIEDE2000 kH 가중치 (기본 1.0)")
+    args = parser.parse_args()
+    kL, kC, kH = args.kl, args.kc, args.kh
+
     print("반복-디코드 노이즈 바닥 측정 (ΔE CIEDE2000 단위, 대표 파일 각 1장):")
     hasselblad_pairs = load_hasselblad_pairs()
     fuji_pairs = load_fuji_pairs()
-    noise_pairs = [check_determinism(hasselblad_pairs[0]), check_determinism(fuji_pairs[0])]
+    noise_pairs = [check_determinism(hasselblad_pairs[0], kL, kC, kH),
+                   check_determinism(fuji_pairs[0], kL, kC, kH)]
     max_noise_de = max(n for pair_noise in noise_pairs for n in pair_noise)
     print(f"측정된 최대 노이즈 바닥: ΔE {max_noise_de:.6f}")
     print("(참고: 이 값은 반복-디코드 재현성만 재는 것이지 통계적 유의성")
@@ -224,7 +233,7 @@ def main():
     print()
 
     print("전체 16쌍 비교:")
-    results = run_comparison()
+    results = run_comparison(kL, kC, kH)
     s = summarize(results)
     print_summary(s)
 

@@ -2,7 +2,7 @@
 
 Tkinter 데스크톱 앱 - `brands/`/`hybrid_engine/`/`tools/`/`core/`의 기존
 CLI·함수를 감싸기만 한다. 로직을 여기서 새로 구현하지 않는다: 브랜드
-Look은 `apply_*()`를 직접 호출하고, 나머지 3탭은 기존 CLI를
+Look은 `apply_*()`를 직접 호출하고, 나머지 4탭은 기존 CLI를
 subprocess로 그대로 실행한다(`tools/CLAUDE.md`: tools/의 코드는 shipped
 code가 import하지 않는다 - 여기서도 지킨다).
 
