@@ -59,5 +59,30 @@ class TestPopulationFitLookGoldenHashes(unittest.TestCase):
                                   f"expected sha256={expected_hash}, got {actual_hash}")
 
 
+# (모듈 경로, 함수명, 리팩토링 전 sha256(출력.tobytes())) - Hasselblad
+# 단독바디 apply_hncs_* 변형 2개
+# (docs/superpowers/plans/2026-08-09-hasselblad-body-variant-wrapper-consolidation.md)
+HASSELBLAD_BODY_GOLDEN_HASHES = [
+    ("brands.hasselblad_x1d50c", "apply_hncs_x1d50c",
+     "a2f56608aab5a6c06f69f9e041467edbcfa37a605576df0e5e7d4eb2ea8f9267"),
+    ("brands.hasselblad_x2dii", "apply_hncs_x2dii",
+     "e56aae33aeb387ea18efc03371567c1e0da55a3e4e6fca3c77fa54e2790058fa"),
+]
+
+
+class TestHasselbladBodyVariantGoldenHashes(unittest.TestCase):
+    def test_both_body_variants_match_pre_refactor_output(self):
+        img = make_test_image()
+        for mod_name, fn_name, expected_hash in HASSELBLAD_BODY_GOLDEN_HASHES:
+            with self.subTest(brand=mod_name, fn=fn_name):
+                mod = importlib.import_module(mod_name)
+                fn = getattr(mod, fn_name)
+                out = fn(img)
+                actual_hash = hashlib.sha256(out.tobytes()).hexdigest()
+                self.assertEqual(actual_hash, expected_hash,
+                                  f"{mod_name}.{fn_name} output changed - "
+                                  f"expected sha256={expected_hash}, got {actual_hash}")
+
+
 if __name__ == "__main__":
     unittest.main()
