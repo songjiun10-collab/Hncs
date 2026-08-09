@@ -112,7 +112,12 @@ let you run independently; "make it work" needs constant clarification.
 ## Never
 
 - Modify `apply_hncs()` in `brands/hasselblad.py`, any shipped `apply_*`,
-  or `hybrid_engine/assets/profiles/*.json` / `*.dcp`.
+  or `hybrid_engine/assets/profiles/*.json` / `*.dcp` — **without the
+  user's explicit, in-the-moment sign-off**. The default is never;
+  silent/automatic changes are never OK. An explicit exception the user
+  approves in that conversation (e.g. a behavior-preserving refactor, or
+  adopting a recalibration) is a separate, sanctioned path — record what
+  was approved and why.
 - Ship an experimental result automatically. That's a separate decision.
 
 ## Every commit
