@@ -43,6 +43,20 @@ def apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, cl
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
 
+def make_population_fit_look(toe_lift, shoulder_start, white_point, clahe_clip):
+    """apply_population_fit_look()에 브랜드별 상수를 고정한 apply_*_look()
+    함수를 만들어 반환한다. functools.partial이 아니라 진짜 def 클로저를
+    쓰는 이유: hybrid_engine/core/preset_inverse.py와 tools/video_engine.py가
+    inspect.signature(func).parameters["toe_lift"].default 형태로 이
+    함수의 기본값을 직접 읽어가므로(브랜드 상수를 이중 기록하지 않기
+    위해), 그 두 소비자가 지금과 동일하게 동작하려면 실제 함수
+    시그니처(파라미터명+기본값)가 그대로 보존돼야 한다."""
+    def apply(img_bgr, toe_lift=toe_lift, shoulder_start=shoulder_start,
+              white_point=white_point, clahe_clip=clahe_clip):
+        return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+    return apply
+
+
 def apply_population_fit_look_video_frame(img_bgr, toe_lift, shoulder_start, white_point):
     """apply_population_fit_look()의 비디오 전용 변형 - CLAHE(프레임별
     적응형 로컬 대비 보정)를 생략하고 톤 LUT만 적용한다. CLAHE는 프레임마다
