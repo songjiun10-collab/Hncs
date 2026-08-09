@@ -30,9 +30,11 @@ docs/         Detailed documentation (this directory)
 | `brands/nikon.py` | Nikon color approximation (Z6/Z6 II/D780, 3-body population - the Z9/D850 galleries only had placeholder images with stripped EXIF, so they were excluded) - `apply_nikon_look()` |
 | `brands/sony.py` | Sony color approximation (A7/A7R/A7S/A7 III/A7 IV, 5-body population, 23 photos per body) - `apply_sony_look()` |
 | `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V only, the first raw-based calibration from 58 raw+jpeg pairs, +0.53% over the direct-ΔE00 grid search) |
+| `brands/sony_a7rvi.py` | Experimental - `apply_sony_a7rvi_look` (Sony a7R VI only, 40 raw+jpeg pairs, +0.57% via a direct-ΔE00 grid search - weak evidence, CI lower bound near zero) |
 | `brands/panasonic.py` | Panasonic (Lumix) color approximation (GH5/GH6/G9 MFT + S5/S1 full-frame, 5-body population, n=120) - `apply_panasonic_look()` |
 | `brands/olympus.py` | Olympus (now OM System) color approximation (OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F, 5-body population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma color approximation (Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill, 5-body population, n=83) - `apply_sigma_look()` |
+| `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF only, 51 raw+jpeg pairs, +0.53% via a direct-ΔE00 grid search - the weakest-evidence adoption this session, CI lower bound +0.007) |
 | `core/curve.py` | Tone-curve math (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - shared by multiple brand modules |
 | `core/lut.py` | LUT application helper |
 | `core/engine.py` | Shared engine for every population-fit brand (leica/phaseone/pentax/ricoh_gr and every other population-fit brand added since) - they all lack a raw baseline and plug their population target directly into `film_curve` with the same structure, so this was consolidated into one function |

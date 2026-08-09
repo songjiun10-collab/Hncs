@@ -1294,3 +1294,21 @@ shoulder_start=0.82, white_point=1.0`, X-T30 III `toe_lift=0.02,
 shoulder_start=0.82, white_point=1.0`로 사실상 동일 - `apply_leica_raw_look`이
 4개 라이카 바디에서 수렴한 값과도 완전히 같다(brands/leica_raw.py 이력).
 표본이 더 큰 GFX100RF 값을 `apply_provia()` 기본값으로 채택.
+
+### apply_sony_a7rvi_look / apply_sigma_bf_look 신설 - 보류했던 후보 최종 채택 (2026-08)
+
+"야 다해" 지시로, 앞서 근거 약함을 이유로 보류했던 Sony a7R VI와 Sigma BF를
+최종 채택했다. 둘 다 이미 원본 픽셀까지 재확인된 수치를 그대로 실었다 -
+새로 재검증하지 않음.
+
+| 함수 | n | 개선폭(원본 픽셀) | 승/패 | 부호검정 p | 부트스트랩 95% CI |
+|---|---|---|---|---|---|
+| `apply_sony_a7rvi_look` | 40 | +0.57% | 31/9 | 0.0007 | [+0.021, +0.172] |
+| `apply_sigma_bf_look` | 51 | +0.53% | 39/12 | 0.0002 | [+0.007, +0.181] |
+
+두 함수 모두 CI가 0을 벗어나 통계적으로는 유의하지만, 하한이 0에 가까워
+(특히 Sigma BF는 +0.007) 이 세션에서 채택한 함수들(X1D-50c +5.96%,
+X2D II +13.38%, Provia +18.8~23.5%) 대비 근거가 확실히 약하다 - 각
+파일 docstring에 명시. Hasselblad X2D 100C/CFV 100C/907X, Canon
+EOS R6 Mark III/R1은 CI가 0을 포함하거나(X2D 100C) 개선폭 자체가
+무의미한 수준이라(Canon 둘 다 +0.06~0.14%) 이번에도 채택하지 않았다.

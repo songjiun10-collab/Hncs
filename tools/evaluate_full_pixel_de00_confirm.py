@@ -29,7 +29,10 @@ from brands.hasselblad_x1d50c import apply_hncs_x1d50c
 from brands.hasselblad_x2dii import apply_hncs_x2dii
 from brands.leica import apply_leica_look
 from brands.leica_raw import apply_leica_raw_look
+from brands.sigma import apply_sigma_look
+from brands.sigma_bf import apply_sigma_bf_look
 from brands.sony import apply_sony_look
+from brands.sony_a7rvi import apply_sony_a7rvi_look
 from brands.sony_a7v import apply_sony_a7v_look
 from core.validation import is_image_array_usable
 from tools.calibrate import load_neutral_render
@@ -180,6 +183,18 @@ def main():
         _IDENTITY,
         apply_provia,
         film_mode_filter="F0/Standard (Provia)")
+
+    run("Sony a7R VI (apply_sony_look vs apply_sony_a7rvi_look)",
+        os.path.join(BASE, "datasets", "sony", "sony_new_pairs.csv"),
+        "ILCE-7RM6",
+        apply_sony_look,
+        apply_sony_a7rvi_look)
+
+    run("Sigma BF (apply_sigma_look vs apply_sigma_bf_look)",
+        os.path.join(BASE, "datasets", "sigma", "sigma_new_pairs.csv"),
+        None,
+        apply_sigma_look,
+        apply_sigma_bf_look)
 
 
 if __name__ == "__main__":
