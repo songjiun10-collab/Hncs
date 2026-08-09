@@ -56,14 +56,11 @@ leica.py/phaseone.py/pentax.py와 동일한 한계: raw 기준선이 없어
 population 타깃을 film_curve의 toe_lift/white_point에 직접 대입,
 shoulder_start/clahe_clip/hue·채도 무조작 가정은 미검증.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 8.4 / 255
 _WHITE_POINT = 245.2 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_ricoh_gr_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                         white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_ricoh_gr_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)
