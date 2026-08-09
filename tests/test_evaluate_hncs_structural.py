@@ -1,132 +1,133 @@
+import contextlib
+import io
 import unittest
 
 import numpy as np
 
 from tools.evaluate_hncs_structural import (
-    _pair_names, _resize_max_dim, _sign_test_p, summarize,
+    _sign_test_p, classify_illuminant_cluster, compute_blend_weight_rb,
+    fit_color_matrix, apply_color_matrix, make_folds, summarize,
 )
 
-# hybrid_engine/EVALUATION.md "HNCS 구조 실험" 절에 기록된 실측 13폴드
-# 결과 그대로 - 문서에 적힌 통계치가 summarize()로 재현되는지 여기서
-# 검증한다(LOOCV를 다시 돌리지 않고도 확인 가능하도록).
-RECORDED_PER_FOLD = [
-    ("x1d-II-sample-02.jpg", "cluster_a", 10.787, 9.961),
-    ("x1d-II-sample-09.jpg", "cluster_b", 5.249, 13.449),
-    ("B0000994.jpg", "cluster_b", 14.223, 9.128),
-    ("B0001395.jpg", "cluster_a", 18.412, 18.334),
-    ("x1d-xcd45-01.jpg", "cluster_a", 13.194, 9.395),
-    ("x1d-xcd45-03.jpg", "cluster_a", 8.342, 9.246),
-    ("x1d-xcd45-04.jpg", "cluster_a", 4.729, 8.245),
-    ("x1d-ii-xcd45p-01.jpg", "cluster_a", 10.126, 14.976),
-    ("x1d-ii-xcd45p-02.jpg", "cluster_a", 11.055, 11.645),
-    ("x1d-II-sample-01.jpg", "cluster_a", 6.452, 5.478),
-    ("x1d-II-sample-06.jpg", "cluster_a", 11.726, 8.610),
-    ("02709.jpg", "cluster_b", 13.074, 9.636),
-    ("00378.jpg", "cluster_a", 5.115, 10.073),
-]
-
-
-class TestPairNames(unittest.TestCase):
-    def test_returns_13_real_pairs(self):
-        names = _pair_names()
-        self.assertEqual(len(names), 13)
-
-    def test_excludes_x2dii_chart_files(self):
-        names = _pair_names()
-        self.assertFalse(any("x2dii-chart" in n for n in names))
-
-    def test_names_are_jpeg_basenames(self):
-        names = _pair_names()
-        self.assertTrue(all(n.endswith(".jpg") for n in names))
-
-
-class TestResizeMaxDim(unittest.TestCase):
-    def test_noop_when_already_smaller_than_max_dim(self):
-        img = np.random.default_rng(0).uniform(0, 1, size=(10, 20, 3))
-        out = _resize_max_dim(img, max_dim=512)
-        self.assertEqual(out.shape, img.shape)
-
-    def test_downsamples_when_larger_than_max_dim(self):
-        img = np.random.default_rng(1).uniform(0, 1, size=(1000, 2000, 3))
-        out = _resize_max_dim(img, max_dim=512)
-        self.assertLessEqual(max(out.shape[:2]), 512)
-        # aspect ratio preserved (within 1px rounding)
-        self.assertAlmostEqual(out.shape[1] / out.shape[0], 2000 / 1000, places=1)
-
-    def test_preserves_channel_count(self):
-        img = np.random.default_rng(2).uniform(0, 1, size=(600, 300, 3))
-        out = _resize_max_dim(img, max_dim=512)
-        self.assertEqual(out.shape[2], 3)
+# 이 파일은 예전에 원본 13쌍(X1D 전용) 실험판 tools/evaluate_hncs_structural.py를
+# 대상으로 `_pair_names`/`_resize_max_dim`을 테스트했는데, 그 사이 모듈이
+# dpreview 95쌍(4세대) 5-fold 재실험판으로 전면 재작성되면서 `_pair_names`가
+# 아예 없어져 import 자체가 깨졌다(CI에서 발견, 2026-08-09). RAW_DIR도
+# 로컬 하드코딩 절대경로(`/Users/songjiun/...`)라 `load_pairs()`/`run_kfold()`
+# 자체가 CI는 물론 이 컨테이너에서도 못 돈다 - tests/CLAUDE.md의 "CI has
+# no image data" 원칙대로 raw 디코드가 필요 없는 순수 함수만 골라 다시
+# 테스트한다. 이 모듈의 `summarize()`는 dict를 반환하지 않고 결과를
+# 표준출력에 찍기만 하므로(다른 evaluate_*.py의 `summarize()`와 인터페이스가
+# 다르다), `TestSummarizeRecordedRun` 패턴 대신 출력 캡처로 스모크테스트한다.
 
 
 class TestSignTestP(unittest.TestCase):
     def test_even_split_is_p_one(self):
-        self.assertAlmostEqual(_sign_test_p(5, 5), 1.0)
+        self.assertAlmostEqual(_sign_test_p(6, 6), 1.0)
 
-    def test_all_wins_is_significant(self):
-        # 13전 13승 -> 2 * (1/2^13) = 0.000244
-        self.assertAlmostEqual(_sign_test_p(13, 0), 2.0 / 2 ** 13, places=6)
-
-    def test_six_of_thirteen_is_p_one(self):
-        self.assertAlmostEqual(_sign_test_p(6, 7), 1.0)
-
-    def test_no_folds_is_p_one(self):
+    def test_no_pairs_is_p_one(self):
         self.assertAlmostEqual(_sign_test_p(0, 0), 1.0)
 
+    def test_all_wins_is_significant(self):
+        self.assertLess(_sign_test_p(13, 0), 0.001)
 
-class TestSummarizeRecordedRun(unittest.TestCase):
-    """EVALUATION.md에 기록된 수치가 summarize()에서 그대로 나오는지."""
-
-    @classmethod
-    def setUpClass(cls):
-        cls.s = summarize(RECORDED_PER_FOLD)
-
-    def test_reproduces_documented_means(self):
-        self.assertAlmostEqual(self.s["mean_structural"], 10.191, places=3)
-        self.assertAlmostEqual(self.s["mean_hncs"], 10.629, places=3)
-        self.assertAlmostEqual(self.s["improvement_pct"], 4.1, places=1)
-
-    def test_reproduces_documented_fold_counts(self):
-        self.assertEqual(self.s["structural_wins"], 6)
-        self.assertEqual(self.s["hncs_wins"], 7)
-        self.assertEqual(self.s["n"], 13)
-
-    def test_median_fold_favours_apply_hncs(self):
-        # 평균은 구조 실험이 앞서지만 중앙값 폴드는 반대 방향이다.
-        self.assertLess(self.s["median_diff"], 0.0)
-
-    def test_paired_difference_is_not_distinguishable_from_zero(self):
-        self.assertAlmostEqual(self.s["sd_diff"], 3.978, places=2)
-        self.assertLess(abs(self.s["t_stat"]), 2.18)  # df=12 양측 5% 임계값
-        self.assertAlmostEqual(self.s["sign_test_p"], 1.0, places=6)
-        lo, hi = self.s["ci_diff"]
-        self.assertLess(lo, 0.0)
-        self.assertGreater(hi, 0.0)
-        self.assertTrue(self.s["inconclusive"])
-
-    def test_dropping_one_pair_flips_the_sign(self):
-        self.assertTrue(self.s["dropone_flips_sign"])
-        self.assertLess(self.s["dropone_pct_min"], 0.0)
-
-    def test_verdict_is_inconclusive_not_a_win(self):
-        self.assertIn("판정 보류", self.s["verdict"])
+    def test_known_exact_value(self):
+        # 다른 evaluate_*.py들의 동일 구현/동일 관례로 교차검증한 값
+        self.assertAlmostEqual(_sign_test_p(10, 3), 0.09228515625, places=9)
 
 
-class TestSummarizeDecisiveCase(unittest.TestCase):
-    """차이가 실제로 크고 일관되면 승리 판정이 나오는지(보류가 기본값이
-    되어버리지 않는지) 확인."""
+class TestClassifyIlluminantCluster(unittest.TestCase):
+    def test_below_threshold_is_cluster_a(self):
+        self.assertEqual(classify_illuminant_cluster(np.array([0.89, 1.0, 1.0])), "cluster_a")
 
-    def test_consistent_large_win_is_declared(self):
-        per_fold = [(f"p{i}.jpg", "cluster_a", 5.0, 10.0) for i in range(13)]
-        s = summarize(per_fold, n_bootstrap=2000)
-        self.assertFalse(s["inconclusive"])
-        self.assertEqual(s["verdict"], "구조적 실험이 이겼다")
+    def test_at_or_above_threshold_is_cluster_b(self):
+        self.assertEqual(classify_illuminant_cluster(np.array([0.9, 1.0, 1.0])), "cluster_b")
+        self.assertEqual(classify_illuminant_cluster(np.array([1.2, 1.0, 1.0])), "cluster_b")
 
-    def test_consistent_large_loss_is_declared(self):
-        per_fold = [(f"p{i}.jpg", "cluster_a", 10.0, 5.0) for i in range(13)]
-        s = summarize(per_fold, n_bootstrap=2000)
-        self.assertFalse(s["inconclusive"])
-        self.assertEqual(s["verdict"], "apply_hncs()가 더 낫다")
+    def test_custom_threshold(self):
+        self.assertEqual(
+            classify_illuminant_cluster(np.array([0.5, 1.0, 1.0]), threshold=0.4), "cluster_b")
+
+
+class TestFitColorMatrixRoundTrip(unittest.TestCase):
+    def test_recovers_known_linear_transform(self):
+        rng = np.random.default_rng(0)
+        true_matrix = np.array([[1.1, 0.0, 0.0], [0.0, 0.9, 0.05], [0.0, 0.0, 1.0]])
+        source = rng.uniform(0, 1, size=(50, 50, 3))
+        target = source @ true_matrix
+        fitted = fit_color_matrix([source], [target], ridge=0.0)
+        np.testing.assert_allclose(fitted, true_matrix, atol=1e-6)
+
+    def test_apply_color_matrix_reproduces_target(self):
+        rng = np.random.default_rng(1)
+        true_matrix = np.array([[1.0, 0.1, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 0.95]])
+        source = rng.uniform(0, 1, size=(20, 20, 3))
+        target = source @ true_matrix
+        fitted = fit_color_matrix([source], [target], ridge=0.0)
+        out = apply_color_matrix(source, fitted)
+        np.testing.assert_allclose(out, target, atol=1e-6)
+
+    def test_clips_negative_output(self):
+        matrix = np.array([[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, -1.0]])
+        rgb = np.ones((2, 2, 3))
+        out = apply_color_matrix(rgb, matrix)
+        self.assertTrue((out >= 0.0).all())
+
+
+class TestComputeBlendWeightRb(unittest.TestCase):
+    def test_weight_zero_at_rb_min(self):
+        self.assertAlmostEqual(compute_blend_weight_rb(np.array([0.8, 1.0, 1.0]), 0.8, 1.0), 0.0)
+
+    def test_weight_one_at_rb_max(self):
+        self.assertAlmostEqual(compute_blend_weight_rb(np.array([1.0, 1.0, 1.0]), 0.8, 1.0), 1.0)
+
+    def test_weight_interpolates_linearly(self):
+        self.assertAlmostEqual(compute_blend_weight_rb(np.array([0.9, 1.0, 1.0]), 0.8, 1.0), 0.5)
+
+    def test_degenerate_range_returns_half(self):
+        self.assertAlmostEqual(compute_blend_weight_rb(np.array([1.0, 1.0, 1.0]), 1.0, 1.0), 0.5)
+
+
+class TestMakeFolds(unittest.TestCase):
+    def test_folds_partition_all_indices_exactly_once(self):
+        pairs = list(range(10))
+        folds = make_folds(pairs, n_folds=3, seed=0)
+        self.assertEqual(len(folds), 3)
+        covered = sorted(np.concatenate(folds).tolist())
+        self.assertEqual(covered, list(range(10)))
+
+    def test_deterministic_given_same_seed(self):
+        pairs = list(range(13))
+        folds_a = make_folds(pairs, n_folds=5, seed=0)
+        folds_b = make_folds(pairs, n_folds=5, seed=0)
+        for a, b in zip(folds_a, folds_b):
+            np.testing.assert_array_equal(a, b)
+
+
+class TestSummarizePrintsVerdict(unittest.TestCase):
+    """summarize()는 dict를 반환하지 않고 표준출력에만 판정을 찍는다
+    (위 모듈독스트링 참고). 고정 시드로 재현 가능한 값을 찍는지만
+    스모크테스트한다."""
+
+    def _run(self, hncs_des, other_des, label):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            summarize(hncs_des, other_des, label, n_bootstrap=2000, seed=0)
+        return buf.getvalue()
+
+    def test_reports_means_and_win_count(self):
+        out = self._run([10.0, 12.0, 9.0, 11.0], [8.0, 12.5, 7.5, 10.5], "test-label")
+        self.assertIn("평균 apply_hncs ΔE00=10.500", out)
+        self.assertIn("평균 test-label ΔE00=9.625", out)
+        self.assertIn("승/패=3/1", out)
+
+    def test_inconclusive_verdict_when_ci_straddles_zero(self):
+        out = self._run([10.0, 12.0, 9.0, 11.0], [8.0, 12.5, 7.5, 10.5], "test-label")
+        self.assertIn("판정: 보류", out)
+
+    def test_decisive_verdict_when_all_folds_agree(self):
+        out = self._run([10.0, 12.0, 9.0, 11.0], [8.0, 9.0, 7.0, 8.0], "test-label")
+        self.assertIn("판정: 구조실험 우세", out)
 
 
 if __name__ == "__main__":
