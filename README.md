@@ -24,6 +24,17 @@ A project that measures official (or near-official) sample images from camera/di
 - `unittest` test suite + GitHub Actions CI verifies automatically on
   every push/PR
 
+## Where to start reading
+
+New here? Read in this order: this README's [Supported
+Brands](#supported-brands) table for what's shipped, then
+[docs/project_structure.en.md](docs/project_structure.en.md) for the
+file-level map, then the `CLAUDE.md` in whichever directory you're about
+to touch (each area documents its own rules — `brands/`, `core/`,
+`tools/`, `hybrid_engine/`, `gui/`, `tests/`, `datasets/`, `docs/`).
+[docs/START_HERE.en.md](docs/START_HERE.en.md) has the full directory map
+plus a "want to do X → read Y" table.
+
 ![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
 
 ![HNCS preset demo - 29 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
