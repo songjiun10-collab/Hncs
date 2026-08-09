@@ -18,6 +18,7 @@ hybrid_engine/EVALUATION.md의 "Fuji X-Trans 데모자이크 알고리즘 비교
 
   python3 -m tools.evaluate_fuji_demosaic
 """
+import argparse
 import csv
 import os
 import sys
@@ -50,23 +51,23 @@ def load_pairs(manifest_path=MANIFEST_PATH):
     return pairs
 
 
-def compare_pair(pair):
+def compare_pair(pair, kL=1.0, kC=1.0, kH=1.0):
     """(기본 데모자이크 ΔE, DHT ΔE) 반환 - 같은 카메라 JPEG 타깃 대비.
     데모자이크 알고리즘을 바꿔도 출력 해상도는 동일하므로 타깃은
     한 번만 로드한다."""
     default_linear = decode_raw(pair["raw_path"])
     dht_linear = decode_raw(pair["raw_path"], demosaic_algorithm=rawpy.DemosaicAlgorithm.DHT)
     target = load_image_linear_for_evaluate(pair["jpeg_path"], default_linear.shape)
-    de_default = mean_delta_e(default_linear, target)
-    de_dht = mean_delta_e(dht_linear, target)
+    de_default = mean_delta_e(default_linear, target, kL=kL, kC=kC, kH=kH)
+    de_dht = mean_delta_e(dht_linear, target, kL=kL, kC=kC, kH=kH)
     return de_default, de_dht
 
 
-def run_comparison():
+def run_comparison(kL=1.0, kC=1.0, kH=1.0):
     pairs = load_pairs()
     results = []
     for pair in pairs:
-        de_default, de_dht = compare_pair(pair)
+        de_default, de_dht = compare_pair(pair, kL, kC, kH)
         improved = de_dht < de_default
         results.append((pair["camera"], de_default, de_dht, improved))
         print(f"  [{pair['camera']}] 기본 ΔE={de_default:.3f} DHT ΔE={de_dht:.3f} "
@@ -75,7 +76,13 @@ def run_comparison():
 
 
 def main():
-    results = run_comparison()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--kl", type=float, default=1.0, help="CIEDE2000 kL 가중치 (기본 1.0)")
+    parser.add_argument("--kc", type=float, default=1.0, help="CIEDE2000 kC 가중치 (기본 1.0)")
+    parser.add_argument("--kh", type=float, default=1.0, help="CIEDE2000 kH 가중치 (기본 1.0)")
+    args = parser.parse_args()
+
+    results = run_comparison(args.kl, args.kc, args.kh)
     n_improved = sum(1 for _, _, _, improved in results if improved)
     n_total = len(results)
     print()
