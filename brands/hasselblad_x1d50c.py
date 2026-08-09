@@ -30,28 +30,8 @@ main(0.5)보다도 훨씬 길다 - 별개 센서/펌웨어 세대라 X2D II 값�
 "Hasselblad X1D-50c" --manifest datasets/hasselblad/hasselblad_new_pairs.csv
 --raw-dir "/Users/songjiun/local-work/raw pair" --model "Hasselblad X1D-50c"`
 """
-import cv2
-import numpy as np
-
-from core.curve import film_curve
+from core.engine import make_hasselblad_body_look
 
 
-def apply_hncs_x1d50c(img_bgr, toe_lift=0.0, shoulder_start=0.82,
-                       white_point=1.0, clahe_clip=1.25, exposure_gamma=0.7):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    if exposure_gamma != 1.0:
-        x = np.arange(256, dtype=np.float32) / 255.0
-        exp_lut = np.clip((x ** exposure_gamma) * 255, 0, 255).astype(np.uint8)
-        l = cv2.LUT(l, exp_lut)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    x = np.arange(256, dtype=np.float32) / 255.0
-    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
-                  0, 255).astype(np.uint8)
-    l = cv2.LUT(l, lut)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+apply_hncs_x1d50c = make_hasselblad_body_look(
+    toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25, exposure_gamma=0.7)
