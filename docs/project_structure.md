@@ -82,4 +82,23 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/evaluate_hncs_blend.py` | 연구용 - 조명 하드분류 대신 연속 블렌딩(R/B 선형 / CCT mired 두 가중치 공식)이 나은지 가중 최소자승 피팅 + LOO로 비교 - 13쌍 초판은 판정 보류였으나 `local-mixed-2026-07` 기여분으로 74쌍 재실행 후 두 공식 다 하드클러스터 대비 통계적으로 유의미하게 개선(각 +1.8%, 유의성 경계에 근접 - RB 부호검정 p=0.047, CCT 부트스트랩 CI 하한 +0.017). RB와 CCT 사이 우열은 74쌍에서도 판정 보류. 결과 기록: `hybrid_engine/EVALUATION.md` |
 | `tools/simulate_pair_count_power.py` | 부트스트랩 표본 확대 시뮬레이션 - 이미 기록된 13개 페어드 차이를 복원추출해 "n=60이면 유의해지는가"를 투영한다(**실제 새 데이터가 아니라 통계적 투영**). 결과: 세 비교 다 n=60에서도 안정적으로 유의해지지 않는다 |
 | `tools/regen_preset_demo_title.py` | `docs/images/preset_demo.jpg` 상단 타이틀 바만 다시 그리는 CLI - 브랜드가 추가돼 apply_* 개수가 바뀔 때마다 사진 그리드 전체를 재렌더링하지 않고 숫자만 맞춘다(`python3 -m tools.regen_preset_demo_title`, 타이틀 아래 타일 부분은 픽셀 그대로 유지) |
+| `tools/build_flat_manifest.py` | `build_local_manifest.py`와 같은 EXIF DateTimeOriginal 페어링을 쓰되 파일을 복사하지 않고 원본 경로 그대로 둔 채 raw_file/jpeg_file/model 3컬럼 CSV만 만든다 - 대용량 로컬 raw 폴더(53GB)를 디스크 넘침 없이 참조하기 위함 |
+| `tools/evaluate_sony_body_split.py` | 연구용 - Sony 5바디 population 통계에서 브랜드 전체 pooled 타깃 대신 바디별 타깃을 쓰면 held-out 예측이 더 정확한지 leave-one-out으로 검증. 결과 기록: `hybrid_engine/EVALUATION.md` |
+| `tools/evaluate_hasselblad_body_de00_grid.py` | Hasselblad 신규/소표본 바디(X1D-50c 등) 전용 ΔE00 그리드서치 + LOO - `evaluate_x2dii_de00_grid.py`와 동일 로직을 CLI 파라미터로 뺀 버전 |
+| `tools/evaluate_leica_de00_grid.py` | Leica SL3-P/Q3 43 raw+jpeg 페어로 ΔE00(CIEDE2000)을 직접 목적함수로 삼은 그리드서치 - 두 바디를 따로 처리(센서/렌즈가 달라 같은 커브를 가정할 근거 없음) |
+| `tools/evaluate_new_body_de00_grid.py` | 신규 바디(Canon EOS R6 Mark III, Sony a7R VI, Hasselblad X1D-50c 등) 전용 ΔE00 그리드서치 + LOO - manifest/raw_dir/모델 필터/baseline을 CLI로 받는 범용판(`evaluate_sony_a7v_de00_grid.py`/`evaluate_x2dii_de00_grid.py`와 로직 동일) |
+| `tools/evaluate_sony_a7v_de00.py` | `apply_sony_a7v_look()`의 실제 ΔE00 - 기존 population-fit(`apply_sony_look`)과 58쌍 전체에서 페어드 비교 |
+| `tools/evaluate_sony_a7v_de00_grid.py` | Sony a7V 그리드서치를 ΔE00(CIEDE2000) 자체를 목적함수로 재실행 - b2/w995 percentile RMSE 기준 그리드서치가 RMSE는 이기고 ΔE00은 졌던 문제(`brands/sony_a7v.py` 정정 이력)를 바로잡음 |
+| `tools/evaluate_sony_a7v_grid_search.py` | Sony a7V(ILCE-7M5) 75쌍 raw+jpeg 페어로 첫 그리드서치 - Hasselblad와 동일 방법론(중립 렌더링 베이스라인 vs 카메라 JPEG 타깃), `apply_sony_look()`은 건드리지 않음 |
+| `tools/evaluate_exposure_gamma_x2dii.py` | main과 candidate(로컬 v13) 두 `apply_hncs` 파라미터 후보를 X2D II 41장 포함 dpreview 클린 95쌍으로 직접 맞대결(쟁점: exposure_gamma/toe_lift) |
+| `tools/evaluate_x2dii_generation_loo.py` | X2D II 전용 파라미터가 풀링 기본값 대비 유의미한지 65쌍 세대별 방법론을 X2D II 41쌍에 적용해 확인 |
+| `tools/evaluate_x2dii_de00_check.py` | `apply_hncs_x2dii()`의 ΔE00/RMSE를 shoulder_start 정정(0.82->0.5) 이후 확장된 X2D II 70쌍 전체로 재확인 |
+| `tools/evaluate_x2dii_de00_grid.py` | X2D II 70쌍 그리드서치를 ΔE00 자체를 목적함수로 재실행 - 기존 검증이 전부 b2/w995 percentile RMSE 기준이었던 것을 바로잡음 |
+| `tools/evaluate_x2dii_reduce_de00.py` | `apply_hncs_x2dii()`의 ΔE00을 더 낮추는 세 후보(전용 학습 LUT/분리감마/채도-hue 보정)를 X2D II 41쌍에 LOO로 검증 |
+| `tools/evaluate_x2dii_combined.py` | `evaluate_x2dii_reduce_de00.py`에서 각각 유의미하게 이긴 세 후보를 조합했을 때 추가 개선폭 확인(콤보 A: 분리감마+채도/hue, 콤보 B: 학습LUT+채도/hue) |
+| `tools/evaluate_x2dii_combo_a_full.py` | 콤보 A(분리감마 고정 + 채도/hue LOO)의 ΔE00 외 RMSE·drop-one 민감도까지 전체 지표를 베이스라인과 비교 |
+| `tools/evaluate_x2dii_color_matrix.py` | X2D II 41쌍 실사진 자체로 3x3 컬러 매트릭스를 직접 피팅(LOO)하면 `apply_hncs()` 기본값보다 나은지 확인(챠트로 피팅한 매트릭스 대신) |
+| `tools/render_x2dii_comparison.py` | `apply_hncs_x2dii()`/콤보A가 실제 이미지에서 어떻게 보이는지 원본 JPG/`apply_hncs`/`apply_hncs_x2dii`/콤보A 네 개를 나란히 렌더링 |
+| `tools/evaluate_full_pixel_de00_confirm.py` | 그리드서치/LOO 단계에서 저해상도로 계산했던 모든 확정 raw+jpeg 함수의 ΔE00을 원본 해상도로 재확인(다운샘플 왜곡 여부 검증, shipped `apply_*`만 대상) |
+| `tools/evaluate_native_pixel_confirm.py` | `evaluate_new_body_de00_grid.py`/`evaluate_hasselblad_body_de00_grid.py`가 저해상도로 고른 최적 콤보를 원본 해상도로 재대결 |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
