@@ -26,9 +26,9 @@ A project that measures official (or near-official) sample images from camera/di
 
 ![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
 
-![HNCS preset demo - 24 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
+![HNCS preset demo - 29 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
-*All 24 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
+*All 29 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
 on the same source photo (a Nikon D5300 night shot, provided for this
 demo). Not
 an official calibration source photo - just a demo. See the links in the
@@ -40,7 +40,7 @@ evidence behind each brand.*
 | Brand | Verification method | Details |
 |---|---|---|
 | ✅ Hasselblad | raw+jpeg pair calibration (grid search + learned LUT) | [docs/measurements.en.md](docs/measurements.en.md) |
-| ✅ Fujifilm | 10 film-simulation presets, population + same-scene comparison charts | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
+| ✅ Fujifilm | 11 film-simulation presets, population + same-scene comparison charts + raw+jpeg (Provia) | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
 | ✅ Leica | population-fit (45 SOOC JPEGs) | [docs/brands.en.md](docs/brands.en.md#leica-brandsleicapy) |
 | ✅ Phase One | population-fit (Capture One's default rendering) | [docs/brands.en.md](docs/brands.en.md#phase-one-brandsphaseonepy) |
 | ✅ Pentax | population-fit (645Z + K-1, 40 photos) | [docs/brands.en.md](docs/brands.en.md#pentax-brandspentaxpy) |
