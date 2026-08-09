@@ -1356,3 +1356,14 @@ EOS R6 Mark III/R1은 CI가 0을 포함하거나(X2D 100C) 개선폭 자체가
 **실제 shipped 함수엔 영향 없음** - 세션 도중 재확인 과정에서만 오염된
 21쌍 매니페스트를 썼던 것. Leica M11만 실제로 잘못된 결론(강한 개선)을
 낼 뻔했다가 이번 재확인으로 걸러졌다.
+
+**추가 정정 - CFV 100C/907X는 판정 자체가 뒤집힘**: 오염된 31쌍 기준
+그리드서치는 +3.33%·CI[+0.015, +0.350]로 "우세"였는데(원래도 CI 하한이
+0에 아슬아슬해 근거 약하다고 표시해뒀던 항목), 오염 3쌍 제거한 29쌍으로
+재확인하니 **+2.83%·CI[-0.030, +0.341]로 CI가 0을 포함 - "보류"로
+뒤집혔다.** 채택된 적 없는 항목이라(항상 "약한 근거"로 보류 상태였음)
+실제 영향은 없지만, M11과 함께 "오염이 약한 신호를 가짜 우세로
+부풀린" 두 번째 사례. 재현: `python3 -m
+tools.evaluate_hasselblad_body_de00_grid --label "Hasselblad CFV
+100C/907X" --manifest datasets/hasselblad/hasselblad_new_pairs.csv
+--raw-dir "/Users/songjiun/local-work" --model "CFV 100C/907X"`.
