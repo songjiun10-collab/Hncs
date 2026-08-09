@@ -1312,3 +1312,47 @@ X2D II +13.38%, Provia +18.8~23.5%) 대비 근거가 확실히 약하다 - 각
 파일 docstring에 명시. Hasselblad X2D 100C/CFV 100C/907X, Canon
 EOS R6 Mark III/R1은 CI가 0을 포함하거나(X2D 100C) 개선폭 자체가
 무의미한 수준이라(Canon 둘 다 +0.06~0.14%) 이번에도 채택하지 않았다.
+
+### 데이터 무결성 버그 2건 발견·수정 - 편집 오염 필터 (2026-08)
+
+사용자가 "Leica M11 hue+chroma LUT +16.01%" 결과(이 세션에서 가장 큰
+개선폭)를 보고 "데이터 재확인"을 요청해서 다시 조사한 결과, **두 개의
+독립적인 데이터 무결성 버그**를 발견했다:
+
+**버그 1 - Capture One이 편집 오염 키워드 목록에 없었음.** `tools/analyze.py`의
+`_check_genuine_bytes()`가 Photoshop/Lightroom/Camera Raw만 걸러내고
+**Capture One**(Phase One의 RAW 현상 소프트웨어)은 빠져있었다. M11
+"클린" 35쌍을 재확인하니 EXIF `Software` 태그가 전부
+`Capture One 15 Macintosh` - **전부 편집본이었다.** M11의 그리드서치
+(+4.82%)와 hue+chroma LUT(+16.01%) 결과 둘 다 무효 - M11은 다시 클린
+페어 0장 상태로 복귀(이번 배치에서도 아직 raw+jpeg 검증 불가).
+`reject_keywords`에 `"capture one"` 추가로 수정.
+
+**버그 2 - 임시파일 경로 레이스 컨디션(더 심각함).**
+`_check_genuine_bytes()`가 편집 여부를 확인하려고 EXIF를 읽을 때 고정된
+임시파일 경로(`/tmp/_hasselblad_genuine_check.jpg`)를 썼는데, 이 세션에서
+여러 브랜드의 `build_flat_manifest.py`를 백그라운드로 동시에 돌린 적이
+있어서 - 프로세스 A가 파일을 쓰는 사이 프로세스 B가 같은 경로를
+덮어써서 exiftool이 **엉뚱한 파일의 EXIF를 읽는** 레이스가 있었다. 전체
+매니페스트를 4개 편집 키워드로 재스캔해서 실증:
+- Leica: SL3-P 8쌍이 `Adobe Photoshop Camera Raw 18.3.x`인데도 통과 -
+  49쌍(오염) -> 41쌍(클린)으로 정정
+- Hasselblad: X1D-50c 1쌍, X1D 4쌍, CFV 100C/907X 3쌍이 같은 방식으로
+  누락 통과 - X1D-50c는 21쌍(오염) -> 20쌍(클린)으로 정정
+- Sony/Canon/Sigma/Fuji는 이 버그의 영향 없음(전수 재스캔, 0건)
+
+`tempfile.NamedTemporaryFile`로 호출마다 고유 경로를 쓰도록 수정 -
+동시 실행에도 안전.
+
+**영향받은 결과 재검증**(오염 제거 후):
+
+| 결과 | 오염된 값(n) | 정정값(n) |
+|---|---|---|
+| `apply_hncs_x1d50c` 원본 픽셀 재확인 | +5.40%(n=21) | **+5.96%(n=20)** - 최초 채택 당시 수치와 정확히 일치, 원래 결론은 안 바뀜 |
+| X1D-50c +hue+chroma LUT | +4.57%(n=21) | +5.16%(n=20) - 결론 동일(채택 가치 있음) |
+| Leica SL3-P +hue+chroma LUT | +3.13%(n=49, 오염 포함) | +3.87%(n=41, 클린) - 결론 동일, 개선폭은 오히려 더 큼 |
+
+`apply_hncs_x1d50c`는 애초에 20쌍(클린)으로 최초 채택됐던 값이라
+**실제 shipped 함수엔 영향 없음** - 세션 도중 재확인 과정에서만 오염된
+21쌍 매니페스트를 썼던 것. Leica M11만 실제로 잘못된 결론(강한 개선)을
+낼 뻔했다가 이번 재확인으로 걸러졌다.

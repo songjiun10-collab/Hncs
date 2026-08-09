@@ -1432,3 +1432,51 @@ evidence than this session's other adoptions (X1D-50c +5.96%, X2D II
 docstring. Hasselblad X2D 100C/CFV 100C-907X and Canon EOS R6 Mark III/R1
 still weren't adopted - CI includes 0 (X2D 100C) or the improvement is
 simply negligible (both Canon bodies, +0.06-0.14%).
+
+### Found and fixed 2 data-integrity bugs - edit-contamination filter (2026-08)
+
+The user asked to "re-verify the data" after seeing a "Leica M11
+hue+chroma LUT +16.01%" result (the largest improvement of this session),
+which turned up **two independent data-integrity bugs**:
+
+**Bug 1 - Capture One was missing from the edit-keyword list.**
+`tools/analyze.py`'s `_check_genuine_bytes()` only screened for
+Photoshop/Lightroom/Camera Raw, missing **Capture One** (Phase One's RAW
+processing software). Re-checking M11's "clean" 35 pairs showed every
+single EXIF `Software` tag was `Capture One 15 Macintosh` - **all
+edited.** Both M11 results (grid search +4.82%, hue+chroma LUT +16.01%)
+are void - M11 is back to 0 clean pairs (still unverifiable via raw+jpeg
+in this batch). Fixed by adding `"capture one"` to `reject_keywords`.
+
+**Bug 2 - a temp-file path race condition (the more serious one).**
+`_check_genuine_bytes()` used a fixed temp-file path
+(`/tmp/_hasselblad_genuine_check.jpg`) to read back EXIF while checking
+for edits. This session ran several brands' `build_flat_manifest.py`
+calls in the background concurrently at points, so process A's write
+could get overwritten by process B before A's exiftool read it back -
+exiftool would then read **the wrong file's EXIF**. Rescanned every
+manifest against all 4 edit keywords to confirm:
+- Leica: 8 SL3-P pairs were tagged `Adobe Photoshop Camera Raw 18.3.x`
+  yet passed - corrected 49 (contaminated) -> 41 (clean)
+- Hasselblad: 1 X1D-50c, 4 X1D, and 3 CFV 100C/907X pairs slipped
+  through the same way - X1D-50c corrected 21 (contaminated) -> 20
+  (clean)
+- Sony/Canon/Sigma/Fuji were unaffected by this bug (full rescan, 0 hits)
+
+Fixed with `tempfile.NamedTemporaryFile` so every call gets a unique
+path - safe under concurrency.
+
+**Re-verified the affected results** (contamination removed):
+
+| Result | Contaminated value (n) | Corrected value (n) |
+|---|---|---|
+| `apply_hncs_x1d50c` native-pixel re-check | +5.40% (n=21) | **+5.96% (n=20)** - matches exactly the number from its original adoption, conclusion unchanged |
+| X1D-50c +hue+chroma LUT | +4.57% (n=21) | +5.16% (n=20) - same conclusion (still worth adopting) |
+| Leica SL3-P +hue+chroma LUT | +3.13% (n=49, contaminated) | +3.87% (n=41, clean) - same conclusion, improvement actually larger |
+
+`apply_hncs_x1d50c` was originally adopted from the clean 20-pair set, so
+**the shipped function itself was never affected** - only a later
+re-check during this session happened to use the 21-pair contaminated
+manifest. Leica M11 was the only case that nearly produced a genuinely
+wrong conclusion (a strong-looking improvement), caught here before it
+shipped.

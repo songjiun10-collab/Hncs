@@ -44,16 +44,25 @@ HASSELBLAD_CSV_PATH = "datasets/hasselblad/hasselblad_sample_images.csv"
 HASSELBLAD_CACHE_DIR = "downloaded_samples"
 
 
-def _check_genuine_bytes(data, reject_keywords=("photoshop", "lightroom", "camera raw")):
+def _check_genuine_bytes(data, reject_keywords=("photoshop", "lightroom", "camera raw", "capture one")):
     """다운로드한 원본 바이트(리사이즈 전)의 EXIF Software 태그를 확인해서
     Photoshop/Lightroom 등 제3자 편집 흔적이 있는지 판정한다. 리사이즈 후
     cv2.imwrite로 재저장하면 EXIF가 통째로 날아가서 이 시점에서만 검증
     가능 - GitHub 이슈 #4에서 지적된 문제(genuine_render_check이
-    run_hasselblad()엔 안 걸려있었던 것)의 수정."""
-    tmp_path = "/tmp/_hasselblad_genuine_check.jpg"
-    with open(tmp_path, "wb") as f:
-        f.write(data)
-    out = subprocess.run(["exiftool", "-Software", tmp_path], capture_output=True, timeout=30)
+    run_hasselblad()엔 안 걸려있었던 것)의 수정.
+
+    **정정(2026-08)**: 임시파일 경로가 고정 상수(`/tmp/_hasselblad_genuine_check.jpg`)라
+    여러 build_flat_manifest.py 호출을 백그라운드로 동시에 돌리면 프로세스끼리
+    같은 경로를 덮어써서 exiftool이 엉뚱한 파일의 EXIF를 읽는 레이스
+    컨디션이 있었다 - 실제로 이 버그 때문에 Leica SL3-P 8쌍이 Adobe Camera
+    Raw 편집본인데도 "순정"으로 잘못 통과된 걸 확인함(2026-08, docs/
+    measurements.md 참고). `tempfile.NamedTemporaryFile`로 호출마다 고유
+    경로를 쓰도록 수정 - 동시 실행에도 안전."""
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=True) as tmp:
+        tmp.write(data)
+        tmp.flush()
+        out = subprocess.run(["exiftool", "-Software", tmp.name], capture_output=True, timeout=30)
     text = out.stdout.decode("utf-8", errors="ignore").lower()
     return not any(k in text for k in reject_keywords)
 
