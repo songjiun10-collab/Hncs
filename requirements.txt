@@ -4,6 +4,7 @@ rawpy
 requests
 gdown
 colour-science
+scikit-image
 lensfunpy
 OpenEXR
 imageio-ffmpeg
