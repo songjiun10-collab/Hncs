@@ -85,28 +85,8 @@ white_point=0.95`**(58/70 폴드 지배, 나머지는 shoulder_start만
 바뀐 게 시각적 피드백과 정확히 들어맞는다 - **최종 채택값을 이걸로
 갱신**. 재현: `python3 -m tools.evaluate_x2dii_de00_grid`.
 """
-import cv2
-import numpy as np
-
-from core.curve import film_curve
+from core.engine import make_hasselblad_body_look
 
 
-def apply_hncs_x2dii(img_bgr, toe_lift=0.02, shoulder_start=0.58,
-                      white_point=0.95, clahe_clip=1.25, exposure_gamma=0.6):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    if exposure_gamma != 1.0:
-        x = np.arange(256, dtype=np.float32) / 255.0
-        exp_lut = np.clip((x ** exposure_gamma) * 255, 0, 255).astype(np.uint8)
-        l = cv2.LUT(l, exp_lut)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    x = np.arange(256, dtype=np.float32) / 255.0
-    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
-                  0, 255).astype(np.uint8)
-    l = cv2.LUT(l, lut)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+apply_hncs_x2dii = make_hasselblad_body_look(
+    toe_lift=0.02, shoulder_start=0.58, white_point=0.95, clahe_clip=1.25, exposure_gamma=0.6)

@@ -79,14 +79,11 @@ std/15와는 다른 연산자지만 자릿수는 Leica 2.48/Ricoh GR 3.36과 비
 가까움), chroma_mean=17.24. hue/채도를 안 건드리는 설계라 color/gamut
 수치는 보정 타깃이 아니라 참고 자료.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 13.7 / 255
 _WHITE_POINT = 237.3 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_nikon_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                      white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_nikon_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

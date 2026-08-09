@@ -24,11 +24,22 @@ A project that measures official (or near-official) sample images from camera/di
 - `unittest` test suite + GitHub Actions CI verifies automatically on
   every push/PR
 
+## Where to start reading
+
+New here? Read in this order: this README's [Supported
+Brands](#supported-brands) table for what's shipped, then
+[docs/project_structure.en.md](docs/project_structure.en.md) for the
+file-level map, then the `CLAUDE.md` in whichever directory you're about
+to touch (each area documents its own rules — `brands/`, `core/`,
+`tools/`, `hybrid_engine/`, `gui/`, `tests/`, `datasets/`, `docs/`).
+[docs/START_HERE.en.md](docs/START_HERE.en.md) has the full directory map
+plus a "want to do X → read Y" table.
+
 ![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
 
-![HNCS preset demo - 24 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
+![HNCS preset demo - 29 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
-*All 24 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
+*All 29 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
 on the same source photo (a Nikon D5300 night shot, provided for this
 demo). Not
 an official calibration source photo - just a demo. See the links in the
@@ -40,7 +51,7 @@ evidence behind each brand.*
 | Brand | Verification method | Details |
 |---|---|---|
 | ✅ Hasselblad | raw+jpeg pair calibration (grid search + learned LUT) | [docs/measurements.en.md](docs/measurements.en.md) |
-| ✅ Fujifilm | 10 film-simulation presets, population + same-scene comparison charts | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
+| ✅ Fujifilm | 11 film-simulation presets, population + same-scene comparison charts + raw+jpeg (Provia) | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
 | ✅ Leica | population-fit (45 SOOC JPEGs) | [docs/brands.en.md](docs/brands.en.md#leica-brandsleicapy) |
 | ✅ Phase One | population-fit (Capture One's default rendering) | [docs/brands.en.md](docs/brands.en.md#phase-one-brandsphaseonepy) |
 | ✅ Pentax | population-fit (645Z + K-1, 40 photos) | [docs/brands.en.md](docs/brands.en.md#pentax-brandspentaxpy) |

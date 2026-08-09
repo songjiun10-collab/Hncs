@@ -97,14 +97,11 @@ Y-TRI-CF006323/006324-WB 쌍(파일명 접미사 "-WB"로 보아 같은 화이�
 (_TOE_LIFT/_WHITE_POINT)는 이번 조사로 변경하지 않았다 - 재검증(n=16)
 절의 값을 그대로 유지.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 12.8 / 255
 _WHITE_POINT = 226.5 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_phaseone_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                         white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_phaseone_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

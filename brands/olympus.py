@@ -119,14 +119,11 @@ overshoot/undershoot는 Canon 원본 스크립트 미보존으로 텍스트 설�
 보고 재구현한 것이라 브랜드 간 1:1 비교는 보장 안 됨(캐논/소니/파나소닉과
 동일 caveat).
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 14.5 / 255
 _WHITE_POINT = 232.2 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_olympus_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                        white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_olympus_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)
