@@ -29,14 +29,11 @@ Sigma BF 페어가 더 늘면 제일 먼저 재검증해야 할 후보다. 재�
 --manifest datasets/sigma/sigma_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --baseline brands.sigma.apply_sigma_look`.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 0.09
 _SHOULDER_START = 0.82
 _WHITE_POINT = 1.0
 _CLAHE_CLIP = 1.25  # population-fit 값 차용, 미검증
 
-
-def apply_sigma_bf_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                         white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_sigma_bf_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

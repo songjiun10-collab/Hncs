@@ -33,14 +33,11 @@ libraw 0.22.1이 지원 안 해서 디코드 자체가 안 됨 - 애초에 후�
 --raw-dir "/Users/songjiun/local-work" --model "ILCE-7RM6" --baseline
 brands.sony.apply_sony_look`.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 0.09
 _SHOULDER_START = 0.7
 _WHITE_POINT = 0.85
 _CLAHE_CLIP = 1.25  # population-fit 값 차용, 미검증
 
-
-def apply_sony_a7rvi_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                           white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_sony_a7rvi_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)
