@@ -1413,3 +1413,22 @@ trustworthy. The chosen combos are effectively identical - GFX100RF
 what `apply_leica_raw_look` converged to across all 4 Leica bodies
 (brands/leica_raw.py history). Shipped `apply_provia()` with the
 larger-sample GFX100RF values as defaults.
+
+### apply_sony_a7rvi_look / apply_sigma_bf_look added - final call on held-back candidates (2026-08)
+
+Per an explicit "ship everything" instruction, adopted Sony a7R VI and
+Sigma BF, both previously held back for weak evidence. Both use the
+already-confirmed native-pixel numbers as-is - no re-verification was run.
+
+| Function | n | Improvement (native pixel) | Wins/Losses | Sign-test p | Bootstrap 95% CI |
+|---|---|---|---|---|---|
+| `apply_sony_a7rvi_look` | 40 | +0.57% | 31/9 | 0.0007 | [+0.021, +0.172] |
+| `apply_sigma_bf_look` | 51 | +0.53% | 39/12 | 0.0002 | [+0.007, +0.181] |
+
+Both are statistically significant (CI excludes 0) but the lower bound
+sits close to zero (Sigma BF especially, at +0.007) - noticeably weaker
+evidence than this session's other adoptions (X1D-50c +5.96%, X2D II
++13.38%, Provia +18.8-23.5%), documented explicitly in each file's
+docstring. Hasselblad X2D 100C/CFV 100C-907X and Canon EOS R6 Mark III/R1
+still weren't adopted - CI includes 0 (X2D 100C) or the improvement is
+simply negligible (both Canon bodies, +0.06-0.14%).
