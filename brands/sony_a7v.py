@@ -73,14 +73,11 @@ LOO 결과 `toe_lift=0.06, shoulder_start=0.82, white_point=1.0`
 결론 - 최종 채택값을 이걸로 갱신했다. 재현: `python3 -m
 tools.evaluate_sony_a7v_de00_grid`.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 0.06
 _SHOULDER_START = 0.82
 _WHITE_POINT = 1.0
 _CLAHE_CLIP = 1.25  # population-fit 값 차용, 미검증
 
-
-def apply_sony_a7v_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                         white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_sony_a7v_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

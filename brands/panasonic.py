@@ -109,14 +109,11 @@ micro_contrast=3.80으로 Canon(3.39/3.85)과 같은 자릿수·근접한 값이
 methodology 필드에 명시) - sharpening/micro_contrast만큼 브랜드 간
 1:1 비교 가능하다고 보지 말 것.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 13.4 / 255
 _WHITE_POINT = 223.2 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_panasonic_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                          white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_panasonic_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

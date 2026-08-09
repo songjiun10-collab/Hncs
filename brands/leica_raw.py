@@ -60,14 +60,11 @@ Camera Raw)으로 이번 배치에 클린 페어가 0장이라 검증 불가, �
 "/Users/songjiun/local-work" --model "LEICA SL2" --baseline
 brands.leica.apply_leica_look` (M10은 --model만 교체).
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 0.0
 _SHOULDER_START = 0.82
 _WHITE_POINT = 1.0
 _CLAHE_CLIP = 1.25  # population-fit 값 차용, 미검증
 
-
-def apply_leica_raw_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                          white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_leica_raw_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

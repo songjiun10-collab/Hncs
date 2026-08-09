@@ -154,14 +154,11 @@ Panasonic/Olympus와 마찬가지로 파라미터가 정확히 같다는 보장�
 없음(datasets/sigma/texture_signature.json methodology 필드에 명시) -
 sharpening/micro_contrast만큼 브랜드 간 1:1 비교 가능하다고 보지 말 것.
 """
-from core.engine import apply_population_fit_look
+from core.engine import make_population_fit_look
 
 _TOE_LIFT = 9.3 / 255
 _WHITE_POINT = 228.8 / 255
 _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
-
-def apply_sigma_look(img_bgr, toe_lift=_TOE_LIFT, shoulder_start=_SHOULDER_START,
-                      white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP):
-    return apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip)
+apply_sigma_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)
