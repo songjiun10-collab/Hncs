@@ -1506,3 +1506,52 @@ the identical value. Checked the 5 losses (diff 0.002-0.041 ΔE00,
 rounding-noise scale) for bias - lens/ISO/f-number/shoot-date all matched
 the winning group's distribution, no signal found. Added SL2-S to
 `apply_leica_raw_look`'s coverage.
+
+### Fuji GFX50S II large batch - Classic Chrome added, Nostalgic Neg replaced (2026-08)
+
+169 new Fujifilm GFX50S II pairs landed in the local raw+jpeg library
+(shot across a mix of film modes). Verified per film mode: Provia (9
+pairs, too few alone) was merged into the existing GFX100RF/X-T30 III
+Provia data; the other 4 modes (Classic Chrome/Classic Negative/
+Nostalgic Neg/Eterna) each had at least 25 pairs and were verified
+independently.
+
+**Provia re-verified across 3 bodies combined**: GFX100RF(38) +
+X-T30 III(20) + GFX50S II(9) = 67-pair grid search - +19.06% improvement,
+63 wins/4 losses, sign-test p<0.0001, bootstrap 95% CI [+2.731, +3.556].
+65/67 folds converged on the existing adopted values (`toe=0,
+shoulder=0.82, wp=1.0`) unchanged - a third body added and nothing moved,
+reconfirming the earlier conclusion.
+
+**Directly verified 3 existing presets against raw+jpeg**
+(`tools/evaluate_fuji_preset_de00.py`, new - compares the shipped preset
+function as-is against untouched raw, not a grid search):
+
+| Preset | n | Improvement | Verdict |
+|---|---|---|---|
+| Classic Negative | 39 | +4.13% | Preset confirmed working, CI[+0.662,+1.831] |
+| Nostalgic Neg | 27 | **-2.13%** | **Raw beats the preset - the preset moves the wrong direction**, CI[-0.936,-0.133] |
+| Eterna Cinema | 25 | +1.83% | Inconclusive (CI[-0.234,+1.179] includes 0) |
+
+Nostalgic Neg turned out broken, so it was re-derived the same way as
+`apply_provia` (direct toe/shoulder/wp grid search against untouched raw):
+
+**apply_nostalgic_neg_v2 added**: +6.13% improvement, 21 wins/6 losses,
+sign-test p=0.0059, bootstrap 95% CI [+0.839, +2.330]. 25/27 folds
+converged on `toe_lift=0.036, shoulder_start=0.82, white_point=0.85` -
+completely different from the old n=1-comparison-chart hand-tuning
+(amber tint boost). The old `apply_nostalgic_neg` code is left untouched
+for the historical record with this finding appended to its docstring;
+`apply_nostalgic_neg_v2` is the recommended replacement.
+
+**apply_classic_chrome added** (this file had no matching preset at
+all): +5.60% improvement, 30 wins/9 losses, sign-test p=0.0011, bootstrap
+95% CI [+0.601, +1.556]. toe_lift=0/white_point=1.0 were fold-unanimous
+(39/39) but shoulder_start split three ways - 0.66 (15/39), 0.70 (15/39),
+0.82 (9/39) - adopted the middle value 0.70 as default; worth
+re-checking once more samples land.
+
+Reproduce: `python3 -m tools.evaluate_new_body_de00_grid --label "..."
+--manifest /tmp/fuji_<mode>.csv --raw-dir "/Users/songjiun/local-work"
+--baseline-identity` (manifest built by filtering
+`datasets/fuji/fuji_new_pairs.csv` on the film_mode column).

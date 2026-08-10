@@ -46,6 +46,15 @@ population 통계를 비교해서 각 프리셋이 실측과 같은 방향으로
   개선폭 GFX100RF +18.8%/X-T30 III +23.7%). 자세한 수치는
   [measurements.md](measurements.md#apply_provia-신설---fuji-gfx100rfx-t30-iii-rawjpeg-페어-확보-2026-08)
   참고.
+- **(2026-08 추가 갱신)** GFX50S II 169쌍이 새로 들어와서 필름모드별로
+  검증 - Provia는 3바디 통합(67쌍) 재검증으로 기존값 그대로 재확인
+  (+19.1%). Classic Chrome은 대응 프리셋이 아예 없어서 신규 생성
+  (+5.6%). Nostalgic Neg는 기존 프리셋을 raw+jpeg로 직접 검증하니
+  **raw 원본보다 못한 것으로 드러나서**(-2.1%, 방향 자체가 틀림)
+  `apply_nostalgic_neg_v2`로 재도출(+6.1%) - 옛 함수는 기록 보존
+  목적으로 코드는 그대로 두고 docstring에 정정만 추가. 자세한 수치는
+  [measurements.md](measurements.md#fuji-gfx50s-ii-대량-추가---classic-chrome-신설-nostalgic-neg-교체-2026-08)
+  참고.
 
 ## 라이카 (`brands/leica.py`)
 

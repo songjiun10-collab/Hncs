@@ -138,6 +138,13 @@ white_point=1.0`로 사실상 같다 - `apply_leica_raw_look`의 4바디 수렴�
 `python3 -m tools.evaluate_new_body_de00_grid --label "Fuji GFX100RF
 Provia" --manifest datasets/fuji/fuji_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --model GFX100RF --baseline-identity`.
+
+**Provia 3바디 통합 재확인 (2026-08)**: GFX50S II Provia 9쌍이 추가돼서
+GFX100RF+X-T30 III+GFX50S II 전체(67쌍)를 한 그리드서치로 통합
+재검증했다 - 개선폭 +19.06%, 63승4패, 부호검정 p<0.0001, 부트스트랩
+95% CI [+2.731, +3.556]. 65/67 폴드가 `toe_lift=0.0, shoulder_start=0.82,
+white_point=1.0`로 수렴 - 기존 채택값과 정확히 일치, 세 번째 바디를
+더해도 값이 안 바뀜(기존 결론 재확인).
 """
 import cv2
 import numpy as np
@@ -308,6 +315,16 @@ def apply_nostalgic_neg(img_bgr):
     아직 못 미침. 표본이 1장뿐이라 이 이상 그리드서치로 정밀 맞추는 건
     과적합 위험이 커서(포트레이트/빌딩 장면 하나에만 맞추는 꼴) 보류 -
     표본이 더 모이면 재보정.
+
+    **정정(2026-08) - raw+jpeg 페어 27쌍으로 직접 검증하니 방향 자체가
+    틀렸음**: GFX50S II Nostalgic Neg raw+jpeg 27쌍에 이 함수를 그대로
+    적용해 ΔE00을 재보고 실측했더니, **가공 없는 raw 원본이 이 함수보다도
+    ΔE00이 더 낮았다**(개선폭 -2.13%, 부트스트랩 95% CI [-0.936, -0.133],
+    0을 포함하지 않는 음수 - `tools/evaluate_fuji_preset_de00.py`). n=1
+    비교차트 기반 수작업 튜닝(앰버 틴트 가산)이 실제 카메라 JPEG와
+    반대 방향이었다는 뜻. `apply_nostalgic_neg_v2()`(아래, raw+jpeg
+    기반 재도출)로 대체 권장 - 이 함수 자체는 과거 기록 보존 목적으로
+    코드는 안 건드리고 남겨둔다.
     """
     img = ensure_uint8(img_bgr)
     img_lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -425,6 +442,73 @@ def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
 # 11. Provia/Standard (기본 필름모드) - raw+jpeg 페어 실측 검증됨(2026-08, GFX100RF n=38/X-T30 III n=20)
 # ==========================================
 def apply_provia(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+# ==========================================
+# 12. Classic Chrome - raw+jpeg 페어 실측 검증됨(2026-08, GFX50S II n=39)
+# ==========================================
+def apply_classic_chrome(img_bgr, toe_lift=0.0, shoulder_start=0.70, white_point=1.0, clahe_clip=1.25):
+    """이 파일에 대응 프리셋이 아예 없던 필름모드 - GFX50S II Classic
+    Chrome raw+jpeg 43쌍(디코드 성공 39쌍)으로 `apply_provia`와 같은
+    방식(무가공 raw 대비 ΔE00 직접 그리드서치+LOO,
+    `tools/evaluate_new_body_de00_grid.py --baseline-identity`)으로
+    처음부터 새로 만들었다.
+
+    개선폭 +5.60%, 30승9패, 부호검정 p=0.0011, 부트스트랩 95% CI
+    [+0.601, +1.556](픽셀단위 재확인은 아직 안 함, 저해상도 그리드서치
+    LOO 값). 폴드 선택이 shoulder_start=0.66(15/39)과 0.70(15/39)로
+    타이 - 0.82(9/39)까지 셋으로 갈려서 다른 프리셋들처럼 만장일치가
+    아님(toe_lift=0/white_point=1.0은 39/39 만장일치). 중간값인 0.70을
+    기본값으로 채택 - 표본이 더 모이면 셋 중 어디로 수렴하는지
+    재확인 필요."""
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+# ==========================================
+# 13. Nostalgic Neg v2 - raw+jpeg 재도출판(2026-08, GFX50S II n=27), apply_nostalgic_neg 대체
+# ==========================================
+def apply_nostalgic_neg_v2(img_bgr, toe_lift=0.036, shoulder_start=0.82, white_point=0.85, clahe_clip=1.25):
+    """`apply_nostalgic_neg()`(위, n=1 비교차트 수작업 튜닝)가 GFX50S II
+    Nostalgic Neg raw+jpeg 27쌍 실측에서 **raw 원본보다도 못한 것**으로
+    드러나서(개선폭 -2.13%, CI [-0.936, -0.133], 0 미포함 - 방향 자체가
+    틀림) `apply_provia`/`apply_classic_chrome`과 같은 방식으로 무가공
+    raw 대비 처음부터 다시 그리드서치했다.
+
+    개선폭 +6.13%, 21승6패, 부호검정 p=0.0059, 부트스트랩 95% CI
+    [+0.839, +2.330]. 25/27 폴드가 `toe_lift=0.036, shoulder_start=0.82,
+    white_point=0.85`로 수렴(나머지 2폴드는 toe_lift=0.09만 다름) -
+    기존 앰버 틴트/하이라이트 압축 방식과 전혀 다른 파라미터 공간이라
+    실측이 실제로 다른 방향을 가리키고 있었다는 뜻. 재현:
+    `python3 -m tools.evaluate_new_body_de00_grid --label
+    "Fuji GFX50S II Nostalgic Neg" --manifest
+    /tmp/fuji_nostalgic_neg.csv --raw-dir "/Users/songjiun/local-work"
+    --baseline-identity`(매니페스트는 `datasets/fuji/fuji_new_pairs.csv`의
+    film_mode=="Nostalgic Neg" 행)."""
     img = ensure_uint8(img_bgr)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)

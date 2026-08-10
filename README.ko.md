@@ -49,7 +49,7 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 | 브랜드 | 검증 방식 | 근거 |
 |---|---|---|
 | ✅ Hasselblad | raw+jpeg 페어 캘리브레이션(그리드서치 + 학습 LUT) | [docs/measurements.md](docs/measurements.md) |
-| ✅ Fujifilm | 필름시뮬레이션 프리셋 11종, population + 동일장면 비교차트 + raw+jpeg(Provia) | [docs/brands.md](docs/brands.md#후지필름-brandsfujipy) |
+| ✅ Fujifilm | 필름시뮬레이션 프리셋 13종, population + 동일장면 비교차트 + raw+jpeg(Provia/Classic Chrome/Nostalgic Neg v2) | [docs/brands.md](docs/brands.md#후지필름-brandsfujipy) |
 | ✅ Leica | population-fit (SOOC JPEG 45장) | [docs/brands.md](docs/brands.md#라이카-brandsleicapy) |
 | ✅ Phase One | population-fit (Capture One 렌더링 기준) | [docs/brands.md](docs/brands.md#phase-one-brandsphaseonepy) |
 | ✅ Pentax | population-fit (645Z + K-1, 40장) | [docs/brands.md](docs/brands.md#pentax-brandspentaxpy) |
@@ -411,7 +411,7 @@ python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
 
 - [x] 핫셀블라드 RAW 기반 파라메트릭/학습 캘리브레이션(`apply_hncs`,
       `apply_hncs_learned`)
-- [x] 후지필름 필름시뮬레이션 프리셋 11종
+- [x] 후지필름 필름시뮬레이션 프리셋 13종
 - [x] 10개 브랜드 population-fit 색감 근사 엔진(`core/engine.py`)
 - [x] 픽셀 단위 5종 시그니처 분석(tone/color/texture/gamut/
       joint_distribution)

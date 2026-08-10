@@ -1378,3 +1378,46 @@ tools.evaluate_hasselblad_body_de00_grid --label "Hasselblad CFV
 이제 5개 바디가 전부 동일값. 5패(diff 0.002~0.041 ΔE00, 반올림 오차
 수준) 편향 확인 - 렌즈/ISO/F값/촬영일 전부 승 그룹과 분포 동일, 신호
 없음. `apply_leica_raw_look` 적용 대상에 SL2-S 추가.
+
+### Fuji GFX50S II 대량 추가 - Classic Chrome 신설, Nostalgic Neg 교체 (2026-08)
+
+로컬 raw+jpeg 라이브러리에 Fujifilm GFX50S II 169쌍이 새로 들어와서(필름모드가
+다양하게 섞여 촬영됨) 필름모드별로 나눠 검증했다. Provia(9쌍, 표본 부족)는
+기존 GFX100RF/X-T30 III Provia 데이터와 통합, 나머지 4개 모드(Classic
+Chrome/Classic Negative/Nostalgic Neg/Eterna)는 각각 최소 25쌍 확보돼서
+독립 검증했다.
+
+**Provia 3바디 통합 재검증**: GFX100RF(38)+X-T30 III(20)+GFX50S II(9)=67쌍
+그리드서치 - 개선폭 +19.06%, 63승4패, 부호검정 p<0.0001, 부트스트랩 95%
+CI [+2.731, +3.556]. 65/67 폴드가 기존 채택값(`toe=0/shoulder=0.82/wp=1.0`)
+그대로 수렴 - 세 번째 바디가 추가돼도 안 바뀜, 기존 결론 재확인.
+
+**기존 프리셋 3개를 raw+jpeg로 직접 검증**(`tools/evaluate_fuji_preset_de00.py`,
+신규 - raw 무가공 대비 기존 프리셋 함수 그대로 비교, 그리드서치 아님):
+
+| 프리셋 | n | 개선폭 | 판정 |
+|---|---|---|---|
+| Classic Negative | 39 | +4.13% | 프리셋 정상 작동 확인, CI[+0.662,+1.831] |
+| Nostalgic Neg | 27 | **-2.13%** | **raw가 프리셋보다 우세 - 프리셋이 실측과 반대 방향**, CI[-0.936,-0.133] |
+| Eterna Cinema | 25 | +1.83% | 보류(CI[-0.234,+1.179], 0 포함) |
+
+Nostalgic Neg가 문제로 드러나서 `apply_provia`와 동일한 방식(raw 무가공
+대비 toe/shoulder/wp 직접 그리드서치)으로 재도출:
+
+**apply_nostalgic_neg_v2 신설**: 개선폭 +6.13%, 21승6패, 부호검정
+p=0.0059, 부트스트랩 95% CI [+0.839, +2.330]. 25/27 폴드가
+`toe_lift=0.036, shoulder_start=0.82, white_point=0.85`로 수렴 - 기존
+n=1 비교차트 기반 수작업 튜닝(앰버 틴트 가산)과 완전히 다른 파라미터.
+기존 `apply_nostalgic_neg`는 코드를 안 건드리고(과거 기록 보존)
+docstring에 이 결과를 append, `apply_nostalgic_neg_v2`로 대체 권장.
+
+**apply_classic_chrome 신설**(이 파일에 대응 프리셋이 아예 없었음):
+개선폭 +5.60%, 30승9패, 부호검정 p=0.0011, 부트스트랩 95% CI
+[+0.601, +1.556]. toe_lift=0/white_point=1.0은 39/39 만장일치인데
+shoulder_start만 0.66(15/39)·0.70(15/39)·0.82(9/39)로 삼분됨 - 중간값
+0.70을 기본값으로 채택, 표본이 더 모이면 재확인 필요.
+
+재현: `python3 -m tools.evaluate_new_body_de00_grid --label "..." --manifest
+/tmp/fuji_<mode>.csv --raw-dir "/Users/songjiun/local-work"
+--baseline-identity` (매니페스트는 `datasets/fuji/fuji_new_pairs.csv`를
+film_mode 컬럼으로 필터링해서 생성).
