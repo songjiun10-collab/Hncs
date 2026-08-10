@@ -22,7 +22,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/hasselblad_x1d50c.py` | Experimental - `apply_hncs_x1d50c` (X1D-50c 전용, raw+jpeg 20쌍 기반, ΔE00 직접 그리드서치+LOO/원본 픽셀 재확인 모두 +6~7% - `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) |
 | `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 11종 (Astia, PRO Neg, Eterna, Acros, Classic Negative, Provia 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 population 실측 검증됨, Pro Neg Hi/Eterna Cinema/Nostalgic Neg는 동일장면 비교차트로 추가 검증·재보정(표본 n=1~3, 저신뢰), **Provia는 raw+jpeg 페어(GFX100RF 38장/X-T30 III 20장) 기반 ΔE00 그리드서치로 신규 검증**(원본 픽셀 +18.8%/+23.7%) |
 | `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
-| `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10 전용, raw+jpeg 172쌍 기반, ΔE00 직접 그리드서치로 4바디 모두 같은 값(toe=0/shoulder=0.82/wp=1.0)에 수렴·개선) |
+| `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10/SL2-S 전용, raw+jpeg 215쌍 기반, ΔE00 직접 그리드서치로 5바디 모두 같은 값(toe=0/shoulder=0.82/wp=1.0)에 수렴·개선) |
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
 | `brands/ricoh_gr.py` | Ricoh GR 색감 근사 - `apply_ricoh_gr_look()` |

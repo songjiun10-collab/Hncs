@@ -59,6 +59,15 @@ Camera Raw)으로 이번 배치에 클린 페어가 0장이라 검증 불가, �
 "Leica SL2" --manifest datasets/leica/leica_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --model "LEICA SL2" --baseline
 brands.leica.apply_leica_look` (M10은 --model만 교체).
+
+**적용 범위 확장 - SL2-S 추가 (2026-08)**: 같은 라이브러리에 SL2-S
+43쌍이 추가돼서 동일 방법론으로 검증: 개선폭 +1.21%, 38승5패, 부호검정
+p<0.0001, 부트스트랩 95% CI [+0.080, +0.173]. 43/43 폴드 만장일치로
+역시 같은 조합(`toe_lift=0.0, shoulder_start=0.82, white_point=1.0`)에
+수렴 - 5개 바디(SL3-P/Q3 43/SL2/M10/SL2-S) 전부 동일한 값. 5패 전부
+diff 0.002~0.041 ΔE00로 편향 신호 없음(렌즈/ISO/F값/촬영일 확인,
+전부 승 그룹과 분포 동일). 재현: 위 명령의 `--model`만 "LEICA SL2-S"로
+교체.
 """
 from core.engine import make_population_fit_look
 
