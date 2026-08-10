@@ -1,0 +1,56 @@
+"""
+apply_sigma_bf_learned - Experimental. `apply_sigma_bf_look`(brands/sigma_bf.py)와 같은
+목표를 raw+jpeg 페어에서 픽셀 단위로 직접 학습한 256bin LUT으로
+근사한다(raw+jpeg 기반 파라메트릭 채택값) - `hasselblad_learned.py`(파라메트릭 vs 학습 LUT)와
+같은 패턴.
+
+**경위(2026-08)**: `tools/evaluate_empirical_tone_curve.py`로 실제 카메라
+톤 매핑을 raw+jpeg 페어에서 직접 뽑아 채택된 파라메트릭
+`toe_lift/shoulder_start/white_point` 값과 비교했더니, 이 바디는 RMSE=45.87로
+실제 곡선과 잘 안 맞음 - 파라메트릭 3파라미터 모양 자체가 실제 곡선과 안 맞는다는
+뜻이라, `tools/evaluate_learned_lut.py`로 학습 LUT을 직접 LOO
+교차검증했다(exposure_gamma(있으면)->CLAHE까지는 기존과 동일, 그 뒤
+`film_curve` 대신 256bin LUT).
+
+개선폭 +38.52%, 46승5패, 부호검정 p=0.0000, 부트스트랩
+95% CI [+5.108, +8.089] - 학습 LUT 우세. 최종 LUT은 홀드아웃 없이
+전체 51쌍으로 재학습(`tools/fit_final_lut.py`).
+
+`apply_sigma_bf_look()`은 이 실험으로 바뀌지 않는다(브랜드 룩 정본 유지) - 둘
+다 나란히 둔다. 재현: `python3 -m tools.evaluate_learned_lut --label
+"Sigma BF" --manifest datasets/sigma/sigma_new_pairs.csv --raw-dir "/Users/songjiun/local-work" --model "Sigma BF" --clahe-clip 1.25
+--toe-lift 0.09 --shoulder-start 0.82 --white-point 1.0`.
+"""
+import cv2
+import numpy as np
+
+_LEARNED_LUT = np.array([
+    6, 6, 4, 15, 15, 18, 26, 30, 37, 39, 42, 46, 49, 53, 54, 59,
+    61, 64, 65, 68, 70, 73, 75, 75, 79, 77, 82, 83, 84, 86, 87, 88,
+    90, 92, 92, 95, 96, 96, 97, 98, 99, 100, 102, 103, 104, 105, 106, 107,
+    109, 109, 110, 111, 113, 113, 114, 115, 117, 117, 117, 120, 120, 122, 122, 123,
+    124, 126, 126, 127, 126, 129, 129, 130, 131, 132, 133, 133, 135, 136, 137, 138,
+    140, 141, 141, 143, 143, 146, 147, 148, 149, 150, 151, 153, 155, 156, 158, 159,
+    158, 160, 161, 162, 163, 163, 164, 165, 165, 167, 166, 167, 168, 169, 171, 171,
+    173, 175, 175, 177, 178, 177, 180, 178, 178, 179, 178, 179, 176, 177, 176, 177,
+    177, 179, 180, 180, 181, 181, 181, 182, 182, 183, 183, 184, 184, 186, 186, 186,
+    187, 188, 187, 189, 190, 191, 190, 192, 193, 193, 194, 195, 195, 197, 197, 198,
+    198, 199, 201, 202, 202, 202, 204, 203, 204, 205, 206, 208, 208, 208, 210, 210,
+    210, 211, 212, 213, 215, 215, 214, 217, 217, 217, 220, 219, 219, 220, 220, 220,
+    221, 220, 220, 221, 221, 221, 224, 222, 224, 225, 225, 227, 227, 228, 229, 229,
+    229, 230, 234, 232, 233, 236, 236, 236, 236, 236, 237, 237, 238, 237, 238, 240,
+    238, 240, 239, 240, 241, 243, 240, 243, 245, 243, 244, 244, 245, 244, 242, 246,
+    244, 243, 245, 248, 247, 248, 250, 249, 251, 250, 247, 246, 249, 252, 249, 253,
+], dtype=np.uint8)
+
+
+def apply_sigma_bf_learned(img_bgr, clahe_clip=1.25):
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    l = cv2.LUT(l, _LEARNED_LUT)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)

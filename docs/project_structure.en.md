@@ -21,8 +21,10 @@ docs/         Detailed documentation (this directory)
 | `brands/hasselblad_x2dii.py` | Experimental - `apply_hncs_x2dii` (X2D II 100C only, changes just exposure_gamma 0.8->0.7 - callers must detect the model themselves; with only 41 samples the other parameters like shoulder_start were left untouched) |
 | `brands/hasselblad_x1d50c.py` | Experimental - `apply_hncs_x1d50c` (X1D-50c only, from 20 raw+jpeg pairs, +6-7% both in the ΔE00-native grid search/LOO and the native-pixel re-check - `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) |
 | `brands/fuji.py` | 13 Fujifilm-style film simulation presets (Astia, PRO Neg, Eterna, Acros, Classic Negative, Provia, Classic Chrome, Nostalgic Neg v2, etc.) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative are verified against real population data; Pro Neg Hi/Eterna Cinema have been further verified/recalibrated against same-scene comparison charts (n=1-3 samples, low confidence); **Provia/Classic Chrome/Nostalgic Neg v2 were verified via a ΔE00 grid search on real raw+jpeg pairs** (Provia combined across 3 bodies, 67 pairs, +19.1%; Classic Chrome 39 pairs +5.6%; Nostalgic Neg v2 27 pairs +6.1% - the old `apply_nostalgic_neg` turned out to actually be worse than doing nothing at -2.1%, kept in place for history with v2 recommended instead) |
+| `brands/fuji_provia_learned.py` | Experimental - `apply_provia_learned` (256-bin learned LUT combined across all 3 Provia bodies, +20.42% over the parametric version) |
 | `brands/leica.py` | Leica color approximation - `apply_leica_look()` (population-fit, v1) |
 | `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10/SL2-S only, from 215 raw+jpeg pairs, all 5 bodies converge on the same values (toe=0/shoulder=0.82/wp=1.0) and improve via a direct-ΔE00 grid search) |
+| `brands/leica_raw_learned.py` | Experimental - `apply_leica_raw_learned` (256-bin learned LUT combined across all 5 bodies, +12.56% over the parametric version - built after the empirical tone-curve study found the parametric shape itself didn't fit well) |
 | `brands/phaseone.py` | Phase One (Capture One's default rendering) color approximation - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax color approximation - `apply_pentax_look()` |
 | `brands/ricoh_gr.py` | Ricoh GR color approximation - `apply_ricoh_gr_look()` |
@@ -31,11 +33,15 @@ docs/         Detailed documentation (this directory)
 | `brands/sony.py` | Sony color approximation (A7/A7R/A7S/A7 III/A7 IV, 5-body population, 23 photos per body) - `apply_sony_look()` |
 | `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V only, the first raw-based calibration from 58 raw+jpeg pairs, +0.53% over the direct-ΔE00 grid search) |
 | `brands/sony_a7rvi.py` | Experimental - `apply_sony_a7rvi_look` (Sony a7R VI only, 40 raw+jpeg pairs, +0.57% via a direct-ΔE00 grid search - weak evidence, CI lower bound near zero) |
+| `brands/sony_a7v_learned.py` | Experimental - `apply_sony_a7v_learned` (256-bin learned LUT, +11.10% over the parametric version) |
+| `brands/sony_a7rvi_learned.py` | Experimental - `apply_sony_a7rvi_learned` (256-bin learned LUT, +9.12% over the parametric version) |
 | `brands/panasonic.py` | Panasonic (Lumix) color approximation (GH5/GH6/G9 MFT + S5/S1 full-frame, 5-body population, n=120) - `apply_panasonic_look()` |
 | `brands/olympus.py` | Olympus (now OM System) color approximation (OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F, 5-body population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma color approximation (Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill, 5-body population, n=83) - `apply_sigma_look()` |
 | `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF only, 51 raw+jpeg pairs, +0.53% via a direct-ΔE00 grid search - the weakest-evidence adoption this session, CI lower bound +0.007) |
 | `brands/sigma_fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L only, 32 raw+jpeg pairs, +0.55% via a direct-ΔE00 grid search, CI[+0.038,+0.124]) |
+| `brands/sigma_bf_learned.py` | Experimental - `apply_sigma_bf_learned` (256-bin learned LUT, **+38.52% over the parametric version - the largest improvement of this whole session**) |
+| `brands/sigma_fpl_learned.py` | Experimental - `apply_sigma_fpl_learned` (256-bin learned LUT, +17.01% over the parametric version) |
 | `core/curve.py` | Tone-curve math (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - shared by multiple brand modules |
 | `core/lut.py` | LUT application helper |
 | `core/engine.py` | Shared engine for every population-fit brand (leica/phaseone/pentax/ricoh_gr and every other population-fit brand added since) - they all lack a raw baseline and plug their population target directly into `film_curve` with the same structure, so this was consolidated into one function |
