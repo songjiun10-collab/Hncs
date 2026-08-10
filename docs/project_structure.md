@@ -35,6 +35,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/olympus.py` | Olympus(현 OM System) 색감 근사(OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F 5바디 population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma 색감 근사(Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill 5바디 population, n=83) - `apply_sigma_look()` |
 | `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF 전용, raw+jpeg 51쌍, ΔE00 직접 그리드서치로 +0.53% 개선 - 이 세션에서 가장 근거 약한 채택, CI 하한 +0.007) |
+| `brands/sigma_fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L 전용, raw+jpeg 32쌍, ΔE00 직접 그리드서치로 +0.55% 개선, CI[+0.038,+0.124]) |
 | `core/curve.py` | 톤커브 수학 (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - 여러 브랜드 모듈이 공유 |
 | `core/lut.py` | LUT 적용 헬퍼 |
 | `core/engine.py` | population-fit 브랜드(leica/phaseone/pentax/ricoh_gr 및 이후 추가된 나머지 population-fit 브랜드 전부) 공용 엔진 - raw 기준선 없이 population 타깃을 `film_curve`에 직접 대입하는 동일 구조라 하나로 합침 |
