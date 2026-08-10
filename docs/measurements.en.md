@@ -1664,3 +1664,28 @@ empirical curves were mutually consistent (within ~10-20 units), and the
 Fuji X-T30 III lens's curve alone was still consistently brighter than
 all of Leica's - the gap is a real brand/body difference, not a lens
 artifact.
+
+### 2 improvement attempts - noise-switch hybrid / per-body Leica LUTs, both rejected (2026-08)
+
+**Noise-switch hybrid (rejected)**: Sony a7V/a7R VI showed "the learned
+LUT loses to the parametric curve on high-ISO shots" (win/loss groups'
+mean ISO: 163 vs 2734, and 1167 vs 3339 respectively). Tried building a
+hybrid that switches between parametric and LUT based on noise estimated
+directly from the image (Immerkaer 1996 fast noise estimation - EXIF ISO
+isn't available inside `apply_*()`'s signature), LOO-validated via
+`tools/evaluate_hybrid_switch.py`. Result: slightly *worse* than always
+using the LUT (a7V +10.96% vs always-LUT's +11.10%; a7R VI +8.51% vs
++9.12%) - the learned threshold almost never picked parametric (1/61
+pairs for a7V, 1.6%). Concluded the image-derived noise estimate doesn't
+capture the real ISO signal well enough; rejected.
+
+**Per-body Leica LUTs (rejected)**: Compared the combined 5-body LUT
+(`apply_leica_raw_learned`) against individually-fit per-body LUTs
+(SL3-P/Q3 43/SL2/M10/SL2-S, via `tools/fit_final_lut.py`) - mean absolute
+difference between each body's own LUT and the combined one was only
+2.3-6.9 (0-255 scale, much smaller than the 11-24 gap found between Leica
+and Fuji's real curves) - the bodies don't differ much from each other.
+M10, which had the largest per-body deviation, saw its own LUT beat the
+combined one by +3.63% (in-sample, not LOO); SL2, with the smallest
+deviation, only +0.56% - essentially negligible. Not enough gain to
+justify splitting into 5 separate shipped functions; kept the combined LUT.
