@@ -1421,3 +1421,30 @@ shoulder_start만 0.66(15/39)·0.70(15/39)·0.82(9/39)로 삼분됨 - 중간값
 /tmp/fuji_<mode>.csv --raw-dir "/Users/songjiun/local-work"
 --baseline-identity` (매니페스트는 `datasets/fuji/fuji_new_pairs.csv`를
 film_mode 컬럼으로 필터링해서 생성).
+
+### apply_sigma_fpl_look 신설 (2026-08)
+
+로컬 raw+jpeg 라이브러리에 Sigma fp L 페어 32장이 새로 들어와서
+`apply_sigma_look()` 대비 ΔE00 직접 그리드서치+LOO를 Sigma BF와 동일
+방식으로 돌렸다.
+
+| 검증 단계 | 개선폭 | 승/패 | 부호검정 p | 부트스트랩 95% CI |
+|---|---|---|---|---|
+| LOO(200px 선택/400px 평가) | +0.63% | 23/9 | 0.0201 | [+0.044, +0.129] |
+| 원본 픽셀(max_dim=3000) | +0.55% | 23/9 | 0.0201 | [+0.038, +0.124] |
+
+32/32 폴드 만장일치로 `toe_lift=0.02, shoulder_start=0.82,
+white_point=1.0` 수렴 - Sigma BF(`toe_lift=0.09`)와 toe_lift만 다름.
+개선폭은 Sony a7V/Sigma BF급으로 작지만 CI 하한(+0.038)이 Sigma BF
+(+0.007)보다는 안정적. `brands/sigma_fpl.py`로 신설.
+
+### 라이카/후지 톤커브 완전 동일성 직접 검증 (2026-08)
+
+사용자가 "라이카하고 후지 톤커브 진짜 같은지 확인"을 요청해서, 파라미터
+비교뿐 아니라 실제 함수 실행으로 재확인했다: `apply_leica_raw_look()`과
+`apply_provia()`를 같은 랜덤 이미지에 그대로 돌려서 출력을 비교하니
+**픽셀 단위로 완전히 동일**(`np.array_equal`=True, 최대 차이 0). 두
+값(`toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25`)이
+독립적으로 그리드서치된 라이카 5바디(SL3-P/Q3-43/SL2/M10/SL2-S,
+215쌍)와 후지 Provia 3바디 통합(GFX100RF/X-T30 III/GFX50S II, 67쌍)에서
+정확히 같은 값에 수렴했다는 뜻 - 우연이라 보기 어렵다.

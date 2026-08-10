@@ -1555,3 +1555,32 @@ Reproduce: `python3 -m tools.evaluate_new_body_de00_grid --label "..."
 --manifest /tmp/fuji_<mode>.csv --raw-dir "/Users/songjiun/local-work"
 --baseline-identity` (manifest built by filtering
 `datasets/fuji/fuji_new_pairs.csv` on the film_mode column).
+
+### apply_sigma_fpl_look added (2026-08)
+
+32 new Sigma fp L raw+jpeg pairs landed in the local library. Ran the
+same ΔE00-native grid search + LOO as Sigma BF against `apply_sigma_look()`.
+
+| Stage | Improvement | Wins/Losses | Sign-test p | Bootstrap 95% CI |
+|---|---|---|---|---|
+| LOO (200px select / 400px eval) | +0.63% | 23/9 | 0.0201 | [+0.044, +0.129] |
+| Native pixels (max_dim=3000) | +0.55% | 23/9 | 0.0201 | [+0.038, +0.124] |
+
+All 32/32 folds converged on `toe_lift=0.02, shoulder_start=0.82,
+white_point=1.0` - differs from Sigma BF only in toe_lift (0.09). The
+improvement is small (Sony a7V / Sigma BF scale) but the CI lower bound
+(+0.038) is more comfortable than Sigma BF's (+0.007). Shipped as
+`brands/sigma_fpl.py`.
+
+### Directly verified Leica/Fuji tone curves are truly identical (2026-08)
+
+The user asked to double-check whether Leica's and Fuji's tone curves are
+"really the same" - re-verified by actually running the functions, not
+just comparing parameters: fed `apply_leica_raw_look()` and
+`apply_provia()` the same random test image and compared outputs -
+**pixel-identical** (`np.array_equal` = True, max difference 0). The
+shared value (`toe_lift=0.0, shoulder_start=0.82, white_point=1.0,
+clahe_clip=1.25`) was independently arrived at by grid search across 5
+Leica bodies (SL3-P/Q3-43/SL2/M10/SL2-S, 215 pairs) and the combined
+3-body Fuji Provia set (GFX100RF/X-T30 III/GFX50S II, 67 pairs) - hard to
+explain as coincidence.

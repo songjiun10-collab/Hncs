@@ -35,6 +35,7 @@ docs/         Detailed documentation (this directory)
 | `brands/olympus.py` | Olympus (now OM System) color approximation (OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F, 5-body population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma color approximation (Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill, 5-body population, n=83) - `apply_sigma_look()` |
 | `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF only, 51 raw+jpeg pairs, +0.53% via a direct-ΔE00 grid search - the weakest-evidence adoption this session, CI lower bound +0.007) |
+| `brands/sigma_fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L only, 32 raw+jpeg pairs, +0.55% via a direct-ΔE00 grid search, CI[+0.038,+0.124]) |
 | `core/curve.py` | Tone-curve math (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - shared by multiple brand modules |
 | `core/lut.py` | LUT application helper |
 | `core/engine.py` | Shared engine for every population-fit brand (leica/phaseone/pentax/ricoh_gr and every other population-fit brand added since) - they all lack a raw baseline and plug their population target directly into `film_curve` with the same structure, so this was consolidated into one function |
