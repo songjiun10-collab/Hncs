@@ -1584,3 +1584,83 @@ clahe_clip=1.25`) was independently arrived at by grid search across 5
 Leica bodies (SL3-P/Q3-43/SL2/M10/SL2-S, 215 pairs) and the combined
 3-body Fuji Provia set (GFX100RF/X-T30 III/GFX50S II, 67 pairs) - hard to
 explain as coincidence.
+
+### Learned LUT vs parametric - 6 new functions (2026-08)
+
+Following the empirical tone-curve study kicked off by the user's "check
+whether Leica/Fuji tone curves are really the same" request
+(`tools/evaluate_empirical_tone_curve.py`), measured how well the
+parametric `toe_lift/shoulder_start/white_point` 3-parameter assumption
+actually matches each camera's real curve, via RMSE, across all 10
+adopted functions:
+
+| Function | RMSE (0-255) |
+|---|---|
+| X2D II | 13.57 (best fit) |
+| Leica (5 bodies) | 14.59 |
+| X1D-50c | 14.69 |
+| Sigma fp L | 25.77 |
+| Provia (3 bodies) | 26.31 |
+| Sony a7V | 26.42 |
+| Classic Chrome | 31.82 |
+| Sony a7R VI | 34.72 |
+| Sigma BF | 45.87 (worst fit) |
+| Nostalgic Neg v2 | 46.36 |
+
+Followed up with `tools/evaluate_learned_lut.py` (LOO-cross-validated
+256-bin learned LUT instead of the parametric curve) to check whether
+this translates into a real ΔE00 win:
+
+| Function | n | Improvement | Verdict |
+|---|---|---|---|
+| X2D II | 70 | -0.06% | Inconclusive (parametric already near-optimal) |
+| X1D-50c | 20 | +3.76% | Inconclusive (CI[-0.115,+0.753]) |
+| Sony a7V | 61 | +11.10% | Wins, CI[+1.188,+2.312] |
+| Sony a7R VI | 40 | +9.12% | Wins, CI[+0.689,+2.341] |
+| Leica (5 bodies) | 216 | +12.56% | Wins, CI[+0.868,+1.333] |
+| Sigma BF | 51 | **+38.52%** | **Dominant win**, CI[+5.108,+8.089] |
+| Sigma fp L | 32 | +17.01% | Wins, CI[+1.386,+2.813] |
+| Provia (3 bodies) | 67 | +20.42% | Wins, CI[+1.959,+3.365] |
+| Classic Chrome | 39 | -1.36% | Inconclusive |
+| Nostalgic Neg v2 | 27 | +4.69% | Inconclusive (CI[-0.951,+3.227]) |
+
+RMSE and LUT improvement roughly track each other (X2D II lowest
+RMSE/lowest gain, Sigma BF highest RMSE/highest gain) but not perfectly -
+Leica had low RMSE yet a large gain, while Classic Chrome/Nostalgic Neg v2
+had high RMSE yet weak gains. Likely because RMSE weights every L-value
+bin equally while ΔE00 is pixel-weighted (dominated by the high-pixel-
+count midtone bins), so the two metrics aren't measuring quite the same
+thing.
+
+**Shipped the 6 winning cases as new functions**, refit on the full
+sample with no holdout (`tools/fit_final_lut.py`); the parametric
+`apply_*_look`/`apply_provia` functions are left unchanged and kept
+side-by-side, following the `hasselblad_learned.py` precedent:
+
+- `brands/sony_a7v_learned.py` - `apply_sony_a7v_learned`
+- `brands/sony_a7rvi_learned.py` - `apply_sony_a7rvi_learned`
+- `brands/leica_raw_learned.py` - `apply_leica_raw_learned`
+- `brands/sigma_bf_learned.py` - `apply_sigma_bf_learned`
+- `brands/sigma_fpl_learned.py` - `apply_sigma_fpl_learned`
+- `brands/fuji_provia_learned.py` - `apply_provia_learned`
+
+### Leica/Fuji "identical parameters" was coincidence - real curves differ (2026-08)
+
+Earlier documented that `apply_leica_raw_look()` and `apply_provia()`
+produce pixel-identical output. The user pushed back, asking whether that
+was just the parameters matching rather than the real curves - overlaid
+the actual empirical curves directly: across the shadow-to-midtone range
+(input L 18-130), **Provia is consistently 11-24 brighter than Leica**;
+the two curves only converge in the highlights (L 150+). The two brands
+genuinely have different tone responses, and the parametric grid search
+landing on the same value (toe=0/shoulder=0.82/wp=1.0) is now understood
+as **the 3-parameter grid being too coarse - two genuinely different real
+curves happened to snap to the same grid point**, not a real "house look"
+match.
+
+**Not a lens confound**: checked Leica's 4 lens groups (VARIO-ELMARIT /
+APO-SUMMICRON 43 / ELMARIT-TL 18 / Summilux-M 35) separately - their
+empirical curves were mutually consistent (within ~10-20 units), and the
+Fuji X-T30 III lens's curve alone was still consistently brighter than
+all of Leica's - the gap is a real brand/body difference, not a lens
+artifact.

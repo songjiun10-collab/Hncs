@@ -21,8 +21,10 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/hasselblad_x2dii.py` | Experimental - `apply_hncs_x2dii` (X2D II 100C 전용, exposure_gamma만 0.8->0.7 - 호출부가 모델 판별해서 골라 써야 함, 표본 41장이라 shoulder_start 등 나머지 파라미터는 안 건드림) |
 | `brands/hasselblad_x1d50c.py` | Experimental - `apply_hncs_x1d50c` (X1D-50c 전용, raw+jpeg 20쌍 기반, ΔE00 직접 그리드서치+LOO/원본 픽셀 재확인 모두 +6~7% - `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) |
 | `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 13종 (Astia, PRO Neg, Eterna, Acros, Classic Negative, Provia, Classic Chrome, Nostalgic Neg v2 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 population 실측 검증됨, Pro Neg Hi/Eterna Cinema는 동일장면 비교차트로 추가 검증·재보정(표본 n=1~3, 저신뢰), **Provia/Classic Chrome/Nostalgic Neg v2는 raw+jpeg 페어 기반 ΔE00 그리드서치로 검증**(Provia 3바디 통합 67쌍 +19.1%, Classic Chrome 39쌍 +5.6%, Nostalgic Neg v2 27쌍 +6.1% - 구 `apply_nostalgic_neg`는 실측 결과 raw보다도 못한 -2.1%로 판명, 코드는 보존하고 v2로 대체 권장) |
+| `brands/fuji_provia_learned.py` | Experimental - `apply_provia_learned` (Provia 3바디 통합 256bin 학습 LUT, 파라메트릭 대비 +20.42% 개선) |
 | `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
 | `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10/SL2-S 전용, raw+jpeg 215쌍 기반, ΔE00 직접 그리드서치로 5바디 모두 같은 값(toe=0/shoulder=0.82/wp=1.0)에 수렴·개선) |
+| `brands/leica_raw_learned.py` | Experimental - `apply_leica_raw_learned` (5바디 통합 256bin 학습 LUT, 파라메트릭 대비 +12.56% 개선 - 실측 톤커브 조사에서 파라메트릭 모양 자체가 안 맞는 걸 발견하고 만든 데이터 기반 버전) |
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
 | `brands/ricoh_gr.py` | Ricoh GR 색감 근사 - `apply_ricoh_gr_look()` |
@@ -31,11 +33,15 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/sony.py` | Sony 색감 근사(A7/A7R/A7S/A7 III/A7 IV 5바디 population, 바디당 23장) - `apply_sony_look()` |
 | `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V 전용, raw+jpeg 58쌍 기반 첫 raw 캘리브레이션, ΔE00 직접 그리드서치로 +0.53% 개선) |
 | `brands/sony_a7rvi.py` | Experimental - `apply_sony_a7rvi_look` (Sony a7R VI 전용, raw+jpeg 40쌍, ΔE00 직접 그리드서치로 +0.57% 개선 - CI 하한이 0에 가까워 근거 약함) |
+| `brands/sony_a7v_learned.py` | Experimental - `apply_sony_a7v_learned` (256bin 학습 LUT, 파라메트릭 대비 +11.10% 개선) |
+| `brands/sony_a7rvi_learned.py` | Experimental - `apply_sony_a7rvi_learned` (256bin 학습 LUT, 파라메트릭 대비 +9.12% 개선) |
 | `brands/panasonic.py` | Panasonic(Lumix) 색감 근사(GH5/GH6/G9 MFT + S5/S1 풀프레임 5바디 population, n=120) - `apply_panasonic_look()` |
 | `brands/olympus.py` | Olympus(현 OM System) 색감 근사(OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F 5바디 population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma 색감 근사(Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill 5바디 population, n=83) - `apply_sigma_look()` |
 | `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF 전용, raw+jpeg 51쌍, ΔE00 직접 그리드서치로 +0.53% 개선 - 이 세션에서 가장 근거 약한 채택, CI 하한 +0.007) |
 | `brands/sigma_fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L 전용, raw+jpeg 32쌍, ΔE00 직접 그리드서치로 +0.55% 개선, CI[+0.038,+0.124]) |
+| `brands/sigma_bf_learned.py` | Experimental - `apply_sigma_bf_learned` (256bin 학습 LUT, 파라메트릭 대비 **+38.52% 개선 - 이 세션 전체에서 가장 큰 개선폭**) |
+| `brands/sigma_fpl_learned.py` | Experimental - `apply_sigma_fpl_learned` (256bin 학습 LUT, 파라메트릭 대비 +17.01% 개선) |
 | `core/curve.py` | 톤커브 수학 (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - 여러 브랜드 모듈이 공유 |
 | `core/lut.py` | LUT 적용 헬퍼 |
 | `core/engine.py` | population-fit 브랜드(leica/phaseone/pentax/ricoh_gr 및 이후 추가된 나머지 population-fit 브랜드 전부) 공용 엔진 - raw 기준선 없이 population 타깃을 `film_curve`에 직접 대입하는 동일 구조라 하나로 합침 |

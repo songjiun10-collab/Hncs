@@ -1448,3 +1448,75 @@ white_point=1.0` 수렴 - Sigma BF(`toe_lift=0.09`)와 toe_lift만 다름.
 독립적으로 그리드서치된 라이카 5바디(SL3-P/Q3-43/SL2/M10/SL2-S,
 215쌍)와 후지 Provia 3바디 통합(GFX100RF/X-T30 III/GFX50S II, 67쌍)에서
 정확히 같은 값에 수렴했다는 뜻 - 우연이라 보기 어렵다.
+
+### 학습 LUT vs 파라메트릭 - 6개 함수 신설 (2026-08)
+
+사용자가 "라이카/후지 톤커브 진짜 같은지 확인"을 요청해서 시작된
+실측 톤커브 조사(`tools/evaluate_empirical_tone_curve.py`)에서, 파라메트릭
+`toe_lift/shoulder_start/white_point` 3파라미터 가정이 실제 카메라 곡선과
+얼마나 맞는지 10개 채택 함수 전부 RMSE로 측정했다:
+
+| 함수 | RMSE(0-255) |
+|---|---|
+| X2D II | 13.57(가장 잘 맞음) |
+| Leica 5바디 | 14.59 |
+| X1D-50c | 14.69 |
+| Sigma fp L | 25.77 |
+| Provia 3바디 | 26.31 |
+| Sony a7V | 26.42 |
+| Classic Chrome | 31.82 |
+| Sony a7R VI | 34.72 |
+| Sigma BF | 45.87(가장 안 맞음) |
+| Nostalgic Neg v2 | 46.36 |
+
+이걸 `tools/evaluate_learned_lut.py`(파라메트릭 대신 256bin 학습 LUT을
+LOO로 교차검증)로 이어서 실제 ΔE00 개선 여부를 확인했다:
+
+| 함수 | n | 개선폭 | 판정 |
+|---|---|---|---|
+| X2D II | 70 | -0.06% | 보류(이미 파라메트릭이 최적에 가까움) |
+| X1D-50c | 20 | +3.76% | 보류(CI[-0.115,+0.753]) |
+| Sony a7V | 61 | +11.10% | 우세, CI[+1.188,+2.312] |
+| Sony a7R VI | 40 | +9.12% | 우세, CI[+0.689,+2.341] |
+| Leica 5바디 | 216 | +12.56% | 우세, CI[+0.868,+1.333] |
+| Sigma BF | 51 | **+38.52%** | **압도적 우세**, CI[+5.108,+8.089] |
+| Sigma fp L | 32 | +17.01% | 우세, CI[+1.386,+2.813] |
+| Provia 3바디 | 67 | +20.42% | 우세, CI[+1.959,+3.365] |
+| Classic Chrome | 39 | -1.36% | 보류 |
+| Nostalgic Neg v2 | 27 | +4.69% | 보류(CI[-0.951,+3.227]) |
+
+RMSE와 LUT 개선폭이 대체로 대응(X2D II 최저 RMSE·최저 개선, Sigma BF
+최고 RMSE·최고 개선)하지만 완벽히 일치하진 않음(Leica는 RMSE가
+낮은데도 개선폭이 컸고, Classic Chrome/Nostalgic Neg v2는 RMSE가
+높은데도 개선이 약했음) - RMSE는 L값 구간별 잔차를 균등가중하는데
+ΔE00은 픽셀수가 많은 구간(주로 미드톤) 비중이 커서 완전히 같은
+지표가 아니기 때문으로 추정.
+
+**우세 판정 6개를 `tools/fit_final_lut.py`로 홀드아웃 없이 전체
+표본 재학습해서 신설**(파라메트릭 `apply_*_look`/`apply_provia`는
+`hasselblad_learned.py` 선례대로 그대로 유지, 나란히 배치):
+
+- `brands/sony_a7v_learned.py` - `apply_sony_a7v_learned`
+- `brands/sony_a7rvi_learned.py` - `apply_sony_a7rvi_learned`
+- `brands/leica_raw_learned.py` - `apply_leica_raw_learned`
+- `brands/sigma_bf_learned.py` - `apply_sigma_bf_learned`
+- `brands/sigma_fpl_learned.py` - `apply_sigma_fpl_learned`
+- `brands/fuji_provia_learned.py` - `apply_provia_learned`
+
+### 라이카-후지 "동일 파라미터"는 우연 - 실측 곡선은 다름 (2026-08)
+
+앞서 "`apply_leica_raw_look()`과 `apply_provia()`가 픽셀 단위로 완전히
+동일하다"고 정리했었는데, 사용자가 "파라미터만 같았던거 아니냐"고
+재확인을 요청해서 실측 곡선 자체를 직접 겹쳐봤다: 그림자~미드톤
+(입력 L 18~130 구간)에서 **Provia가 라이카보다 일관되게 11~24 더
+밝음** - 하이라이트(L 150 이상)에서만 두 곡선이 수렴한다. 즉 두
+브랜드는 실제로 다른 톤 반응을 가지고 있고, 파라메트릭 그리드서치가
+같은 값(toe=0/shoulder=0.82/wp=1.0)에 착지한 건 **3파라미터 그리드가
+너무 성겨서 서로 다른 실제 곡선이 우연히 같은 격자점을 골랐기
+때문**으로 정정한다.
+
+**렌즈 confound는 아님**: 라이카 4개 렌즈군(VARIO-ELMARIT/APO-SUMMICRON
+43/ELMARIT-TL 18/Summilux-M 35)의 실측 곡선을 따로 뽑아보니 서로
+비슷했고(10~20 이내 차이), 후지 X-T30 III 렌즈 단독 곡선도 라이카
+전체보다 일관되게 더 밝았다 - 렌즈 차이가 아니라 진짜 브랜드/바디
+차이.
