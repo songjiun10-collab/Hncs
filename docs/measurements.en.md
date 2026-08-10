@@ -1493,3 +1493,16 @@ Reproduce: `python3 -m tools.evaluate_hasselblad_body_de00_grid --label
 "Hasselblad CFV 100C/907X" --manifest
 datasets/hasselblad/hasselblad_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --model "CFV 100C/907X"`.
+
+### apply_leica_raw_look scope extended - SL2-S added (2026-08)
+
+43 new SL2-S raw+jpeg pairs landed in the local library. Verified against
+`apply_leica_look()` with the same methodology (ΔE00-native grid search +
+LOO): +1.21% improvement, 38 wins/5 losses, sign-test p<0.0001, bootstrap
+95% CI [+0.080, +0.173]. All 43/43 folds unanimously converged on the
+exact same combo as the existing 4 bodies (SL3-P/Q3 43/SL2/M10):
+`toe_lift=0.0, shoulder_start=0.82, white_point=1.0` - now 5 bodies share
+the identical value. Checked the 5 losses (diff 0.002-0.041 ΔE00,
+rounding-noise scale) for bias - lens/ISO/f-number/shoot-date all matched
+the winning group's distribution, no signal found. Added SL2-S to
+`apply_leica_raw_look`'s coverage.

@@ -27,8 +27,8 @@ import sys
 from datetime import date, datetime, timedelta
 
 # .3fr/.fff=Hasselblad, .dng=Leica(M/SL/Q 전 라인업 공식 RAW 포맷)/Sigma,
-# .arw=Sony, .cr3=Canon, .raf=Fujifilm
-RAW_EXT = {".3fr", ".fff", ".dng", ".arw", ".cr3", ".raf"}
+# .arw=Sony, .cr3=Canon, .raf=Fujifilm, .nef=Nikon
+RAW_EXT = {".3fr", ".fff", ".dng", ".arw", ".cr3", ".raf", ".nef"}
 JPEG_EXT = {".jpg", ".jpeg"}
 OFFSET_HOURS = list(range(-12, 13))
 COLUMNS = ["filename_raw", "filename_jpeg", "camera", "lens", "iso", "wb_setting",

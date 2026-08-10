@@ -1367,3 +1367,14 @@ EOS R6 Mark III/R1은 CI가 0을 포함하거나(X2D 100C) 개선폭 자체가
 tools.evaluate_hasselblad_body_de00_grid --label "Hasselblad CFV
 100C/907X" --manifest datasets/hasselblad/hasselblad_new_pairs.csv
 --raw-dir "/Users/songjiun/local-work" --model "CFV 100C/907X"`.
+
+### apply_leica_raw_look 적용 범위 확장 - SL2-S 추가 (2026-08)
+
+로컬 raw+jpeg 라이브러리에 SL2-S 43쌍이 새로 추가돼서 동일 방법론(ΔE00
+직접 그리드서치+LOO)으로 `apply_leica_look()` 대비 검증했다: 개선폭
++1.21%, 38승5패, 부호검정 p<0.0001, 부트스트랩 95% CI [+0.080, +0.173].
+43/43 폴드 만장일치로 기존 4바디(SL3-P/Q3 43/SL2/M10)와 완전히 같은
+조합(`toe_lift=0.0, shoulder_start=0.82, white_point=1.0`)에 수렴 -
+이제 5개 바디가 전부 동일값. 5패(diff 0.002~0.041 ΔE00, 반올림 오차
+수준) 편향 확인 - 렌즈/ISO/F값/촬영일 전부 승 그룹과 분포 동일, 신호
+없음. `apply_leica_raw_look` 적용 대상에 SL2-S 추가.
