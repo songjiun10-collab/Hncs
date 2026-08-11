@@ -25,6 +25,7 @@ import requests
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.validation import is_image_usable
+from tools.build_local_manifest import _match_pairs, _parse_dt
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
 
@@ -244,7 +245,18 @@ def download_fuji_pairs():
     RAF<->JPEG 페어를 찾아 FUJI_MANIFEST_PATH로 남긴다 (파일명이 서로 안
     맞는 경우가 많아서 촬영시각으로 매칭 - 이 사이트는 raw_url/jpeg_url을
     직접 짝지어 주지 않기 때문). 각 JPEG의 Film Mode 태그도 exiftool로
-    같이 기록한다."""
+    같이 기록한다.
+
+    **정정(2026-08)**: 매칭 로직이 이 함수 안에 독자적으로
+    있었다(`dt` 문자열이 정확히 같은 raw를 전부 그 jpeg에 붙이는 방식) -
+    `tools/build_local_manifest.py`의 페어 매칭 버그(비결정적/비1:1
+    매칭, 별도 커밋으로 수정) 수정 작업에서 이 함수는 안 건드렸었는데,
+    같은 종류의 버그가 여기 독립적으로 또 있었다(오히려 더 심함 - 같은
+    타임스탬프의 raw가 여러 장이면 같은 jpeg가 그 raw들 전부에 중복
+    배정됨, 진짜 1:1이 아니었음). `build_local_manifest._match_pairs()`
+    (전역 후보를 델타 오름차순으로 그리디 배정하는 1:1 deterministic
+    매처)를 공통 함수로 그대로 재사용하도록 변경 - 두 경로가 이제 같은
+    매칭기를 쓴다."""
     rows = list(csv.DictReader(open(FUJI_LINKS_CSV, encoding="utf-8-sig")))
     manifest = []
 
@@ -272,21 +284,26 @@ def download_fuji_pairs():
             print(f"  손상 JPEG 제외: {n_before - len(jpeg_files)}장")
         print(f"  raw {len(raw_files)}장, jpeg {len(jpeg_files)}장 (무결성 검증 통과분)")
 
-        raw_by_time = {}
+        raw_recs, jpeg_recs, film_mode_by_jpeg = [], [], {}
         for f in raw_files:
-            dt, _ = _exif_datetime_and_filmmode(f)
-            if dt:
-                raw_by_time.setdefault(dt, []).append(f)
-
+            dt_str, _ = _exif_datetime_and_filmmode(f)
+            dt = _parse_dt(dt_str)
+            if dt is not None:
+                raw_recs.append(dict(filename=f, dt=dt))
         for jf in jpeg_files:
-            dt, film_mode = _exif_datetime_and_filmmode(jf)
-            if not dt or dt not in raw_by_time:
-                continue
-            for rf in raw_by_time[dt]:
-                manifest.append(dict(camera=camera, datetime=dt, film_mode=film_mode or "",
-                                      raw_path=rf, jpeg_path=jf))
+            dt_str, film_mode = _exif_datetime_and_filmmode(jf)
+            dt = _parse_dt(dt_str)
+            if dt is not None:
+                jpeg_recs.append(dict(filename=jf, dt=dt))
+                film_mode_by_jpeg[jf] = film_mode or ""
 
-        print(f"  매칭된 페어: {sum(1 for m in manifest if m['camera'] == camera)}")
+        matched = _match_pairs(raw_recs, jpeg_recs)
+        for rf_rec, jf_rec, _delta, _oh in matched:
+            manifest.append(dict(camera=camera, datetime=rf_rec["dt"].isoformat(),
+                                  film_mode=film_mode_by_jpeg[jf_rec["filename"]],
+                                  raw_path=rf_rec["filename"], jpeg_path=jf_rec["filename"]))
+
+        print(f"  매칭된 페어: {len(matched)}")
 
     with open(FUJI_MANIFEST_PATH, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["camera", "datetime", "film_mode", "raw_path", "jpeg_path"])
