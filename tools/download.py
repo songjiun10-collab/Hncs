@@ -298,15 +298,20 @@ def download_fuji_pairs():
                 film_mode_by_jpeg[jf] = film_mode or ""
 
         matched = _match_pairs(raw_recs, jpeg_recs)
-        for rf_rec, jf_rec, _delta, _oh in matched:
+        for rf_rec, jf_rec, _delta, _oh, ambiguous in matched:
             manifest.append(dict(camera=camera, datetime=rf_rec["dt"].isoformat(),
                                   film_mode=film_mode_by_jpeg[jf_rec["filename"]],
-                                  raw_path=rf_rec["filename"], jpeg_path=jf_rec["filename"]))
+                                  raw_path=rf_rec["filename"], jpeg_path=jf_rec["filename"],
+                                  ambiguous="yes" if ambiguous else ""))
 
-        print(f"  매칭된 페어: {len(matched)}")
+        n_ambiguous = sum(1 for m in matched if m[4])
+        print(f"  매칭된 페어: {len(matched)}"
+              + (f" (동률 후보 있던 매칭 {n_ambiguous}개 - manifest의 ambiguous 컬럼 참고)"
+                 if n_ambiguous else ""))
 
     with open(FUJI_MANIFEST_PATH, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["camera", "datetime", "film_mode", "raw_path", "jpeg_path"])
+        writer = csv.DictWriter(f, fieldnames=["camera", "datetime", "film_mode", "raw_path",
+                                                "jpeg_path", "ambiguous"])
         writer.writeheader()
         writer.writerows(manifest)
     print(f"\n총 {len(manifest)}쌍 -> {FUJI_MANIFEST_PATH}")
