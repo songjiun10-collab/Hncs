@@ -113,6 +113,9 @@ def main():
     ap.add_argument("--toe-lift", type=float, required=True)
     ap.add_argument("--shoulder-start", type=float, required=True)
     ap.add_argument("--white-point", type=float, required=True)
+    ap.add_argument("--n-folds", type=int, default=None,
+                     help="기본은 LOO(표본 수만큼). 5 등을 주면 k-fold로 낮춰서 재검증 - "
+                          "LOO가 표본 늘수록 낙관적으로 보일 수 있다는 이 프로젝트 통계 관례상 체크")
     args = ap.parse_args()
 
     rows = list(csv.DictReader(open(args.manifest)))
@@ -170,22 +173,32 @@ def main():
     total_target = sum(p["sum_target"] for p in pairs)
     total_weight = sum(p["sum_weight"] for p in pairs)
 
-    print(f"\n=== LOO 검증({n}폴드) ===", flush=True)
-    lut_des = []
-    for i in range(n):
-        train_target = total_target - pairs[i]["sum_target"]
-        train_weight = total_weight - pairs[i]["sum_weight"]
+    k = args.n_folds if args.n_folds else n
+    k = min(k, n)
+    rng = np.random.RandomState(0)
+    order = rng.permutation(n)
+    fold_groups = np.array_split(order, k)
+
+    print(f"\n=== {k}-fold 검증(LOO={'예' if k==n else '아니오'}) ===", flush=True)
+    lut_des = np.zeros(n)
+    for fi, held_out_idx in enumerate(fold_groups):
+        held_out = set(held_out_idx.tolist())
+        train_target = total_target.copy()
+        train_weight = total_weight.copy()
+        for idx in held_out_idx:
+            train_target -= pairs[idx]["sum_target"]
+            train_weight -= pairs[idx]["sum_weight"]
         lut = _build_lut(train_target, train_weight)
 
-        p = pairs[i]
-        lut_l = cv2.LUT(p["l"], lut)
-        out = cv2.cvtColor(cv2.merge((lut_l, p["a"], p["b"])), cv2.COLOR_LAB2BGR)
-        de = mean_delta_e(bgr_u8_to_linear(out), p["target_lin"])
-        lut_des.append(de)
-        print(f"  [{i+1}/{n}] {p['name']} 파라메트릭={p['param_de']:.3f} LUT={de:.3f}", flush=True)
+        for idx in held_out_idx:
+            p = pairs[idx]
+            lut_l = cv2.LUT(p["l"], lut)
+            out = cv2.cvtColor(cv2.merge((lut_l, p["a"], p["b"])), cv2.COLOR_LAB2BGR)
+            de = mean_delta_e(bgr_u8_to_linear(out), p["target_lin"])
+            lut_des[idx] = de
+            print(f"  [폴드 {fi+1}/{k}] {p['name']} 파라메트릭={p['param_de']:.3f} LUT={de:.3f}", flush=True)
 
     param_des = np.array([p["param_de"] for p in pairs])
-    lut_des = np.array(lut_des)
     diff = param_des - lut_des
     wins = int((diff > 0).sum())
     losses = int((diff < 0).sum())

@@ -1689,3 +1689,35 @@ M10, which had the largest per-body deviation, saw its own LUT beat the
 combined one by +3.63% (in-sample, not LOO); SL2, with the smallest
 deviation, only +0.56% - essentially negligible. Not enough gain to
 justify splitting into 5 separate shipped functions; kept the combined LUT.
+
+### Learned LUT 5-fold re-check - Leica per-lens + Sigma (2026-08)
+
+Per this project's statistical convention that LOO can look more optimistic
+as sample size grows (`hybrid_engine/CLAUDE.md`), re-verified some of the
+learned-LUT results with 5-fold CV instead (new `--n-folds 5` option on
+`tools/evaluate_learned_lut.py`).
+
+**Leica by lens** (VARIO-ELMARIT etc. shared across SL3-P/SL2/SL2-S; sample
+counts re-derived fresh from the manifest and confirmed to match exactly:
+113/44/28/25):
+
+| Lens | n | Improvement | Verdict |
+|---|---|---|---|
+| VARIO-ELMARIT-SL | 113 | +19.03% | Wins, CI[+1.295,+2.040] |
+| APO-SUMMICRON 43 (Q3) | 44 | +8.12% | Wins, CI[+0.425,+1.203] |
+| ELMARIT-TL 18 (CL) | 28 | +9.62% | Wins, CI[+0.540,+1.572] |
+| Summilux-M 35 (M10) | 25 | +4.62% | Inconclusive (wins/losses 20/5 lopsided but CI[-0.051,+0.705] includes 0) |
+
+3 of 4 lens groups clearly win under 5-fold too - matches the direction of
+the combined 5-body LOO result (+12.56%), confirming robustness. Only the
+smallest sample (Summilux-M 35) has a favorable win ratio but too small an
+average gain to clear the CI bar.
+
+**Sigma - essentially identical to LOO**:
+
+| | LOO | 5-fold |
+|---|---|---|
+| Sigma BF | +38.52% | +38.70% |
+| Sigma fp L | +17.01% | +17.07% |
+
+The two nearly match - confirms the LOO results weren't overfit.
