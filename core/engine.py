@@ -26,10 +26,11 @@ import cv2
 import numpy as np
 
 from core.curve import film_curve
+from core.lut import ensure_uint8
 
 
 def apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, clahe_clip):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    lab = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
     clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
@@ -67,7 +68,7 @@ def make_hasselblad_body_look(toe_lift, shoulder_start, white_point, clahe_clip,
     brands/hasselblad.py 자체는 이 팩토리와 무관하게 그대로 둔다."""
     def apply(img_bgr, toe_lift=toe_lift, shoulder_start=shoulder_start,
               white_point=white_point, clahe_clip=clahe_clip, exposure_gamma=exposure_gamma):
-        lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+        lab = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2LAB)
         l, a, b = cv2.split(lab)
 
         if exposure_gamma != 1.0:
@@ -94,7 +95,7 @@ def apply_population_fit_look_video_frame(img_bgr, toe_lift, shoulder_start, whi
     함수가 쓰는 film_curve() 기반 톤 LUT는 브랜드 고정 파라미터로만
     계산되고 프레임 내용과 무관해 시간적으로 안정적이다. 사진 모드
     apply_population_fit_look()과 동일한 출력이 아니다(로컬 대비가 약함)."""
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    lab = cv2.cvtColor(ensure_uint8(img_bgr), cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
 
     x = np.arange(256, dtype=np.float32) / 255.0

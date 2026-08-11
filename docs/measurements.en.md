@@ -1752,3 +1752,86 @@ component's relative weight in ΔE00. So specific numbers like "+38%" are
 tied to the kL=1 choice used throughout this session - the paper's concern
 was legitimate. Doesn't change any verdict, but numbers should be quoted
 with the "kL=kC=kH=1" caveat attached.
+
+### Full codebase review - found and fixed a non-monotonic shadow artifact in the Sony a7R VI/a7V learned LUTs (2026-08)
+
+A full codebase review (6 areas - brands/core/hybrid_engine/gui/tools/tests
+- checked in parallel) found that `apply_sony_a7rvi_learned`'s and
+`apply_sony_a7v_learned`'s `_LEARNED_LUT` jumps to mid-gray (93/99) at the
+shadow start (index 0-2), then drops sharply at index 3 (20/24) - a
+non-monotonic cliff where L=0 renders brighter than L=3. Root cause:
+`tools/fit_final_lut.py` only takes a per-bin weighted mean with no
+monotonicity guarantee, so a handful of mismatched pixels (registration/
+noise) in a given bin get reflected as-is.
+
+Fix: added weighted PAVA (pool adjacent violators, isotonic regression) to
+both `tools/fit_final_lut.py` and `tools/evaluate_learned_lut.py` - pins
+more strongly where sample weight is higher, while forcing
+non-decreasing output. Re-validated both bodies (same raw+jpeg pairs, LOO):
+
+| | Before (non-monotonic) | After PAVA fix |
+|---|---|---|
+| Sony a7R VI | +9.12%, 26W14L, p=0.0807, CI[+0.689,+2.341] (n=40) | +7.24%, 25W15L, p=0.1539, CI[+0.363,+2.049] (n=40) |
+| Sony a7V | +11.10%, 45W16L, p=0.0003, CI[+1.188,+2.312] (n=61) | +7.93%, 42W19L, p=0.0044, CI[+0.672,+1.821] (n=61) |
+
+The improvement shrank slightly (interpreted as removing some of the
+noise-overfitting that happened to line up at the cliff), but both CIs
+still clear zero, so the "learned LUT wins" verdict itself is unchanged.
+Per `brands/CLAUDE.md`, the existing `apply_sony_a7rvi_learned`/
+`apply_sony_a7v_learned` are left untouched and new
+`apply_sony_a7rvi_learned_v2`/`apply_sony_a7v_learned_v2` functions were
+added instead (a changed LUT array is more than a dated-comment
+correction) - not yet wired into the
+`hybrid_engine/core/preset_inverse.py`/`tools/video_engine.py` registries
+(adopting them is a separate decision).
+
+Other items from the same review: `hybrid_engine/calibrate_profile.py`
+was silently overwriting `hasselblad.json` with no cross-validation when
+run without `--mode` (a `hybrid_engine/CLAUDE.md` "Never touch"
+violation) - removed the write path, left a pointer to the gated
+`recalibrate.py --write` instead. `tools/iso_noise.py` had the same
+fixed-temp-file-path race condition as `tools/analyze.py` - fixed the
+same way. `core/engine.py` was missing the `ensure_uint8()` guard (a path
+15+ population-fit brands go through) - added. Added golden-hash tests
+for the `apply_hncs` family (5 functions) and all 13 Fuji presets
+(previously only shape/dtype were checked, so a regression could pass the
+full suite silently). Measured whether `apply_reala_ace` repeats the same
+saturation bug documented in 5 sibling presets (n=2, X-T30 III) - no
+meaningful difference in ΔE00 or saturation delta, so left unchanged
+(sample is also under the 8-pair threshold for a real verdict anyway).
+
+### Pair-matching bug had corrupted half the Fuji dataset - found and fixed (2026-08)
+
+After fixing `tools/build_local_manifest.py`'s pair matcher (separate
+commit - it processed raws in chronological order and grabbed the "first
+candidate encountered" in the jpeg pool, never comparing delta size),
+checked how much this actually affected the brand-specific
+`*_new_pairs.csv` files built by `tools/build_flat_manifest.py`, which
+reuses that same function - re-ran the fixed matcher over the entire
+`~/local-work` pool.
+
+**Fuji was badly affected**: **130 of 234 pairs (55.6%) in
+`datasets/fuji/fuji_new_pairs.csv` got a different jpeg assignment**
+under the fixed matcher. Checked against the camera's own file numbering
+(the only available ground truth without labels - same shutter press
+means same number) - **the new matching agrees with camera numbering on
+128/130 (98.5%), the old matching agrees on 0/130 (0%)**. During GFX50S
+II burst shooting (several frames within one second), raws and jpegs
+were systematically scrambled, and not a single one of the old matches
+happened to be right by luck. Other brands were affected far less (Canon
+11 of 143, Sigma 3 of 83, Sony 3-4 of 300, Leica/Nikon/Hasselblad 2 each)
+- likely because burst shooting was rarer in those sets.
+
+**Regenerated and committed all brand CSVs with the fixed matcher** (pair
+assignment only - `model`/`film_mode` columns were also re-derived from
+the correctly-matched jpeg's actual EXIF). Fuji grew to 246 pairs (12
+raws that the old matcher couldn't find any candidate for now match
+correctly).
+
+**Implication**: this session's Fuji results (Classic Chrome, Nostalgic
+Neg v2, the Provia GFX50S II merge, `fuji_provia_learned.py`, etc.) were
+computed against this corrupted dataset - more than half the sample was
+compared to the wrong target, so **re-verification is needed**. Canon has
+no shipped `apply_*` yet (still research-stage) so it's not urgent. The
+other brands are only off by 2-4 pairs, likely not enough to flip any
+already-published win/loss verdict, but will be re-checked separately.

@@ -342,6 +342,14 @@ def apply_nostalgic_neg(img_bgr):
 # ==========================================
 # 7. Reala Ace (정확한 색 재현, 정직한 룩) - 미검증
 # ==========================================
+# 2026-08 코드리뷰: 이 파일의 다른 5개 프리셋(Astia/Pro Neg Std/Hi,
+# Bleach Bypass, Nostalgic Neg)이 겪었던 "apply_lut()로 BGR 채널별 커브를
+# 걸면 채도가 실측보다 크게 뜨는" 버그를 이 함수도 반복하는지 확인차
+# raw+jpeg 실측(X-T30 III Reala ACE, n=2)했음 - 현재 구현(HSV desaturation
+# + BGR apply_lut)과 Lab L채널 전용으로 바꾼 후보를 비교한 결과 ΔE00(raw
+# 대비 18.014→18.013, 19.127→19.126)과 채도 델타 모두 유의미한 차이 없음.
+# n=2라 판정 자체가 안 되는 표본(이 프로젝트 기준 8개 미만은 보류)이기도
+# 해서 수정하지 않음 - 여전히 미검증 상태로 둔다.
 def apply_reala_ace(img_bgr):
     img_bgr = ensure_uint8(img_bgr)
 
@@ -473,7 +481,53 @@ def apply_classic_chrome(img_bgr, toe_lift=0.0, shoulder_start=0.70, white_point
     타이 - 0.82(9/39)까지 셋으로 갈려서 다른 프리셋들처럼 만장일치가
     아님(toe_lift=0/white_point=1.0은 39/39 만장일치). 중간값인 0.70을
     기본값으로 채택 - 표본이 더 모이면 셋 중 어디로 수렴하는지
-    재확인 필요."""
+    재확인 필요.
+
+    **정정(2026-08, 코드리뷰로 발견)**: 이 폴드 3분할 자체가 데이터
+    오염 때문이었다 - `tools/build_local_manifest.py`의 페어 매칭
+    버그(비단조/비결정적 매칭, 별도 커밋으로 수정)로
+    `datasets/fuji/fuji_new_pairs.csv`의 GFX50S II Classic Chrome
+    43쌍 중 상당수가 버스트 촬영 구간에서 엉뚱한 jpeg와 짝지어져
+    있었음(카메라 자체 넘버링 대조로 확인). 데이터셋을 고쳐서
+    재검증한 결과는 `apply_classic_chrome_v2()`(아래) - 이 함수는
+    그대로 두고 나란히 둔다."""
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+# ==========================================
+# 12b. Classic Chrome v2 - 페어 매칭 버그 수정 후 재도출(2026-08, GFX50S II n=42)
+# ==========================================
+def apply_classic_chrome_v2(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
+    """`apply_classic_chrome()`(위)의 정정판. `tools/build_local_manifest.py`
+    페어 매칭 버그 수정 후 `datasets/fuji/fuji_new_pairs.csv`를
+    재생성(GFX50S II Classic Chrome 46쌍, 디코드 성공 42쌍)하고 같은
+    방식(`tools/evaluate_new_body_de00_grid.py --baseline-identity`)으로
+    처음부터 재그리드서치했다.
+
+    개선폭 +22.54%(구버전 +5.60%보다 훨씬 큼), 37승5패, 부호검정
+    p<0.0001, 부트스트랩 95% CI [+2.018, +2.955]. 폴드 선택이
+    toe_lift=0.0/shoulder_start=0.82/white_point=1.0으로 **42/42
+    만장일치** - 구버전의 3파전(0.66/0.70/0.82) 자체가 오염된 데이터의
+    아티팩트였다는 뜻. `apply_provia`(GFX100RF)와 우연히 완전히 같은
+    파라미터로 수렴했다 - 세션 초반 "라이카/후지 파라미터 동일" 건이
+    그리드 해상도 우연이었던 전례가 있어서(docs/measurements.md) 이것도
+    같은 카메라의 진짜 공통 커브인지 그리드 우연인지는 아직 별도로
+    검증 안 됨, 과대해석 자제. 재현: `python3 -m
+    tools.evaluate_new_body_de00_grid --label "Fuji GFX50S II Classic
+    Chrome" --manifest <film_mode=="Classic Chrome" 행> --raw-dir
+    "/Users/songjiun/local-work" --baseline-identity`."""
     img = ensure_uint8(img_bgr)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
@@ -508,7 +562,48 @@ def apply_nostalgic_neg_v2(img_bgr, toe_lift=0.036, shoulder_start=0.82, white_p
     "Fuji GFX50S II Nostalgic Neg" --manifest
     /tmp/fuji_nostalgic_neg.csv --raw-dir "/Users/songjiun/local-work"
     --baseline-identity`(매니페스트는 `datasets/fuji/fuji_new_pairs.csv`의
-    film_mode=="Nostalgic Neg" 행)."""
+    film_mode=="Nostalgic Neg" 행).
+
+    **정정(2026-08, 코드리뷰로 발견)**: 이 27쌍도 Classic Chrome과 같은
+    `tools/build_local_manifest.py` 페어 매칭 버그(별도 커밋으로 수정)에
+    오염돼 있었다. 데이터셋을 고쳐서 재검증한 결과는
+    `apply_nostalgic_neg_v3()`(아래) - 이 함수는 그대로 두고 나란히
+    둔다."""
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+# ==========================================
+# 13b. Nostalgic Neg v3 - 페어 매칭 버그 수정 후 재도출(2026-08, GFX50S II n=28)
+# ==========================================
+def apply_nostalgic_neg_v3(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
+    """`apply_nostalgic_neg_v2()`(위)의 정정판. `tools/build_local_manifest.py`
+    페어 매칭 버그 수정 후 `datasets/fuji/fuji_new_pairs.csv`를
+    재생성(GFX50S II Nostalgic Neg 28쌍, 전부 디코드 성공)하고 같은
+    방식(`tools/evaluate_new_body_de00_grid.py --baseline-identity`)으로
+    처음부터 재그리드서치했다.
+
+    개선폭 +18.14%(v2의 +6.13%보다 훨씬 큼), **28승0패 만장일치**,
+    부호검정 p<0.0001, 부트스트랩 95% CI [+1.748, +2.643]. 폴드 선택도
+    toe_lift=0.0/shoulder_start=0.82/white_point=1.0으로 28/28 만장일치 -
+    v2가 찾은 `toe_lift=0.036/white_point=0.85`는 오염된 데이터의
+    아티팩트였다는 뜻. `apply_classic_chrome_v2()`/`apply_provia`
+    (GFX100RF)와 우연히 완전히 같은 파라미터로 수렴했다 - 과대해석
+    자제 사유는 `apply_classic_chrome_v2()` docstring 참고. 재현:
+    `python3 -m tools.evaluate_new_body_de00_grid --label "Fuji GFX50S
+    II Nostalgic Neg" --manifest <film_mode=="Nostalgic Neg" 행>
+    --raw-dir "/Users/songjiun/local-work" --baseline-identity`."""
     img = ensure_uint8(img_bgr)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)

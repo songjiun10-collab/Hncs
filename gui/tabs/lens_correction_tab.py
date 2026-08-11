@@ -138,8 +138,12 @@ class LensCorrectionTab(ttk.Frame):
             self._log.insert("end", f"결과 파일을 못 읽음: {output_path}\n")
             return
         ext = os.path.splitext(self._input_path)[1].lower()
-        before = quick_raw_preview(self._input_path) if ext in RAW_EXTS else cv2.imread(
-            self._input_path)
+        try:
+            before = quick_raw_preview(self._input_path) if ext in RAW_EXTS else cv2.imread(
+                self._input_path)
+        except Exception as exc:
+            self._log.insert("end", f"원본 프리뷰 디코드 실패: {exc}\n")
+            return
         if before is None:
             self._log.insert("end", f"원본 이미지를 못 읽음: {self._input_path}\n")
             return

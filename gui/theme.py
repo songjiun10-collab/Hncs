@@ -1,7 +1,6 @@
 """전체 앱 다크(블랙) 테마. ttk 위젯은 apply_dark_theme()가 ttk.Style로
 한 곳에서 처리한다 - classic tk 위젯(Text 등)은 ttk.Style이 안 먹어서
 탭들이 이 모듈의 색상 상수를 직접 가져다 쓴다."""
-import tkinter as tk
 from tkinter import ttk
 
 BG = "#1a1a1a"

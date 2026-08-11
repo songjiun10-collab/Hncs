@@ -20,6 +20,13 @@ apply_sony_a7v_learned - Experimental. `apply_sony_a7v_look`(brands/sony_a7v.py)
 다 나란히 둔다. 재현: `python3 -m tools.evaluate_learned_lut --label
 "Sony a7V" --manifest datasets/sony/sony_new_pairs.csv --raw-dir "/Users/songjiun/local-work" --model "ILCE-7M5" --clahe-clip 1.25
 --toe-lift 0.06 --shoulder-start 0.82 --white-point 1.0`.
+
+**정정(2026-08 코드리뷰)**: 이 LUT의 그림자 초입(index 0-2)이 mid-gray(99)로
+튀었다가 index 3에서 24로 급락하는 비단조 절벽이 있음 - L=0이 L=3보다
+밝게 렌더링되는 반전(암부/밤하늘에서 보일 수 있음). `tools/fit_final_lut.py`가
+순수 bin별 가중평균만 쓰고 단조성 보장이 없어서 표본 노이즈가 그대로
+반영된 것. 아래 `apply_sony_a7v_learned_v2()`가 PAVA(가중 isotonic
+regression)로 이 문제를 고친 버전 - 이 함수는 그대로 두고 나란히 둔다.
 """
 import cv2
 import numpy as np
@@ -52,5 +59,50 @@ def apply_sony_a7v_learned(img_bgr, clahe_clip=1.25):
     l = clahe.apply(l)
 
     l = cv2.LUT(l, _LEARNED_LUT)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+# ==========================================
+# v2 - PAVA(isotonic regression)로 그림자 비단조 절벽 수정(2026-08)
+# ==========================================
+# 위 apply_sony_a7v_learned()의 정정판. tools/fit_final_lut.py에 가중
+# PAVA(pool adjacent violators)를 추가해서(표본이 많은 bin일수록 더 세게
+# 고정) 물리적으로 있을 수 없는 톤 반전을 제거하고 61쌍 전체로 재학습했다.
+# 재검증(tools/evaluate_learned_lut.py, 동일 61쌍 LOO): 개선폭 +7.93%
+# (구 버전 +11.10%에서 하락 - 절벽 부분이 우연히 맞아떨어졌던 노이즈
+# 과적합 일부가 사라진 것으로 해석), 42승19패, 부호검정 p=0.0044,
+# 부트스트랩 95% CI [+0.672, +1.821] - CI가 0을 넘지 않아 학습 LUT 우세
+# 판정은 그대로 유지. 재현: `python3 -m tools.fit_final_lut --label
+# "Sony a7V" --manifest datasets/sony/sony_new_pairs.csv --raw-dir
+# "/Users/songjiun/local-work" --model "ILCE-7M5" --clahe-clip 1.25`.
+_LEARNED_LUT_V2 = np.array([
+    52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52, 52,
+    52, 52, 52, 53, 54, 54, 56, 57, 60, 60, 60, 61, 61, 63, 64, 65,
+    65, 67, 67, 69, 71, 72, 73, 73, 73, 73, 73, 74, 75, 75, 77, 78,
+    79, 80, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 89, 90, 90, 92,
+    93, 94, 95, 97, 97, 98, 99, 99, 100, 102, 102, 104, 104, 105, 105, 107,
+    108, 109, 110, 111, 112, 112, 113, 114, 115, 117, 117, 118, 119, 120, 121, 121,
+    122, 123, 124, 124, 126, 127, 127, 128, 128, 128, 129, 130, 131, 132, 132, 134,
+    135, 136, 136, 136, 137, 138, 138, 138, 139, 139, 141, 141, 142, 143, 144, 145,
+    145, 146, 148, 148, 150, 150, 150, 150, 151, 151, 152, 153, 153, 153, 155, 156,
+    156, 156, 156, 156, 156, 156, 156, 156, 156, 156, 156, 159, 160, 160, 160, 160,
+    161, 161, 162, 162, 164, 164, 168, 168, 168, 171, 171, 171, 174, 174, 174, 174,
+    174, 174, 174, 174, 174, 174, 174, 175, 177, 177, 177, 179, 179, 179, 179, 179,
+    179, 179, 179, 179, 179, 179, 179, 179, 180, 180, 180, 180, 180, 180, 183, 183,
+    183, 183, 183, 183, 183, 183, 188, 189, 189, 189, 189, 189, 190, 190, 196, 196,
+    198, 198, 198, 198, 198, 198, 198, 198, 198, 198, 198, 198, 198, 198, 198, 198,
+    198, 198, 198, 198, 198, 198, 198, 200, 201, 201, 201, 201, 201, 202, 204, 231,
+], dtype=np.uint8)
+
+
+def apply_sony_a7v_learned_v2(img_bgr, clahe_clip=1.25):
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    l = cv2.LUT(l, _LEARNED_LUT_V2)
 
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)

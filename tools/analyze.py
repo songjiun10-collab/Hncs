@@ -275,7 +275,8 @@ def run_imaging_resource_brand(brand):
                 break
             try:
                 resolved = resolve_full_image(detail_path)
-            except Exception:
+            except Exception as e:
+                print(f"  {detail_path} 원본 URL 해석 실패: {e}")
                 continue
             if not resolved:
                 continue

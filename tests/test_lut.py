@@ -7,7 +7,8 @@ from core.lut import apply_lut, ensure_uint8
 
 class TestEnsureUint8(unittest.TestCase):
     def test_uint8_input_passed_through_unchanged(self):
-        img = np.random.randint(0, 256, (4, 4, 3), dtype=np.uint8)
+        rng = np.random.default_rng(0)
+        img = rng.integers(0, 256, (4, 4, 3), dtype=np.uint8)
         out = ensure_uint8(img)
         self.assertIs(out, img)
 
@@ -25,7 +26,8 @@ class TestEnsureUint8(unittest.TestCase):
 
 class TestApplyLut(unittest.TestCase):
     def test_identity_lut_returns_same_values(self):
-        img = np.random.randint(0, 256, (8, 8, 3), dtype=np.uint8)
+        rng = np.random.default_rng(1)
+        img = rng.integers(0, 256, (8, 8, 3), dtype=np.uint8)
         identity = np.arange(256, dtype=np.uint8)
         out = apply_lut(img, identity)
         np.testing.assert_array_equal(out, img)

@@ -1599,3 +1599,77 @@ R²=0.61 수준이라는 내용 - 을 공유해서, 이 세션 전체가 써온 
 고정해 쓴 선택에 종속적이다 - 논문이 제기한 우려가 실제로 유효했음.
 결론(승/패)에는 영향 없지만 수치를 인용할 때는 "kL=kC=kH=1 기준"이라는
 전제를 명시해야 한다.
+
+### 코드 전체 리뷰 - Sony a7R VI/a7V 학습 LUT 그림자 비단조 아티팩트 발견·수정 (2026-08)
+
+전체 코드베이스 리뷰(brands/core/hybrid_engine/gui/tools/tests 6개 영역
+병렬 검토) 중 `apply_sony_a7rvi_learned`/`apply_sony_a7v_learned`의
+`_LEARNED_LUT` 그림자 초입(index 0-2)이 mid-gray(93/99)로 튀었다가
+index 3에서 급락(20/24)하는 비단조 절벽을 발견 - L=0이 L=3보다 밝게
+렌더링되는 반전. 원인: `tools/fit_final_lut.py`가 bin별 가중평균만
+쓰고 단조성 보장이 없어서, 등록/노이즈로 특정 bin에 섞인 소수 픽셀이
+그대로 반영됨.
+
+수정: `tools/fit_final_lut.py`와 `tools/evaluate_learned_lut.py`에 가중
+PAVA(pool adjacent violators, isotonic regression)를 추가 - 표본이 많은
+bin일수록 더 세게 고정하면서 non-decreasing을 강제. 두 바디 모두
+재검증(동일 raw+jpeg 페어, LOO):
+
+| | 기존(비단조) | PAVA 수정 후 |
+|---|---|---|
+| Sony a7R VI | +9.12%, 26승14패, p=0.0807, CI[+0.689,+2.341] (n=40) | +7.24%, 25승15패, p=0.1539, CI[+0.363,+2.049] (n=40) |
+| Sony a7V | +11.10%, 45승16패, p=0.0003, CI[+1.188,+2.312] (n=61) | +7.93%, 42승19패, p=0.0044, CI[+0.672,+1.821] (n=61) |
+
+개선폭이 소폭 줄었지만(절벽 부분이 우연히 맞아떨어졌던 노이즈 과적합
+일부가 사라진 것으로 해석) 둘 다 CI가 0을 넘지 않아 "학습 LUT 우세"
+판정 자체는 그대로 유지. `brands/CLAUDE.md` 원칙대로 기존
+`apply_sony_a7rvi_learned`/`apply_sony_a7v_learned`는 그대로 두고
+`apply_sony_a7rvi_learned_v2`/`apply_sony_a7v_learned_v2`를 신설(값이
+바뀐 LUT이라 dated correction 주석만으로는 부족하다고 판단) - 아직
+`hybrid_engine/core/preset_inverse.py`/`tools/video_engine.py`
+레지스트리에 연결하지 않음(적용은 별도 결정).
+
+같은 리뷰에서 나온 다른 항목들: `hybrid_engine/calibrate_profile.py`가
+`--mode` 없이 실행되면 교차검증 없이 `hasselblad.json`을 덮어쓰던
+문제(hybrid_engine/CLAUDE.md의 "Never touch" 위반) - 게이트가 있는
+`recalibrate.py --write`로 유도하는 안내만 남기고 write 로직 제거.
+`tools/iso_noise.py`가 `tools/analyze.py`와 같은 고정 임시파일 경로
+레이스 컨디션을 갖고 있어서 동일하게 수정. `core/engine.py`에
+`ensure_uint8()` 가드 누락(15개+ population-fit 브랜드가 거치는 경로)
+추가. `apply_hncs` 계열 5개 + Fuji 프리셋 13개에 골든해시 테스트 추가
+(이전엔 shape/dtype만 확인해서 회귀가 나도 풀스위트가 통과했음).
+`apply_reala_ace`가 다른 5개 프리셋과 같은 채도 버그를 반복하는지
+실측(n=2, X-T30 III)했으나 ΔE00/채도 델타 모두 유의미한 차이 없어서
+수정 안 함(표본도 8개 미만이라 판정 보류 기준 미달).
+
+### 페어 매칭 버그로 Fuji 데이터셋 절반이 오염돼 있었음을 발견·수정 (2026-08)
+
+`tools/build_local_manifest.py`의 페어 매칭(raw를 시각순으로 처리하며
+jpeg 풀에서 "그 순간 처음 만난" 후보를 집는 방식, 델타 크기를 비교하지
+않음)을 1:1 deterministic으로 고친 뒤(별도 커밋), 이 함수를 그대로
+가져다 쓰는 `tools/build_flat_manifest.py`로 만들어진 브랜드별
+`*_new_pairs.csv`가 실제로 얼마나 영향받았는지 `~/local-work` 전체를
+새 매칭기로 재실행해서 확인했다.
+
+**Fuji가 압도적으로 심각했다**: `datasets/fuji/fuji_new_pairs.csv`
+234쌍 중 **130쌍(55.6%)의 jpeg 배정이 옛 알고리즘과 다르게 나왔다**.
+카메라 자체 파일 넘버링(라벨 없이 같은 셔터인지 확인 가능한 유일한
+근거)과 대조하면 **새 매칭은 130개 중 128개(98.5%)가 일치, 기존
+매칭은 130개 중 0개(0%)가 일치** - GFX50S II 버스트 촬영(1초 안에
+여러 장) 구간에서 raw와 jpeg가 체계적으로 뒤섞여 있었고, 옛 매칭은
+단 하나도 우연히 맞은 게 없었다. 다른 브랜드는 영향이 훨씬 작음
+(Canon 143쌍 중 11개, Sigma 83쌍 중 3개, Sony 300쌍 중 3-4개, Leica/
+Nikon/Hasselblad 각 2개) - 버스트 촬영 빈도가 낮았기 때문으로 보인다.
+
+**전 브랜드 CSV를 새 매칭기로 재생성해서 커밋** (raw/jpeg 페어만 -
+`model`/`film_mode` 컬럼도 올바르게 재매칭된 jpeg의 실제 EXIF에서
+다시 뽑음). Fuji는 246쌍으로 늘었다(12쌍은 옛 매칭에서 아예 후보를
+못 찾았던 raw가 새 매칭에서 정상적으로 짝을 찾음).
+
+**의미**: Fuji 관련 이번 세션 결과(Classic Chrome, Nostalgic Neg v2,
+Provia GFX50S II 통합, `fuji_provia_learned.py` 등)는 이 오염된
+데이터셋으로 계산됐다 - 표본의 절반 이상이 잘못된 타깃과 비교됐다는
+뜻이라 **재검증이 필요**. Canon은 아직 shipped `apply_*`가 없어서
+(연구 단계) 급하지 않음. 나머지 브랜드는 2-4개 수준이라 이미 발표된
+승/패 판정을 뒤집을 정도는 아닐 가능성이 높지만 별도로 재확인
+예정.

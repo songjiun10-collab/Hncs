@@ -38,7 +38,41 @@ def _build_lut(sum_target, sum_weight):
     domain = np.arange(N_BINS)
     if not filled.all():
         lut = np.interp(domain, domain[filled], lut[filled])
+    # 보간에 쓴 bin은 실측이 아니라 표본 부족 폴백이라 낮은 가중치(1)로
+    # PAVA에 들어가게 함 - 실측 bin(weight=sum_weight)이 우선한다.
+    pava_weight = np.where(filled, sum_weight, 1.0)
+    lut = _isotonic_regression(lut, pava_weight)
     return np.clip(lut, 0, 255).astype(np.uint8)
+
+
+def _isotonic_regression(y, w):
+    """PAVA(pool adjacent violators) - 가중 최소자승 기준으로 y에 가장
+    가까우면서 non-decreasing인 배열을 만든다.
+
+    정정(2026-08 코드리뷰): 순수 bin별 가중평균만 쓰면 등록/노이즈로 인접
+    구간에 몇 개만 어긋난 픽셀이 섞여도 그대로 반영돼서 비단조 구간이
+    생길 수 있다(Sony a7R VI/a7V LUT에서 확인: 그림자 시작(index 0-2)이
+    mid-gray로 튀었다가 index 3에서 급락하는 ~70유닛 절벽 - L=0이 L=3보다
+    밝게 렌더링되는 반전). 실제 톤 커브는 물리적으로 단조증가라 이 반전은
+    항상 아티팩트다. w(=bin별 누적 픽셀수, sum_weight)로 가중해서 표본이
+    많은 bin일수록 더 세게 고정되도록 한다."""
+    y = [float(v) for v in y]
+    w = [float(v) for v in w]
+    n = len(y)
+    stack = []  # (value, weight, start, end)
+    for i in range(n):
+        v, wt, s, e = y[i], w[i], i, i
+        while stack and stack[-1][0] > v:
+            v2, w2, s2, e2 = stack.pop()
+            new_w = w2 + wt
+            v = (v2 * w2 + v * wt) / new_w
+            wt = new_w
+            s = s2
+        stack.append((v, wt, s, e))
+    out = np.empty(n)
+    for v, wt, s, e in stack:
+        out[s:e + 1] = v
+    return out
 
 
 def _resolve(raw_dirs, filename):

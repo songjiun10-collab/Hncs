@@ -84,5 +84,94 @@ class TestHasselbladBodyVariantGoldenHashes(unittest.TestCase):
                                   f"expected sha256={expected_hash}, got {actual_hash}")
 
 
+# (모듈 경로, 함수명, sha256(출력.tobytes())) - CLAUDE.md의 "Never" 목록에
+# 있는 apply_hncs()와 그 파생 5개는 다른 population-fit 브랜드들과 달리
+# 값을 고정하는 골든 테스트가 없었다(2026-08 코드리뷰에서 발견) - shape/
+# dtype만 확인하는 test_brands.py로는 회귀가 나도 풀스위트가 통과했다.
+# 여기 해시는 현재 shipped 코드를 그대로 돌려 뽑은 값이다(값 자체가
+# 옳은지는 각 브랜드 docstring의 raw+jpeg 실측이 담당) - 오직 "이후
+# 변경이 픽셀 출력을 하나도 안 바꿨는지"만 확인한다.
+HASSELBLAD_CORE_GOLDEN_HASHES = [
+    ("brands.hasselblad", "apply_hncs",
+     "6751b7a521f97640edfa4db32386a9b14a85bbdb08474f9b2b27f0d74ccc74d5"),
+    ("brands.hasselblad", "apply_hncs_video_frame",
+     "4ef5e2e2eab5a198421f0d037d8d073a4d87c0212b0e40dfb7f9ef94d87be6fa"),
+    ("brands.hasselblad_learned", "apply_hncs_learned",
+     "be576e1017a3e3319c2bf68f235ae976f91ede1ccd7842ac65ba54952fd152b8"),
+    ("brands.hasselblad_day", "apply_hasselblad_day",
+     "508a5d8cf5b44586a5ba0767582d39a935bf5b90570b62137df708f31690ec32"),
+    ("brands.hasselblad_night", "apply_hasselblad_night",
+     "4cc95feb16d4128a3bfca1440c54e010ef891aa7f0efe0acada2e17e0f667a63"),
+]
+
+
+class TestHasselbladCoreGoldenHashes(unittest.TestCase):
+    def test_apply_hncs_family_output_is_pinned(self):
+        img = make_test_image()
+        for mod_name, fn_name, expected_hash in HASSELBLAD_CORE_GOLDEN_HASHES:
+            with self.subTest(brand=mod_name, fn=fn_name):
+                mod = importlib.import_module(mod_name)
+                fn = getattr(mod, fn_name)
+                out = fn(img)
+                actual_hash = hashlib.sha256(out.tobytes()).hexdigest()
+                self.assertEqual(actual_hash, expected_hash,
+                                  f"{mod_name}.{fn_name} output changed - "
+                                  f"expected sha256={expected_hash}, got {actual_hash}")
+
+
+# (모듈 경로, 함수명, sha256(출력.tobytes())) - brands/fuji.py의 프리셋
+# (apply_pro_neg_hi_video_frame 제외)도 population-fit/Hasselblad와
+# 마찬가지로 값을 고정하는 골든 테스트가 없었다(2026-08 코드리뷰에서
+# 발견) - test_brands.py는 shape/dtype만 봐서 identity-passthrough로
+# 망가져도 통과한다. apply_acros/apply_monochrome은 2D(그레이스케일)
+# 반환이라 다른 함수와 shape가 다름에 유의.
+FUJI_PRESET_GOLDEN_HASHES = [
+    ("brands.fuji", "apply_astia",
+     "9165582f2e4e3446651911dda3cacc53379a5a75b343093769e42eafb9e6d53e"),
+    ("brands.fuji", "apply_pro_neg_std",
+     "9bc1066b6555c5982a2c7e3b336b30135c826e951d8c9b3bed2c3b50718c2dd5"),
+    ("brands.fuji", "apply_pro_neg_hi",
+     "11c1a5089df24669a108bfc8597656c340d61962047b8b84da0253b2ac0b30d7"),
+    ("brands.fuji", "apply_eterna_cinema",
+     "fb1249acf2822ad3655d5f7b423ab462360ee9db886cdfdafb70b6741b05a1b8"),
+    ("brands.fuji", "apply_eterna_bleach_bypass",
+     "d6613246636fa87cd8111907c82d87c9615906c5e85fddac332ebc6efe108fe8"),
+    ("brands.fuji", "apply_nostalgic_neg",
+     "e23ece30f93c022cc0b43b0614d49a230c550477c4e8aa5f2d842ddb8cd80648"),
+    ("brands.fuji", "apply_reala_ace",
+     "c800990e2c98e333f0fbcef722fe0cc6105a92a14e8744102c2fa453a9c43d13"),
+    ("brands.fuji", "apply_acros",
+     "604d6d87f6d0484735eb7328b56f97af91b5b701f5539d9a306d1f3d5f68b62f"),
+    ("brands.fuji", "apply_monochrome",
+     "293b6e6a130fbe2ae0f00ee6e3b4cb4e07e3f4f76e3bed912f0ba144f21cd207"),
+    ("brands.fuji", "apply_classic_negative",
+     "83f7f6719d7605c987288f1a35d80a3dff897fb5eb96015f76eb90931954edb5"),
+    ("brands.fuji", "apply_provia",
+     "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
+    ("brands.fuji", "apply_classic_chrome",
+     "3d79e020eadfda21fa347297208f208a89f81e21fae73da3cdfb11f1932ed0c1"),
+    ("brands.fuji", "apply_nostalgic_neg_v2",
+     "3542071e7f745e5b8e8b09951d894f050d19d04291b7a5aa6fa62d598da2ccc3"),
+    ("brands.fuji", "apply_classic_chrome_v2",
+     "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
+    ("brands.fuji", "apply_nostalgic_neg_v3",
+     "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
+]
+
+
+class TestFujiPresetGoldenHashes(unittest.TestCase):
+    def test_all_presets_output_is_pinned(self):
+        img = make_test_image()
+        for mod_name, fn_name, expected_hash in FUJI_PRESET_GOLDEN_HASHES:
+            with self.subTest(brand=mod_name, fn=fn_name):
+                mod = importlib.import_module(mod_name)
+                fn = getattr(mod, fn_name)
+                out = fn(img)
+                actual_hash = hashlib.sha256(out.tobytes()).hexdigest()
+                self.assertEqual(actual_hash, expected_hash,
+                                  f"{mod_name}.{fn_name} output changed - "
+                                  f"expected sha256={expected_hash}, got {actual_hash}")
+
+
 if __name__ == "__main__":
     unittest.main()
