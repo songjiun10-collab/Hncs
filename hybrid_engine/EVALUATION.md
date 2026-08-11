@@ -2130,3 +2130,54 @@ w995만, A7R: b2만, A7S: w995만), 둘 다 판정 보류(A7 IV)거나, 아예
 
 `brands/sony.py`의 `apply_sony_look()`이나 다른 어떤 shipped `apply_*`도
 이 파일럿으로 건드리지 않았다.
+
+## WB 이중처리 확정 실험 - camera WB + Bradford + Gray World 삼중 스택 (2026-08)
+
+**문제 제기**: production 체인(`hybrid_engine/main.py`)을 그대로 따라가면
+1) `utils/io.decode_raw()`가 rawpy `use_camera_wb=True`로 카메라 자체
+화이트밸런스(촬영 당시 광원 추정)를 이미 적용해서 linear RGB를 뽑고,
+2) `pipeline/engine.py`의 `to_normalized_lab()`이 `use_color_unification`
+(기본 True)이면 **같은** `camera_whitebalance` 메타데이터로
+`color_matrix.estimate_source_white_xy()` -> `unify_to_d65()`(Bradford
+색순응)를 한 번 더 걸고, 3) 그 위에 `normalizer.normalize()`(Gray
+World, `correct_color_cast` 기본 True)까지 얹는다. 1)과 2)가 정확히
+같은 WB 추정치를 두 번 쓰는 구조라 이중(사실상 3)까지 치면 삼중)
+보정인지 실측으로 확인했다.
+
+**방법**: `tools/evaluate_wb_pipeline_variants.py`(신설). raw_calib_cache의
+공식 13쌍(9쌍은 tools/calibrate.py가 걸러내는 편집 오염 타깃이지만
+A/B/C/D 네 변형이 전부 같은 13쌍·같은 타깃을 써서 상대 비교엔 영향
+없음)에 대해 4개 Phase 0 변형을 만들고, 각각에 `run_raw_baseline_mode`와
+동일한 방법론(톤/채도 커브 없이 전역 3x3 매트릭스만 최소자승 피팅 -
+"이 색 기초 자체가 얼마나 좋은가"만 분리 측정)으로 leave-one-out ΔE00을
+비교:
+
+| | 구성 | 평균 LOO ΔE00 |
+|---|---|---|
+| A | rawpy camera WB만 | 9.071 |
+| B | rawpy camera WB + Bradford (현재 production 기본 조합) | 10.154 |
+| C | native/no-WB + Bradford | 10.262 |
+| D | native/no-WB + Gray World | 11.860 |
+
+**A vs B(핵심 질문)**: B 개선폭 -11.94%(즉 악화), 12패1승, 부호검정
+p=0.0034, 부트스트랩 95% CI [-1.528, -0.656] - **CI가 0을 완전히
+벗어나 통계적으로 유의미하게 A가 낫다**. rawpy가 이미 적용한
+camera WB 위에 같은 메타데이터로 Bradford를 또 거는 게 잔차를
+지우는 게 아니라 **실제로 손해**라는 뜻 - 정확한 double-processing.
+
+**A vs C**: A가 우세(CI [-2.146, -0.312], 0 미포함) - camera WB를
+건너뛰고 Bradford만 단독으로 걸어도 camera WB 하나만 쓰는 것보다
+못하다. **A vs D**: A가 가장 크게 우세(-30.75%, CI [-4.455, -1.321]) -
+Gray World 단독도 camera WB보다 나쁘다. **C vs D**: native에서
+출발할 때는 Bradford(C)가 Gray World(D)보다 낫다(CI [-2.608, -0.630]).
+
+**결론**: 4개 중 A(rawpy camera WB만, Phase 0의 추가 보정 없음)가
+전 구간에서 가장 낮은 ΔE00. 현재 production 기본(`use_color_unification`
+=True + `correct_color_cast`=True, 즉 A 위에 Bradford와 Gray World를
+둘 다 얹는 조합)은 이 실험이 측정한 4개 변형 중 어느 것보다도 낮은
+ΔE00을 낼 근거가 없다 - 오히려 Bradford 단계만으로도 이미 유의미하게
+나빠진다. **이 실험은 측정까지만 한다.** `assets/profiles/hasselblad.json`의
+`use_color_unification`/`correct_color_cast`를 끄는 건 shipped 프로필을
+바꾸는 별도의 명시적 결정이라 여기서 자동 반영하지 않는다(CLAUDE.md
+"Ship an experimental result automatically. That's a separate decision.").
+재현: `python3 -m tools.evaluate_wb_pipeline_variants`.
