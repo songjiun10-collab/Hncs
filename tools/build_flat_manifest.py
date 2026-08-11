@@ -40,11 +40,14 @@ def main():
     blm.RAW_EXT = set(args.ext) & ALL_RAW_EXT
 
     pairs = find_pairs(src_dir, already_raw=set(), already_jpeg=set())
-    print(f"{len(pairs)}개 raw/jpeg 시각 매칭")
+    n_ambiguous = sum(1 for p in pairs if p[4])
+    print(f"{len(pairs)}개 raw/jpeg 시각 매칭"
+          + (f" (동률 후보 있던 매칭 {n_ambiguous}개 - 아래 목록 참고)" if n_ambiguous else ""))
 
     rows = []
     dropped_make = dropped_edit = 0
-    for r, j, delta, oh in pairs:
+    ambiguous_kept = []
+    for r, j, delta, oh, ambiguous in pairs:
         raw_path = os.path.join(src_dir, r["filename"])
         jpeg_path = os.path.join(src_dir, j["filename"])
         if args.make.lower() not in _make_of(raw_path):
@@ -56,6 +59,8 @@ def main():
                 continue
         rows.append(dict(raw_file=r["filename"], jpeg_file=j["filename"],
                           model=r["model"].strip()))
+        if ambiguous:
+            ambiguous_kept.append((r["filename"], j["filename"]))
 
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     with open(args.out, "w", newline="", encoding="utf-8") as f:
@@ -68,6 +73,11 @@ def main():
     from collections import Counter
     for model, cnt in Counter(r["model"] for r in rows).most_common():
         print(f"  {model}: {cnt}")
+    if ambiguous_kept:
+        print(f"\n주의: 최종 {len(rows)}쌍 중 동률 후보 있던 매칭 {len(ambiguous_kept)}개 - "
+              f"전역 최적 배정이 임의로 하나를 골랐으니 수동 확인 권장(CSV 자체엔 표시 안 됨):")
+        for raw_fn, jpeg_fn in ambiguous_kept:
+            print(f"    {raw_fn} <-> {jpeg_fn}")
 
 
 def _make_of(path):
