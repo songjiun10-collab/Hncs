@@ -1,9 +1,11 @@
+import csv
 import os
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from tools.download import (_collect_files, _gdrive_extract_id,
+                             download_fuji_pairs,
                              find_fuji_drive_links, ir_img_url,
                              list_gallery_images, resolve_full_image)
 
@@ -139,6 +141,56 @@ class TestCollectFiles(unittest.TestCase):
             files = _collect_files(tmp, {".jpg", ".jpeg"})
             basenames = sorted(os.path.basename(f) for f in files)
             self.assertEqual(basenames, ["a.jpg", "b.JPG", "d.jpeg"])
+
+
+class TestDownloadFujiPairsMatching(unittest.TestCase):
+    """download_fuji_pairs()가 정정(2026-08) 전엔 EXIF DateTimeOriginal
+    문자열이 정확히 같은 raw 전부를 그 jpeg 하나에 중복 배정했다(진짜
+    1:1이 아니었음, build_local_manifest의 페어 매칭 버그와 별개로 이
+    함수 자체에 있던 버그) - build_local_manifest._match_pairs()로
+    교체한 뒤 같은 타임스탬프 버스트에서도 1:1이 유지되는지 확인."""
+
+    def test_same_timestamp_burst_produces_1to1_not_duplicated(self):
+        raw_files = ["/cache/raw/A.RAF", "/cache/raw/B.RAF"]
+        jpeg_files = ["/cache/jpeg/A.JPG", "/cache/jpeg/B.JPG"]
+
+        # 둘 다 정확히 같은 초에 찍힌 것처럼(버스트) - 파일명은 우연히
+        # 대응되지만 매칭 로직은 파일명을 안 보고 타임스탬프만 본다.
+        exif_map = {
+            "/cache/raw/A.RAF": ("2026:08:01 12:00:00", None),
+            "/cache/raw/B.RAF": ("2026:08:01 12:00:00", None),
+            "/cache/jpeg/A.JPG": ("2026:08:01 12:00:00", "Provia"),
+            "/cache/jpeg/B.JPG": ("2026:08:01 12:00:00", "Velvia"),
+        }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            links_csv = os.path.join(tmp, "links.csv")
+            manifest_path = os.path.join(tmp, "manifest.csv")
+            with open(links_csv, "w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=["camera", "gallery_url",
+                                                   "raw_drive_url", "jpeg_drive_url"])
+                w.writeheader()
+                w.writerow(dict(camera="Fujifilm X-T3", gallery_url="", raw_drive_url="",
+                                 jpeg_drive_url=""))
+
+            with patch("tools.download.FUJI_LINKS_CSV", links_csv), \
+                 patch("tools.download.FUJI_MANIFEST_PATH", manifest_path), \
+                 patch("tools.download._gdrive_fetch", return_value=None), \
+                 patch("tools.download._collect_files",
+                       side_effect=lambda d, exts: raw_files if ".raf" in exts else jpeg_files), \
+                 patch("tools.download.is_image_usable", return_value=True), \
+                 patch("tools.download._exif_datetime_and_filmmode",
+                       side_effect=lambda p: exif_map[p]):
+                download_fuji_pairs()
+
+            with open(manifest_path, encoding="utf-8") as f:
+                rows = list(csv.DictReader(f))
+
+        self.assertEqual(len(rows), 2, "버스트 2쌍이 그대로 2행이어야 함(중복 배정 금지)")
+        raw_paths = [row["raw_path"] for row in rows]
+        jpeg_paths = [row["jpeg_path"] for row in rows]
+        self.assertEqual(len(raw_paths), len(set(raw_paths)), "같은 raw가 두 번 쓰이면 안 됨")
+        self.assertEqual(len(jpeg_paths), len(set(jpeg_paths)), "같은 jpeg가 두 번 쓰이면 안 됨(옛 버그)")
 
 
 if __name__ == "__main__":
