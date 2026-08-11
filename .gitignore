@@ -43,3 +43,4 @@ datasets/leica/contributed/*/jpeg/
 datasets/leica/contributed/*/chart/
 eval_reports/
 models/upscale/
+.DS_Store
