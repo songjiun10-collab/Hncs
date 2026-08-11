@@ -91,6 +91,30 @@ def _sign_test_p(wins, losses):
     return min(1.0, 2.0 * tail)
 
 
+def _isotonic_regression(y, w):
+    """PAVA(pool adjacent violators) - tools/fit_final_lut.py와 동일한
+    로직(evaluate_*.py는 sibling import 금지 컨벤션이라 복붙). 가중
+    최소자승 기준으로 y에 가장 가까우면서 non-decreasing인 배열을 만든다 -
+    표본 노이즈로 생기는 비단조 절벽(Sony a7R VI/a7V에서 확인)을 막는다."""
+    y = [float(v) for v in y]
+    w = [float(v) for v in w]
+    n = len(y)
+    stack = []  # (value, weight, start, end)
+    for i in range(n):
+        v, wt, s, e = y[i], w[i], i, i
+        while stack and stack[-1][0] > v:
+            v2, w2, s2, e2 = stack.pop()
+            new_w = w2 + wt
+            v = (v2 * w2 + v * wt) / new_w
+            wt = new_w
+            s = s2
+        stack.append((v, wt, s, e))
+    out = np.empty(n)
+    for v, wt, s, e in stack:
+        out[s:e + 1] = v
+    return out
+
+
 def _build_lut(sum_target, sum_weight):
     lut = np.zeros(N_BINS)
     filled = sum_weight > 0
@@ -98,6 +122,8 @@ def _build_lut(sum_target, sum_weight):
     domain = np.arange(N_BINS)
     if not filled.all():
         lut = np.interp(domain, domain[filled], lut[filled])
+    pava_weight = np.where(filled, sum_weight, 1.0)
+    lut = _isotonic_regression(lut, pava_weight)
     return np.clip(lut, 0, 255).astype(np.uint8)
 
 

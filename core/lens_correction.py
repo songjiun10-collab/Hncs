@@ -11,16 +11,21 @@ FNumber로 DB에서 카메라+렌즈 프로파일을 찾아 지오메트릭 왜�
 DB에 카메라/렌즈가 없으면 조용히 원본을 돌려주지 않고 None을 반환한다 -
 잘못된(혹은 안 한) 보정을 보정했다고 속이지 않기 위함.
 """
+import threading
+
 import cv2
 import lensfunpy
 
 _DB = None
+_DB_LOCK = threading.Lock()
 
 
 def _get_db():
     global _DB
     if _DB is None:
-        _DB = lensfunpy.Database()
+        with _DB_LOCK:
+            if _DB is None:
+                _DB = lensfunpy.Database()
     return _DB
 
 

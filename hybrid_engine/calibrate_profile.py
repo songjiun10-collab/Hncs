@@ -1229,28 +1229,14 @@ def main():
 
     print(f"\n최종 평균 ΔE: {final_loss:.3f}")
     print(f"최종 파라미터: {params}")
-
-    profile_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)), "assets", "profiles", "hasselblad.json")
-    import json
-    output = {
-        "_comment": (
-            f"v1.1 - {len(dataset)}쌍의 실제 핫셀블라드 raw+jpeg 페어(raw_calib_cache/)로 "
-            f"hybrid_engine.calibrate_profile의 좌표하강 ΔE 루프를 돌려서 캘리브레이션함. "
-            f"최종 평균 ΔE(CIEDE2000)={final_loss:.2f}. brands/hasselblad.py의 apply_hncs와는 "
-            "여전히 다른 커브 수식이라 그쪽 파라미터와 직접 비교는 안 됨 - 이 profile 자체의 "
-            "실측 기반 최적값이라는 의미."
-        ),
-        **{k: v for k, v in params.items() if k not in
-           ("correct_color_cast", "use_color_unification", "use_spatial")},
-        "correct_color_cast": params["correct_color_cast"],
-        "use_color_unification": params["use_color_unification"],
-        "use_spatial": params["use_spatial"],
-    }
-    with open(profile_path, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-    print(f"\n저장: {profile_path}")
+    print(
+        "\n(이 모드는 in-sample 좌표하강 결과만 출력하고 hasselblad.json은 건드리지 "
+        "않는다 - hybrid_engine/CLAUDE.md: 'assets/profiles/*.json에 쓰는 리서치 "
+        "스크립트는 무엇을 측정했든 버그다.' 정정(2026-08 코드리뷰): 예전엔 여기서 "
+        "교차검증/게이트 없이 profile_path에 바로 json.dump해서 저장했음 - 실제로 "
+        "적용하려면 교차검증 개선폭 게이트(기본 5%)가 있는 "
+        "`python3 -m hybrid_engine.recalibrate --write`를 쓸 것.)"
+    )
 
 
 if __name__ == "__main__":

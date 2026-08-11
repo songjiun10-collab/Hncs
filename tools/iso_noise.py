@@ -37,20 +37,26 @@ HEADERS = {"User-Agent": "Mozilla/5.0"}
 
 
 def fetch_exif_head(url, n_bytes=131072):
+    # 정정(2026-08 코드리뷰): 고정 임시파일 경로(/tmp/_iso_noise_head.jpg)를
+    # 썼었는데, tools/analyze.py의 _check_genuine_bytes()에서 같은 패턴이
+    # 동시 실행 시 레이스 컨디션을 일으킨 게 확인된 바 있어(다른 프로세스가
+    # exiftool 읽기 전에 파일을 덮어씀) 동일하게 tempfile.NamedTemporaryFile로
+    # 호출마다 고유 경로를 쓰도록 수정 - 동시 실행에도 안전.
     req = urllib.request.Request(url, headers={**HEADERS, "Range": f"bytes=0-{n_bytes - 1}"})
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read()
     except Exception as e:
         return None, None, None
-    tmp_path = "/tmp/_iso_noise_head.jpg"
-    with open(tmp_path, "wb") as f:
-        f.write(data)
-    out = subprocess.run(["exiftool", "-json", "-ISO", "-Make", "-Model", tmp_path],
-                          capture_output=True, text=True, timeout=30)
+    import json
+    import tempfile
+    with tempfile.NamedTemporaryFile(suffix=".jpg", delete=True) as tmp:
+        tmp.write(data)
+        tmp.flush()
+        out = subprocess.run(["exiftool", "-json", "-ISO", "-Make", "-Model", tmp.name],
+                              capture_output=True, text=True, timeout=30)
     if out.returncode != 0 or not out.stdout.strip():
         return None, None, None
-    import json
     d = json.loads(out.stdout)[0]
     return d.get("ISO"), d.get("Make"), d.get("Model")
 

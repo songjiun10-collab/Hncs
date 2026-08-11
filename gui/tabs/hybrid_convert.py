@@ -130,10 +130,14 @@ class HybridConvertTab(ttk.Frame):
         if after is None:
             self._log.insert("end", f"결과 파일을 못 읽음: {output_path}\n")
             return
-        if is_raw_input(self._input_path):
-            before = quick_raw_preview(self._input_path)
-        else:
-            before = cv2.imread(self._input_path)
+        try:
+            if is_raw_input(self._input_path):
+                before = quick_raw_preview(self._input_path)
+            else:
+                before = cv2.imread(self._input_path)
+        except Exception as exc:
+            self._log.insert("end", f"원본 프리뷰 디코드 실패: {exc}\n")
+            return
         if before is None:
             self._log.insert("end", f"원본 이미지를 못 읽음: {self._input_path}\n")
             return

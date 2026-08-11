@@ -82,7 +82,11 @@ class BrandPreviewTab(ttk.Frame):
             self._status.configure(text="이미지를 먼저 선택하세요")
             return
         module_name, func_name = self._choice.get().rsplit(".", 1)
-        img = load_image(self._path)
+        try:
+            img = load_image(self._path)
+        except Exception as exc:
+            self._status.configure(text=f"이미지를 못 읽음: {exc}")
+            return
         if img is None:
             self._status.configure(text=f"이미지를 못 읽음: {self._path}")
             return
