@@ -51,7 +51,7 @@ evidence behind each brand.*
 | Brand | Verification method | Details |
 |---|---|---|
 | ✅ Hasselblad | raw+jpeg pair calibration (grid search + learned LUT) | [docs/measurements.en.md](docs/measurements.en.md) |
-| ✅ Fujifilm | 11 film-simulation presets, population + same-scene comparison charts + raw+jpeg (Provia) | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
+| ✅ Fujifilm | 13 film-simulation presets, population + same-scene comparison charts + raw+jpeg (Provia/Classic Chrome/Nostalgic Neg v2) | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
 | ✅ Leica | population-fit (45 SOOC JPEGs) | [docs/brands.en.md](docs/brands.en.md#leica-brandsleicapy) |
 | ✅ Phase One | population-fit (Capture One's default rendering) | [docs/brands.en.md](docs/brands.en.md#phase-one-brandsphaseonepy) |
 | ✅ Pentax | population-fit (645Z + K-1, 40 photos) | [docs/brands.en.md](docs/brands.en.md#pentax-brandspentaxpy) |
