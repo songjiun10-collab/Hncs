@@ -119,8 +119,8 @@ class TestHasselbladCoreGoldenHashes(unittest.TestCase):
                                   f"expected sha256={expected_hash}, got {actual_hash}")
 
 
-# (모듈 경로, 함수명, sha256(출력.tobytes())) - brands/fuji.py의 13개
-# 프리셋(apply_pro_neg_hi_video_frame 제외)도 population-fit/Hasselblad와
+# (모듈 경로, 함수명, sha256(출력.tobytes())) - brands/fuji.py의 프리셋
+# (apply_pro_neg_hi_video_frame 제외)도 population-fit/Hasselblad와
 # 마찬가지로 값을 고정하는 골든 테스트가 없었다(2026-08 코드리뷰에서
 # 발견) - test_brands.py는 shape/dtype만 봐서 identity-passthrough로
 # 망가져도 통과한다. apply_acros/apply_monochrome은 2D(그레이스케일)
@@ -152,11 +152,15 @@ FUJI_PRESET_GOLDEN_HASHES = [
      "3d79e020eadfda21fa347297208f208a89f81e21fae73da3cdfb11f1932ed0c1"),
     ("brands.fuji", "apply_nostalgic_neg_v2",
      "3542071e7f745e5b8e8b09951d894f050d19d04291b7a5aa6fa62d598da2ccc3"),
+    ("brands.fuji", "apply_classic_chrome_v2",
+     "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
+    ("brands.fuji", "apply_nostalgic_neg_v3",
+     "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
 ]
 
 
 class TestFujiPresetGoldenHashes(unittest.TestCase):
-    def test_all_13_presets_output_is_pinned(self):
+    def test_all_presets_output_is_pinned(self):
         img = make_test_image()
         for mod_name, fn_name, expected_hash in FUJI_PRESET_GOLDEN_HASHES:
             with self.subTest(brand=mod_name, fn=fn_name):
