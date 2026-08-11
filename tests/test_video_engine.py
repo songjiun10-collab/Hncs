@@ -488,20 +488,20 @@ class TestGrayscaleToBgrFrame(unittest.TestCase):
 
 
 class TestExpandedBrandNames(unittest.TestCase):
-    def test_expanded_supported_brands_has_exactly_eleven(self):
-        self.assertEqual(len(EXPANDED_SUPPORTED_BRANDS), 11)
+    def test_expanded_supported_brands_has_exactly_twelve(self):
+        self.assertEqual(len(EXPANDED_SUPPORTED_BRANDS), 12)
         self.assertEqual(EXPANDED_SUPPORTED_BRANDS, frozenset({
             "fuji_astia", "fuji_pro_neg_std", "fuji_pro_neg_hi",
             "fuji_eterna_cinema", "fuji_eterna_bleach_bypass",
             "fuji_nostalgic_neg", "fuji_reala_ace", "fuji_classic_negative",
-            "fuji_acros", "fuji_monochrome", "hasselblad",
+            "fuji_acros", "fuji_monochrome", "fuji_classic_chrome", "hasselblad",
         }))
 
     def test_no_overlap_with_original_supported_brands(self):
         self.assertEqual(SUPPORTED_BRANDS & EXPANDED_SUPPORTED_BRANDS, frozenset())
 
-    def test_all_brands_union_has_21(self):
-        self.assertEqual(len(SUPPORTED_BRANDS | EXPANDED_SUPPORTED_BRANDS), 21)
+    def test_all_brands_union_has_22(self):
+        self.assertEqual(len(SUPPORTED_BRANDS | EXPANDED_SUPPORTED_BRANDS), 22)
 
 
 class TestExpandedBrandFunctionsNeverUseClahe(unittest.TestCase):
