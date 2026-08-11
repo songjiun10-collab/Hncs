@@ -1721,3 +1721,34 @@ average gain to clear the CI bar.
 | Sigma fp L | +17.01% | +17.07% |
 
 The two nearly match - confirms the LOO results weren't overfit.
+
+### ΔE00's kL-weight sensitivity - verdicts stable, magnitudes kL-dependent (2026-08)
+
+The user shared a paper ("CIEDE2000 Optimization for Digital Image Color
+Difference Measurement", DBpia) - CIEDE2000's kL/kC/kH default to (1,1,1)
+from single-patch experiments, may not be optimal for whole-image color
+difference, and even the paper's own optimized parameters only reach
+R²=0.61 correlation with visual assessment - prompting a check of how
+sensitive this session's ΔE00 (fixed at kL=kC=kH=1 throughout) actually
+is to that choice.
+
+`skimage.color.deltaE_ciede2000` accepts kL/kC/kH directly (confirmed via
+`inspect.signature`) - re-compared parametric vs learned LUT for 3
+representative cases (Sigma BF / Provia GFX100RF / Leica SL3-P, 15-pair
+samples each) across kL=1-4:
+
+| kL | Sigma BF | Provia | Leica SL3-P |
+|---|---|---|---|
+| 1 | +37.2% | +21.4% | +8.5% |
+| 2 | +25.9% | +13.8% | +6.7% |
+| 3 | +18.6% | +9.5% | +5.2% |
+| 4 | +13.9% | +6.9% | +4.1% |
+
+**The winner (LUT) never changes across kL=1-4** - this session's win/loss
+verdicts are robust to the kL choice. But **the magnitude shrinks
+noticeably as kL grows** - this session's tone-curve calibration only ever
+touches the Lab L channel (a/b untouched), and increasing kL reduces the L
+component's relative weight in ΔE00. So specific numbers like "+38%" are
+tied to the kL=1 choice used throughout this session - the paper's concern
+was legitimate. Doesn't change any verdict, but numbers should be quoted
+with the "kL=kC=kH=1" caveat attached.
