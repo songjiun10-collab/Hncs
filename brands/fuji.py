@@ -543,6 +543,23 @@ def apply_classic_chrome_v2(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_po
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
 
+def apply_classic_chrome_v2_video_frame(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0):
+    """apply_classic_chrome_v2()의 비디오 전용 변형 - apply_pro_neg_hi_video_frame과
+    같은 이유로 CLAHE(프레임별 적응형 로컬 대비 보정, 프레임마다 로컬
+    히스토그램을 새로 계산해서 비디오에서 깜빡임을 유발)를 생략한다.
+    사진 모드와 동일 출력이 아니다(로컬 대비가 약함)."""
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
 # ==========================================
 # 13. Nostalgic Neg v2 - raw+jpeg 재도출판(2026-08, GFX50S II n=27), apply_nostalgic_neg 대체
 # ==========================================
@@ -610,6 +627,23 @@ def apply_nostalgic_neg_v3(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_poi
 
     clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
     l = clahe.apply(l)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
+def apply_nostalgic_neg_v3_video_frame(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0):
+    """apply_nostalgic_neg_v3()의 비디오 전용 변형 - apply_pro_neg_hi_video_frame과
+    같은 이유로 CLAHE(프레임별 적응형 로컬 대비 보정, 프레임마다 로컬
+    히스토그램을 새로 계산해서 비디오에서 깜빡임을 유발)를 생략한다.
+    사진 모드와 동일 출력이 아니다(로컬 대비가 약함)."""
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
 
     x = np.arange(256, dtype=np.float32) / 255.0
     lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
