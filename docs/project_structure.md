@@ -110,4 +110,10 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/render_x2dii_comparison.py` | `apply_hncs_x2dii()`/콤보A가 실제 이미지에서 어떻게 보이는지 원본 JPG/`apply_hncs`/`apply_hncs_x2dii`/콤보A 네 개를 나란히 렌더링 |
 | `tools/evaluate_full_pixel_de00_confirm.py` | 그리드서치/LOO 단계에서 저해상도로 계산했던 모든 확정 raw+jpeg 함수의 ΔE00을 원본 해상도로 재확인(다운샘플 왜곡 여부 검증, shipped `apply_*`만 대상) |
 | `tools/evaluate_native_pixel_confirm.py` | `evaluate_new_body_de00_grid.py`/`evaluate_hasselblad_body_de00_grid.py`가 저해상도로 고른 최적 콤보를 원본 해상도로 재대결 |
+| `tools/evaluate_fuji_preset_de00.py` | 후지 필름시뮬레이션 프리셋(`brands/fuji.py`)을 raw+jpeg 페어로 직접 검증 - toe/shoulder/wp 그리드서치가 아니라 손튜닝 파라미터를 쓰는 기존 프리셋이 raw 무가공 대비 실제로 ΔE00을 줄이는지만 측정(Nostalgic Neg가 오히려 raw보다 못하다는 걸 이걸로 발견) |
+| `tools/evaluate_empirical_tone_curve.py` | 실제 카메라 JPEG의 raw_L->target_L 매핑을 픽셀에서 직접 뽑아(bin별 가중평균), 채택된 `toe_lift/shoulder_start/white_point` 파라메트릭 곡선이 실측과 얼마나 맞는지 RMSE로 측정 - 라이카/후지 Provia "동일 파라미터"가 우연이었음을 이걸로 발견 |
+| `tools/evaluate_learned_lut.py` | 파라메트릭 대신 256bin 학습 LUT(페어별 bin 집계 캐시 후 LOO/k-fold, `--n-folds`로 조절)을 LOO로 검증 - RMSE가 높게 나온 브랜드(Sigma/Sony/후지 신규 프리셋)에서 실제 ΔE00이 줄어드는지 확인, 6개 함수(`brands/*_learned.py`) 신설의 근거 |
+| `tools/fit_final_lut.py` | `evaluate_learned_lut.py`가 LOO로 검증한 학습 LUT을 홀드아웃 없이 전체 표본으로 재학습해서 `_LEARNED_LUT` 배열 형태로 출력 - 최종 shipped 함수에 굽는 용도 |
+| `tools/evaluate_hybrid_switch.py` | 이미지 콘텐츠에서 노이즈를 추정(Immerkaer 1996)해 파라메트릭/학습LUT을 전환하는 하이브리드가 "항상 LUT"보다 나은지 LOO 검증 - Sony a7V/a7R VI에서 근소하게 더 나쁜 것으로 판명, 기각(기록만 남김) |
+| `tools/evaluate_hue_chroma_lut.py` | 톤커브 보정 후에도 Lab a/b(hue/chroma)에 잔차가 남는지, `hybrid_engine/core/hue_core.py`의 순환 1D LUT으로 줄일 수 있는지 LOO 검증 - X2D II는 hue만, 라이카/후지는 hue+chroma가 유효한 것으로 확인 |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
