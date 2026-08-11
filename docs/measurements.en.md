@@ -1799,3 +1799,39 @@ full suite silently). Measured whether `apply_reala_ace` repeats the same
 saturation bug documented in 5 sibling presets (n=2, X-T30 III) - no
 meaningful difference in ΔE00 or saturation delta, so left unchanged
 (sample is also under the 8-pair threshold for a real verdict anyway).
+
+### Pair-matching bug had corrupted half the Fuji dataset - found and fixed (2026-08)
+
+After fixing `tools/build_local_manifest.py`'s pair matcher (separate
+commit - it processed raws in chronological order and grabbed the "first
+candidate encountered" in the jpeg pool, never comparing delta size),
+checked how much this actually affected the brand-specific
+`*_new_pairs.csv` files built by `tools/build_flat_manifest.py`, which
+reuses that same function - re-ran the fixed matcher over the entire
+`~/local-work` pool.
+
+**Fuji was badly affected**: **130 of 234 pairs (55.6%) in
+`datasets/fuji/fuji_new_pairs.csv` got a different jpeg assignment**
+under the fixed matcher. Checked against the camera's own file numbering
+(the only available ground truth without labels - same shutter press
+means same number) - **the new matching agrees with camera numbering on
+128/130 (98.5%), the old matching agrees on 0/130 (0%)**. During GFX50S
+II burst shooting (several frames within one second), raws and jpegs
+were systematically scrambled, and not a single one of the old matches
+happened to be right by luck. Other brands were affected far less (Canon
+11 of 143, Sigma 3 of 83, Sony 3-4 of 300, Leica/Nikon/Hasselblad 2 each)
+- likely because burst shooting was rarer in those sets.
+
+**Regenerated and committed all brand CSVs with the fixed matcher** (pair
+assignment only - `model`/`film_mode` columns were also re-derived from
+the correctly-matched jpeg's actual EXIF). Fuji grew to 246 pairs (12
+raws that the old matcher couldn't find any candidate for now match
+correctly).
+
+**Implication**: this session's Fuji results (Classic Chrome, Nostalgic
+Neg v2, the Provia GFX50S II merge, `fuji_provia_learned.py`, etc.) were
+computed against this corrupted dataset - more than half the sample was
+compared to the wrong target, so **re-verification is needed**. Canon has
+no shipped `apply_*` yet (still research-stage) so it's not urgent. The
+other brands are only off by 2-4 pairs, likely not enough to flip any
+already-published win/loss verdict, but will be re-checked separately.
