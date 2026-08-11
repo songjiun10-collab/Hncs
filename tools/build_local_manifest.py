@@ -69,9 +69,57 @@ def _classify_scene(iso):
         return "daylight"
 
 
+def _match_pairs(raws, jpegs):
+    """raws/jpegs(각 {filename, dt, ...} dict 리스트)를 1:1 deterministic
+    매칭한다 - (raw_rec, jpeg_rec, delta_s, offset_h) 리스트 반환. 순수
+    함수(exiftool/파일시스템 의존 없음)라 합성 fixture로 직접 단위
+    테스트할 수 있다.
+
+    **정정(2026-08 코드리뷰)**: 예전 구현은 raw를 시각순으로 하나씩
+    처리하면서 그 시점에 jpeg 풀에 "남아있는 순서상 처음 만난" 후보를
+    집었다(offset=0을 더 선호하는 것 말고는 델타 크기를 전혀 비교하지
+    않음) - 이 풀 순서가 exiftool 배치 호출의 입력 순서, 즉
+    `os.listdir()` 순서를 그대로 물려받아 파일시스템/OS에 따라 달라질
+    수 있었다. 버스트 촬영(여러 raw+jpeg가 몇 초 안에 몰림)이나 동일초
+    타임스탬프처럼 여러 후보가 동시에 매칭 범위에 들어오는 경우, 실제로
+    가장 가까운 페어가 아니라 디렉터리 나열 순서가 매칭을 결정해버리는
+    비결정적 버그였다.
+
+    지금은 raw x jpeg x offset 전체 후보를 모아서 (offset=0 우선,
+    그 다음 델타 오름차순, 그 다음 파일명순 - 마지막 tiebreak가 있어야
+    같은 델타의 후보가 여럿이어도 실행마다 같은 결과가 나온다)으로 정렬한
+    뒤 그리디로 하나씩 배정한다(이미 쓰인 raw/jpeg는 건너뜀) - 전역
+    최적(헝가리안 알고리즘) 은 아니지만 "가장 가까운 후보부터 확정"이라
+    직관적으로 맞고, 무엇보다 입력 순서와 무관하게 항상 같은 결과가
+    나온다."""
+    candidates = []
+    for r in raws:
+        for j in jpegs:
+            for oh in OFFSET_HOURS:
+                delta = abs((r["dt"] + timedelta(hours=oh) - j["dt"]).total_seconds())
+                if delta <= 2.0:
+                    candidates.append((oh != 0, delta, r["filename"], j["filename"], r, j, oh))
+                    break  # 이 (r, j) 쌍은 처음 맞는 오프셋 하나만 후보로 등록
+    candidates.sort(key=lambda c: c[:4])
+
+    used_raw, used_jpeg = set(), set()
+    pairs = []
+    for _, delta, _, _, r, j, oh in candidates:
+        if r["filename"] in used_raw or j["filename"] in used_jpeg:
+            continue
+        used_raw.add(r["filename"])
+        used_jpeg.add(j["filename"])
+        pairs.append((r, j, delta, oh))
+
+    pairs.sort(key=lambda p: (p[0]["dt"], p[0]["filename"]))
+    return pairs
+
+
 def find_pairs(src_dir, already_raw, already_jpeg):
     """src_dir 안의 raw/jpeg 파일을 스캔해서 (raw_rec, jpeg_rec, delta_s, offset_h) 리스트 반환.
-    이미 세트에 들어간 파일명(already_raw/already_jpeg)은 후보에서 제외."""
+    이미 세트에 들어간 파일명(already_raw/already_jpeg)은 후보에서 제외.
+    실제 매칭 로직은 _match_pairs() - 여기는 exiftool로 후보 레코드를
+    모으기만 한다."""
     all_paths = []
     for fn in os.listdir(src_dir):
         ext = os.path.splitext(fn)[1].lower()
@@ -93,23 +141,7 @@ def find_pairs(src_dir, already_raw, already_jpeg):
         elif ext in JPEG_EXT and fn not in already_jpeg:
             jpegs.append(rec)
 
-    jpeg_pool = list(jpegs)
-    pairs = []
-    for r in sorted(raws, key=lambda x: x["dt"]):
-        best = None
-        for j in jpeg_pool:
-            for oh in OFFSET_HOURS:
-                delta = abs((r["dt"] + timedelta(hours=oh) - j["dt"]).total_seconds())
-                if delta <= 2.0:
-                    if best is None or (best[2] != 0 and oh == 0):
-                        best = (j, delta, oh)
-                    break
-        if best is None:
-            continue
-        j, delta, oh = best
-        jpeg_pool.remove(j)
-        pairs.append((r, j, delta, oh))
-    return pairs
+    return _match_pairs(raws, jpegs)
 
 
 def append_manifest(set_dir, pairs, src_dir, download_note):
