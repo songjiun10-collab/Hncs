@@ -342,6 +342,14 @@ def apply_nostalgic_neg(img_bgr):
 # ==========================================
 # 7. Reala Ace (정확한 색 재현, 정직한 룩) - 미검증
 # ==========================================
+# 2026-08 코드리뷰: 이 파일의 다른 5개 프리셋(Astia/Pro Neg Std/Hi,
+# Bleach Bypass, Nostalgic Neg)이 겪었던 "apply_lut()로 BGR 채널별 커브를
+# 걸면 채도가 실측보다 크게 뜨는" 버그를 이 함수도 반복하는지 확인차
+# raw+jpeg 실측(X-T30 III Reala ACE, n=2)했음 - 현재 구현(HSV desaturation
+# + BGR apply_lut)과 Lab L채널 전용으로 바꾼 후보를 비교한 결과 ΔE00(raw
+# 대비 18.014→18.013, 19.127→19.126)과 채도 델타 모두 유의미한 차이 없음.
+# n=2라 판정 자체가 안 되는 표본(이 프로젝트 기준 8개 미만은 보류)이기도
+# 해서 수정하지 않음 - 여전히 미검증 상태로 둔다.
 def apply_reala_ace(img_bgr):
     img_bgr = ensure_uint8(img_bgr)
 

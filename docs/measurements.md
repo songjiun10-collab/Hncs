@@ -1599,3 +1599,45 @@ R²=0.61 수준이라는 내용 - 을 공유해서, 이 세션 전체가 써온 
 고정해 쓴 선택에 종속적이다 - 논문이 제기한 우려가 실제로 유효했음.
 결론(승/패)에는 영향 없지만 수치를 인용할 때는 "kL=kC=kH=1 기준"이라는
 전제를 명시해야 한다.
+
+### 코드 전체 리뷰 - Sony a7R VI/a7V 학습 LUT 그림자 비단조 아티팩트 발견·수정 (2026-08)
+
+전체 코드베이스 리뷰(brands/core/hybrid_engine/gui/tools/tests 6개 영역
+병렬 검토) 중 `apply_sony_a7rvi_learned`/`apply_sony_a7v_learned`의
+`_LEARNED_LUT` 그림자 초입(index 0-2)이 mid-gray(93/99)로 튀었다가
+index 3에서 급락(20/24)하는 비단조 절벽을 발견 - L=0이 L=3보다 밝게
+렌더링되는 반전. 원인: `tools/fit_final_lut.py`가 bin별 가중평균만
+쓰고 단조성 보장이 없어서, 등록/노이즈로 특정 bin에 섞인 소수 픽셀이
+그대로 반영됨.
+
+수정: `tools/fit_final_lut.py`와 `tools/evaluate_learned_lut.py`에 가중
+PAVA(pool adjacent violators, isotonic regression)를 추가 - 표본이 많은
+bin일수록 더 세게 고정하면서 non-decreasing을 강제. 두 바디 모두
+재검증(동일 raw+jpeg 페어, LOO):
+
+| | 기존(비단조) | PAVA 수정 후 |
+|---|---|---|
+| Sony a7R VI | +9.12%, 26승14패, p=0.0807, CI[+0.689,+2.341] (n=40) | +7.24%, 25승15패, p=0.1539, CI[+0.363,+2.049] (n=40) |
+| Sony a7V | +11.10%, 45승16패, p=0.0003, CI[+1.188,+2.312] (n=61) | +7.93%, 42승19패, p=0.0044, CI[+0.672,+1.821] (n=61) |
+
+개선폭이 소폭 줄었지만(절벽 부분이 우연히 맞아떨어졌던 노이즈 과적합
+일부가 사라진 것으로 해석) 둘 다 CI가 0을 넘지 않아 "학습 LUT 우세"
+판정 자체는 그대로 유지. `brands/CLAUDE.md` 원칙대로 기존
+`apply_sony_a7rvi_learned`/`apply_sony_a7v_learned`는 그대로 두고
+`apply_sony_a7rvi_learned_v2`/`apply_sony_a7v_learned_v2`를 신설(값이
+바뀐 LUT이라 dated correction 주석만으로는 부족하다고 판단) - 아직
+`hybrid_engine/core/preset_inverse.py`/`tools/video_engine.py`
+레지스트리에 연결하지 않음(적용은 별도 결정).
+
+같은 리뷰에서 나온 다른 항목들: `hybrid_engine/calibrate_profile.py`가
+`--mode` 없이 실행되면 교차검증 없이 `hasselblad.json`을 덮어쓰던
+문제(hybrid_engine/CLAUDE.md의 "Never touch" 위반) - 게이트가 있는
+`recalibrate.py --write`로 유도하는 안내만 남기고 write 로직 제거.
+`tools/iso_noise.py`가 `tools/analyze.py`와 같은 고정 임시파일 경로
+레이스 컨디션을 갖고 있어서 동일하게 수정. `core/engine.py`에
+`ensure_uint8()` 가드 누락(15개+ population-fit 브랜드가 거치는 경로)
+추가. `apply_hncs` 계열 5개 + Fuji 프리셋 13개에 골든해시 테스트 추가
+(이전엔 shape/dtype만 확인해서 회귀가 나도 풀스위트가 통과했음).
+`apply_reala_ace`가 다른 5개 프리셋과 같은 채도 버그를 반복하는지
+실측(n=2, X-T30 III)했으나 ΔE00/채도 델타 모두 유의미한 차이 없어서
+수정 안 함(표본도 8개 미만이라 판정 보류 기준 미달).

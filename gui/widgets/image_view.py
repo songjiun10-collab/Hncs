@@ -1,6 +1,5 @@
 """Before/After 이미지를 나란히 보여주는 위젯. 픽셀 처리(리사이즈, 채널
 변환)는 Tk 없이 테스트 가능하도록 prepare_for_display()로 분리한다."""
-import tkinter as tk
 from tkinter import ttk
 
 import cv2
