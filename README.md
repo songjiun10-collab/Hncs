@@ -40,12 +40,13 @@ plus a "want to do X → read Y" table.
 ![HNCS preset demo - 44 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
 *All 44 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
-on the same source photo (a Fuji GFX50S II shot of a traditional Korean
-palace building, `DSCF9411.RAF` - one of the actual raw+jpeg pairs behind
-`apply_classic_chrome_v2`'s calibration, not a throwaway demo shot).
-Built with `tools/build_readme_demo.py`, which re-runs automatically as
-new looks ship. See the links in the [Supported Brands](#supported-brands)
-table for the actual population/ΔE00 evidence behind each brand.*
+on the same source photo (a street snapshot from Itaewon, Seoul, shot on a
+Fuji GFX50S II - `DSCF9556.RAF`, from the same raw+jpeg library used for
+this session's Classic Chrome/Nostalgic Neg calibration, not a close-up of
+any specific person). Built with `tools/build_readme_demo.py`, which
+re-runs automatically as new looks ship. See the links in the
+[Supported Brands](#supported-brands) table for the actual population/ΔE00
+evidence behind each brand.*
 
 ## Supported Brands
 
