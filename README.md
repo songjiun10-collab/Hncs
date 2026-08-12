@@ -37,6 +37,12 @@ plus a "want to do X → read Y" table.
 
 ![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
 
+*`apply_hncs` (the Hasselblad look) applied to a Seoul street-crossing
+snapshot shot on a Fuji GFX50S II - `DSCF9447.RAF`, from the same
+raw+jpeg library used for this session's Classic Chrome/Nostalgic Neg
+calibration. The person in frame is seen from behind/the side only, not
+identifiable.*
+
 ![HNCS preset demo - 44 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
 *All 44 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
@@ -150,21 +156,24 @@ python3 -m hybrid_engine.main photo.3FR out.jpg
 python3 -m hybrid_engine.main photo.3FR out.tiff --profile hasselblad  # 16-bit for further editing
 ```
 
-![hybrid_engine demo - Nikon JPEG converted to a Hasselblad look](docs/images/hybrid_engine_demo.jpg)
+![hybrid_engine demo - Fuji RAW rendered through the Hasselblad profile](docs/images/hybrid_engine_demo.jpg)
 
-*A Nikon D5300 JPEG of the Budapest Parliament at night (left, provided for
-this demo - the same source photo as `docs/images/before_after_hncs.jpg`)
-converted with `hybrid_engine.convert --target
-hasselblad` (right) - EXIF auto-detects Nikon, inverts its tone curve back
-toward a neutral baseline, then re-applies `apply_hncs`.*
+*A Fuji GFX50S II RAW (`DSCF9556.RAF`, from the same `999_FUJI` raw+jpeg
+library as the other demos on this page) rendered two ways: the camera's
+own JPEG (left) vs `hybrid_engine.main --profile hasselblad` (right) -
+the RAW pipeline (color matrix + Gray World + LAB tone/color curves),
+not `hybrid_engine.convert`, since Fuji's film-simulation presets don't
+have the closed-form invertible tone curve `preset_inverse` needs
+(`core/preset_inverse.py` - only the population-fit brands in
+`BRAND_FUNCS` are invertible).*
 
-![hybrid_engine demo, 4 more photos - cathedral interior/flag/street](docs/images/hybrid_engine_demo_more.jpg)
+![hybrid_engine demo, 4 more photos - library/architecture/palace/street](docs/images/hybrid_engine_demo_more.jpg)
 
-*Four more photos from the same trip (all provided for this demo) - the two
-cathedral-interior shots had no EXIF at all (likely stripped in transit
-through a messaging app), so `--source nikon` was passed explicitly; all
-four were shot in portrait and needed `PIL.ImageOps.exif_transpose()` to
-fix orientation before conversion.*
+*Four more `999_FUJI` RAW+JPEG pairs (Starfield Library at COEX, a
+sculpture outside Seoul City Hall, Gyeongbokgung Palace's main gate, a
+Myeongdong street) run through the same `hybrid_engine.main --profile
+hasselblad` RAW pipeline as above. People appearing at a distance in the
+library/palace/street shots are not identifiable close-ups.*
 
 **Known limitations** (also documented in each module's docstring):
 - `core/color_matrix.py`: even with camera-specific color-matrix normalization, sensor spectral sensitivities are never exactly proportional to the CIE standard observer (metamerism), so a physically perfect camera-agnostic colorspace isn't possible - the residual can only be reduced via the ΔE loop, not eliminated
