@@ -50,7 +50,12 @@ def default_source(cv2):
 
 def shipped_looks():
     """brands/*.py의 사진용 apply_* 함수 목록 (video_frame 변형 제외).
-    반환: [(모듈경로, 함수명), ...]"""
+    반환: [(모듈경로, 함수명), ...]
+
+    **정정(2026-08)**: `def apply_*`만 잡고 population-fit 브랜드의
+    `apply_canon_look = make_population_fit_look(...)` 같은 대입식은
+    놓쳤었다(gui/tabs/brand_preview.py의 list_shipped_looks()에서 같은
+    버그 발견 - 15개 브랜드 함수 누락) - 대입식도 같이 스캔하도록 수정."""
     out = []
     for f in sorted(glob.glob(os.path.join(ROOT, "brands/*.py"))):
         mod = "brands." + os.path.basename(f)[:-3]
@@ -60,6 +65,11 @@ def shipped_looks():
             if (isinstance(n, ast.FunctionDef) and n.name.startswith("apply_")
                     and "video_frame" not in n.name):
                 out.append((mod, n.name))
+            elif (isinstance(n, ast.Assign) and len(n.targets) == 1
+                    and isinstance(n.targets[0], ast.Name)
+                    and n.targets[0].id.startswith("apply_")
+                    and "video_frame" not in n.targets[0].id):
+                out.append((mod, n.targets[0].id))
     return out
 
 
