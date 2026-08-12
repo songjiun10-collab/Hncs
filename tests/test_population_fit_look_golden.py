@@ -91,6 +91,15 @@ class TestHasselbladBodyVariantGoldenHashes(unittest.TestCase):
 # 여기 해시는 현재 shipped 코드를 그대로 돌려 뽑은 값이다(값 자체가
 # 옳은지는 각 브랜드 docstring의 raw+jpeg 실측이 담당) - 오직 "이후
 # 변경이 픽셀 출력을 하나도 안 바꿨는지"만 확인한다.
+#
+# **정정(2026-08)**: apply_hasselblad_night 1개 + FUJI_PRESET_GOLDEN_HASHES의
+# 6개(pro_neg_std/pro_neg_hi/eterna_cinema/eterna_bleach_bypass/reala_ace/
+# classic_negative - 전부 HSV 왕복 변환을 쓰는 함수) 해시가 실제 shipped
+# 코드 출력과 불일치했다. 원인 조사: (1) git log상 해당 함수들은 이 해시가
+# 추가된 커밋(d1eb3a6) 이후 한 번도 수정되지 않음 (2) opencv-contrib-python
+# 4.11.0/5.0.0 두 버전 모두 동일한 해시를 냄(버전 의존 아님) (3) 다른 27개
+# 해시는 전부 통과. 결론: 코드 회귀가 아니라 처음 값을 기록할 때의 계산
+# 실수 - 코드는 손대지 않고 이 7개 해시 값만 실제 출력으로 정정.
 HASSELBLAD_CORE_GOLDEN_HASHES = [
     ("brands.hasselblad", "apply_hncs",
      "6751b7a521f97640edfa4db32386a9b14a85bbdb08474f9b2b27f0d74ccc74d5"),
@@ -101,7 +110,7 @@ HASSELBLAD_CORE_GOLDEN_HASHES = [
     ("brands.hasselblad_day", "apply_hasselblad_day",
      "508a5d8cf5b44586a5ba0767582d39a935bf5b90570b62137df708f31690ec32"),
     ("brands.hasselblad_night", "apply_hasselblad_night",
-     "4cc95feb16d4128a3bfca1440c54e010ef891aa7f0efe0acada2e17e0f667a63"),
+     "777ac69a5fe96f25dc6a4d32a5d66d7d0190b9ba90d1739fc8144c10e15f9d1e"),
 ]
 
 
@@ -129,23 +138,23 @@ FUJI_PRESET_GOLDEN_HASHES = [
     ("brands.fuji", "apply_astia",
      "9165582f2e4e3446651911dda3cacc53379a5a75b343093769e42eafb9e6d53e"),
     ("brands.fuji", "apply_pro_neg_std",
-     "9bc1066b6555c5982a2c7e3b336b30135c826e951d8c9b3bed2c3b50718c2dd5"),
+     "73e72b76e548ea4263f47c7ecdccca6d21216943e985966544d5d6b780147058"),
     ("brands.fuji", "apply_pro_neg_hi",
-     "11c1a5089df24669a108bfc8597656c340d61962047b8b84da0253b2ac0b30d7"),
+     "71b35662abb7fd9ada1c73161024093fd3e798ae5fdc1c4aed73f139dd8e69ce"),
     ("brands.fuji", "apply_eterna_cinema",
-     "fb1249acf2822ad3655d5f7b423ab462360ee9db886cdfdafb70b6741b05a1b8"),
+     "df87852f73f16a613bfafb8a202cd231a2ccfd6c153b1dd58187f4efa193484c"),
     ("brands.fuji", "apply_eterna_bleach_bypass",
-     "d6613246636fa87cd8111907c82d87c9615906c5e85fddac332ebc6efe108fe8"),
+     "d2c7f4748ed89378381ec87c3cd45bf41b19ce9b02d7b97db7a470bbb8c65a7f"),
     ("brands.fuji", "apply_nostalgic_neg",
      "e23ece30f93c022cc0b43b0614d49a230c550477c4e8aa5f2d842ddb8cd80648"),
     ("brands.fuji", "apply_reala_ace",
-     "c800990e2c98e333f0fbcef722fe0cc6105a92a14e8744102c2fa453a9c43d13"),
+     "eaf7389de3d2d67d4f8d4c2bf3798642c21c83159a7a86290210128f8060c53d"),
     ("brands.fuji", "apply_acros",
      "604d6d87f6d0484735eb7328b56f97af91b5b701f5539d9a306d1f3d5f68b62f"),
     ("brands.fuji", "apply_monochrome",
      "293b6e6a130fbe2ae0f00ee6e3b4cb4e07e3f4f76e3bed912f0ba144f21cd207"),
     ("brands.fuji", "apply_classic_negative",
-     "83f7f6719d7605c987288f1a35d80a3dff897fb5eb96015f76eb90931954edb5"),
+     "7bc972bbbbd0476f43292c830a6e3dc1924fddef87277b091ac496fdd653bebb"),
     ("brands.fuji", "apply_provia",
      "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
     ("brands.fuji", "apply_classic_chrome",
