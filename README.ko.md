@@ -39,11 +39,12 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 
 ![HNCS 프리셋 데모 - 사진 한 장에 apply_* 44개(+원본) 전부 적용](docs/images/preset_demo.jpg)
 
-*동일한 소스 사진(Fuji GFX50S II로 찍은 한국 전통 건축물, `DSCF9411.RAF` -
-데모용으로 급조한 게 아니라 `apply_classic_chrome_v2` 캘리브레이션에
-실제로 쓰인 raw+jpeg 페어 중 하나) 한 장에 `brands/*.py`의 사진용
-`apply_*` 룩 44개(+원본)를 그대로 돌린 결과. `tools/build_readme_demo.py`로
-생성 - 새 룩이 추가될 때마다 재실행하면 됨. 실제 population/ΔE00 수치의
+*동일한 소스 사진(Fuji GFX50S II로 찍은 서울 이태원 거리 스냅샷,
+`DSCF9556.RAF` - Classic Chrome/Nostalgic Neg 등 이 세션 캘리브레이션에
+쓰인 것과 같은 raw+jpeg 라이브러리에서 고른 실제 사진, 특정 인물 클로즈업이
+아니라 일반 거리 스냅샷) 한 장에 `brands/*.py`의 사진용 `apply_*` 룩
+44개(+원본)를 그대로 돌린 결과. `tools/build_readme_demo.py`로 생성 -
+새 룩이 추가될 때마다 재실행하면 됨. 실제 population/ΔE00 수치의
 근거는 [지원 브랜드](#지원-브랜드) 표에 링크된 문서를 참고.*
 
 ## 지원 브랜드
