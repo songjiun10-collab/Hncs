@@ -37,11 +37,13 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 
 ![Before/After - apply_hncs 적용 예시](docs/images/before_after_hncs.jpg)
 
-![HNCS 프리셋 데모 - 사진 한 장에 apply_* 29개(+원본) 전부 적용](docs/images/preset_demo.jpg)
+![HNCS 프리셋 데모 - 사진 한 장에 apply_* 44개(+원본) 전부 적용](docs/images/preset_demo.jpg)
 
-*동일한 소스 사진(Nikon D5300 야경샷, 데모용으로 제공받음) 한 장에
-`brands/*.py`의 사진용 `apply_*` 룩 29개(+원본)를 그대로 돌린 결과. 공식
-캘리브레이션 소스 사진이 아니라 단순 데모용 - 실제 population 수치의
+*동일한 소스 사진(Fuji GFX50S II로 찍은 한국 전통 건축물, `DSCF9411.RAF` -
+데모용으로 급조한 게 아니라 `apply_classic_chrome_v2` 캘리브레이션에
+실제로 쓰인 raw+jpeg 페어 중 하나) 한 장에 `brands/*.py`의 사진용
+`apply_*` 룩 44개(+원본)를 그대로 돌린 결과. `tools/build_readme_demo.py`로
+생성 - 새 룩이 추가될 때마다 재실행하면 됨. 실제 population/ΔE00 수치의
 근거는 [지원 브랜드](#지원-브랜드) 표에 링크된 문서를 참고.*
 
 ## 지원 브랜드
@@ -185,7 +187,7 @@ python3 -m hybrid_engine.main photo.3FR out.tiff --profile hasselblad  # 후속 
 ![hybrid_engine 데모 - Nikon JPEG을 Hasselblad 룩으로 변환](docs/images/hybrid_engine_demo.jpg)
 
 *Nikon D5300으로 찍은 부다페스트 국회의사당 야경 JPEG(왼쪽, 데모용으로
-제공받음 - `docs/images/preset_demo.jpg`/`before_after_hncs.jpg`와 같은
+제공받음 - `docs/images/before_after_hncs.jpg`와 같은
 소스 사진)을 `hybrid_engine.convert --target hasselblad`로 변환한
 결과(오른쪽) - EXIF로 Nikon을 자동인식해서 그 톤커브를 역산해 근사 중립
 상태로 되돌린 뒤 `apply_hncs`를 재적용했다.*

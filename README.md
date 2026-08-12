@@ -37,14 +37,15 @@ plus a "want to do X → read Y" table.
 
 ![Before/After - apply_hncs applied to a sample photo](docs/images/before_after_hncs.jpg)
 
-![HNCS preset demo - 29 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
+![HNCS preset demo - 44 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
-*All 29 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
-on the same source photo (a Nikon D5300 night shot, provided for this
-demo). Not
-an official calibration source photo - just a demo. See the links in the
-[Supported Brands](#supported-brands) table for the actual population
-evidence behind each brand.*
+*All 44 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
+on the same source photo (a Fuji GFX50S II shot of a traditional Korean
+palace building, `DSCF9411.RAF` - one of the actual raw+jpeg pairs behind
+`apply_classic_chrome_v2`'s calibration, not a throwaway demo shot).
+Built with `tools/build_readme_demo.py`, which re-runs automatically as
+new looks ship. See the links in the [Supported Brands](#supported-brands)
+table for the actual population/ΔE00 evidence behind each brand.*
 
 ## Supported Brands
 
@@ -151,8 +152,8 @@ python3 -m hybrid_engine.main photo.3FR out.tiff --profile hasselblad  # 16-bit 
 ![hybrid_engine demo - Nikon JPEG converted to a Hasselblad look](docs/images/hybrid_engine_demo.jpg)
 
 *A Nikon D5300 JPEG of the Budapest Parliament at night (left, provided for
-this demo - the same source photo as `docs/images/preset_demo.jpg`/
-`before_after_hncs.jpg`) converted with `hybrid_engine.convert --target
+this demo - the same source photo as `docs/images/before_after_hncs.jpg`)
+converted with `hybrid_engine.convert --target
 hasselblad` (right) - EXIF auto-detects Nikon, inverts its tone curve back
 toward a neutral baseline, then re-applies `apply_hncs`.*
 
