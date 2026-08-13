@@ -41,6 +41,10 @@ datasets/hasselblad/contributed/*/chart/
 datasets/leica/contributed/*/raw/
 datasets/leica/contributed/*/jpeg/
 datasets/leica/contributed/*/chart/
+datasets/*/contributed/*/raw/
+datasets/*/contributed/*/jpeg/
+datasets/*/contributed/*/chart/
+datasets/*/contributed/*/phocus_tiff/
 eval_reports/
 models/upscale/
 .DS_Store
