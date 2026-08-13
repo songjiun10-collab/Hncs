@@ -51,7 +51,7 @@ evidence behind each brand.*
 | Brand | Verification method | Details |
 |---|---|---|
 | ✅ Hasselblad | raw+jpeg pair calibration (grid search + learned LUT) | [docs/measurements.en.md](docs/measurements.en.md) |
-| ✅ Fujifilm | 13 film-simulation presets, population + same-scene comparison charts + raw+jpeg (Provia/Classic Chrome/Nostalgic Neg v2) | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
+| ✅ Fujifilm | 15 film-simulation presets, population + same-scene comparison charts + raw+jpeg (Provia/Classic Chrome/Classic Chrome v2/Nostalgic Neg v2/Nostalgic Neg v3) | [docs/brands.en.md](docs/brands.en.md#fujifilm-brandsfujipy) |
 | ✅ Leica | population-fit (45 SOOC JPEGs) | [docs/brands.en.md](docs/brands.en.md#leica-brandsleicapy) |
 | ✅ Phase One | population-fit (Capture One's default rendering) | [docs/brands.en.md](docs/brands.en.md#phase-one-brandsphaseonepy) |
 | ✅ Pentax | population-fit (645Z + K-1, 40 photos) | [docs/brands.en.md](docs/brands.en.md#pentax-brandspentaxpy) |
@@ -301,7 +301,7 @@ python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
 
 - [x] Hasselblad raw-based parametric/learned calibration (`apply_hncs`,
       `apply_hncs_learned`)
-- [x] 13 Fujifilm film-simulation presets
+- [x] 15 Fujifilm film-simulation presets
 - [x] Population-fit color-approximation engine shared by 10 brands
       (`core/engine.py`)
 - [x] Pixel-level 5-part signature analysis (tone/color/texture/gamut/
