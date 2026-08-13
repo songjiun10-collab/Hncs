@@ -11,5 +11,19 @@
       "files.pythonhosted.org",
       "registry.npmjs.org"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_never_touch.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
   }
 }
