@@ -2181,3 +2181,109 @@ Gray World 단독도 camera WB보다 나쁘다. **C vs D**: native에서
 바꾸는 별도의 명시적 결정이라 여기서 자동 반영하지 않는다(CLAUDE.md
 "Ship an experimental result automatically. That's a separate decision.").
 재현: `python3 -m tools.evaluate_wb_pipeline_variants`.
+
+## 라이카 hybrid_engine 캘리브레이션 - 첫 raw+jpeg 파이프라인 (2026-08)
+
+**배경**: 라이카는 지금까지 population-fit(SOOC JPEG만)으로만 캘리브레이션돼
+있었다 - 해셀블라드처럼 raw+jpeg 페어를 매트릭스+톤/색 커브로 직접 학습하는
+`hybrid_engine` 경로가 없었다. `datasets/leica/contributed/local-work-2026-08/`
+(사용자 개인 라이브러리 분할, 244쌍, LEICA CL/M10/SL2/SL2-S/SL3-P/Q3 등 혼합
+바디)가 이번에 처음으로 이 규모의 라이카 raw+jpeg 데이터를 만들어서, 신설
+`hybrid_engine/calibrate_profile_leica.py`(`calibrate_profile.py`의 브랜드
+비종속 적합 함수 - `_find_matrix_and_recalibrate`/`coordinate_descent`/
+`learn_hue_lut` - 를 그대로 재사용, 데이터 로더만 라이카 manifest.csv로
+교체)로 첫 측정을 돌렸다.
+
+**환경 참고**: 로컬 `python3`가 3.9라 `requirements.txt`의
+`colour-science==0.4.7`(Python>=3.11 요구)이 설치가 안 돼서
+`hybrid_engine.utils.evaluate`의 `intermediate_attributes_CIE2000` import가
+깨져 있었다(로컬 환경 드리프트, 코드 버그 아님) - Homebrew python3.12로
+새 venv(`~/.hncs-hybrid-venv312`)를 만들어서 해결. 이 venv로만 hybrid_engine
+계열을 돌려야 한다.
+
+**방법**: 244쌍을 500px 축소 해상도로 로드 -> Phase 0(raw_baseline_matrix)
+최소자승 적합 -> Phase 1/2(tone_core/color_core) 좌표하강 재학습(해셀블라드와
+동일한 `_find_matrix_and_recalibrate`), 4-fold nested 교차검증. 이어서
+gray_world(기본) vs gray_edge 색치우침 알고리즘을 페어드 4-fold nested CV로
+비교, 마지막으로 gray_edge 기반 프로필 위에 hue LUT(`learn_hue_lut`, 순환
+36bin)을 얹었을 때/안 얹었을 때를 같은 방식으로 비교. 통계는 전부
+`summarize()`(부트스트랩 95% CI 20000회 + 부호검정, hybrid_engine/CLAUDE.md
+규칙 그대로 - `tools/evaluate_wb_pipeline_variants.py`의 것을 복붙).
+
+| 단계 | ΔE00 (4-fold CV) | 비고 |
+|---|---|---|
+| V0.1 기본 파라미터(무보정 시드) | 16.843 | 라이카용 시드 자체가 없어서 해셀블라드 V0.1 기본값 그대로 적용 |
+| 매트릭스+톤/색 재학습 | 15.088 | in-sample 15.055와 거의 일치 - 과적합 징후 없음 |
+| + Gray Edge (vs Gray World) | 14.847 | **채택** - 아래 참고 |
+| + hue LUT (36bin, gray_edge 기반) | 14.868 (판정 보류) | **기각** - 아래 참고 |
+
+**Gray Edge 채택 근거**: 개선폭 +1.60%, 143승/101패, 부호검정 p=0.0085,
+부트스트랩 95% CI(평균차)=[+0.055, +0.434] - **CI가 0을 벗어나 통계적으로
+유의미**. 해셀블라드에서 얻은 +9.4%보다는 작지만 방향은 같다.
+
+**hue LUT 기각 근거**: 개선폭 -0.36%, 128승/116패, 부호검정 p=0.4814,
+부트스트랩 95% CI=[-0.148, +0.034] - **CI가 0을 포함해 판정 보류**
+(hybrid_engine/CLAUDE.md: "CI straddles zero → inconclusive"). 해셀블라드와
+같은 결론(hue LUT은 두 브랜드 다 유의미한 개선 없음).
+
+**정직한 한계**: 목표로 잡았던 ΔE00<=5는 이 1차 패스로는 전혀 못 미친다
+(14.85). 해셀블라드가 15.01 -> 9.82까지 가는 데 가장 컸던 지렛대는
+X2D II ColorChecker 챠트 페어 추가(+11.1% 결정적 조합)였는데, **라이카는
+이런 챠트 촬영 raw+jpeg 데이터가 아예 없다** - dpreview/ePHOTOzine/
+Imaging-Resource/Photo Review 4곳을 확인했지만 공개 다운로드 가능한
+라이카 ColorChecker RAW+JPEG 페어는 없었다(Photo Review는 Imatest가
+이미 가공한 저해상도 크롭만 공개, 나머지는 RAW 자체가 없거나 위젯에
+막힘). 챠트 데이터 없이는 9~10대 진입도 낙관 못 한다.
+
+**결론**: 측정까지만 한다. `assets/profiles/leica.json`을 만들어서 실제
+`brands/leica_raw.py` 등에 배선하는 건 별도의 명시적 결정 - 아직 안 함
+(root CLAUDE.md "Ship an experimental result automatically. That's a
+separate decision."). hue LUT 학습에 쓴 스크래치 LUT 파일
+(`hybrid_engine/assets/luts/leica_hue_learned_scratch.npy`)은 해셀블라드
+`assets/luts/hasselblad_hue_learned.npy`와 겹치지 않는 별도 경로.
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.calibrate_profile_leica`
+(전체 실행 약 2시간 - 244쌍 raw 디코드 + 매트릭스/톤/색 재학습을 gray_world/
+gray_edge 페어드 CV + hue LUT CV까지 여러 번 반복하는 구조라 무겁다).
+페어별 세부 로그는 `/tmp/hncs_review_fix/leica_calibrate3.log`에 있었으나
+세션 종료 시 삭제되는 임시 경로 - 회귀 테스트(`TestSummarizeRecordedRun`)는
+아직 추가 안 함, 후속 작업으로 남겨둠.
+
+## 후지 hybrid_engine 캘리브레이션 - 라이카와 반대 결론 (2026-08)
+
+라이카와 같은 방법(`hybrid_engine/calibrate_profile_fuji.py`, 코드 복붙 +
+데이터 로더만 교체)을 `datasets/fuji/contributed/local-work-2026-08/`
+246쌍(로컬 라이브러리 분할분)에 그대로 적용.
+
+| 단계 | ΔE00 (4-fold CV) | 비고 |
+|---|---|---|
+| V0.1 기본 파라미터(무보정 시드) | 24.250 | |
+| 매트릭스+톤/색 재학습 | 20.357 | in-sample 20.321과 일치 |
+| + Gray Edge (vs Gray World) | 20.402 (판정 보류) | **기각** - 라이카와 반대 |
+| + hue LUT (36bin, gray_world 기반) | 20.204 | **채택** - 라이카와 반대 |
+
+**Gray Edge 기각 근거**: 개선폭 -0.22%(오히려 악화), 126승/120패, 부호검정
+p=0.7500, 부트스트랩 95% CI=[-0.131, +0.045] - CI가 0을 포함해 판정 보류.
+
+**hue LUT 채택 근거**: 개선폭 +0.75%, 159승/87패, 부호검정 p<0.0001,
+부트스트랩 95% CI=[+0.089, +0.217] - **CI가 0을 완전히 벗어나 통계적으로
+유의미**. 라이카에서는 hue LUT이 기각됐던 것과 정확히 반대 - 후지의
+X-Trans 색 재현/필름 시뮬레이션 특유의 체계적 hue 편향(Classic Chrome
+등에서 이미 알려진 성향)이 라이카보다 크다는 가설과 방향이 맞는다(이
+가설 자체는 이 실험이 검증한 건 아니고 사후 해석).
+
+**중요**: hue LUT 실험은 gray_edge가 아니라 **gray_world(기본) 기반
+프로필 위에** 돌았다 - 라이카는 gray_edge가 이겨서 그 위에 얹었지만,
+후지는 gray_edge 자체가 기각됐으므로 기본 프로필 그대로 사용. 두 브랜드
+결과를 나란히 놓고 "hue LUT이 항상 이런다"처럼 일반화하면 안 된다 - 브랜드마다
+Phase 0/1이 다른 상태에서 측정한 것.
+
+**정지 사유**: 라이카(2시간) + 후지(2시간 40분) 실행 후 개선폭이 두
+브랜드 다 작아서(+1.6%, +0.75%) Canon/Sony/Nikon/Sigma까지 이어가는
+비용(예상 5~6시간 추가) 대비 이득이 낮다고 판단, 사용자 지시로
+Canon 캘리브레이션 도중(4-fold CV 진행 중) 중단. Canon/Sony/Nikon/Sigma는
+측정 자체를 안 함 - "돌려봤는데 결과가 안 좋았다"가 아니라 "안 돌렸다".
+
+**결론**: 라이카와 마찬가지로 측정까지만, `assets/profiles/fuji.json`
+배선은 별도 결정. 재현:
+`~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.calibrate_profile_fuji`
+(약 2시간 40분).
