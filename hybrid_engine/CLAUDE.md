@@ -3,6 +3,35 @@
 Cross-camera color conversion + the calibration/evaluation machinery.
 `EVALUATION.md` here is the project's measurement record.
 
+## Local environment: use the Python 3.12 venv
+
+`requirements.txt` pins `colour-science==0.4.7`, which requires
+Python>=3.11. The machine's default `python3` is 3.9, which can only
+install colour-science 0.4.4 — missing
+`colour.difference.delta_e.intermediate_attributes_CIE2000`, which
+`utils/evaluate.py` imports at module level. Any `hybrid_engine.*` module
+(including every `calibrate_profile_<brand>.py`) fails immediately under
+the default interpreter. Run these with
+`~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.<module>` instead
+(create via `/opt/homebrew/bin/python3.12 -m venv ~/.hncs-hybrid-venv312`
++ `pip install -r requirements.txt` if it doesn't exist yet). Scoped to
+this directory only — the rest of the repo runs fine under the default
+3.9.
+
+## Per-brand calibration scripts
+
+`calibrate_profile.py` (Hasselblad) is the template: its fitting
+functions (`_find_matrix_and_recalibrate`, `coordinate_descent`,
+`learn_hue_lut`) are already brand-agnostic — only `_find_pairs()`/
+`_load_calib_set()` and the output paths are Hasselblad-specific.
+`calibrate_profile_leica.py`, `_fuji.py`, `_canon.py`, `_sony.py`,
+`_nikon.py`, `_sigma.py` (2026-08) are per-brand copies (not a shared
+import — matches the `evaluate_*.py` "copy, don't couple" convention)
+that swap in a `datasets/<brand>/contributed/*/manifest.csv` loader and a
+brand-specific scratch LUT path (`assets/luts/<brand>_hue_learned_scratch.npy`
+— never reuses `hasselblad_hue_learned.npy`). None of them write to any
+`assets/profiles/*.json` — measurement only, same as the original.
+
 ## Never touch
 
 `assets/profiles/hasselblad.json`, `assets/profiles/*.dcp`. These are
