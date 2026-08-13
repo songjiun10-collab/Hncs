@@ -10,7 +10,20 @@ Git-ignored: `raw_calib_cache*/`, `downloaded_samples*/`,
 **A manifest committed by another session may have no images in this
 container.** Check the files exist before planning an experiment around
 them — some contributed sets came from a personal library with no
-`download_url` and cannot be re-fetched here.
+`download_url` and cannot be re-fetched here. But don't assume a
+"personal library" label means truly unrecoverable without asking — it
+can just mean the manifest's `download_url` wasn't filled in.
+`hasselblad/contributed/local-mixed-2026-07/` (61 pairs) went missing
+from disk entirely pre-2026-08-13 (never committed as deleted — raw/jpeg
+are gitignored, so git only ever tracked the manifest) and its
+`download_url` said "local (owner personal library)", but the source was
+actually dpreview sample galleries all along — it was re-downloaded as
+`hasselblad/contributed/x1d-x2d100c-restore-2026-08/` (164 pairs, see
+`tools/CLAUDE.md`'s dpreview download section). `collect_local_pairs()`
+silently skips any set whose manifest.csv is missing, so this kind of
+loss doesn't surface as an error — if a pair count looks lower than a
+documented figure elsewhere (e.g. `tools/CLAUDE.md`'s "74 pairs"), check
+for a silently-missing set directory before assuming the code changed.
 
 ## Contributed data intake
 
