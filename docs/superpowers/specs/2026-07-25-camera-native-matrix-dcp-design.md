@@ -188,6 +188,30 @@ DNG 스펙상 ForwardMatrix는 카메라 중립점을 D50 백색점으로 정확
    illuminant 프로필만 만들 수 있고, 조명 간 보간(dual-illuminant)은
    불가능하다.
 3. **Lightroom 렌더링 미검증.** 위 2-2의 3번.
+
+   > **정정(2026-08-13, 실사용자 테스트)**: 실제 X2D II 100C 사용자(사진가)에게
+   > `hasselblad_x2dii_chart.dcp`를 보내 테스트를 부탁했는데, Lightroom
+   > Profile Browser의 "Camera Matching"에 안 뜨고 기본 프로필만 보인다고
+   > 보고받음. 재확인한 것: (1) 파일 자체는 손상/잘림이 아님 - `exiftool
+   > -validate`가 `Validate: OK`를 반환, `UniqueCameraModel`/`ColorMatrix1`/
+   > `CalibrationIlluminant1`/`ProfileName` 4개 태그 전부 정상 파싱됨(190
+   > 바이트는 HueSatMap/톤커브 테이블 없는 최소 프로필이라 원래 이 정도
+   > 크기가 맞음). (2) 웹 검색으로 확인한 바로는 서드파티 DCP는 Lightroom
+   > Profile Browser에서 애초에 "Camera Matching"(Adobe 자체 내장 프로필
+   > 전용)이 아니라 별도 카테고리("Custom Profiles" 등)에 뜨는 게 일반적
+   > 동작이라, 사용자가 "Camera Matching"에서만 확인했다면 그 자체가
+   > 오탐일 수 있음. (3) 설치 경로도 원인 후보 - macOS는
+   > `~/Library/Application Support/Adobe/CameraRaw/CameraProfiles/`(중첩
+   > 카메라별 서브폴더 아님), 설치 후 Lightroom/ACR을 완전히 재시작해야
+   > 반영됨(핫리로드 안 됨) - 이 두 조건 중 하나라도 안 지키면 안 뜬다는
+   > 사례가 다수 확인됨(Adobe 커뮤니티 포럼). (4) `UniqueCameraModel`
+   > 값("Hasselblad X2D II 100C")은 3FR에 그 태그가 없어서
+   > `hybrid_engine/utils/exif.py:read_unique_camera_model()`이 Make+Model
+   > 조합으로 대체한 값 - Adobe ACR이 이 카메라를 내부적으로 정확히 같은
+   > 문자열로 인식하는지는 Adobe 소프트웨어 없이는 확인 불가, 여전히
+   > 미검증. 결론: 파일 자체 손상은 배제됐고, 설치 절차/카테고리 오해
+   > 쪽이 유력한 설명이지만 확정은 못 함 - 사용자가 정확한 설치
+   > 절차(올바른 폴더 + 재시작)로 재시도한 뒤 재확인 필요.
 4. **패치 수 부족.** ColorChecker Classic 24패치(무채색 6 + 유채색 18)는
    본격 카메라 프로파일링 타깃(수백 패치)에 비해 매우 적다. 자유도 9개
    매트릭스에 240 패치 샘플(24×10)이라 과적합 위험 자체는 낮지만(기존
