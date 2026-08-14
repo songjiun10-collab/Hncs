@@ -106,11 +106,12 @@ class TestHasselbladBodyVariantGoldenHashes(unittest.TestCase):
 # **정정(2026-08)**: apply_hasselblad_night 1개 + FUJI_PRESET_GOLDEN_HASHES의
 # 6개(pro_neg_std/pro_neg_hi/eterna_cinema/eterna_bleach_bypass/reala_ace/
 # classic_negative - 전부 HSV 왕복 변환을 쓰는 함수) 해시가 실제 shipped
-# 코드 출력과 불일치했다. 원인 조사: (1) git log상 해당 함수들은 이 해시가
-# 추가된 커밋(d1eb3a6) 이후 한 번도 수정되지 않음 (2) opencv-contrib-python
-# 4.11.0/5.0.0 두 버전 모두 동일한 해시를 냄(버전 의존 아님) (3) 다른 27개
-# 해시는 전부 통과. 결론: 코드 회귀가 아니라 처음 값을 기록할 때의 계산
-# 실수 - 코드는 손대지 않고 이 7개 해시 값만 실제 출력으로 정정.
+# 코드 출력과 불일치해서 재계산해 정정했었다 - **원인은 "기록 실수"가
+# 아니라 이 파일 위쪽 모듈 docstring의 "주의(2026-08, requirements.txt
+# 버전 고정 작업 중 발견)" 항목이 정확한 설명이다**(opencv 버전/플랫폼
+# 의존, CI가 정답 환경). 병렬로 같은 문제를 다른 세션이 먼저 정확한
+# 원인으로 진단·수정한 걸 뒤늦게 발견 - 값은 우연히 일치했지만 이 블록의
+# 원래 원인 서술("코드 회귀 아니라 계산 실수")은 틀렸었다.
 HASSELBLAD_CORE_GOLDEN_HASHES = [
     ("brands.hasselblad", "apply_hncs",
      "6751b7a521f97640edfa4db32386a9b14a85bbdb08474f9b2b27f0d74ccc74d5"),
