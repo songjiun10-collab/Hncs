@@ -28,6 +28,29 @@ Build an explicit `env=`. The parent's `OMP_NUM_THREADS` once leaked into
 0, no error, 75% black. Check output plausibility, never just the exit
 code.
 
+## dpreview sample-gallery downloads
+
+Plain `curl` gets Cloudflare's challenge page on dpreview.com. Use the
+OpenCLI browser (`opencli browser main ...`), which drives an already
+-authenticated real Chrome session and passes the challenge. Within a
+gallery page (`dpreview.com/samples/<id>/...`), clicking
+`.sg-thumb-carousel__item` thumbnails exposes download links at
+`a.sg-details__download-link[href$=".jpg"]`/`[href$=".3fr"]` (or whatever
+raw ext) - scriptable via `opencli browser main eval`. JPG URLs
+(`wp-content/uploads/sample_galleries/...jpg`) are plain CDN assets and
+`curl` them directly. RAW URLs are Cloudflare-gated specifically -
+`curl` gets the challenge page regardless of User-Agent; the fix is
+`opencli browser main open <raw_url>` (navigate), which triggers a real
+Chrome download to `~/Downloads` (needs Files-and-Folders TCC permission
+granted to the Claude app itself, not Terminal - restart the app after
+granting). `tools/download_xcd_lens_gallery.py` and
+`tools/download_x1d_x2d100c_restore.py` (2026-08) are worked examples of
+this whole pipeline (link CSV -> curl+browser download -> manifest.csv).
+`tools/split_local_pool.py` (2026-08) does the inverse: given a folder
+with several brands' raw+jpeg mixed together, matches pairs once
+globally then routes each into the right `datasets/<brand>/contributed/`
+by the raw file's EXIF Make.
+
 ## Long runs
 
 RAW-decode experiments hit hours (chromatic aberration: ~2h).

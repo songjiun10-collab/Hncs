@@ -26,6 +26,9 @@ import subprocess
 import sys
 from datetime import date, datetime, timedelta
 
+import numpy as np
+from scipy.optimize import linear_sum_assignment
+
 # .3fr/.fff=Hasselblad, .dng=Leica(M/SL/Q 전 라인업 공식 RAW 포맷)/Sigma,
 # .arw=Sony, .cr3=Canon, .raf=Fujifilm, .nef=Nikon
 RAW_EXT = {".3fr", ".fff", ".dng", ".arw", ".cr3", ".raf", ".nef"}
@@ -69,47 +72,66 @@ def _classify_scene(iso):
         return "daylight"
 
 
+_INFEASIBLE_COST = 1e6  # 어떤 offset에서도 델타<=2.0s가 안 나오는 셀
+_OFFSET_PENALTY = 100.0  # 실제 델타 상한(2.0s)보다 훨씬 커서 offset=0을 항상 우선시킨다
+_AMBIGUITY_EPS = 1e-6  # 부동소수점 비교 여유(초 단위) - 사실상 "완전히 같은 델타"만 잡음
+
+
 def _match_pairs(raws, jpegs):
-    """raws/jpegs(각 {filename, dt, ...} dict 리스트)를 1:1 deterministic
-    매칭한다 - (raw_rec, jpeg_rec, delta_s, offset_h) 리스트 반환. 순수
-    함수(exiftool/파일시스템 의존 없음)라 합성 fixture로 직접 단위
-    테스트할 수 있다.
+    """raws/jpegs(각 {filename, dt, ...} dict 리스트)를 1:1 전역 최적
+    매칭한다 - (raw_rec, jpeg_rec, delta_s, offset_h, is_ambiguous) 리스트
+    반환. 순수 함수(exiftool/파일시스템 의존 없음)라 합성 fixture로 직접
+    단위 테스트할 수 있다.
 
-    **정정(2026-08 코드리뷰)**: 예전 구현은 raw를 시각순으로 하나씩
-    처리하면서 그 시점에 jpeg 풀에 "남아있는 순서상 처음 만난" 후보를
-    집었다(offset=0을 더 선호하는 것 말고는 델타 크기를 전혀 비교하지
-    않음) - 이 풀 순서가 exiftool 배치 호출의 입력 순서, 즉
-    `os.listdir()` 순서를 그대로 물려받아 파일시스템/OS에 따라 달라질
-    수 있었다. 버스트 촬영(여러 raw+jpeg가 몇 초 안에 몰림)이나 동일초
-    타임스탬프처럼 여러 후보가 동시에 매칭 범위에 들어오는 경우, 실제로
-    가장 가까운 페어가 아니라 디렉터리 나열 순서가 매칭을 결정해버리는
-    비결정적 버그였다.
+    **정정 이력**: 최초 구현(raw를 시각순으로 처리하며 jpeg 풀에서
+    "처음 만난" 후보를 집는 방식)은 풀 순서가 `os.listdir()`를 그대로
+    물려받아 비결정적이었다(2026-08 코드리뷰로 발견, Fuji 데이터셋
+    55.6% 오배정으로 이어짐). 그 다음 버전(이 함수의 이전 판)은 전체
+    후보를 델타 오름차순으로 정렬해 그리디로 배정 - 입력 순서와 무관하게
+    결정적이었지만 **그리디는 지역 최적**이라 이런 경우에 최적이 아닐 수
+    있었다: raw A가 raw B보다 살짝 먼저 그리디에 뽑혀서 jpeg X를
+    선점하면, B는 X보다 훨씬 먼 Y와 억지로 짝지어질 수 있다 - 반대로
+    A를 Y에, B를 X에 배정했으면 총 델타 합이 더 작았을 수도 있는데
+    그리디는 그 가능성을 안 본다.
 
-    지금은 raw x jpeg x offset 전체 후보를 모아서 (offset=0 우선,
-    그 다음 델타 오름차순, 그 다음 파일명순 - 마지막 tiebreak가 있어야
-    같은 델타의 후보가 여럿이어도 실행마다 같은 결과가 나온다)으로 정렬한
-    뒤 그리디로 하나씩 배정한다(이미 쓰인 raw/jpeg는 건너뜀) - 전역
-    최적(헝가리안 알고리즘) 은 아니지만 "가장 가까운 후보부터 확정"이라
-    직관적으로 맞고, 무엇보다 입력 순서와 무관하게 항상 같은 결과가
-    나온다."""
-    candidates = []
-    for r in raws:
-        for j in jpegs:
+    지금은 (raw, jpeg) 전체 비용 행렬(비용 = 델타, offset!=0이면
+    `_OFFSET_PENALTY`를 더해 offset=0을 항상 우선)을 만들고
+    `scipy.optimize.linear_sum_assignment`(헝가리안 알고리즘)로 **전체
+    합을 최소화하는 진짜 전역 최적 1:1 배정**을 구한다. 두 후보가 완전히
+    동률(같은 raw나 jpeg에 대해 비용이 `_AMBIGUITY_EPS` 이내로 같은 다른
+    후보가 있음)이면 조용히 tiebreak하지 않고 `is_ambiguous=True`로
+    표시한다 - 호출부가 로그로 남기거나 사람이 검토하게 한다."""
+    n, m = len(raws), len(jpegs)
+    if n == 0 or m == 0:
+        return []
+
+    cost = np.full((n, m), _INFEASIBLE_COST)
+    delta_of = np.full((n, m), np.inf)
+    offset_of = np.zeros((n, m), dtype=int)
+
+    for i, r in enumerate(raws):
+        for j, jr in enumerate(jpegs):
             for oh in OFFSET_HOURS:
-                delta = abs((r["dt"] + timedelta(hours=oh) - j["dt"]).total_seconds())
+                delta = abs((r["dt"] + timedelta(hours=oh) - jr["dt"]).total_seconds())
                 if delta <= 2.0:
-                    candidates.append((oh != 0, delta, r["filename"], j["filename"], r, j, oh))
+                    cost[i, j] = delta + (_OFFSET_PENALTY if oh != 0 else 0.0)
+                    delta_of[i, j] = delta
+                    offset_of[i, j] = oh
                     break  # 이 (r, j) 쌍은 처음 맞는 오프셋 하나만 후보로 등록
-    candidates.sort(key=lambda c: c[:4])
 
-    used_raw, used_jpeg = set(), set()
+    row_ind, col_ind = linear_sum_assignment(cost)
+
     pairs = []
-    for _, delta, _, _, r, j, oh in candidates:
-        if r["filename"] in used_raw or j["filename"] in used_jpeg:
-            continue
-        used_raw.add(r["filename"])
-        used_jpeg.add(j["filename"])
-        pairs.append((r, j, delta, oh))
+    for i, j in zip(row_ind, col_ind):
+        if cost[i, j] >= _INFEASIBLE_COST:
+            continue  # 실제로는 후보가 없었는데 행렬 크기 때문에 강제 배정된 셀
+
+        c = cost[i, j]
+        ambiguous = bool(
+            (cost[i, :] <= c + _AMBIGUITY_EPS).sum() > 1
+            or (cost[:, j] <= c + _AMBIGUITY_EPS).sum() > 1
+        )
+        pairs.append((raws[i], jpegs[j], float(delta_of[i, j]), int(offset_of[i, j]), ambiguous))
 
     pairs.sort(key=lambda p: (p[0]["dt"], p[0]["filename"]))
     return pairs
@@ -134,8 +156,8 @@ def find_pairs(src_dir, already_raw, already_jpeg):
         dt = _parse_dt(e.get("DateTimeOriginal"))
         if dt is None:
             continue
-        rec = dict(filename=fn, dt=dt, model=e.get("Model", ""), lens=e.get("LensModel", ""),
-                   iso=e.get("ISO", ""))
+        rec = dict(filename=fn, dt=dt, model=e.get("Model", ""), make=e.get("Make", ""),
+                   lens=e.get("LensModel", ""), iso=e.get("ISO", ""))
         if ext in RAW_EXT and fn not in already_raw:
             raws.append(rec)
         elif ext in JPEG_EXT and fn not in already_jpeg:
@@ -154,20 +176,24 @@ def append_manifest(set_dir, pairs, src_dir, download_note):
         w = csv.DictWriter(f, fieldnames=COLUMNS)
         if write_header:
             w.writeheader()
-        for r, j, delta, oh in pairs:
-            shutil.copy2(os.path.join(src_dir, r["filename"]),
-                         os.path.join(set_dir, "raw", r["filename"]))
-            shutil.copy2(os.path.join(src_dir, j["filename"]),
-                         os.path.join(set_dir, "jpeg", j["filename"]))
+        for r, j, delta, oh, ambiguous in pairs:
+            shutil.move(os.path.join(src_dir, r["filename"]),
+                        os.path.join(set_dir, "raw", r["filename"]))
+            shutil.move(os.path.join(src_dir, j["filename"]),
+                        os.path.join(set_dir, "jpeg", j["filename"]))
             offset_note = (f", 정수시간 오프셋 {oh:+d}h 보정 적용(분/초 완전일치로 확인)"
                            if oh != 0 else "")
+            ambiguous_note = (", 주의: 동률 후보 있음(다른 raw/jpeg도 같은 비용으로 매칭 "
+                               "가능했음 - 전역 최적 배정이 임의로 하나를 골랐으니 수동 확인 권장)"
+                               if ambiguous else "")
             w.writerow(dict(
                 filename_raw=r["filename"], filename_jpeg=j["filename"],
                 camera=_norm_camera(r["model"]), lens=r["lens"].strip() or "unknown",
                 iso=r["iso"], wb_setting="auto", scene_type=_classify_scene(r["iso"]),
                 filename_phocus_tiff="", phocus_settings="", illuminant="",
                 download_url=download_note,
-                notes=f"exif raw DateTimeOriginal={r['dt']}, jpeg DateTimeOriginal={j['dt']}{offset_note}",
+                notes=f"exif raw DateTimeOriginal={r['dt']}, jpeg DateTimeOriginal={j['dt']}"
+                      f"{offset_note}{ambiguous_note}",
             ))
 
 
@@ -219,8 +245,12 @@ def main():
         if os.path.isdir(os.path.join(set_dir, "jpeg")) else set()
 
     pairs = find_pairs(src_dir, already_raw, already_jpeg)
+    n_ambiguous = sum(1 for p in pairs if p[4])
     print(f"{len(pairs)}개 페어 매칭 (오프셋 0: {sum(1 for p in pairs if p[3] == 0)}개, "
           f"오프셋 보정: {sum(1 for p in pairs if p[3] != 0)}개)")
+    if n_ambiguous:
+        print(f"  주의: 동률 후보 있던 매칭 {n_ambiguous}개 (manifest.csv notes 컬럼에 표시됨) - "
+              f"전역 최적 배정이 임의로 하나를 골랐으니 수동 확인 권장")
 
     append_manifest(set_dir, pairs, src_dir,
                      f"local (owner personal library, downloaded {date.today().isoformat()})")

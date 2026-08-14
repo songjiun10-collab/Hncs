@@ -3,7 +3,18 @@
 전후로 완전히 동일한지 확인하는 골든 회귀 테스트. 해시는 리팩토링 전
 실제 코드를 돌려서 뽑은 값 그대로다 - 값 자체가 맞는지는 검증하지
 않는다(그건 각 브랜드 docstring의 population 수치가 담당), 오직
-"이 리팩토링이 픽셀 출력을 하나도 안 바꿨는지"만 확인한다."""
+"이 리팩토링이 픽셀 출력을 하나도 안 바꿨는지"만 확인한다.
+
+**주의(2026-08, requirements.txt 버전 고정 작업 중 발견)**: 이 해시들은
+전부 CI(ubuntu-latest, requirements.txt에 고정된 정확한 버전)에서 뽑은
+값이어야 한다 - macOS 로컬 환경에서 뽑으면 안 됨. `cv2.cvtColor(...,
+COLOR_BGR2HSV)` 왕복을 쓰는 함수(apply_pro_neg_std/pro_neg_hi/
+eterna_cinema/eterna_bleach_bypass/reala_ace/classic_negative,
+hasselblad_night)는 opencv 버전/플랫폼에 따라 최하위 비트가 달라져서
+로컬에서 뽑은 해시가 CI에서 재현 안 됨(Lab 전용 CLAHE+LUT 함수는 전부
+플랫폼 무관하게 일치 - 실제로 확인됨). 새 골든해시를 추가할 땐 로컬에서
+계산만 하지 말고 CI 실행 결과(실패 시 assertEqual 메시지의 "got" 값)로
+검증/교정할 것."""
 import hashlib
 import importlib
 import unittest

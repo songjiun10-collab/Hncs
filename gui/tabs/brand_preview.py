@@ -19,7 +19,16 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 def list_shipped_looks():
     """brands/*.py에서 apply_*() 함수 목록을 ast로 스캔한다(video_frame
     변형 제외) - .claude/skills/run-hncs/driver.py의 shipped_looks()와
-    같은 방식, 별도 레지스트리를 새로 두지 않는다."""
+    같은 방식, 별도 레지스트리를 새로 두지 않는다.
+
+    **정정(2026-08)**: `def apply_*`만 잡고 population-fit 브랜드들이
+    쓰는 `apply_canon_look = make_population_fit_look(...)` 같은 대입식
+    (`core.engine.make_population_fit_look`/`make_hasselblad_body_look`
+    팩토리가 반환한 클로저를 이름에 바인딩하는 패턴)은 놓쳐서
+    canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/
+    sony/sony_a7v/sony_a7rvi/leica_raw/hasselblad_x1d50c/hasselblad_x2dii
+    15개가 통째로 드롭다운에서 빠져있었다 - 대입식(`ast.Assign`)도 같이
+    스캔하도록 수정."""
     out = []
     for path in sorted(glob.glob(os.path.join(_ROOT, "brands", "*.py"))):
         module = "brands." + os.path.basename(path)[:-3]
@@ -30,6 +39,11 @@ def list_shipped_looks():
             if (isinstance(node, ast.FunctionDef) and node.name.startswith("apply_")
                     and "video_frame" not in node.name):
                 out.append((module, node.name))
+            elif (isinstance(node, ast.Assign) and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)
+                    and node.targets[0].id.startswith("apply_")
+                    and "video_frame" not in node.targets[0].id):
+                out.append((module, node.targets[0].id))
     return out
 
 

@@ -1,6 +1,6 @@
 import random
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from tools.build_local_manifest import RAW_EXT, _match_pairs
 
@@ -30,18 +30,27 @@ class TestMatchPairsDeterminism(unittest.TestCase):
             rng.shuffle(shuffled_raws)
             rng.shuffle(shuffled_jpegs)
             result = _match_pairs(shuffled_raws, shuffled_jpegs)
-            actual = {r["filename"]: j["filename"] for r, j, _, _ in result}
+            actual = {r["filename"]: j["filename"] for r, j, _, _, _ in result}
             self.assertEqual(actual, expected_pairs, f"trial {trial}: 입력 순서를 바꾸니 매칭이 달라짐")
 
-    def test_same_timestamp_ties_break_by_filename(self):
+    def test_same_timestamp_both_sides_tied_is_flagged_ambiguous(self):
         """raw 둘, jpeg 둘이 전부 완전히 같은 초에 찍힘(카메라의 EXIF
-        타임스탬프 해상도가 초 단위라 버스트에서 흔함) - 시간만으로는
-        구분이 안 되니 파일명순 tiebreak로 항상 같은 결과가 나와야 한다."""
+        타임스탬프 해상도가 초 단위라 버스트에서 흔함) - (0001,0001)+
+        (0002,0002)든 (0001,0002)+(0002,0001)이든 총비용이 똑같아서
+        어느 쪽이 "진짜"인지 시간만으로는 알 수 없다. 조용히 아무거나
+        골라 확정하면 안 되고 is_ambiguous=True로 표시해야 한다(모든 raw/
+        jpeg가 어쨌든 정확히 한 번씩만 쓰이는 진짜 1:1인지는 계속 확인)."""
         t = datetime(2026, 8, 1, 12, 0, 0)
         raws = [_rec("IMG_0001.3fr", t), _rec("IMG_0002.3fr", t)]
         jpegs = [_rec("IMG_0001.jpg", t), _rec("IMG_0002.jpg", t)]
-        expected = {"IMG_0001.3fr": "IMG_0001.jpg", "IMG_0002.3fr": "IMG_0002.jpg"}
-        self._assert_order_invariant(raws, jpegs, expected)
+        result = _match_pairs(raws, jpegs)
+        self.assertEqual(len(result), 2)
+        self.assertTrue(all(is_ambiguous for *_, is_ambiguous in result),
+                         "동률 매칭인데 ambiguous로 표시가 안 됨")
+        raw_used = {r["filename"] for r, j, d, oh, amb in result}
+        jpeg_used = {j["filename"] for r, j, d, oh, amb in result}
+        self.assertEqual(raw_used, {"IMG_0001.3fr", "IMG_0002.3fr"})
+        self.assertEqual(jpeg_used, {"IMG_0001.jpg", "IMG_0002.jpg"})
 
     def test_burst_picks_closest_not_first_encountered(self):
         """1초 간격 버스트 3장 - 옛 구현은 raw를 시각순으로 처리하며
@@ -89,6 +98,28 @@ class TestMatchPairsDeterminism(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0][0]["filename"], "ONLY.3fr")
         self.assertEqual(result[0][1]["filename"], "CLOSE.jpg")
+
+    def test_global_assignment_beats_greedy_nearest_first(self):
+        """그리디(델타 오름차순으로 하나씩 확정)와 전역 최적(헝가리안)이
+        실제로 다른 결과를 내는 구체적 사례 - 그리디는 R1을 가장 가까운
+        J1에 먼저 확정시켜버려서 R2가 갈 곳이 없어진다(R2-J2는 2초
+        문턱을 넘어 애초에 후보가 아님). 전역 최적은 R1을 차선책(J2)으로
+        보내고 J1을 R2에게 양보해서 둘 다 매칭시키는 게 총비용상 더
+        낫다는 걸 안다 - 매칭 개수 자체가 그리디(1쌍)보다 전역 최적
+        (2쌍)이 많다."""
+        t0 = datetime(2026, 8, 1, 12, 0, 0)
+        raws = [
+            _rec("R1.3fr", t0),
+            _rec("R2.3fr", t0 - timedelta(seconds=0.3)),
+        ]
+        jpegs = [
+            _rec("J1.jpg", t0 + timedelta(seconds=1.0)),  # R1-J1=1.0s, R2-J1=1.3s
+            _rec("J2.jpg", t0 + timedelta(seconds=1.8)),  # R1-J2=1.8s, R2-J2=2.1s(문턱 밖)
+        ]
+        result = _match_pairs(raws, jpegs)
+        self.assertEqual(len(result), 2, "전역 최적이면 둘 다 매칭돼야 함(그리디는 1쌍만 매칭)")
+        actual = {r["filename"]: j["filename"] for r, j, _, _, _ in result}
+        self.assertEqual(actual, {"R1.3fr": "J2.jpg", "R2.3fr": "J1.jpg"})
 
     def test_zero_offset_preferred_over_smaller_delta_at_nonzero_offset(self):
         """정수시간 오프셋 카메라(2017 X1D 사례, 파일 docstring 참고) 지원과

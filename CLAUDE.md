@@ -28,6 +28,20 @@ or two, no preamble, no restating the request.
 - **"평가 ㄱㄱ"/"객관적으로" = the unvarnished version.** No cushioning —
   lead with what's weak or wrong, in self-reports too.
 - **Check whether a gap is already handled before reporting it.**
+- **Tests security/permission boundaries under time pressure, accepts a
+  firm no.** Restate the boundary once, briefly, without re-explaining —
+  don't cave, don't lecture. They resolve it the legitimate way
+  themselves once able to (e.g. granting a real OS permission).
+- **Before backgrounding anything over ~20-30 min, quote a time
+  estimate** (based on the closest comparable prior run if one exists).
+  A short check-in during a wait (`?`, `ㅇ?`, `다됨?`) is a status ping,
+  not a request to re-derive the estimate — answer in one line and
+  reference the number already given rather than re-explaining.
+- **Follows and contributes real leads, not just requests.** Will name a
+  specific site/source themselves mid-task ("ephotozine 찾아봐", "photo
+  review 사이트에") when they have domain knowledge relevant to what's
+  being searched — treat these as informed tips worth checking directly,
+  not vague suggestions.
 
 ## What they optimize for
 

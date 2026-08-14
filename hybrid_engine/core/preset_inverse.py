@@ -64,9 +64,10 @@ TARGET_FUNCS.update({
     "fuji_pro_neg_hi": fuji.apply_pro_neg_hi,
     "fuji_eterna_cinema": fuji.apply_eterna_cinema,
     "fuji_eterna_bleach_bypass": fuji.apply_eterna_bleach_bypass,
-    "fuji_nostalgic_neg": fuji.apply_nostalgic_neg,
+    "fuji_nostalgic_neg": fuji.apply_nostalgic_neg_v3,
     "fuji_reala_ace": fuji.apply_reala_ace,
     "fuji_classic_negative": fuji.apply_classic_negative,
+    "fuji_classic_chrome": fuji.apply_classic_chrome_v2,
 })
 
 

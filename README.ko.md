@@ -37,11 +37,19 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 
 ![Before/After - apply_hncs 적용 예시](docs/images/before_after_hncs.jpg)
 
-![HNCS 프리셋 데모 - 사진 한 장에 apply_* 29개(+원본) 전부 적용](docs/images/preset_demo.jpg)
+*`apply_hncs`(Hasselblad 룩)를 Fuji GFX50S II로 찍은 서울 횡단보도
+스냅샷(`DSCF9447.RAF`, 이 세션 Classic Chrome/Nostalgic Neg 캘리브레이션에
+쓰인 것과 같은 raw+jpeg 라이브러리)에 적용한 결과. 사진 속 인물은
+뒷모습/옆모습만 나와 특정할 수 없음.*
 
-*동일한 소스 사진(Nikon D5300 야경샷, 데모용으로 제공받음) 한 장에
-`brands/*.py`의 사진용 `apply_*` 룩 29개(+원본)를 그대로 돌린 결과. 공식
-캘리브레이션 소스 사진이 아니라 단순 데모용 - 실제 population 수치의
+![HNCS 프리셋 데모 - 사진 한 장에 apply_* 44개(+원본) 전부 적용](docs/images/preset_demo.jpg)
+
+*동일한 소스 사진(Fuji GFX50S II로 찍은 서울 이태원 거리 스냅샷,
+`DSCF9556.RAF` - Classic Chrome/Nostalgic Neg 등 이 세션 캘리브레이션에
+쓰인 것과 같은 raw+jpeg 라이브러리에서 고른 실제 사진, 특정 인물 클로즈업이
+아니라 일반 거리 스냅샷) 한 장에 `brands/*.py`의 사진용 `apply_*` 룩
+44개(+원본)를 그대로 돌린 결과. `tools/build_readme_demo.py`로 생성 -
+새 룩이 추가될 때마다 재실행하면 됨. 실제 population/ΔE00 수치의
 근거는 [지원 브랜드](#지원-브랜드) 표에 링크된 문서를 참고.*
 
 ## 지원 브랜드
@@ -182,20 +190,22 @@ python3 -m hybrid_engine.main photo.3FR out.jpg
 python3 -m hybrid_engine.main photo.3FR out.tiff --profile hasselblad  # 후속 편집용 16비트
 ```
 
-![hybrid_engine 데모 - Nikon JPEG을 Hasselblad 룩으로 변환](docs/images/hybrid_engine_demo.jpg)
+![hybrid_engine 데모 - Fuji RAW를 Hasselblad 프로필로 렌더링](docs/images/hybrid_engine_demo.jpg)
 
-*Nikon D5300으로 찍은 부다페스트 국회의사당 야경 JPEG(왼쪽, 데모용으로
-제공받음 - `docs/images/preset_demo.jpg`/`before_after_hncs.jpg`와 같은
-소스 사진)을 `hybrid_engine.convert --target hasselblad`로 변환한
-결과(오른쪽) - EXIF로 Nikon을 자동인식해서 그 톤커브를 역산해 근사 중립
-상태로 되돌린 뒤 `apply_hncs`를 재적용했다.*
+*Fuji GFX50S II RAW(`DSCF9556.RAF`, 이 페이지의 다른 데모와 같은
+`999_FUJI` raw+jpeg 라이브러리)를 두 가지로 렌더링 - 카메라 자체 JPEG(왼쪽)
+vs `hybrid_engine.main --profile hasselblad`(오른쪽). `hybrid_engine.convert`가
+아니라 RAW 파이프라인(색매트릭스 + Gray World + LAB 톤/색 커브)을 쓴
+이유는 Fuji의 필름 시뮬레이션 프리셋이 `preset_inverse`가 요구하는
+닫힌 형태의 역변환 톤커브를 갖고 있지 않기 때문(`core/preset_inverse.py` -
+`BRAND_FUNCS`에 있는 population-fit 브랜드만 역변환 가능).*
 
-![hybrid_engine 데모 추가 4장 - 성당 내부/국기/거리 사진](docs/images/hybrid_engine_demo_more.jpg)
+![hybrid_engine 데모 추가 4장 - 도서관/건축물/궁궐/거리 사진](docs/images/hybrid_engine_demo_more.jpg)
 
-*같은 여행에서 찍은 추가 사진 4장(전부 데모용으로 제공받음) - 성당 내부
-2장은 EXIF가 아예 없어(메신저 전송 과정에서 소실로 추정) `--source
-nikon`을 직접 지정했고, 전부 세로 촬영이라 `PIL.ImageOps.exif_transpose()`로
-방향을 먼저 바로잡은 뒤 변환했다.*
+*`999_FUJI` raw+jpeg 4쌍 더(코엑스 별마당도서관, 서울시청 앞 조형물,
+경복궁 정문, 명동 거리)를 같은 `hybrid_engine.main --profile
+hasselblad` RAW 파이프라인으로 변환한 결과. 도서관/궁궐/거리 사진에
+멀리 보이는 사람들은 특정할 수 없는 원경.*
 
 **알려진 한계** (각 모듈 docstring에도 명시):
 - `core/color_matrix.py`: 카메라 고유 색매트릭스로 정규화해도 센서
