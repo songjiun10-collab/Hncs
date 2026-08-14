@@ -38,6 +38,18 @@ brand-specific scratch LUT path (`assets/luts/<brand>_hue_learned_scratch.npy`
 shipped calibration artifacts. A research script that writes to them is a
 bug, no matter what it measured.
 
+## Investigation volume isn't the same as progress
+
+A real user tested `hasselblad_x2dii_chart.dcp` and reported Lightroom
+didn't recognize it. Reinstalling `exiftool` to re-verify the file's TIFF
+structure was genuinely useful (ruled out corruption — `Validate: OK`),
+but the hypotheses generated afterward (folder location, restart
+requirement, `UniqueCameraModel` string mismatch) never got confirmed —
+the user's actual problem was still open when the session ended. The
+amount of investigation made it read like the problem was nearly solved
+when it wasn't. Report "ruled out X" and "still unresolved" as separate
+facts — don't let volume of activity imply progress it didn't make.
+
 ## Statistics — non-negotiable
 
 Three "decisive wins" in this repo turned out to be noise, thread

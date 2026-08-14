@@ -38,3 +38,19 @@ records of what was believed at execution time.
 friends cite sources explicitly and mark confidence. External
 reverse-engineering (blogs, forums) is labeled as such — never presented
 as vendor-confirmed fact.
+
+## Retrospective narrative docs are prone to confirmation bias
+
+A session once wrote a project-history doc, a CLAUDE.md-evolution doc,
+and a "core philosophy" doc — none of it factually wrong (every claim
+traced to a real commit), but all three quietly emphasized evidence
+fitting a flattering thesis ("this project honestly records its own
+failures") and downplayed the rest: the initial commit dumped the whole
+architecture with zero design doc (contradicting the project's own
+later-stated "structure first" value), "final review always caught real
+bugs" was framed as a virtue rather than read as "first-pass work was
+reliably incomplete," and the doc's own weaknesses section was softer
+than the facts warranted. The bias wasn't caught until explicitly asked
+for the unfiltered version. Apply the same critical read to a "summarize
+the history" request as to an explicit "evaluate this" request — the
+framing of the ask doesn't lower the bar.

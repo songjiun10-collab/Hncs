@@ -36,3 +36,19 @@ published table actually supports — a 3-decimal table doesn't reproduce a
 Write the test first, run it, confirm it fails for the right reason. A
 boundary test that asserts against a hand-computed constant is worth more
 than one that asserts against whatever the code currently returns.
+
+## A failing golden-hash test might already be fixed upstream
+
+A session hit 7 failing entries in the golden byte-hash tests
+(`test_population_fit_look_golden.py`), spent real time reinstalling
+opencv and A/B-testing versions, and committed a confident but wrong
+root cause ("a recording mistake, not a code regression"). A different
+session had already fixed the same 7 hashes a day earlier on `main`,
+with the actual cause: `requirements.txt` had no version pins, so CI and
+local environments resolved different opencv builds and the HSV-roundtrip
+functions' lowest bits genuinely differed. The recovered hash *values*
+matched byte-for-byte (real independent verification), but the root-cause
+story didn't — a fixed value with a wrong explanation still ends up
+committed and read by the next session. Before treating a golden-hash
+mismatch as "these values are just stale," check `git log origin/main --
+<this file>` first — see root `CLAUDE.md`'s "Think before coding".
