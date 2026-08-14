@@ -79,6 +79,13 @@ Biased toward caution over speed. Use judgment on trivial tasks.
 - Simpler approach exists → say so. Push back when warranted.
 - Confused → stop, name what's confusing, ask. Don't hide it. (Exception
   under `/goal` — see Commands.)
+- **Before a deep root-cause dig (reinstalling packages, git archaeology,
+  A/B-testing library versions), check recent activity on main/sibling
+  branches first** — `git log origin/main -- <file>` costs a minute. A
+  session once spent much longer independently re-deriving a fix
+  (a golden-hash mismatch) that had already landed on main the day
+  before, and produced a less accurate root-cause explanation than the
+  one already sitting there.
 
 ### Simplicity first
 
