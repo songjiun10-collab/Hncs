@@ -43,6 +43,26 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_agent_model_naming.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_push_safety.py",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "PostToolUse": [
