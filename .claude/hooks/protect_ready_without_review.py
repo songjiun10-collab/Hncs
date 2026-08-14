@@ -13,6 +13,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+from _hook_common import allow, deny
+
+HOOK_NAME = "protect_ready_without_review"
+
 _SENTINEL = Path(__file__).parent / ".last_whole_branch_review_sha"
 
 
@@ -27,25 +31,6 @@ def current_head_sha():
         return out.stdout.strip() if out.returncode == 0 else None
     except Exception:
         return None
-
-
-def allow():
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-        }
-    }))
-
-
-def deny(reason):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        }
-    }))
 
 
 def main():
@@ -69,6 +54,7 @@ def main():
         detail = "no whole-branch review has been dispatched in this session"
 
     deny(
+        HOOK_NAME,
         "CLAUDE.md: \"Don't skip the final whole-branch review; it caught "
         f"three critical bugs.\" Blocking draft->ready ({detail}). Dispatch "
         "a final whole-branch review Agent (superpowers:requesting-code-review "

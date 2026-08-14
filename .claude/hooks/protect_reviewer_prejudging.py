@@ -12,6 +12,10 @@ import json
 import re
 import sys
 
+from _hook_common import allow, deny
+
+HOOK_NAME = "protect_reviewer_prejudging"
+
 # Each pattern pairs a regex with the phrase that triggered it, so the
 # denial message can quote the actual match instead of a generic template.
 _PREJUDGING_PATTERNS = [
@@ -41,25 +45,6 @@ def find_prejudging_phrase(text):
     return None
 
 
-def allow():
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-        }
-    }))
-
-
-def deny(reason):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        }
-    }))
-
-
 def main():
     data = read_input()
     if data.get("tool_name") != "Agent":
@@ -70,6 +55,7 @@ def main():
     phrase = find_prejudging_phrase(combined)
     if phrase:
         deny(
+            HOOK_NAME,
             "CLAUDE.md subagent-driven-development rule: \"Never tell a "
             "reviewer what not to flag or pre-rate a finding's severity. "
             "Think it's a false positive -> let it be raised, settle it "

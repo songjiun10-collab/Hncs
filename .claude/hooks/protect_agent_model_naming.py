@@ -13,30 +13,15 @@ import json
 import re
 import sys
 
+from _hook_common import allow, deny
+
+HOOK_NAME = "protect_agent_model_naming"
+
 _HAIKU_RE = re.compile(r"haiku", re.IGNORECASE)
 
 
 def read_input():
     return json.load(sys.stdin)
-
-
-def allow():
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-        }
-    }))
-
-
-def deny(reason):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        }
-    }))
 
 
 def main():
@@ -49,6 +34,7 @@ def main():
 
     if not model:
         deny(
+            HOOK_NAME,
             "CLAUDE.md Controller rule: \"Always name the model (omitting "
             "it inherits the session's, usually the priciest).\" This "
             "dispatch has no `model` field. Set model explicitly - "
@@ -59,6 +45,7 @@ def main():
 
     if _HAIKU_RE.search(str(model)):
         deny(
+            HOOK_NAME,
             "CLAUDE.md Controller rule: \"Skip haiku - its extra turns on "
             f"multi-step work cost more than the tokens it saves.\" This "
             f"dispatch names model={model!r}. Use `sonnet` (default) or "

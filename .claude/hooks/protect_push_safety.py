@@ -23,6 +23,10 @@ import re
 import subprocess
 import sys
 
+from _hook_common import allow, deny
+
+HOOK_NAME = "protect_push_safety"
+
 _CLAUDE_AUTHOR_EMAIL = "noreply@anthropic.com"
 
 _STMT_START = r"(?:^|&&|\|\||;|\n|\||\(|`|\bdo\b|\bthen\b|\belse\b)\s*"
@@ -34,25 +38,6 @@ _FORCE_RE = re.compile(r"(^|\s)(--force(-with-lease)?|-f)(\s|$)")
 
 def read_input():
     return json.load(sys.stdin)
-
-
-def allow():
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-        }
-    }))
-
-
-def deny(reason):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        }
-    }))
 
 
 def head_author_email():
@@ -79,6 +64,7 @@ def main():
     for m in matches:
         if _FORCE_RE.search(m.group("args")):
             deny(
+                HOOK_NAME,
                 "CLAUDE.md: \"Push rejected -> git fetch + git rebase, "
                 "never force.\" This command force-pushes. If the remote "
                 "rejected a push, fetch and rebase instead - never force, "
@@ -91,6 +77,7 @@ def main():
     email = head_author_email()
     if email is not None and email != _CLAUDE_AUTHOR_EMAIL:
         deny(
+            HOOK_NAME,
             "CLAUDE.md: \"Fix authorship or GitHub marks it Unverified.\" "
             f"HEAD commit's author email is {email!r}, not "
             f"{_CLAUDE_AUTHOR_EMAIL!r}. Run `git config user.email "

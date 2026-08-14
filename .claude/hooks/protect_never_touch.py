@@ -12,6 +12,10 @@ import os
 import re
 import sys
 
+from _hook_common import allow, deny
+
+HOOK_NAME = "protect_never_touch"
+
 BRAND_FILE_RE = re.compile(r"(^|/)brands/[^/]+\.py$")
 PROFILE_ASSET_RE = re.compile(r"(^|/)hybrid_engine/assets/profiles/[^/]+\.(json|dcp)$")
 
@@ -98,25 +102,6 @@ def touched_function(file_path, old_string):
     return None, None
 
 
-def allow():
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-        }
-    }))
-
-
-def deny(reason):
-    print(json.dumps({
-        "hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "deny",
-            "permissionDecisionReason": reason,
-        }
-    }))
-
-
 def main():
     data = read_input()
     tool = data.get("tool_name")
@@ -131,6 +116,7 @@ def main():
 
     if is_profile_asset(file_path):
         deny(
+            HOOK_NAME,
             f"CLAUDE.md Never list: {file_path} is a shipped calibration "
             "profile under hybrid_engine/assets/profiles/. It cannot be "
             "modified without the user's explicit, in-the-moment sign-off "
@@ -147,6 +133,7 @@ def main():
         ranges = protected_ranges(file_path)
         if ranges is None:
             deny(
+                HOOK_NAME,
                 f"CLAUDE.md Never list: couldn't parse the current contents of "
                 f"{file_path} to check for shipped apply_* functions before this "
                 "Write would overwrite it. Blocking to be safe - ask the user "
@@ -156,6 +143,7 @@ def main():
         if ranges:
             names = ", ".join(n for n, _, _ in ranges)
             deny(
+                HOOK_NAME,
                 f"CLAUDE.md Never list: this Write would overwrite {file_path}, "
                 f"which currently defines shipped apply_* function(s) ({names}). "
                 "Modifying a shipped apply_* requires the user's explicit, "
@@ -176,6 +164,7 @@ def main():
         name, rng = touched_function(file_path, e.get("old_string", ""))
         if name == "__unknown__":
             deny(
+                HOOK_NAME,
                 f"CLAUDE.md Never list: couldn't parse {file_path} to check "
                 "whether this edit touches a shipped apply_* function. "
                 "Blocking to be safe - ask the user for explicit sign-off, "
@@ -184,6 +173,7 @@ def main():
             return
         if name:
             deny(
+                HOOK_NAME,
                 f"CLAUDE.md Never list: this edit touches `{name}()` in "
                 f"{file_path} (lines {rng[0]}-{rng[1]}), a shipped apply_* "
                 "function. CLAUDE.md forbids modifying it without the user's "

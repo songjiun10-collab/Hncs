@@ -1,0 +1,1 @@
+{"timestamp": "2026-08-14T14:40:10+00:00", "hook": "protect_agent_model_naming", "reason": "CLAUDE.md Controller rule: \"Always name the model (omitting it inherits the session's, usually the priciest).\" This dispatch has no `model` field. Set model explicitly - `sonnet` by default, `opus` only for architecture/final whole-branch review. This hook has no bypass."}
