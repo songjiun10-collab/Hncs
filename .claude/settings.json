@@ -23,6 +23,16 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_reviewer_prejudging.py",
+            "timeout": 15
+          }
+        ]
       }
     ]
   }
