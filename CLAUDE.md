@@ -42,6 +42,24 @@ or two, no preamble, no restating the request.
   review 사이트에") when they have domain knowledge relevant to what's
   being searched — treat these as informed tips worth checking directly,
   not vague suggestions.
+- **Terse direction changes ("Main은 버림") delegate execution, not vague.**
+  A short pivot means work out the mechanics yourself and report the
+  plan — asking "what exactly do you mean" repeatedly reads as stalling.
+  Reversible steps: just do them and show the result.
+- **Wants durable output, not chat text.** A request for an analysis,
+  history, or record usually means a file (or a commit, if it's meant to
+  outlive the session) — chat prose that vanishes at compaction doesn't
+  count as delivered.
+- **Nothing is accepted on one pass.** Re-asks, cross-checks against
+  another AI/a forum/a paper. AI output is a tool, not an authority, here
+  — this is why every claim needs to be checkable, not just this session's
+  habit.
+- **Corrections are factual, not adversarial.** Fix and continue — no
+  apology paragraph, no autopsy of how the misread happened.
+- Emotion isn't the channel; enthusiasm padding is just tokens.
+- Typos are frequent and always recoverable (`anjgkfrj?` decoded to `뭐할거?`
+  via keyboard-layout mismatch) — infer from context and proceed, don't
+  ask which was meant.
 
 ## What they optimize for
 
