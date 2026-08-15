@@ -40,16 +40,29 @@ git-tracked, append-only).
 | `protect_experiment_integrity.py` | 🟠 HIGH | Edit/Write/MultiEdit (EVALUATION.md만) | CI/부트스트랩 언급 없이 수치 결과 기록 |
 | `protect_generated_files.py` | 🟡 MID | Edit/Write/MultiEdit | `_LEARNED_LUT*` 배열(생성물) 직접 수정 |
 | `protect_claim_evidence.py` | 🟡 MID | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 |
-| `protect_reviewer_prejudging.py` | (미분류 - 레거시) | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
-| `protect_ready_without_review.py` | (미분류 - 레거시) | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
-| `protect_agent_model_naming.py` | (미분류 - 레거시) | Agent | model 미지정/haiku 디스패치 |
+| `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
+| `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
+| `protect_agent_model_naming.py` | 🟡 MID | Agent | model 미지정/haiku 디스패치 |
 | `record_whole_branch_review.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) 전체-브랜치 리뷰 sentinel 기록 |
 
-레거시 3개(`protect_reviewer_prejudging.py`/`protect_ready_without_review.py`/
-`protect_agent_model_naming.py`)는 이 심각도 체계 이전에 만들어져서
-`deny(hook_name, reason)`만 쓴다 - `severity` 인자 기본값(HIGH)으로
-로그는 남지만 override 메커니즘은 아직 없음. 다음에 손댈 일 있으면
-같이 정리.
+**2026-08-15 레거시 3개 재설계 완료.** "리뷰 에이전트" 관련 3개
+(`protect_reviewer_prejudging.py`/`protect_ready_without_review.py`/
+`protect_agent_model_naming.py`)를 심각도/override 체계에 편입:
+
+- `protect_reviewer_prejudging.py`/`protect_ready_without_review.py`
+  → HIGH + sentinel override(target은 각각 dispatch의 `description`,
+  `<owner>/<repo>#<pullNumber>`). CRITICAL이 아니라 HIGH인 이유: 둘 다
+  recoverable(다시 리뷰 돌리면 됨)이지 데이터 유실/shipped 아티팩트
+  손상이 아님.
+- `protect_agent_model_naming.py` → MID + `ask()`(원래 deny였음). 모델
+  누락/haiku는 안전성이 아니라 비용 효율 문제라 하드 블록보다 사람 확인
+  한 번이 더 맞는 등급.
+
+`protect_ready_without_review.py`의 override sentinel은
+`record_whole_branch_review.py`가 쓰는 `.last_whole_branch_review_sha`와
+다른 파일(`.pending_override.json`) - 하나는 "리뷰가 실제로 일어났다"를
+기록하고 다른 하나는 "이번만 그 체크를 의도적으로 건너뛴다"를 기록하는
+별개 개념.
 
 **MID `ask()` 실전 검증 완료(2026-08-15)**: `protect_claim_evidence.py`가
 근거 없는 수치 주장(CLAUDE.md에 "성능이 37% 향상됨" 같은 테스트 문구

@@ -4,18 +4,25 @@
 priciest). sonnet is the default for implementation and review; opus only
 for architecture and the final whole-branch review. Skip haiku."
 
-Denies an Agent dispatch that omits `model` entirely, or sets it to a
+Flags an Agent dispatch that omits `model` entirely, or sets it to a
 haiku variant. This hook can't judge whether sonnet vs opus is the right
 call for a given task - that's a real judgment call left to the
 controller - it only catches the two mechanically-checkable violations:
-no model named at all, and haiku."""
+no model named at all, and haiku.
+
+**MID severity (2026-08 retrofit).** `ask()` - falls through to Claude
+Code's normal permission prompt rather than a hard deny. Unlike the other
+"review agent" hooks, a missing/haiku model is a cost-efficiency issue,
+not a correctness or safety one - worth a human glance, not worth
+blocking outright with an override dance."""
 import json
 import re
 import sys
 
-from _hook_common import allow, deny
+from _hook_common import allow, ask
 
 HOOK_NAME = "protect_agent_model_naming"
+SEVERITY = "MID"
 
 _HAIKU_RE = re.compile(r"haiku", re.IGNORECASE)
 
@@ -33,24 +40,21 @@ def main():
     model = ti.get("model")
 
     if not model:
-        deny(
-            HOOK_NAME,
+        ask(
             "CLAUDE.md Controller rule: \"Always name the model (omitting "
             "it inherits the session's, usually the priciest).\" This "
             "dispatch has no `model` field. Set model explicitly - "
             "`sonnet` by default, `opus` only for architecture/final "
-            "whole-branch review. This hook has no bypass."
+            "whole-branch review."
         )
         return
 
     if _HAIKU_RE.search(str(model)):
-        deny(
-            HOOK_NAME,
+        ask(
             "CLAUDE.md Controller rule: \"Skip haiku - its extra turns on "
             f"multi-step work cost more than the tokens it saves.\" This "
             f"dispatch names model={model!r}. Use `sonnet` (default) or "
-            "`opus` (architecture/final whole-branch review only). This "
-            "hook has no bypass."
+            "`opus` (architecture/final whole-branch review only)."
         )
         return
 

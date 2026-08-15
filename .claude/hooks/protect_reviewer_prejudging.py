@@ -4,8 +4,7 @@
 Think it's a false positive -> let it be raised, settle it in the loop."
 
 Scans an Agent-tool dispatch prompt for language that pre-judges a
-reviewer's findings before the reviewer has seen the diff. Denies the
-dispatch outright - there is no bypass through this hook. The controller
+reviewer's findings before the reviewer has seen the diff. The controller
 must rewrite the prompt so any concern about a specific finding is raised
 AFTER the reviewer reports it, not baked into the dispatch.
 
@@ -14,14 +13,23 @@ blocklist, so it only catches prejudging language that matches one of
 these specific patterns - a rephrase ("skip that one", "not worth
 flagging", "no significant issue there") passes through undetected. It
 raises the bar against the common phrasings observed so far; it is not a
-semantic check and cannot be made airtight by adding more phrases alone."""
+semantic check and cannot be made airtight by adding more phrases alone.
+
+**HIGH severity, override available (2026-08 retrofit).** Denies by
+default. Override via the same sentinel-file mechanism as
+`protect_never_touch.py` - write `.claude/hooks/.pending_override.json`
+with `{"rule": "protect_reviewer_prejudging", "target": "<dispatch
+description>", "reason": "<reason>", "timestamp": <time.time()>}`. Kept
+HIGH rather than CRITICAL: a prejudged review is recoverable (dispatch a
+fresh, unbiased one), unlike data loss or a corrupted shipped artifact."""
 import json
 import re
 import sys
 
-from _hook_common import allow, deny
+from _hook_common import allow, allow_with_override, deny, sentinel_override
 
 HOOK_NAME = "protect_reviewer_prejudging"
+SEVERITY = "HIGH"
 
 # Each pattern pairs a regex with the phrase that triggered it, so the
 # denial message can quote the actual match instead of a generic template.
@@ -61,6 +69,11 @@ def main():
     combined = " ".join(str(ti.get(k, "")) for k in ("prompt", "description"))
     phrase = find_prejudging_phrase(combined)
     if phrase:
+        target = str(ti.get("description", "")) or combined[:80]
+        override_reason = sentinel_override(HOOK_NAME, target)
+        if override_reason:
+            allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
+            return
         deny(
             HOOK_NAME,
             "CLAUDE.md subagent-driven-development rule: \"Never tell a "
@@ -70,7 +83,11 @@ def main():
             f"(matched: \"{phrase}\"). Rewrite the dispatch so the "
             "reviewer sees the diff cold - if you believe a concern is a "
             "false positive, raise that AFTER the reviewer reports it, "
-            "not before. This hook has no bypass."
+            f'not before. To override: write '
+            f'.claude/hooks/.pending_override.json with {{"rule": '
+            f'"{HOOK_NAME}", "target": "{target}", "reason": "<reason>", '
+            '"timestamp": <time.time()>}, then retry immediately.',
+            severity=SEVERITY,
         )
         return
     allow()
