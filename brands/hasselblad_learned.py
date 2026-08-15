@@ -83,8 +83,9 @@ X1D 페어로만 학습한 LUT을 다른 세대에 그대로 적용한 게 과�
 데이터로 뒷받침됨. 세대별 표는 `docs/measurements.md` 참고, 재현은
 `python3 -m tools.calibrate learn_curve`.
 """
-import cv2
 import numpy as np
+
+from core.engine import apply_learned_lut_look
 
 # neutral_L(0~255) -> target_L, tools/calibrate.py learn_curve 모드로
 # raw+jpeg 10페어에서 학습 (v12). raw+jpeg 페어 기준 RMSE:
@@ -126,12 +127,4 @@ _LEARNED_LUT = np.array([
 
 
 def apply_hncs_learned(img_bgr, clahe_clip=1.25):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    l = cv2.LUT(l, _LEARNED_LUT)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    return apply_learned_lut_look(img_bgr, _LEARNED_LUT, clahe_clip)
