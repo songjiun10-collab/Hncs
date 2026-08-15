@@ -1,8 +1,10 @@
 """`.claude/hooks/protect_generated_files.py` 테스트 - brands/*_learned.py의
-_LEARNED_LUT* 배열을 직접 건드리는 Edit/Write가 ask()(MID, 실제 사람
-확인 프롬프트로 넘김)로 걸리는지, 무관한 편집은 조용히 통과하는지."""
+_LEARNED_LUT* 배열을 직접 건드리는 Edit/Write가 deny(MID)+sentinel
+override로 걸리는지(원래 ask()였다가 subagent 테스트로 fail-open 발견
+후 deny+override로 정정됨), 무관한 편집은 조용히 통과하는지."""
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -69,27 +71,56 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
         os.makedirs(os.path.dirname(self._file))
         with open(self._file, "w") as f:
             f.write(_SAMPLE_LEARNED_FILE)
+        # 실제 .claude/hooks/violations_log.jsonl/override_audit.jsonl을
+        # 오염시키지 않도록 모든 subprocess 호출을 격리된 로그 경로로
+        # 돌린다(이전에 이 파일의 _run_hook이 env를 안 넘겨서 실제 로그를
+        # 오염시켰던 버그를 정정).
+        self._log_dir = tempfile.mkdtemp()
+        self._env = dict(os.environ, **{
+            "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._log_dir, "v.jsonl"),
+            "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._log_dir, "o.jsonl"),
+            "HNCS_HOOK_OVERRIDE_SENTINEL": os.path.join(self._log_dir, ".pending.json"),
+        })
 
     def tearDown(self):
-        import shutil
         shutil.rmtree(self._dir, ignore_errors=True)
+        shutil.rmtree(self._log_dir, ignore_errors=True)
 
     def _run_hook(self, tool_name, tool_input):
         payload = json.dumps({"tool_name": tool_name, "tool_input": tool_input})
         proc = subprocess.run(
-            [sys.executable, hook.__file__], input=payload,
+            [sys.executable, hook.__file__], input=payload, env=self._env,
             capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
         return out["hookSpecificOutput"]["permissionDecision"]
 
-    def test_lut_edit_asks(self):
+    def test_lut_edit_denied(self):
         decision = self._run_hook("Edit", {
             "file_path": self._file,
             "old_string": "1, 2, 3, 4,",
             "new_string": "9, 9, 9, 9,",
         })
-        self.assertEqual(decision, "ask")
+        self.assertEqual(decision, "deny")
+
+    def test_override_via_sentinel_allowed_and_audited(self):
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_OVERRIDE_SENTINEL"] = self._env["HNCS_HOOK_OVERRIDE_SENTINEL"]
+        import _hook_common
+        _hook_common.write_sentinel_override(
+            "protect_generated_files", self._file, "사용자 확인함")
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_OVERRIDE_SENTINEL", None)
+
+        decision = self._run_hook("Edit", {
+            "file_path": self._file,
+            "old_string": "1, 2, 3, 4,", "new_string": "9, 9, 9, 9,",
+        })
+        self.assertEqual(decision, "allow")
+        with open(os.path.join(self._log_dir, "o.jsonl"), encoding="utf-8") as f:
+            entry = json.loads(f.readline())
+        self.assertEqual(entry["rule"], "protect_generated_files")
+        self.assertEqual(entry["severity"], "MID")
 
     def test_unrelated_edit_allowed(self):
         decision = self._run_hook("Edit", {
@@ -99,11 +130,11 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
         })
         self.assertEqual(decision, "allow")
 
-    def test_write_to_learned_file_asks(self):
+    def test_write_to_learned_file_denied(self):
         decision = self._run_hook("Write", {
             "file_path": self._file, "content": _SAMPLE_LEARNED_FILE,
         })
-        self.assertEqual(decision, "ask")
+        self.assertEqual(decision, "deny")
 
     def test_non_learned_file_allowed(self):
         decision = self._run_hook("Edit", {
