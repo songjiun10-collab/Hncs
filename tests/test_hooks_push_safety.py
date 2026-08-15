@@ -104,8 +104,10 @@ class TestHookEndToEnd(unittest.TestCase):
         # test run appends synthetic denials to the real, git-tracked
         # .claude/hooks/violations_log.jsonl.
         self._log_dir = tempfile.mkdtemp()
-        self._env = dict(os.environ, HNCS_HOOK_VIOLATIONS_LOG=os.path.join(
-            self._log_dir, "test_violations_log.jsonl"))
+        self._env = dict(os.environ, **{
+            "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._log_dir, "test_violations_log.jsonl"),
+            "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._log_dir, "test_override_audit.jsonl"),
+        })
         run = lambda *args: subprocess.run(  # noqa: E731
             args, cwd=self.repo, capture_output=True, text=True, check=True)
         run("git", "init", "-q")
@@ -145,6 +147,29 @@ class TestHookEndToEnd(unittest.TestCase):
 
     def test_non_push_command_allowed_end_to_end(self):
         self.assertEqual(self._run_hook("git status"), "allow")
+
+    def test_force_push_with_override_allowed_and_audited(self):
+        cmd = ("git push --force origin main"
+               "  # HNCS-OVERRIDE: protect_push_safety: 사용자 명시 승인")
+        self.assertEqual(self._run_hook(cmd), "allow")
+        audit_path = os.path.join(self._log_dir, "test_override_audit.jsonl")
+        with open(audit_path, encoding="utf-8") as f:
+            entry = json.loads(f.readline())
+        self.assertEqual(entry["rule"], "protect_push_safety")
+        self.assertEqual(entry["severity"], "CRITICAL")
+        self.assertEqual(entry["reason"], "사용자 명시 승인")
+
+    def test_authorship_mismatch_has_no_override(self):
+        """authorship 체크는 override 대상이 아님 - 항상 고쳐야 함."""
+        run = lambda *args: subprocess.run(  # noqa: E731
+            args, cwd=self.repo, capture_output=True, text=True, check=True)
+        run("git", "config", "user.email", "someone-else@example.com")
+        with open(os.path.join(self.repo, "f.txt"), "a") as f:
+            f.write("y")
+        run("git", "add", "f.txt")
+        run("git", "commit", "-q", "-m", "wrong author")
+        cmd = "git push -u origin main  # HNCS-OVERRIDE: protect_push_safety: 사유"
+        self.assertEqual(self._run_hook(cmd), "deny")
 
 
 if __name__ == "__main__":

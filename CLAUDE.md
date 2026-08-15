@@ -151,13 +151,21 @@ Turn the task into something verifiable, then loop until it passes.
   silent/automatic changes are never OK. An explicit exception the user
   approves in that conversation (e.g. a behavior-preserving refactor, or
   adopting a recalibration) is a separate, sanctioned path — record what
-  was approved and why. Mechanically enforced by the `PreToolUse` hook in
-  `.claude/settings.json` / `.claude/hooks/protect_never_touch.py`: no
-  bypass for Edit/Write/MultiEdit (function-range checked via AST), and a
-  best-effort text-match net over Bash (`sed -i`, redirection, `cp`/`mv`
-  as destination, `python3 -c "...open(...).write(...)"`) that is
-  file-level, not function-level, and not a guarantee against a
-  sufficiently different Bash write pattern.
+  was approved and why. Mechanically enforced (CRITICAL severity) by the
+  `PreToolUse` hook in `.claude/settings.json` /
+  `.claude/hooks/protect_never_touch.py`: function-range checked via AST
+  for Edit/Write/MultiEdit, and a best-effort text-match net over Bash
+  (`sed -i`, redirection, `cp`/`mv` as destination, `python3 -c
+  "...open(...).write(...)"`) that is file-level, not function-level.
+  Denies by default; a deliberate override is available (2026-08 design,
+  `_hook_common.py`) — a trailing `# HNCS-OVERRIDE: protect_never_touch:
+  <reason>` comment on a Bash command, or a fresh
+  `.claude/hooks/.pending_override.json` sentinel before an Edit/Write —
+  and every override is logged to `override_audit.jsonl` with the git
+  sha it was granted at. The hook doesn't judge whether an override is
+  wise, only that it was explicit, not silent — see
+  `_hook_common.py`'s module docstring for the full tier design (LOW/MID/
+  HIGH/CRITICAL, `ask`/`deny`/override).
 - Ship an experimental result automatically. That's a separate decision.
 
 ## Every commit

@@ -50,3 +50,4 @@ eval_reports/
 models/upscale/
 .DS_Store
 .claude/hooks/.last_whole_branch_review_sha
+.claude/hooks/.pending_override.json

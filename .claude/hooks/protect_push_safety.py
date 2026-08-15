@@ -24,15 +24,23 @@ Verified against that false-positive, plus a real bypass found in code
 review (`git -c http.extraHeader=x push --force` and
 `--force-with-lease=<refspec>` both slipped past an earlier version of
 this regex - see commit history) - none of this is a substitute for a
-real shell parser, so this is still a best-effort net, not a guarantee."""
+real shell parser, so this is still a best-effort net, not a guarantee.
+
+**Severity (2026-08 redesign)**: force-push is CRITICAL, with an override
+available via a trailing `# HNCS-OVERRIDE: protect_push_safety: <reason>`
+comment (see `_hook_common.py`'s module docstring for the tier design).
+The authorship-mismatch check has no override - there's no legitimate
+reason to push with the wrong author when the fix is one command; it's
+always resolvable rather than something to consciously bypass."""
 import json
 import re
 import subprocess
 import sys
 
-from _hook_common import allow, deny
+from _hook_common import allow, allow_with_override, bash_override, deny
 
 HOOK_NAME = "protect_push_safety"
+SEVERITY = "CRITICAL"
 
 _CLAUDE_AUTHOR_EMAIL = "noreply@anthropic.com"
 
@@ -75,14 +83,20 @@ def main():
 
     for m in matches:
         if _FORCE_RE.search(m.group("args")):
+            override_reason = bash_override(HOOK_NAME, command)
+            if override_reason:
+                allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, command, override_reason)
+                return
             deny(
                 HOOK_NAME,
                 "CLAUDE.md: \"Push rejected -> git fetch + git rebase, "
                 "never force.\" This command force-pushes. If the remote "
                 "rejected a push, fetch and rebase instead - never force, "
                 "even with --force-with-lease, unless the user explicitly "
-                "authorized it in this conversation. This hook has no "
-                "bypass."
+                "authorized it in this conversation. To override: add a "
+                f"trailing `# HNCS-OVERRIDE: {HOOK_NAME}: <reason>` comment "
+                "to this command.",
+                severity=SEVERITY,
             )
             return
 
@@ -94,8 +108,9 @@ def main():
             f"HEAD commit's author email is {email!r}, not "
             f"{_CLAUDE_AUTHOR_EMAIL!r}. Run `git config user.email "
             f"{_CLAUDE_AUTHOR_EMAIL} && git config user.name Claude` then "
-            "re-author HEAD (amend or rebase --exec) before pushing. This "
-            "hook has no bypass."
+            "re-author HEAD (amend or rebase --exec) before pushing. No "
+            "override for this one - just fix it.",
+            severity="HIGH",
         )
         return
 
