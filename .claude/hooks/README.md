@@ -51,6 +51,16 @@ git-tracked, append-only).
 로그는 남지만 override 메커니즘은 아직 없음. 다음에 손댈 일 있으면
 같이 정리.
 
+**MID `ask()` 실전 검증 완료(2026-08-15)**: `protect_claim_evidence.py`가
+근거 없는 수치 주장(CLAUDE.md에 "성능이 37% 향상됨" 같은 테스트 문구
+추가)에 실제로 `ask()`를 발동시켰고, Claude Code가 진짜 사람 확인
+프롬프트를 띄웠으며 사용자가 직접 승인함을 확인. subprocess 테스트가
+검증하는 "hookSpecificOutput.permissionDecision == 'ask' 문자열 반환"
+너머, harness가 그 값을 실제로 존중해서 인터랙티브 승인으로 이어짐까지
+라이브로 확인됨(1차 시도는 테스트 문구에 우연히 근거마커 단어("검증")가
+섞여 있어 정상적으로 `allow`됐던 오탐 아닌 오탐 - 2차로 깨끗한 문구를
+써서 재확인).
+
 ## 알려진 한계
 
 - 전부 텍스트/AST 패턴 매칭이지 실제 셸 파서나 의미 분석이 아님 -
