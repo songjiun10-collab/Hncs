@@ -21,6 +21,21 @@
             "type": "command",
             "command": "python3 .claude/hooks/protect_never_touch.py",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_generated_files.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_experiment_integrity.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_claim_evidence.py",
+            "timeout": 15
           }
         ]
       },
@@ -70,6 +85,16 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/protect_destructive.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_branch.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_test_coverage.py",
             "timeout": 15
           }
         ]
