@@ -164,8 +164,10 @@ Turn the task into something verifiable, then loop until it passes.
   and every override is logged to `override_audit.jsonl` with the git
   sha it was granted at. The hook doesn't judge whether an override is
   wise, only that it was explicit, not silent — see
-  `_hook_common.py`'s module docstring for the full tier design (LOW/MID/
-  HIGH/CRITICAL, `ask`/`deny`/override).
+  `_hook_common.py`'s module docstring for the full tier design (LOW
+  allows+logs; MID/HIGH/CRITICAL all deny+override identically — severity
+  is a label, not a different mechanism, after `ask()` was found to fail
+  open for dispatched subagents and was dropped from every active hook).
 - Ship an experimental result automatically. That's a separate decision.
 
 ## Every commit

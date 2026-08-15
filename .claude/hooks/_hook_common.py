@@ -4,14 +4,28 @@ PostToolUse hooks.
 ## Severity tiers (2026-08 redesign, user-specified)
 
 - LOW: allow, log only (no interruption).
-- MID: `permissionDecision: "ask"` - falls through to Claude Code's normal
-  interactive permission prompt instead of an automatic allow/deny. The
-  hook itself doesn't decide; a human does, in the moment.
-- HIGH: deny unless a valid override is present (see below).
-- CRITICAL: same override mechanism as HIGH, but the override's
-  `git_sha` must match the CURRENT HEAD (computed by the hook itself, not
-  trusted from the override marker) - forces a fresh, deliberate override
-  tied to the exact commit state, not a stale/reusable one.
+- MID/HIGH/CRITICAL: deny unless a valid override is present (see below).
+  Mechanically identical across all three tiers - severity is now purely
+  a label/messaging-tone distinction, not a different code path.
+
+**정정(2026-08-15)**: MID originally used `permissionDecision: "ask"`
+(falls through to Claude Code's normal interactive permission prompt) on
+the theory that a human glance beats a hard block for lower-stakes
+findings. Dispatched a real subagent to test whether this hook chain
+applies to subagent tool calls at all, and found: Bash-triggered deny
+hooks (e.g. `protect_destructive.py`) correctly blocked the subagent, but
+an `ask()`-based hook (`protect_claim_evidence.py`) let the subagent's
+Edit through with no prompt and no denial - there's no interactive
+surface to render the prompt on inside a subagent's own turn, so it
+silently resolved to allow. Since this project's normal workflow is a
+Controller dispatching Implementer/Reviewer subagents to do the actual
+work, `ask()` provided zero protection in exactly that case. All three
+`ask()`-using hooks were converted to deny+override; `ask()` remains
+defined below (still valid, still used if some future hook genuinely
+only ever fires on direct orchestrator calls) but no active hook calls it
+as of this correction. The `_hook_common.py` git_sha handling below was
+also never actually a CRITICAL-only gate - see the note in
+`_record_override()`.
 
 ## Override mechanism
 
@@ -84,7 +98,7 @@ def deny(hook_name, reason, severity="HIGH"):
 
 
 def allow_with_override(hook_name, severity, rule, target, reason):
-    """HIGH/CRITICAL tier, override matched: log to both the violations
+    """MID/HIGH/CRITICAL tier, override matched: log to both the violations
     log (so the near-miss is visible in the same place as a real deny)
     and the override audit log (so it's separately searchable), then
     allow."""
@@ -163,6 +177,14 @@ def _repo_root():
 
 
 def _record_override(rule, severity, target, reason):
+    """git_sha is recorded for every override regardless of severity - it's
+    an audit-trail field (proves which commit the override was granted
+    at), not a gating check. An earlier docstring draft implied CRITICAL
+    required the override's git_sha to match current HEAD as an extra
+    verification step; that was never implemented - `sentinel_override()`/
+    `bash_override()` don't branch on severity at all. Fixed in place
+    rather than silently rewritten, per this project's own "append a
+    dated correction" convention."""
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "rule": rule,
