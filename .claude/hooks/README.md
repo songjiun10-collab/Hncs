@@ -16,14 +16,28 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 | 🟠 HIGH | deny | 위와 동일 |
 | 🔴 CRITICAL | deny | 위와 동일 - 등급 차이는 "얼마나 신중해야 하는가"이지 우회 난이도가 아님 |
 
-**MID/HIGH/CRITICAL은 지금 기계적으로 동일하게 동작한다** - 셋 다
-deny+override. 2026-08-15 전에는 MID가 `ask()`(Claude Code의 실제 사람
-확인 프롬프트)를 썼는데, 서브에이전트로 실측한 결과 `ask()`가 디스패치된
-subagent의 툴콜에서는 프롬프트 없이 조용히 `allow`로 새는 게 확인돼서
-(아래 "서브에이전트 훅 적용 여부" 항목) 전부 deny+override로 되돌렸다.
-등급 구분은 지금은 순수하게 라벨/메시지 톤의 차이만 남아있다 - 실제
-차단/우회 메커니즘에 등급별 차이는 없음. `ask()`는 `_hook_common.py`에
-함수로는 남아있지만 활성 훅 중 쓰는 곳은 없다.
+**MID/HIGH/CRITICAL은 기계적으로 동일하게 동작한다(deny+override) -
+LOW는 진짜로 다르다(log_and_allow, 절대 안 막음).** 2026-08-15 전에는
+MID가 `ask()`(Claude Code의 실제 사람 확인 프롬프트)를 썼는데,
+서브에이전트로 실측한 결과 `ask()`가 디스패치된 subagent의 툴콜에서는
+프롬프트 없이 조용히 `allow`로 새는 게 확인돼서(아래 "서브에이전트 훅
+적용 여부" 항목) MID 3개 전부 일단 deny+override로 되돌렸다.
+
+그 다음 재검토(같은 날): MID 3개 중 `protect_agent_model_naming.py`는
+이 세션 안에서만 deny→ask→deny로 등급이 3번 바뀌었다 - 그 churn 자체가
+"이건 원래 막을 정도가 아니었다"는 신호였다. 모델 누락/haiku는 비용
+효율 문제지 정확성/안전성 문제가 아니라서, override 한 줄이라도 요구하는
+게 이 finding엔 안 맞는 마찰이었다. **LOW로 재분류하고 `log_and_allow()`
+(항상 allow, 로그만 남김, override 개념 자체가 없음)로 바꿨다.**
+`protect_generated_files.py`/`protect_claim_evidence.py`(나머지 옛
+`ask()` 사용자 둘)는 MID deny+override로 그대로 둠 - 각각 shipped 생성물
+직접 수정, 근거 없는 수치 주장(이 프로젝트가 `docs/CLAUDE.md`에 기록해둔
+실제 확증편향 사건과 같은 실패 유형)이라 막을 가치가 실재함.
+
+정리하면 등급 구분은 지금 두 갈래: **LOW(항상 통과, 로그만) vs
+MID/HIGH/CRITICAL(deny+override, 라벨은 다르지만 메커니즘 동일)**.
+`ask()`는 `_hook_common.py`에 함수로는 남아있지만 활성 훅 중 쓰는 곳은
+없다.
 
 ## Override 방법
 
@@ -51,7 +65,7 @@ git-tracked, append-only).
 | `protect_claim_evidence.py` | 🟡 MID | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 |
 | `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
 | `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
-| `protect_agent_model_naming.py` | 🟡 MID | Agent | model 미지정/haiku 디스패치 |
+| `protect_agent_model_naming.py` | 🟢 LOW | Agent | model 미지정/haiku 디스패치 - 항상 allow, 로그만 남김 |
 | `record_whole_branch_review.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) 전체-브랜치 리뷰 sentinel 기록 |
 
 `protect_ready_without_review.py`의 override sentinel은

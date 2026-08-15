@@ -81,6 +81,17 @@ def allow():
         "hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
 
 
+def log_and_allow(hook_name, severity, reason):
+    """LOW tier: record the finding to violations_log.jsonl (so it's
+    visible to a human reviewing the log later) but never interrupt the
+    call - no deny, no ask, no override needed. For findings real enough
+    to be worth a durable trace but not real enough to justify friction on
+    the current action (e.g. a missing Agent `model` field - a cost
+    nit, not a correctness/safety issue)."""
+    _log_event(hook_name, severity, reason, overridden=False)
+    allow()
+
+
 def ask(reason):
     """MID tier: hand off to Claude Code's own interactive permission
     prompt instead of the hook deciding. Human approves/denies, in the

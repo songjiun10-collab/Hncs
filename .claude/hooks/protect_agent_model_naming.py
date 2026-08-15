@@ -10,46 +10,37 @@ call for a given task - that's a real judgment call left to the
 controller - it only catches the two mechanically-checkable violations:
 no model named at all, and haiku.
 
-**MID severity, deny + sentinel override (2026-08-15, corrected).**
-First retrofit used `ask()` on the theory that a missing/haiku model is a
-cost-efficiency issue, not a safety one, so a human glance beat a hard
-block. Reverted after subagent testing showed `ask()` silently resolves
-to allow when there's no interactive surface to render the prompt on
-(confirmed for a dispatched subagent's own tool calls; an Agent dispatch
-that itself spawns a nested Agent call would hit the same gap). Kept MID
-severity/labeling (still a lighter-weight override bar than HIGH/
-CRITICAL in spirit), but the mechanism is now the same deterministic
-sentinel-override path as everything else, since that's the one proven
-to behave identically whether the caller is the orchestrator or a
-subagent."""
+**LOW severity, log-only (2026-08-15, re-tiered).** Went deny -> ask ->
+deny -> here. The deny+override churn (see git history) was itself the
+signal: this flip-flopped three times in one session because a missing/
+haiku model is a genuine cost-efficiency nit, not a correctness or safety
+issue, and blocking work over it - even with a one-line override escape
+hatch - was solving a problem this finding doesn't actually have. Now it
+just logs to violations_log.jsonl (visible to a human reviewing later)
+and always allows - no interruption, no override dance needed. This is
+also the concrete split of the "MID/HIGH/CRITICAL all mechanically
+collapsed to deny+override" limitation: not everything bucketed there
+actually earns interrupting the current action, and this hook didn't.
+`protect_generated_files.py`/`protect_claim_evidence.py` (the other two
+former ask()-users) stay at MID deny+override - their findings (hand-
+editing a shipped generated LUT array; adding an unbacked numeric claim
+to docs, the same failure mode `docs/CLAUDE.md`'s confirmation-bias
+section documents a real past incident of) have real enough consequences
+to justify the friction."""
 import json
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, deny, sentinel_override
+from _hook_common import allow, log_and_allow
 
 HOOK_NAME = "protect_agent_model_naming"
-SEVERITY = "MID"
+SEVERITY = "LOW"
 
 _HAIKU_RE = re.compile(r"haiku", re.IGNORECASE)
 
 
 def read_input():
     return json.load(sys.stdin)
-
-
-def _deny_or_override(target, reason):
-    override_reason = sentinel_override(HOOK_NAME, target)
-    if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
-        return
-    deny(
-        HOOK_NAME,
-        f"{reason} To override: write .claude/hooks/.pending_override.json "
-        f'with {{"rule": "{HOOK_NAME}", "target": "{target}", "reason": '
-        '"<reason>", "timestamp": <time.time()>}, then retry immediately.',
-        severity=SEVERITY,
-    )
 
 
 def main():
@@ -59,11 +50,10 @@ def main():
         return
     ti = data.get("tool_input") or {}
     model = ti.get("model")
-    target = str(ti.get("description", "")) or str(ti.get("prompt", ""))[:80]
 
     if not model:
-        _deny_or_override(
-            target,
+        log_and_allow(
+            HOOK_NAME, SEVERITY,
             "CLAUDE.md Controller rule: \"Always name the model (omitting "
             "it inherits the session's, usually the priciest).\" This "
             "dispatch has no `model` field. Set model explicitly - "
@@ -73,8 +63,8 @@ def main():
         return
 
     if _HAIKU_RE.search(str(model)):
-        _deny_or_override(
-            target,
+        log_and_allow(
+            HOOK_NAME, SEVERITY,
             "CLAUDE.md Controller rule: \"Skip haiku - its extra turns on "
             f"multi-step work cost more than the tokens it saves.\" This "
             f"dispatch names model={model!r}. Use `sonnet` (default) or "
