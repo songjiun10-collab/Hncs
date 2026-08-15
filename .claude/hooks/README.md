@@ -87,3 +87,24 @@ git-tracked, append-only).
 - `protect_test_coverage.py`는 의도적으로 좁게 스코프됨(새 파일만) -
   모든 커밋에 새 테스트를 요구하면 이 세션 자체의 정당한 리팩토링
   커밋들(예: `f460233`, 기존 테스트로 이미 커버됨)이 계속 걸렸을 것.
+- override는 self-servable함 - agent가 이유를 지어내면(예: 사용자가
+  실제로 승인 안 했는데 "사용자 승인함"이라고 씀) 훅은 검증할 방법이
+  없다. 대화 맥락을 못 보기 때문. 설계 철학(`_hook_common.py` docstring)
+  상 의도된 트레이드오프 - "의식적 행동 + 로그"까지만 보장하지 승인의
+  진위 검증은 안 함.
+- **미확인(2026-08-15 조사 중)**: 디스패치된 서브에이전트의 툴콜도 이
+  훅 체인을 타는지, 그리고 사람이 없을 때(자율 `/loop`, 스케줄된
+  Routine) `ask()`가 어떻게 되는지 - 둘 다 이 세션에서 오케스트레이터의
+  직접 툴콜로만 검증됐고 아직 실증 안 됨. 확인되는 대로 이 섹션 갱신.
+
+## 로그 유지관리
+
+`violations_log.jsonl`/`override_audit.jsonl`은 append-only + git-tracked라
+계속 커진다. `tools/rotate_hook_logs.py`가 retention 기간(기본 90일)보다
+오래된 항목을 월별 아카이브 파일로 옮긴다 - 훅 체인에는 안 걸려있음(매
+툴콜마다 로그 크기 재는 오버헤드 방지), 가끔 수동으로 돌리거나
+Routine으로 스케줄:
+
+```bash
+python3 -m tools.rotate_hook_logs
+```
