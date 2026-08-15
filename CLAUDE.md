@@ -14,8 +14,10 @@ Korean, extremely terse. Match it — answer the question asked, in a line
 or two, no preamble, no restating the request.
 
 - **`ㄱ`/`ㄱㄱ`/`ㅇㅇ`/`ㅇ` = approved, proceed without re-asking; `ㄴㄴ` =
-  correction follows, apply at face value without relitigating.** Keep
-  replies as short as the question — not a status report.
+  correction follows.** Corrections are factual, not adversarial — apply
+  at face value without relitigating, fix and continue, no apology
+  paragraph, no autopsy of how the misread happened. Keep replies as
+  short as the question — not a status report.
 - **A one-line request can mean hours of work.** Scope it fully; a token
   pass reads as ignoring the ask.
 - **`참고` on a pasted URL/table/file means "incorporate this,"** not
@@ -54,8 +56,6 @@ or two, no preamble, no restating the request.
   another AI/a forum/a paper. AI output is a tool, not an authority, here
   — this is why every claim needs to be checkable, not just this session's
   habit.
-- **Corrections are factual, not adversarial.** Fix and continue — no
-  apology paragraph, no autopsy of how the misread happened.
 - Emotion isn't the channel; enthusiasm padding is just tokens.
 - Typos are frequent and always recoverable (`anjgkfrj?` decoded to `뭐할거?`
   via keyboard-layout mismatch) — infer from context and proceed, don't
@@ -151,23 +151,12 @@ Turn the task into something verifiable, then loop until it passes.
   silent/automatic changes are never OK. An explicit exception the user
   approves in that conversation (e.g. a behavior-preserving refactor, or
   adopting a recalibration) is a separate, sanctioned path — record what
-  was approved and why. Mechanically enforced (CRITICAL severity) by the
-  `PreToolUse` hook in `.claude/settings.json` /
-  `.claude/hooks/protect_never_touch.py`: function-range checked via AST
-  for Edit/Write/MultiEdit, and a best-effort text-match net over Bash
-  (`sed -i`, redirection, `cp`/`mv` as destination, `python3 -c
-  "...open(...).write(...)"`) that is file-level, not function-level.
-  Denies by default; a deliberate override is available (2026-08 design,
-  `_hook_common.py`) — a trailing `# HNCS-OVERRIDE: protect_never_touch:
-  <reason>` comment on a Bash command, or a fresh
-  `.claude/hooks/.pending_override.json` sentinel before an Edit/Write —
-  and every override is logged to `override_audit.jsonl` with the git
-  sha it was granted at. The hook doesn't judge whether an override is
-  wise, only that it was explicit, not silent — see
-  `_hook_common.py`'s module docstring for the full tier design (LOW
-  allows+logs; MID/HIGH/CRITICAL all deny+override identically — severity
-  is a label, not a different mechanism, after `ask()` was found to fail
-  open for dispatched subagents and was dropped from every active hook).
+  was approved and why. Mechanically enforced by the `PreToolUse` hook
+  `.claude/hooks/protect_never_touch.py` (CRITICAL severity, deny by
+  default, explicit override available and logged) — full mechanism,
+  override syntax, and severity-tier design documented in
+  `.claude/hooks/README.md` and `_hook_common.py`, not duplicated here to
+  avoid the two copies drifting apart.
 - Ship an experimental result automatically. That's a separate decision.
 
 ## Every commit
