@@ -124,6 +124,11 @@ def _isotonic_regression(y, w):
 def _build_lut(sum_target, sum_weight):
     lut = np.zeros(N_BINS)
     filled = sum_weight >= MIN_BIN_SAMPLES
+    if not filled.any():
+        raise ValueError(
+            f"No bin reached MIN_BIN_SAMPLES={MIN_BIN_SAMPLES} samples - not "
+            "enough data to fit a LUT (small dataset). Lower MIN_BIN_SAMPLES "
+            "or collect more raw+jpeg pairs.")
     lut[filled] = sum_target[filled] / sum_weight[filled]
     domain = np.arange(N_BINS)
     if not filled.all():

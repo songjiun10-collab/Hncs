@@ -7,7 +7,14 @@ Scans an Agent-tool dispatch prompt for language that pre-judges a
 reviewer's findings before the reviewer has seen the diff. Denies the
 dispatch outright - there is no bypass through this hook. The controller
 must rewrite the prompt so any concern about a specific finding is raised
-AFTER the reviewer reports it, not baked into the dispatch."""
+AFTER the reviewer reports it, not baked into the dispatch.
+
+**Known limitation (flagged in code review)**: this is a fixed phrase
+blocklist, so it only catches prejudging language that matches one of
+these specific patterns - a rephrase ("skip that one", "not worth
+flagging", "no significant issue there") passes through undetected. It
+raises the bar against the common phrasings observed so far; it is not a
+semantic check and cannot be made airtight by adding more phrases alone."""
 import json
 import re
 import sys

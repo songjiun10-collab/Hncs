@@ -200,7 +200,12 @@ def append_manifest(set_dir, pairs, src_dir, download_note):
 def drop_failed(set_dir, expected_make="Hasselblad"):
     """manifest.csv 전체를 verify_row로 재검증해서 FAIL 행+파일을 제거하고
     PASS만 남긴다 (verify_contributed_pairs 자체는 리포트만 찍고 정리는
-    안 하므로, 두 단계를 한 번에 묶어 재현 가능하게 만든 것)."""
+    안 하므로, 두 단계를 한 번에 묶어 재현 가능하게 만든 것).
+
+    FAIL 파일은 os.remove로 영구 삭제하지 않고 set_dir/rejected/{raw,jpeg}/로
+    옮긴다 - append_manifest()가 원본을 src_dir에서 move(복사가 아님)해오므로,
+    여기서 영구 삭제하면 원본 사진의 유일한 사본이 사라진다(실제
+    ~/local-work 사진 라이브러리 대상 도구라 영향이 큼)."""
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from tools.verify_contributed_pairs import verify_row
 
@@ -217,8 +222,11 @@ def drop_failed(set_dir, expected_make="Hasselblad"):
         for key, sub in (("filename_raw", "raw"), ("filename_jpeg", "jpeg")):
             p = os.path.join(set_dir, sub, row[key])
             if os.path.exists(p):
-                os.remove(p)
-        print(f"  제외: {row['filename_raw']} + {row['filename_jpeg']} - {problems}")
+                rejected_dir = os.path.join(set_dir, "rejected", sub)
+                os.makedirs(rejected_dir, exist_ok=True)
+                shutil.move(p, os.path.join(rejected_dir, row[key]))
+        print(f"  제외(set_dir/rejected/로 이동): {row['filename_raw']} + "
+              f"{row['filename_jpeg']} - {problems}")
 
     with open(manifest_path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=COLUMNS)

@@ -1,10 +1,10 @@
 """[research] 니콘 raw+jpeg 페어로 hybrid_engine 캘리브레이션 - 지금까지
 해셀블라드 전용이던 `calibrate_profile.py`의 범용 적합 함수
 (`_find_matrix_and_recalibrate`/`coordinate_descent`)를 그대로 재사용하되,
-데이터 소스만 `datasets/leica/contributed/*/manifest.csv`로 바꾼다.
+데이터 소스만 `datasets/nikon/contributed/*/manifest.csv`로 바꾼다.
 
 `calibrate_profile.py`처럼 프로필 json에 아무것도 쓰지 않는다 - 이 스크립트는
-측정만 한다. 실제로 "출시"하려면(니콘용 leica.json을 hybrid_engine
+측정만 한다. 실제로 "출시"하려면(니콘용 nikon.json을 hybrid_engine
 프로필로 등록하는 것) 별도의, 사용자가 명시적으로 승인하는 결정이다
 (hybrid_engine/CLAUDE.md: "Never touch" 대상은 아니지만, 루트 CLAUDE.md의
 "실험 결과를 자동으로 출시하지 않는다" 원칙은 새 브랜드 프로필에도 그대로
@@ -164,7 +164,7 @@ def run(n_folds=4, seed=0, n_passes=1):
     dataset = _load_calib_set()
     print(f"총 {len(dataset)}쌍 로드 완료\n")
     if not dataset:
-        print("페어를 못 찾음 - datasets/leica/contributed/*/manifest.csv 확인 필요")
+        print("페어를 못 찾음 - datasets/nikon/contributed/*/manifest.csv 확인 필요")
         return
 
     baseline_loss = _mean_loss(_DEFAULT_PARAMS, dataset)

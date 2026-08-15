@@ -6,7 +6,16 @@ When an Agent dispatch looks like the final whole-branch review (mentions
 the review skill/phrase), records the current git HEAD sha to a sentinel
 file. protect_ready_without_review.py (PreToolUse on marking a PR ready)
 reads this sentinel to confirm a whole-branch review actually happened at
-the current commit before the PR can leave draft."""
+the current commit before the PR can leave draft.
+
+**Known limitation (flagged in code review)**: this only checks that a
+dispatch *prompt* mentioned review language - it does not verify the
+dispatched agent actually ran, returned, or reported a clean result before
+recording the sentinel. A dispatch that matches the pattern but fails,
+gets interrupted, or returns findings still marks the sentinel as
+satisfied. Combined with protect_reviewer_prejudging.py's phrase-blocklist
+limitation above, "PR left draft" mechanically guarantees only that a
+review-shaped Agent call was *made* at this commit, not that it passed."""
 import json
 import re
 import subprocess

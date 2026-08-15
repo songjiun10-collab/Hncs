@@ -77,6 +77,19 @@ class TestBuildLut(unittest.TestCase):
         self.assertEqual(lut.shape, (N_BINS,))
         self.assertEqual(lut.dtype, np.uint8)
 
+    def test_no_bin_reaching_threshold_raises_clear_error(self):
+        """리뷰에서 발견된 크래시 경로: 표본이 극소(작은 데이터셋)라 단
+        하나의 bin도 MIN_BIN_SAMPLES에 못 미치면 filled가 전부 False가
+        되고, domain[filled]/lut[filled]가 빈 배열이 되어 np.interp가
+        'array of sample points is empty' ValueError로 죽는다(가드
+        이전). 원인 불명 크래시 대신 명확한 에러를 내야 한다."""
+        sum_target = np.zeros(N_BINS)
+        sum_weight = np.zeros(N_BINS)
+        sum_weight[:] = MIN_BIN_SAMPLES - 1  # 전부 임계값 미달
+        sum_target[:] = 100.0 * (MIN_BIN_SAMPLES - 1)
+        with self.assertRaisesRegex(ValueError, "MIN_BIN_SAMPLES"):
+            _build_lut(sum_target, sum_weight)
+
 
 if __name__ == "__main__":
     unittest.main()

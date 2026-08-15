@@ -61,6 +61,11 @@
             "type": "command",
             "command": "python3 .claude/hooks/protect_push_safety.py",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_never_touch.py",
+            "timeout": 15
           }
         ]
       }

@@ -5,7 +5,17 @@ hybrid_engine/assets/profiles/*.json|*.dcp, without the user's explicit,
 in-the-moment sign-off given directly in the conversation. This hook cannot
 detect that sign-off, so it always denies matching calls; the model must
 surface the block to the user and get explicit permission before retrying
-(there is no bypass through this hook - only a human can unblock)."""
+(no bypass for Edit/Write/MultiEdit - only a human can unblock).
+
+Also covers Bash: a code review found this hook's Edit|Write|MultiEdit-only
+matcher meant `sed -i`, `python3 -c "...open(...).write(...)"`, `tee`, or
+shell redirection against a protected path went through unchecked. Bash text
+doesn't carry a reliable notion of byte/line ranges the way Edit/Write do,
+so Bash coverage is file-level (any write-shaped command referencing a
+protected path is blocked), not function-level like the Edit/Write path
+above - coarser, but still a real, text-matching-based net rather than a
+guarantee. A command with no write-shaped pattern that merely reads or
+greps a protected path (e.g. `cat brands/hasselblad.py`) is left alone."""
 import ast
 import json
 import os
@@ -18,6 +28,44 @@ HOOK_NAME = "protect_never_touch"
 
 BRAND_FILE_RE = re.compile(r"(^|/)brands/[^/]+\.py$")
 PROFILE_ASSET_RE = re.compile(r"(^|/)hybrid_engine/assets/profiles/[^/]+\.(json|dcp)$")
+
+# Bash coverage: only flags a write-shaped command whose *destination*
+# looks like a protected path - e.g. `cp x brands/hasselblad.py` (protected
+# path last = destination) is flagged, `cp brands/hasselblad.py /tmp/ref.py`
+# (protected path first = source, just reading it out for reference) is not.
+_PROTECTED_PATH = (
+    r"(?:(?:[\w./-]*/)?brands/[^/\s\"'>]+\.py|"
+    r"(?:[\w./-]*/)?hybrid_engine/assets/profiles/[^/\s\"'>]+\.(?:json|dcp))"
+)
+_REDIRECT_TARGET_RE = re.compile(r">{1,2}\s*[\"']?(" + _PROTECTED_PATH + r")")
+_SED_INPLACE_TARGET_RE = re.compile(r"\bsed\s+-i\b[^|;&\n`]*?(" + _PROTECTED_PATH + r")")
+_TEE_TARGET_RE = re.compile(r"\btee\b[^|;&\n`]*?(" + _PROTECTED_PATH + r")")
+_CP_MV_DEST_RE = re.compile(
+    r"\b(?:cp|mv)\b[^|;&\n`]*\s(" + _PROTECTED_PATH + r")\s*(?:[;&|\n`]|$)")
+_PY_WRITE_OPEN_RE = re.compile(
+    r"open\(\s*f?[\"']([^\"']*" + _PROTECTED_PATH + r")[\"']\s*,\s*"
+    r"[\"'](?:w|a|wb|ab|x)[\"']")
+
+
+# Strips heredoc bodies (`<<EOF ... EOF` / `<<'EOF' ... EOF` / `<<-EOF ...
+# EOF`) before scanning - otherwise a heredoc body that merely *mentions* a
+# redirect/protected-path pattern as prose (e.g. a commit message explaining
+# this very hook) gets misread as a real write. Same false-positive class
+# `protect_push_safety.py` hit and fixed earlier this session.
+_HEREDOC_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
+
+
+def bash_write_target(command):
+    """Returns the matched protected-path string if `command` looks like it
+    writes to a protected path, else None. Coarser than the Edit/Write path
+    below (file-level, not function-level - see module docstring)."""
+    command = _HEREDOC_RE.sub("", command)
+    for rx in (_REDIRECT_TARGET_RE, _SED_INPLACE_TARGET_RE, _TEE_TARGET_RE,
+               _CP_MV_DEST_RE, _PY_WRITE_OPEN_RE):
+        m = rx.search(command)
+        if m:
+            return m.group(1)
+    return None
 
 
 def read_input():
@@ -105,6 +153,38 @@ def touched_function(file_path, old_string):
 def main():
     data = read_input()
     tool = data.get("tool_name")
+
+    if tool == "Bash":
+        command = str((data.get("tool_input") or {}).get("command", ""))
+        target = bash_write_target(command)
+        if target is None:
+            allow()
+            return
+        if is_profile_asset(target):
+            deny(
+                HOOK_NAME,
+                f"CLAUDE.md Never list: this Bash command appears to write to "
+                f"{target}, a shipped calibration profile under "
+                "hybrid_engine/assets/profiles/. It cannot be modified without "
+                "the user's explicit, in-the-moment sign-off given directly in "
+                "this conversation. Stop and ask the user before retrying."
+            )
+            return
+        if is_brand_file(target):
+            deny(
+                HOOK_NAME,
+                f"CLAUDE.md Never list: this Bash command appears to write to "
+                f"{target} (brands/*.py). This check is file-level, not "
+                "function-level like the Edit/Write path - it can't tell "
+                "whether the write targets a shipped apply_* specifically, so "
+                "it blocks any write-shaped Bash command touching this file to "
+                "be safe. Use Edit/Write for changes here, or ask the user for "
+                "explicit sign-off first."
+            )
+            return
+        allow()
+        return
+
     if tool not in ("Edit", "Write", "MultiEdit"):
         allow()
         return

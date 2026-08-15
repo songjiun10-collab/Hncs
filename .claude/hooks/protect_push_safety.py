@@ -11,13 +11,20 @@
 Text-matching a raw shell command string is inherently approximate, so
 this only flags a `git push` that appears as an actual statement start
 (after &&, ||, ;, a newline, a pipe, a subshell/backtick, or a shell
-keyword like do/then/else - or at the very start of the command) and
-only inspects that invocation's own trailing arguments (up to the next
-statement separator) for a force flag. This deliberately does NOT match
-"git push" appearing inside a quoted string/heredoc body/prose - e.g. a
-commit message or a test payload that merely *mentions* "git push
---force" as text, not as a command to run. Verified against exactly that
-false-positive during development (see commit history)."""
+keyword like do/then/else - or at the very start of the command), allows
+up to 6 recognized global git options (`-c k=v`, `-C dir`, `--long-flag
+[=val]`, or a short flag) between `git` and `push`, and only inspects
+that invocation's own trailing arguments (up to the next statement
+separator) for a force flag - matching `--force`, `-f`, or
+`--force-with-lease` with or without a `=<refspec>` suffix. This
+deliberately does NOT match "git push" appearing inside a quoted
+string/heredoc body/prose - e.g. a commit message or a test payload that
+merely *mentions* "git push --force" as text, not as a command to run.
+Verified against that false-positive, plus a real bypass found in code
+review (`git -c http.extraHeader=x push --force` and
+`--force-with-lease=<refspec>` both slipped past an earlier version of
+this regex - see commit history) - none of this is a substitute for a
+real shell parser, so this is still a best-effort net, not a guarantee."""
 import json
 import re
 import subprocess
@@ -30,10 +37,15 @@ HOOK_NAME = "protect_push_safety"
 _CLAUDE_AUTHOR_EMAIL = "noreply@anthropic.com"
 
 _STMT_START = r"(?:^|&&|\|\||;|\n|\||\(|`|\bdo\b|\bthen\b|\belse\b)\s*"
+# Recognized git global options that may appear between `git` and `push`
+# (e.g. `git -c http.extraHeader=x push ...`) - bounded to 6 repeats to
+# keep backtracking cheap and to avoid matching arbitrary free text as
+# "options".
+_GIT_GLOBAL_OPT = r"(?:-c\s+\S+|-C\s+\S+|--\S+(?:=\S+)?|-[A-Za-z])"
 _PUSH_INVOCATION_RE = re.compile(
-    _STMT_START + r"git\s+push\b(?P<args>[^\n;&|`]*)"
+    _STMT_START + r"git(?:\s+" + _GIT_GLOBAL_OPT + r"){0,6}\s+push\b(?P<args>[^\n;&|`]*)"
 )
-_FORCE_RE = re.compile(r"(^|\s)(--force(-with-lease)?|-f)(\s|$)")
+_FORCE_RE = re.compile(r"(^|\s)(--force(-with-lease)?(=\S+)?|-f)(\s|$)")
 
 
 def read_input():

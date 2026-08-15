@@ -4,14 +4,21 @@ hooks. Every deny() call also appends a line to violations_log.jsonl
 these hooks actually caught. This is the raw material for
 docs/session_retrospectives-style CLAUDE.md entries: instead of relying
 on someone remembering to write up an incident after the fact, the catch
-itself is recorded automatically at the moment it happens."""
+itself is recorded automatically at the moment it happens.
+
+The log path can be overridden via HNCS_HOOK_VIOLATIONS_LOG - tests that
+invoke a hook script as a real subprocess (to test the actual stdin/stdout
+contract) set this to a temp file so synthetic test denials don't get
+appended to the real, git-tracked log."""
 import json
 import os
 import sys
 from datetime import datetime, timezone
 
-_LOG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                          "violations_log.jsonl")
+_LOG_PATH = os.environ.get(
+    "HNCS_HOOK_VIOLATIONS_LOG",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "violations_log.jsonl"),
+)
 
 
 def allow():

@@ -151,9 +151,13 @@ Turn the task into something verifiable, then loop until it passes.
   silent/automatic changes are never OK. An explicit exception the user
   approves in that conversation (e.g. a behavior-preserving refactor, or
   adopting a recalibration) is a separate, sanctioned path — record what
-  was approved and why. Mechanically enforced (no bypass) by the
-  `PreToolUse` hook in `.claude/settings.json` /
-  `.claude/hooks/protect_never_touch.py`.
+  was approved and why. Mechanically enforced by the `PreToolUse` hook in
+  `.claude/settings.json` / `.claude/hooks/protect_never_touch.py`: no
+  bypass for Edit/Write/MultiEdit (function-range checked via AST), and a
+  best-effort text-match net over Bash (`sed -i`, redirection, `cp`/`mv`
+  as destination, `python3 -c "...open(...).write(...)"`) that is
+  file-level, not function-level, and not a guarantee against a
+  sufficiently different Bash write pattern.
 - Ship an experimental result automatically. That's a separate decision.
 
 ## Every commit
