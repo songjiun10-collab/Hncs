@@ -20,6 +20,12 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 | 🟠 HIGH | 직접 호출은 `ask()`(실제 사람 프롬프트), 서브에이전트발은 override 없인 무조건 deny | 위와 동일한 override, 둘 다 여전히 유효 |
 | 🔴 CRITICAL | deny (Never-touch/파괴적 명령/force-push) | 오케스트레이터 직접 호출만 override 가능 - 서브에이전트발은 override 자체가 없음 |
 
+**MEDIUM/HIGH/CRITICAL 공통 전제조건(2026-08-16 추가)**: 위 표의 Override
+칸에 적힌 경로들은 전부 `require_decision_or_deny()` 필수 게이트를
+통과한 *다음에만* 평가된다 - decision record가 없으면 override가
+유효하든 MEDIUM-APPROVE가 진짜 opus 승인이든 상관없이 그 자리에서
+바로 deny. "Decision Record" 섹션 참고.
+
 - **LOW**: `log_and_allow()` - 항상 allow, 로그만. 안 바뀜.
 - **MEDIUM**: "상위 에이전트가 허용하면 실행 에이전트가 실행, 단
   주의사항 전달." 실제 디스패치된 서브에이전트의 응답에
@@ -75,10 +81,22 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 
 ## Decision Record (예측 로그, 2026-08-16)
 
-4단계 위에 얹은 로깅 전용 레이어. 가드된 액션 직전에 에이전트 스스로
-자기 위험도 판단을 기록해두면, 그 액션이 실제로 어떤 훅 결정으로
-이어졌는지에 자동으로 붙는다 - **allow/deny를 절대 gating하지 않는다.**
-기존 4단계 기계적 규칙이 여전히 유일한 결정권자.
+가드된 액션 직전에 에이전트 스스로 자기 위험도 판단을 기록해두면, 그
+액션이 실제로 어떤 훅 결정으로 이어졌는지에 자동으로 붙는다.
+
+**정정(같은 날, 사용자 지시 - "그거도 훅 걸어라 강제적훅 예외 없이")**:
+처음 설계할 땐 "로깅 전용, allow/deny를 절대 gating하지 않는다"였다 -
+아래 "한계 3가지"의 1번(자기강제 없음)이 실제로 문제가 됐다: 이 세션의
+두 organic 테스트(테스트라고 안 밝히고 서브에이전트한테 실제 작업을
+시킴 - README에 decision record가 문서화돼 있고 실제로 읽었는데도
+2번 다 자발적으로 안 씀)로 "문서화만 해두면 쓰이겠지"가 성립 안
+한다는 게 확인된 뒤, **MEDIUM/HIGH/CRITICAL 전부에서 decision record가
+필수 게이트로 바뀌었다** - `require_decision_or_deny()`가 override/
+MEDIUM-APPROVE/ask 판단보다 먼저 실행돼서, decision record가 없으면
+그 어떤 통과 경로도 고려하지 않고 무조건 deny한다(예외 없음 - subagent/
+direct 호출 구분도 없음). LOW(`protect_agent_model_naming.py`)는
+대상이 아님 - LOW의 "마찰 없음" 설계 자체가 이미 별개로 확정된 결정이라
+여기서 안 뒤집었다.
 
 **쓰는 법**: `.claude/hooks/.pending_decision_record.json`에
 `write_sentinel_override()`와 같은 방식으로(에이전트가 직접 Write 툴
@@ -104,11 +122,12 @@ expected_risk, target=..., decision_id=...)`가 이 파일 쓰기의 단일
 그 훅의 고정 등급 - 이 둘이 다를 수 있고(그게 정상), 그 차이를
 `tools/eval_hook_judgments.py`가 측정한다.
 
-**한계 3가지 (숨기지 않고 명시)**:
-1. **자기강제가 없다.** override sentinel은 안 쓰면 계속 막힌다는
-   자기 이익이 있지만, decision record는 안 써도 아무것도 안 막힌다 -
-   시간에 쫓기면 그냥 안 쓸 것이다. 데이터가 희소하고 자기선택적일
-   것으로 예상한다(신중할 때만 더 자주 쓰는 편향).
+**한계 (숨기지 않고 명시)**:
+1. ~~자기강제가 없다.~~ **정정(2026-08-16, 같은 날 나중에): 이제 자기강제
+   있음** - 위 필수 게이트 추가로 override sentinel과 동일하게 "안 쓰면
+   계속 막힌다"는 압박이 생겼다. 원래 이 항목이 지적했던 문제(organic
+   테스트 2번 다 자발적으로 안 씀)가 바로 이 정책 변경의 이유였다 - 이제는
+   "안 써도 그만"이 아니라 "안 쓰면 아무 작업도 못 한다."
 2. **`decision_id`는 "어느 규칙이 발동할지 이미 알 때"만 도움된다.**
    "9개 가드 중 뭐가 걸릴지 모르겠다"는 상황은 못 푼다 - `target`이
    그 훅이 쓰는 override target과 정확히 일치해야 매칭되므로, 현실적
@@ -151,6 +170,10 @@ target, reason, git_sha}`로 기록됨(git_sha는 훅이 직접 계산 - 위조 
 git-tracked, append-only).
 
 ## 가드 목록
+
+MEDIUM/HIGH/CRITICAL 행 전부 decision record 필수 게이트가 먼저 적용됨
+(2026-08-16) - 아래 override/승인/ask 설명은 그 게이트를 통과한 다음
+이야기. LOW(`protect_agent_model_naming.py`)만 게이트 대상 아님.
 
 | 훅 | 등급 | 트리거 | 무엇을 막는가 |
 |---|---|---|---|

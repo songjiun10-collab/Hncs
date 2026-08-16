@@ -70,10 +70,21 @@ class TestProtectDestructiveEndToEnd(unittest.TestCase):
         self._env = dict(os.environ, **{
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._tmpdir, "violations.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._tmpdir, "override_audit.jsonl"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(self._tmpdir, ".pending_decision_record.json"),
         })
 
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def _write_decision_record(self, target):
+        sys.path.insert(0, _HOOKS_DIR)
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_DECISION_RECORD_SENTINEL"] = self._env["HNCS_HOOK_DECISION_RECORD_SENTINEL"]
+        import _hook_common
+        _hook_common.write_decision_record(
+            "protect_destructive", "CRITICAL", 0.9, "테스트 자기평가", "테스트 위험", target=target)
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
 
     def _run_hook(self, command, agent_id=None):
         payload = {"tool_name": "Bash", "tool_input": {"command": command}}
@@ -95,6 +106,7 @@ class TestProtectDestructiveEndToEnd(unittest.TestCase):
 
     def test_override_allows_and_is_audited(self):
         cmd = "git reset --hard  # HNCS-OVERRIDE: protect_destructive: 의도된 초기화"
+        self._write_decision_record(cmd)
         self.assertEqual(self._run_hook(cmd), "allow")
         audit_path = os.path.join(self._tmpdir, "override_audit.jsonl")
         with open(audit_path, encoding="utf-8") as f:
@@ -103,8 +115,15 @@ class TestProtectDestructiveEndToEnd(unittest.TestCase):
         self.assertEqual(entry["severity"], "CRITICAL")
         self.assertEqual(entry["reason"], "의도된 초기화")
 
+    def test_override_without_decision_record_still_denied(self):
+        """2026-08-16 필수 게이트: 유효한 override가 있어도 decision
+        record 없으면 무조건 deny - 예외 없음."""
+        cmd = "git reset --hard  # HNCS-OVERRIDE: protect_destructive: 의도된 초기화"
+        self.assertEqual(self._run_hook(cmd), "deny")
+
     def test_wrong_rule_override_still_denied(self):
         cmd = "git reset --hard  # HNCS-OVERRIDE: protect_never_touch: 사유"
+        self._write_decision_record(cmd)
         self.assertEqual(self._run_hook(cmd), "deny")
 
     def test_subagent_call_denied_even_with_valid_override(self):

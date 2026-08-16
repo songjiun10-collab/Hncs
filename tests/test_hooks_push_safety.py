@@ -107,6 +107,7 @@ class TestHookEndToEnd(unittest.TestCase):
         self._env = dict(os.environ, **{
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._log_dir, "test_violations_log.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._log_dir, "test_override_audit.jsonl"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(self._log_dir, ".pending_decision_record.json"),
         })
         run = lambda *args: subprocess.run(  # noqa: E731
             args, cwd=self.repo, capture_output=True, text=True, check=True)
@@ -135,6 +136,15 @@ class TestHookEndToEnd(unittest.TestCase):
         out = json.loads(proc.stdout)
         return out["hookSpecificOutput"]["permissionDecision"]
 
+    def _write_decision_record(self, target):
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_DECISION_RECORD_SENTINEL"] = self._env["HNCS_HOOK_DECISION_RECORD_SENTINEL"]
+        import _hook_common
+        _hook_common.write_decision_record(
+            "protect_push_safety", "CRITICAL", 0.9, "테스트 자기평가", "테스트 위험", target=target)
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
+
     def test_force_push_denied_end_to_end(self):
         self.assertEqual(
             self._run_hook("git push --force-with-lease=refs/heads/main:x origin main"),
@@ -154,6 +164,7 @@ class TestHookEndToEnd(unittest.TestCase):
     def test_force_push_with_override_allowed_and_audited(self):
         cmd = ("git push --force origin main"
                "  # HNCS-OVERRIDE: protect_push_safety: 사용자 명시 승인")
+        self._write_decision_record(cmd)
         self.assertEqual(self._run_hook(cmd), "allow")
         audit_path = os.path.join(self._log_dir, "test_override_audit.jsonl")
         with open(audit_path, encoding="utf-8") as f:
@@ -162,12 +173,20 @@ class TestHookEndToEnd(unittest.TestCase):
         self.assertEqual(entry["severity"], "CRITICAL")
         self.assertEqual(entry["reason"], "사용자 명시 승인")
 
+    def test_force_push_without_decision_record_still_denied(self):
+        """2026-08-16 필수 게이트: 유효한 override가 있어도 decision
+        record 없으면 무조건 deny - 예외 없음."""
+        cmd = ("git push --force origin main"
+               "  # HNCS-OVERRIDE: protect_push_safety: 사용자 명시 승인")
+        self.assertEqual(self._run_hook(cmd), "deny")
+
     def test_subagent_force_push_denied_even_with_valid_override(self):
         """CRITICAL 등급 force-push: 서브에이전트발 호출은 override조차
         안 받는다(2026-08-15) - protect_destructive.py/protect_never_touch.py
         와 같은 근거."""
         cmd = ("git push --force origin main"
                "  # HNCS-OVERRIDE: protect_push_safety: 사용자 명시 승인")
+        self._write_decision_record(cmd)
         self.assertEqual(self._run_hook(cmd, agent_id="agt_1"), "deny")
 
     def test_authorship_mismatch_has_no_override(self):
@@ -180,6 +199,7 @@ class TestHookEndToEnd(unittest.TestCase):
         run("git", "add", "f.txt")
         run("git", "commit", "-q", "-m", "wrong author")
         cmd = "git push -u origin main  # HNCS-OVERRIDE: protect_push_safety: 사유"
+        self._write_decision_record(cmd)
         self.assertEqual(self._run_hook(cmd), "deny")
 
 

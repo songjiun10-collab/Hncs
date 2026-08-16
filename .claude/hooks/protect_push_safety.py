@@ -37,7 +37,8 @@ import re
 import subprocess
 import sys
 
-from _hook_common import allow, allow_with_override, bash_override, deny, is_subagent_call
+from _hook_common import (allow, allow_with_override, bash_override, deny,
+                           is_subagent_call, require_decision_or_deny)
 
 HOOK_NAME = "protect_push_safety"
 SEVERITY = "CRITICAL"
@@ -83,6 +84,12 @@ def main():
 
     for m in matches:
         if _FORCE_RE.search(m.group("args")):
+            decision = require_decision_or_deny(
+                HOOK_NAME, SEVERITY, command,
+                "CLAUDE.md: \"Push rejected -> git fetch + git rebase, never force.\" "
+                "This command force-pushes.")
+            if decision is None:
+                return
             if is_subagent_call(data):
                 deny(
                     HOOK_NAME,
@@ -93,12 +100,13 @@ def main():
                     "subagent itself could write, so force-push from a "
                     "subagent gets no override path at all. Have the "
                     "controller run this directly.",
-                    severity=SEVERITY, target=command,
+                    severity=SEVERITY, target=command, decision=decision,
                 )
                 return
             override_reason = bash_override(HOOK_NAME, command)
             if override_reason:
-                allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, command, override_reason)
+                allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, command, override_reason,
+                                     decision=decision)
                 return
             deny(
                 HOOK_NAME,
@@ -109,12 +117,18 @@ def main():
                 "authorized it in this conversation. To override: add a "
                 f"trailing `# HNCS-OVERRIDE: {HOOK_NAME}: <reason>` comment "
                 "to this command.",
-                severity=SEVERITY, target=command,
+                severity=SEVERITY, target=command, decision=decision,
             )
             return
 
     email = head_author_email()
     if email is not None and email != _CLAUDE_AUTHOR_EMAIL:
+        decision = require_decision_or_deny(
+            HOOK_NAME, "HIGH", command,
+            "CLAUDE.md: \"Fix authorship or GitHub marks it Unverified.\" "
+            f"HEAD commit's author email is {email!r}.")
+        if decision is None:
+            return
         deny(
             HOOK_NAME,
             "CLAUDE.md: \"Fix authorship or GitHub marks it Unverified.\" "
@@ -123,7 +137,7 @@ def main():
             f"{_CLAUDE_AUTHOR_EMAIL} && git config user.name Claude` then "
             "re-author HEAD (amend or rebase --exec) before pushing. No "
             "override for this one - just fix it.",
-            severity="HIGH", target=command,
+            severity="HIGH", target=command, decision=decision,
         )
         return
 

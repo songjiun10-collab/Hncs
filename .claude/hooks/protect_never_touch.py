@@ -31,7 +31,7 @@ import re
 import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
-                           is_subagent_call, sentinel_override)
+                           is_subagent_call, require_decision_or_deny, sentinel_override)
 
 HOOK_NAME = "protect_never_touch"
 SEVERITY = "CRITICAL"
@@ -171,25 +171,35 @@ _SUBAGENT_NO_OVERRIDE_NOTE = (
 
 
 def _deny_or_bash_override(command, target, reason, data):
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, target, reason)
+    if decision is None:
+        return
     if is_subagent_call(data):
-        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY, target=target)
+        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY,
+             target=target, decision=decision)
         return
     override_reason = bash_override(HOOK_NAME, command)
     if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
+        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason,
+                             decision=decision)
         return
-    deny(HOOK_NAME, reason, severity=SEVERITY, target=target)
+    deny(HOOK_NAME, reason, severity=SEVERITY, target=target, decision=decision)
 
 
 def _deny_or_sentinel_override(target, reason, data):
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, target, reason)
+    if decision is None:
+        return
     if is_subagent_call(data):
-        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY, target=target)
+        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY,
+             target=target, decision=decision)
         return
     override_reason = sentinel_override(HOOK_NAME, target)
     if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
+        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason,
+                             decision=decision)
         return
-    deny(HOOK_NAME, reason, severity=SEVERITY, target=target)
+    deny(HOOK_NAME, reason, severity=SEVERITY, target=target, decision=decision)
 
 
 def main():

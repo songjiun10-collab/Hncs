@@ -26,7 +26,8 @@ import json
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, high_tier_decision, sentinel_override
+from _hook_common import (allow, allow_with_override, high_tier_decision,
+                           require_decision_or_deny, sentinel_override)
 
 HOOK_NAME = "protect_reviewer_prejudging"
 SEVERITY = "HIGH"
@@ -70,9 +71,15 @@ def main():
     phrase = find_prejudging_phrase(combined)
     if phrase:
         target = str(ti.get("description", "")) or combined[:80]
+        decision = require_decision_or_deny(
+            HOOK_NAME, SEVERITY, target,
+            f"This dispatch prompt pre-judges a finding (matched: \"{phrase}\").")
+        if decision is None:
+            return
         override_reason = sentinel_override(HOOK_NAME, target)
         if override_reason:
-            allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
+            allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason,
+                                 decision=decision)
             return
         high_tier_decision(
             HOOK_NAME, SEVERITY,
@@ -87,7 +94,7 @@ def main():
             f'.claude/hooks/.pending_override.json with {{"rule": '
             f'"{HOOK_NAME}", "target": "{target}", "reason": "<reason>", '
             '"timestamp": <time.time()>}, then retry immediately.',
-            data, target=target,
+            data, target=target, decision=decision,
         )
         return
     allow()

@@ -22,6 +22,7 @@ class TestProtectReadyWithoutReviewEndToEnd(unittest.TestCase):
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._log_dir, "v.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._log_dir, "o.jsonl"),
             "HNCS_HOOK_OVERRIDE_SENTINEL": os.path.join(self._log_dir, ".pending.json"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(self._log_dir, ".pending_decision_record.json"),
         })
         # The hook's current_head_sha() runs `git rev-parse HEAD` with
         # cwd=Path(__file__).parent (the real .claude/hooks/ dir) - it
@@ -47,6 +48,15 @@ class TestProtectReadyWithoutReviewEndToEnd(unittest.TestCase):
         elif os.path.exists(self._sentinel_path):
             os.remove(self._sentinel_path)
 
+    def _write_decision_record(self, target="x/y#1"):
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_DECISION_RECORD_SENTINEL"] = self._env["HNCS_HOOK_DECISION_RECORD_SENTINEL"]
+        import _hook_common
+        _hook_common.write_decision_record(
+            "protect_ready_without_review", "HIGH", 0.7, "테스트 자기평가", "테스트 위험", target=target)
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
+
     def _run_hook(self, draft, agent_id=None):
         payload = {
             "tool_name": "mcp__github__update_pull_request",
@@ -67,14 +77,24 @@ class TestProtectReadyWithoutReviewEndToEnd(unittest.TestCase):
 
     def test_ready_with_no_sentinel_asks(self):
         """HIGH tier, direct call: ask(), not deny - see
-        _hook_common.py's 2026-08-15 tier redesign note."""
+        _hook_common.py's 2026-08-15 tier redesign note. decision record
+        required first (2026-08-16 mandatory gate)."""
         if os.path.exists(self._sentinel_path):
             os.remove(self._sentinel_path)
+        self._write_decision_record()
         self.assertEqual(self._run_hook(draft=False), "ask")
+
+    def test_ready_without_decision_record_denied(self):
+        """2026-08-16 필수 게이트: decision record 없으면 ask()도 안 뜨고
+        무조건 deny."""
+        if os.path.exists(self._sentinel_path):
+            os.remove(self._sentinel_path)
+        self.assertEqual(self._run_hook(draft=False), "deny")
 
     def test_ready_with_no_sentinel_from_subagent_denied(self):
         if os.path.exists(self._sentinel_path):
             os.remove(self._sentinel_path)
+        self._write_decision_record()
         self.assertEqual(self._run_hook(draft=False, agent_id="agt_1"), "deny")
 
     def test_ready_with_matching_sentinel_allowed(self):
@@ -85,6 +105,7 @@ class TestProtectReadyWithoutReviewEndToEnd(unittest.TestCase):
     def test_ready_with_stale_sentinel_asks(self):
         with open(self._sentinel_path, "w", encoding="utf-8") as f:
             f.write("0" * 40)
+        self._write_decision_record()
         self.assertEqual(self._run_hook(draft=False), "ask")
 
     def test_override_via_sentinel_allowed_and_audited(self):
@@ -96,6 +117,7 @@ class TestProtectReadyWithoutReviewEndToEnd(unittest.TestCase):
         _hook_common.write_sentinel_override(
             "protect_ready_without_review", "x/y#1", "사용자 확인함")
         del sys.modules["_hook_common"]
+        self._write_decision_record()
 
         self.assertEqual(self._run_hook(draft=False), "allow")
         with open(os.path.join(self._log_dir, "o.jsonl"), encoding="utf-8") as f:

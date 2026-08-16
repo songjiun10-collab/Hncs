@@ -219,6 +219,8 @@ class TestProtectGeneratedFilesMediumApprovalEndToEnd(unittest.TestCase):
             "HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL": os.path.join(
                 self._tmpdir, ".pending_medium_approval.json"),
             "HNCS_HOOK_PENDING_CAUTION": os.path.join(self._tmpdir, ".pending_caution.json"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(
+                self._tmpdir, ".pending_decision_record.json"),
         })
 
     def tearDown(self):
@@ -232,6 +234,9 @@ class TestProtectGeneratedFilesMediumApprovalEndToEnd(unittest.TestCase):
                 os.environ[k] = v
         import _hook_common
         _hook_common.write_medium_approval("protect_generated_files", target, caution)
+        _hook_common.write_decision_record(
+            "protect_generated_files", "MEDIUM", 0.6, "테스트 자기평가", "테스트 위험",
+            target=target)
         del sys.modules["_hook_common"]
 
     def test_medium_approval_allows_and_queues_caution(self):

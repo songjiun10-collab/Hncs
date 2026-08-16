@@ -33,7 +33,8 @@ import os
 import re
 import sys
 
-from _hook_common import allow, allow_with_medium_approval, deny, medium_approval, write_pending_caution
+from _hook_common import (allow, allow_with_medium_approval, deny, medium_approval,
+                           require_decision_or_deny, write_pending_caution)
 
 HOOK_NAME = "protect_claim_evidence"
 SEVERITY = "MEDIUM"
@@ -104,10 +105,15 @@ def main():
         allow()
         return
 
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, file_path, reason)
+    if decision is None:
+        return
+
     caution = medium_approval(HOOK_NAME, file_path)
     if caution is not None:
         write_pending_caution(data.get("tool_use_id"), caution)
-        allow_with_medium_approval(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, caution)
+        allow_with_medium_approval(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, caution,
+                                    decision=decision)
         return
 
     deny(
@@ -118,7 +124,7 @@ def main():
         f'contains "MEDIUM-APPROVE: {HOOK_NAME} :: {file_path} :: <caution>" '
         "- the next matching call will be let through with that caution "
         "delivered back to you.",
-        severity=SEVERITY, target=file_path,
+        severity=SEVERITY, target=file_path, decision=decision,
     )
 
 

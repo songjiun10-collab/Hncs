@@ -72,17 +72,33 @@ also never actually a CRITICAL-only gate - see the note in
 sentinel(에이전트 스스로 위험도를 self-report, `.pending_decision_record.json`)이
 `deny()`/`ask()`/`log_and_allow()`/`allow_with_override()`/
 `allow_with_medium_approval()` 각각에 `target=`/`decision_id=` 인자로
-연결됐다 - **allow/deny를 절대 gating하지 않음**, 기존 4단계 기계적
-규칙이 여전히 유일한 결정권자. 매칭되는 fresh 레코드가 있으면
-`_log_event()`/`_record_override()`가 쓰는 항목에 `decision` 키(self_severity/
+연결됐다 - 원래는 **allow/deny를 절대 gating하지 않는** 로깅 전용
+레이어였다. 매칭되는 fresh 레코드가 있으면 `_log_event()`/
+`_record_override()`가 쓰는 항목에 `decision` 키(self_severity/
 confidence/reason/expected_risk)로 붙는다. `_log_event()`도 새 `decision_kind`
 필드를 받는다 - `deny()`와 `ask()`가 원래 구조적으로 동일한 로그 항목을
 써서 사후에 둘을 구분할 방법이 없었는데, `ask()`의 실제 사람 답변은
 Claude Code 런타임이 훅 프로세스 밖에서 처리해 이 프로세스에서 영원히
 관측 불가능하다는 게 확인돼서(`ask()` 자체 docstring 참고), 최소한
-"이건 ask였다"는 구분이라도 남기려고 추가했다. 전체 설계와 알려진 한계는
-`.claude/hooks/README.md`의 "Decision Record" 섹션, 신규 도구는
-`tools/eval_hook_judgments.py`.
+"이건 ask였다"는 구분이라도 남기려고 추가했다.
+
+**정정(같은 날, 사용자 지시 - "그거도 훅 걸어라 강제적훅 예외 없이")**:
+로깅 전용이던 게 바뀌었다. 이 세션의 두 organic 테스트(테스트라고 안
+밝히고 서브에이전트한테 실제 작업 시킴 - README에 decision record가
+문서화돼 있고 실제로 읽었는데도 2번 다 자발적으로 안 씀)로 "문서화만
+해두면 쓰이겠지"가 성립 안 한다는 게 확인된 뒤, `require_decision_or_deny()`
+(신규)가 MEDIUM/HIGH/CRITICAL 전부에서 override/MEDIUM-APPROVE/ask 판단
+**보다 먼저** 실행되는 필수 게이트로 추가됐다 - decision record가 없으면
+그 어떤 통과 경로도 안 보고 무조건 deny, 예외 없음(subagent/direct 구분
+없음). 이 필수 조회는 1회성 sentinel을 소비하므로, 그 결과(`decision`)를
+`deny()`/`ask()`/`allow_with_override()`/`allow_with_medium_approval()`/
+`high_tier_decision()` 호출에 `decision=` 인자로 그대로 넘겨야 한다 -
+새로 `decision_record()`를 또 조회하면 항상 아무것도 못 찾는다(`_UNSET`
+sentinel로 "넘겨받은 값 그대로 써라" vs "네가 알아서 조회해라"를 구분).
+LOW(`protect_agent_model_naming.py`)는 이 게이트 대상이 아님 - LOW의
+"마찰 없음" 설계는 별개로 이미 확정된 결정이라 안 뒤집었다. 전체 설계와
+알려진 한계는 `.claude/hooks/README.md`의 "Decision Record" 섹션, 신규
+도구는 `tools/eval_hook_judgments.py`.
 
 ## Override mechanism
 
@@ -142,24 +158,38 @@ _SENTINEL_MAX_AGE_SECONDS = 600  # 10min - forces a fresh, deliberate write
 _MEDIUM_APPROVAL_MAX_AGE_SECONDS = 600
 _DECISION_RECORD_MAX_AGE_SECONDS = 600
 
+# Distinguishes "no decision was passed, look it up yourself" (the default,
+# backward-compatible behavior) from "decision=None was passed explicitly,
+# meaning the caller already looked and found nothing - don't look again."
+# Needed because decision_record()'s sentinel is single-use/consumed on
+# read: require_decision_or_deny() below does the one lookup a guard hook
+# is allowed to make, and every downstream deny()/ask()/allow_with_*() call
+# must reuse that exact result rather than querying the sentinel again.
+_UNSET = object()
+
 
 def allow():
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
 
 
-def log_and_allow(hook_name, severity, reason, target=None, decision_id=None):
+def log_and_allow(hook_name, severity, reason, target=None, decision_id=None, decision=_UNSET):
     """LOW tier: record the finding to violations_log.jsonl (so it's
     visible to a human reviewing the log later) but never interrupt the
     call - no deny, no ask, no override needed. For findings real enough
     to be worth a durable trace but not real enough to justify friction on
     the current action (e.g. a missing Agent `model` field - a cost
-    nit, not a correctness/safety issue).
+    nit, not a correctness/safety issue). LOW tier is NOT covered by the
+    mandatory decision-record gate (require_decision_or_deny()) - that
+    would reintroduce exactly the friction LOW was created to remove.
 
     `target`/`decision_id` (2026-08-16): if a fresh, matching decision
     record exists (see write_decision_record()), attach it to the log
-    entry - see decision_record()'s docstring for the matching rule."""
-    dr = decision_record(hook_name, target=target, decision_id=decision_id)
+    entry - see decision_record()'s docstring for the matching rule.
+    `decision=`: pass an already-resolved lookup (e.g. from
+    require_decision_or_deny()) to skip the internal lookup - default
+    _UNSET means "look it up yourself" (backward compatible)."""
+    dr = decision_record(hook_name, target=target, decision_id=decision_id) if decision is _UNSET else decision
     _log_event(hook_name, severity, reason, overridden=False,
                decision_kind="log_and_allow", target=target, decision=dr)
     allow()
@@ -175,7 +205,7 @@ def is_subagent_call(data):
     return "agent_id" in data
 
 
-def ask(hook_name, severity, reason, target=None, decision_id=None):
+def ask(hook_name, severity, reason, target=None, decision_id=None, decision=_UNSET):
     """HIGH tier's default path for a DIRECT orchestrator call only
     (agent_id absent from the hook input - check with is_subagent_call()
     before calling this). Hands off to Claude Code's own interactive
@@ -200,8 +230,11 @@ def ask(hook_name, severity, reason, target=None, decision_id=None):
     already exited by the time that happens. `decision_kind="ask"` in the
     log entry marks this explicitly so eval_hook_judgments.py reports
     `ask_unknown` rather than guessing at an outcome it structurally
-    cannot observe."""
-    dr = decision_record(hook_name, target=target, decision_id=decision_id)
+    cannot observe.
+
+    `decision=`: pass an already-resolved lookup to skip the internal one
+    - default _UNSET looks it up here (backward compatible)."""
+    dr = decision_record(hook_name, target=target, decision_id=decision_id) if decision is _UNSET else decision
     _log_event(hook_name, severity, reason, overridden=False,
                decision_kind="ask", target=target, decision=dr)
     print(json.dumps({"hookSpecificOutput": {
@@ -209,14 +242,21 @@ def ask(hook_name, severity, reason, target=None, decision_id=None):
         "permissionDecisionReason": reason}}))
 
 
-def high_tier_decision(hook_name, severity, reason, data, target=None, decision_id=None):
+def high_tier_decision(hook_name, severity, reason, data, target=None, decision_id=None, decision=_UNSET):
     """Shared HIGH-tier default-path decision, used AFTER a caller has
-    already checked for and found no override. Branches on
+    already checked for and found no override AND (2026-08-16) already
+    passed the mandatory require_decision_or_deny() gate. Branches on
     is_subagent_call(data): a direct orchestrator call gets a real ask()
     prompt; a subagent-originated call gets a hard deny (no ask fallback,
     since ask() fails open there) - the subagent must either have a
     pre-declared override, or the action must be re-run directly by the
-    orchestrator where a human can actually be asked."""
+    orchestrator where a human can actually be asked.
+
+    `decision=`: the already-resolved lookup from require_decision_or_deny()
+    - threaded into whichever of deny()/ask() this picks, so neither one
+    re-queries the (already-consumed) sentinel. Default _UNSET preserves
+    the old behavior (each callee looks it up itself) for any caller not
+    yet updated to the mandatory-gate flow."""
     if is_subagent_call(data):
         deny(
             hook_name,
@@ -224,14 +264,14 @@ def high_tier_decision(hook_name, severity, reason, data, target=None, decision_
             "프롬프트를 띄울 화면이 없음(2026-08-15 실측 확인) - 사람 "
             "승인을 받으려면 컨트롤러가 이 액션을 직접 실행하거나, "
             "디스패치 전에 override를 미리 declare할 것.",
-            severity=severity, target=target, decision_id=decision_id,
+            severity=severity, target=target, decision_id=decision_id, decision=decision,
         )
     else:
-        ask(hook_name, severity, reason, target=target, decision_id=decision_id)
+        ask(hook_name, severity, reason, target=target, decision_id=decision_id, decision=decision)
 
 
-def deny(hook_name, reason, severity="HIGH", target=None, decision_id=None):
-    dr = decision_record(hook_name, target=target, decision_id=decision_id)
+def deny(hook_name, reason, severity="HIGH", target=None, decision_id=None, decision=_UNSET):
+    dr = decision_record(hook_name, target=target, decision_id=decision_id) if decision is _UNSET else decision
     _log_event(hook_name, severity, reason, overridden=False,
                decision_kind="deny", target=target, decision=dr)
     print(json.dumps({"hookSpecificOutput": {
@@ -239,7 +279,7 @@ def deny(hook_name, reason, severity="HIGH", target=None, decision_id=None):
         "permissionDecisionReason": reason}}))
 
 
-def allow_with_override(hook_name, severity, rule, target, reason, decision_id=None):
+def allow_with_override(hook_name, severity, rule, target, reason, decision_id=None, decision=_UNSET):
     """MID/HIGH/CRITICAL tier, override matched: log to both the violations
     log (so the near-miss is visible in the same place as a real deny)
     and the override audit log (so it's separately searchable), then
@@ -251,8 +291,16 @@ def allow_with_override(hook_name, severity, rule, target, reason, decision_id=N
     on match, so if each private logger did its own lookup, the second one
     would always find nothing. Do not "simplify" this into two independent
     lookups - that would silently break enrichment on override_audit.jsonl,
-    the more interesting of the two logs for judgment eval."""
-    dr = decision_record(rule, target=target, decision_id=decision_id)
+    the more interesting of the two logs for judgment eval.
+
+    **재정정(같은 날, 사용자 지시 - "강제적훅 예외 없이")**: as of the
+    mandatory decision-record gate (require_decision_or_deny()), by the
+    time this function runs the guard hook has ALREADY confirmed a
+    decision record exists and consumed it - pass that resolved value in
+    via `decision=` so this doesn't try to look it up again (would find
+    nothing, single-use sentinel). Default _UNSET preserves old behavior
+    for any caller not yet on the mandatory-gate flow."""
+    dr = decision_record(rule, target=target, decision_id=decision_id) if decision is _UNSET else decision
     note = f"OVERRIDDEN ({severity}, rule={rule}): {reason}"
     _log_event(hook_name, severity, note, overridden=True,
                decision_kind="override", target=target, decision=dr)
@@ -366,7 +414,7 @@ def write_medium_approval(rule, target, caution):
                     "timestamp": time.time()}, f)
 
 
-def allow_with_medium_approval(hook_name, severity, rule, target, caution, decision_id=None):
+def allow_with_medium_approval(hook_name, severity, rule, target, caution, decision_id=None, decision=_UNSET):
     """MEDIUM tier, higher-agent approval matched (medium_approval()):
     log like an override (visible in violations_log.jsonl next to real
     denials, plus a separate override_audit.jsonl entry tagged with the
@@ -375,8 +423,10 @@ def allow_with_medium_approval(hook_name, severity, rule, target, caution, decis
     - this function only records that the approval was consumed.
 
     Shares one decision_record() lookup between both loggers - same reason
-    as allow_with_override(), see its docstring."""
-    dr = decision_record(rule, target=target, decision_id=decision_id)
+    as allow_with_override(), see its docstring. `decision=`: pass the
+    already-resolved lookup from require_decision_or_deny() - default
+    _UNSET preserves the old look-it-up-yourself behavior."""
+    dr = decision_record(rule, target=target, decision_id=decision_id) if decision is _UNSET else decision
     note = f"MEDIUM-APPROVED (rule={rule}): {caution}"
     _log_event(hook_name, severity, note, overridden=True,
                decision_kind="medium_approval", target=target, decision=dr)
@@ -509,6 +559,47 @@ def decision_record(rule, target=None, decision_id=None):
     except OSError:
         pass
     return data
+
+
+def require_decision_or_deny(hook_name, severity, target, no_decision_reason, decision_id=None):
+    """**MEDIUM/HIGH/CRITICAL 필수 게이트 (2026-08-16, 사용자 지시:
+    "그거도 훅 걸어라 강제적훅 예외 없이").** 이 세션의 두 organic 테스트
+    (README에 decision record가 문서화돼 있고 서브에이전트가 그 문서를
+    실제로 읽었는데도 자발적으로 안 씀 - 2번 다)로 "문서화만 해두면
+    쓰이겠지"가 성립 안 한다는 게 확인된 뒤 결정된 사항: decision record가
+    없으면 override/MEDIUM-APPROVE/ask 등 다른 어떤 통과 경로도 고려하지
+    않고 **무조건 deny - 예외 없음.**
+
+    가드 훅은 override/승인 체크보다 먼저 이 함수를 호출해야 한다:
+      - `None`을 반환하면(=decision record 없음) 이미 deny()를 호출한
+        뒤이므로 호출자는 즉시 `return`만 하면 됨 - 추가로 deny를 부를
+        필요도, 다른 경로를 시도할 필요도 없음.
+      - dict를 반환하면(decision record 있음) 그 값을 그대로
+        `decision=<그 값>`으로 override/MEDIUM-APPROVE/ask 판단 끝의
+        allow_with_override()/allow_with_medium_approval()/deny()/ask()/
+        high_tier_decision() 호출에 넘겨서 재사용해야 함 -
+        decision_record()가 1회성 소비라 여기서 이미 소비했고, 다시
+        조회하면 항상 None만 나옴.
+
+    LOW 등급(protect_agent_model_naming.py)은 이 게이트 대상이 아님 -
+    LOW의 "마찰 없음" 설계 자체가 이미 사용자 승인을 거쳐 확정된 별개
+    결정이라 여기서 뒤집지 않음."""
+    decision = decision_record(hook_name, target=target, decision_id=decision_id)
+    if decision is None:
+        deny(
+            hook_name,
+            f"{no_decision_reason} 이 등급(MEDIUM/HIGH/CRITICAL)은 override/"
+            "승인/ask 여부와 무관하게 decision record가 먼저 있어야 함"
+            "(2026-08-16, 사용자 지시 - 강제, 예외 없음). Write 툴로 "
+            ".claude/hooks/.pending_decision_record.json에 "
+            f'{{"rule": "{hook_name}", "target": "{target}", "decision_id": '
+            'null, "severity": "<자기평가 등급>", "confidence": '
+            '<0.0-1.0>, "reason": "<판단 근거>", "expected_risk": '
+            '"<예상 위험>", "timestamp": <time.time()>}를 먼저 쓰고 재시도할 것.',
+            severity=severity, target=target, decision=None,
+        )
+        return None
+    return decision
 
 
 def current_head_sha():

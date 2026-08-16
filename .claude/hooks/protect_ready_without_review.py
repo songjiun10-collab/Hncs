@@ -23,7 +23,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _hook_common import allow, allow_with_override, high_tier_decision, sentinel_override
+from _hook_common import (allow, allow_with_override, high_tier_decision,
+                           require_decision_or_deny, sentinel_override)
 
 HOOK_NAME = "protect_ready_without_review"
 SEVERITY = "HIGH"
@@ -65,9 +66,14 @@ def main():
         detail = "no whole-branch review has been dispatched in this session"
 
     target = f"{ti.get('owner', '?')}/{ti.get('repo', '?')}#{ti.get('pullNumber', '?')}"
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, target, f"Blocking draft->ready ({detail}).")
+    if decision is None:
+        return
+
     override_reason = sentinel_override(HOOK_NAME, target)
     if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
+        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason,
+                             decision=decision)
         return
 
     high_tier_decision(
@@ -80,7 +86,7 @@ def main():
         f'.claude/hooks/.pending_override.json with {{"rule": "{HOOK_NAME}", '
         f'"target": "{target}", "reason": "<reason>", "timestamp": '
         "<time.time()>}, then retry immediately.",
-        data, target=target,
+        data, target=target, decision=decision,
     )
 
 

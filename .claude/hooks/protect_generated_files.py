@@ -34,7 +34,8 @@ import os
 import re
 import sys
 
-from _hook_common import allow, allow_with_medium_approval, deny, medium_approval, write_pending_caution
+from _hook_common import (allow, allow_with_medium_approval, deny, medium_approval,
+                           require_decision_or_deny, write_pending_caution)
 
 HOOK_NAME = "protect_generated_files"
 SEVERITY = "MEDIUM"
@@ -99,10 +100,14 @@ def touched_lut_array(file_path, old_string):
 
 
 def _deny_or_override(target, reason, tool_use_id=None):
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, target, reason)
+    if decision is None:
+        return
     caution = medium_approval(HOOK_NAME, target)
     if caution is not None:
         write_pending_caution(tool_use_id, caution)
-        allow_with_medium_approval(HOOK_NAME, SEVERITY, HOOK_NAME, target, caution)
+        allow_with_medium_approval(HOOK_NAME, SEVERITY, HOOK_NAME, target, caution,
+                                    decision=decision)
         return
     deny(
         HOOK_NAME,
@@ -112,7 +117,7 @@ def _deny_or_override(target, reason, tool_use_id=None):
         f'contains "MEDIUM-APPROVE: {HOOK_NAME} :: {target} :: <caution>" '
         "- the next matching call will be let through with that caution "
         "delivered back to you.",
-        severity=SEVERITY, target=target,
+        severity=SEVERITY, target=target, decision=decision,
     )
 
 

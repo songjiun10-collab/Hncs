@@ -80,11 +80,21 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._log_dir, "v.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._log_dir, "o.jsonl"),
             "HNCS_HOOK_OVERRIDE_SENTINEL": os.path.join(self._log_dir, ".pending.json"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(self._log_dir, ".pending_decision_record.json"),
         })
 
     def tearDown(self):
         shutil.rmtree(self._dir, ignore_errors=True)
         shutil.rmtree(self._log_dir, ignore_errors=True)
+
+    def _write_decision_record(self, target):
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_DECISION_RECORD_SENTINEL"] = self._env["HNCS_HOOK_DECISION_RECORD_SENTINEL"]
+        import _hook_common
+        _hook_common.write_decision_record(
+            "protect_generated_files", "MEDIUM", 0.6, "테스트 자기평가", "테스트 위험", target=target)
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
 
     def _run_hook(self, tool_name, tool_input):
         payload = json.dumps({"tool_name": tool_name, "tool_input": tool_input})
@@ -122,7 +132,38 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
         self.assertEqual(decision, "deny")
 
     def test_medium_approval_still_allows_and_audited(self):
-        """MEDIUM-APPROVE(opus 디스패치 전용)만 유효한 통과 경로."""
+        """MEDIUM-APPROVE(opus 디스패치 전용)만 유효한 통과 경로.
+        decision record도 먼저 있어야 함(2026-08-16 필수 게이트)."""
+        sys.modules.pop("_hook_common", None)
+        for k, v in self._env.items():
+            if k.startswith("HNCS_HOOK_"):
+                os.environ[k] = v
+        os.environ["HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL"] = os.path.join(
+            self._log_dir, ".pending_medium_approval.json")
+        import _hook_common
+        _hook_common.write_medium_approval(
+            "protect_generated_files", self._file, "opus가 승인함")
+        _hook_common.write_decision_record(
+            "protect_generated_files", "MEDIUM", 0.6, "테스트 자기평가", "테스트 위험",
+            target=self._file)
+        del sys.modules["_hook_common"]
+        self._env["HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL"] = os.environ.pop(
+            "HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL")
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
+
+        decision = self._run_hook("Edit", {
+            "file_path": self._file,
+            "old_string": "1, 2, 3, 4,", "new_string": "9, 9, 9, 9,",
+        })
+        self.assertEqual(decision, "allow")
+        with open(os.path.join(self._log_dir, "o.jsonl"), encoding="utf-8") as f:
+            entry = json.loads(f.readline())
+        self.assertEqual(entry["rule"], "protect_generated_files")
+        self.assertEqual(entry["severity"], "MEDIUM")
+
+    def test_medium_approval_without_decision_record_denied(self):
+        """2026-08-16 필수 게이트: 유효한 MEDIUM-APPROVE가 있어도 decision
+        record 없으면 무조건 deny."""
         sys.modules.pop("_hook_common", None)
         for k, v in self._env.items():
             if k.startswith("HNCS_HOOK_"):
@@ -140,11 +181,7 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
             "file_path": self._file,
             "old_string": "1, 2, 3, 4,", "new_string": "9, 9, 9, 9,",
         })
-        self.assertEqual(decision, "allow")
-        with open(os.path.join(self._log_dir, "o.jsonl"), encoding="utf-8") as f:
-            entry = json.loads(f.readline())
-        self.assertEqual(entry["rule"], "protect_generated_files")
-        self.assertEqual(entry["severity"], "MEDIUM")
+        self.assertEqual(decision, "deny")
 
     def test_unrelated_edit_allowed(self):
         decision = self._run_hook("Edit", {

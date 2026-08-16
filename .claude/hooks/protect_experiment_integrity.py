@@ -28,7 +28,8 @@ import os
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, high_tier_decision, sentinel_override
+from _hook_common import (allow, allow_with_override, high_tier_decision,
+                           require_decision_or_deny, sentinel_override)
 
 HOOK_NAME = "protect_experiment_integrity"
 SEVERITY = "HIGH"
@@ -93,9 +94,14 @@ def main():
         allow()
         return
 
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, file_path, reason)
+    if decision is None:
+        return
+
     override_reason = sentinel_override(HOOK_NAME, file_path)
     if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, override_reason)
+        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, override_reason,
+                             decision=decision)
         return
 
     high_tier_decision(
@@ -103,7 +109,7 @@ def main():
         f"{reason} To override: write .claude/hooks/.pending_override.json "
         f'with {{"rule": "{HOOK_NAME}", "target": "{file_path}", "reason": '
         '"<reason>", "timestamp": <time.time()>}, then retry immediately.',
-        data, target=file_path,
+        data, target=file_path, decision=decision,
     )
 
 

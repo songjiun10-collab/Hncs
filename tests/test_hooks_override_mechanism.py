@@ -122,10 +122,21 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._tmpdir, "violations.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._tmpdir, "override_audit.jsonl"),
             "HNCS_HOOK_OVERRIDE_SENTINEL": os.path.join(self._tmpdir, ".pending_override.json"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(self._tmpdir, ".pending_decision_record.json"),
         })
 
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def _write_decision_record(self, target):
+        sys.path.insert(0, _HOOKS_DIR)
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_DECISION_RECORD_SENTINEL"] = self._env["HNCS_HOOK_DECISION_RECORD_SENTINEL"]
+        import _hook_common
+        _hook_common.write_decision_record(
+            "protect_never_touch", "CRITICAL", 0.9, "테스트 자기평가", "테스트 위험", target=target)
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
 
     def _run_hook(self, tool_name, tool_input, agent_id=None):
         payload = {"tool_name": tool_name, "tool_input": tool_input}
@@ -147,6 +158,7 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
     def test_bash_write_with_valid_override_allowed(self):
         cmd = ("sed -i 's/x/y/' brands/hasselblad.py"
                "  # HNCS-OVERRIDE: protect_never_touch: 테스트 승인 사유")
+        self._write_decision_record("brands/hasselblad.py")
         decision = self._run_hook("Bash", {"command": cmd})
         self.assertEqual(decision, "allow")
         audit_path = os.path.join(self._tmpdir, "override_audit.jsonl")
@@ -157,6 +169,14 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
         self.assertEqual(entry["severity"], "CRITICAL")
         self.assertEqual(entry["reason"], "테스트 승인 사유")
         self.assertIsNotNone(entry["git_sha"])
+
+    def test_bash_write_with_override_but_no_decision_record_denied(self):
+        """2026-08-16 필수 게이트: 유효한 override가 있어도 decision
+        record 없으면 무조건 deny."""
+        cmd = ("sed -i 's/x/y/' brands/hasselblad.py"
+               "  # HNCS-OVERRIDE: protect_never_touch: 테스트 승인 사유")
+        decision = self._run_hook("Bash", {"command": cmd})
+        self.assertEqual(decision, "deny")
 
     def test_bash_write_with_wrong_rule_override_still_denied(self):
         cmd = ("sed -i 's/x/y/' brands/hasselblad.py"
@@ -180,6 +200,7 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
         import _hook_common
         _hook_common.write_sentinel_override("protect_never_touch", target, "테스트 승인")
         del sys.modules["_hook_common"]
+        self._write_decision_record(target)
 
         decision = self._run_hook("Edit", {
             "file_path": target,
@@ -196,6 +217,24 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
             "new_string": "def apply_sony_a7rvi_learned(img_bgr, clahe_clip=3.0):",
         })
         self.assertEqual(decision2, "deny")
+
+    def test_edit_with_sentinel_but_no_decision_record_denied(self):
+        """2026-08-16 필수 게이트: 유효한 sentinel override가 있어도
+        decision record 없으면 무조건 deny."""
+        target = "brands/sony_a7rvi_learned.py"
+        sys.path.insert(0, _HOOKS_DIR)
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_OVERRIDE_SENTINEL"] = self._env["HNCS_HOOK_OVERRIDE_SENTINEL"]
+        import _hook_common
+        _hook_common.write_sentinel_override("protect_never_touch", target, "테스트 승인")
+        del sys.modules["_hook_common"]
+
+        decision = self._run_hook("Edit", {
+            "file_path": target,
+            "old_string": "def apply_sony_a7rvi_learned(img_bgr, clahe_clip=1.25):",
+            "new_string": "def apply_sony_a7rvi_learned(img_bgr, clahe_clip=2.0):",
+        })
+        self.assertEqual(decision, "deny")
 
     def test_profile_asset_without_override_still_denied(self):
         decision = self._run_hook("Write", {

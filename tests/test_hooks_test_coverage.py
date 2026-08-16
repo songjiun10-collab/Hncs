@@ -22,6 +22,7 @@ class TestProtectTestCoverageEndToEnd(unittest.TestCase):
         self._env = dict(os.environ, **{
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._log_dir, "v.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._log_dir, "o.jsonl"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(self._log_dir, ".pending_decision_record.json"),
         })
         self._run("git", "init", "-q")
         self._run("git", "config", "user.email", "x@example.com")
@@ -44,6 +45,16 @@ class TestProtectTestCoverageEndToEnd(unittest.TestCase):
         with open(os.path.join(self.repo, rel_path), "w") as f:
             f.write(content)
 
+    def _write_decision_record(self, target):
+        sys.path.insert(0, _HOOKS_DIR)
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_DECISION_RECORD_SENTINEL"] = self._env["HNCS_HOOK_DECISION_RECORD_SENTINEL"]
+        import _hook_common
+        _hook_common.write_decision_record(
+            "protect_test_coverage", "HIGH", 0.7, "테스트 자기평가", "테스트 위험", target=target)
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
+
     def _run_hook(self, command, agent_id=None):
         payload = {"tool_name": "Bash", "tool_input": {"command": command}}
         if agent_id:
@@ -58,16 +69,26 @@ class TestProtectTestCoverageEndToEnd(unittest.TestCase):
 
     def test_new_tools_file_without_test_asks(self):
         """HIGH tier, direct call: ask(), not deny - see
-        _hook_common.py's 2026-08-15 tier redesign note."""
+        _hook_common.py's 2026-08-15 tier redesign note. decision record
+        required first (2026-08-16 mandatory gate)."""
         self._write("tools/new_thing.py", "x = 1\n")
         self._run("git", "add", "tools/new_thing.py")
+        self._write_decision_record("tools/new_thing.py")
         self.assertEqual(self._run_hook('git commit -m "add"'), "ask")
 
     def test_new_tools_file_without_test_from_subagent_denied(self):
         self._write("tools/new_thing.py", "x = 1\n")
         self._run("git", "add", "tools/new_thing.py")
+        self._write_decision_record("tools/new_thing.py")
         self.assertEqual(
             self._run_hook('git commit -m "add"', agent_id="agt_1"), "deny")
+
+    def test_new_tools_file_without_decision_record_denied(self):
+        """2026-08-16 필수 게이트: decision record 없으면 ask()도 안 뜨고
+        무조건 deny."""
+        self._write("tools/new_thing.py", "x = 1\n")
+        self._run("git", "add", "tools/new_thing.py")
+        self.assertEqual(self._run_hook('git commit -m "add"'), "deny")
 
     def test_new_tools_file_with_test_allowed(self):
         self._write("tools/new_thing.py", "x = 1\n")
@@ -104,6 +125,7 @@ class TestProtectTestCoverageEndToEnd(unittest.TestCase):
     def test_override_allows_and_audited(self):
         self._write("tools/scratch_oneoff.py", "x = 1\n")
         self._run("git", "add", "tools/scratch_oneoff.py")
+        self._write_decision_record("tools/scratch_oneoff.py")
         cmd = 'git commit -m "add"  # HNCS-OVERRIDE: protect_test_coverage: 일회성 스크립트'
         self.assertEqual(self._run_hook(cmd), "allow")
         with open(os.path.join(self._log_dir, "o.jsonl"), encoding="utf-8") as f:

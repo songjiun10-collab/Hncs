@@ -15,7 +15,8 @@ import json
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, bash_override, deny, is_subagent_call
+from _hook_common import (allow, allow_with_override, bash_override, deny,
+                           is_subagent_call, require_decision_or_deny)
 
 HOOK_NAME = "protect_destructive"
 SEVERITY = "CRITICAL"
@@ -87,6 +88,10 @@ def main():
         allow()
         return
 
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, command, reason)
+    if decision is None:
+        return
+
     if is_subagent_call(data):
         deny(
             HOOK_NAME,
@@ -95,13 +100,14 @@ def main():
             "주석은 서브에이전트 스스로도 쓸 수 있음)이라는 게 가장 치명적인 "
             "지점이라, 파괴적 명령의 서브에이전트발 시도는 override 불가로 "
             "막는다. 컨트롤러가 직접 실행할 것.",
-            severity=SEVERITY, target=command,
+            severity=SEVERITY, target=command, decision=decision,
         )
         return
 
     override_reason = bash_override(HOOK_NAME, command)
     if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, command, override_reason)
+        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, command, override_reason,
+                             decision=decision)
         return
 
     deny(
@@ -110,7 +116,7 @@ def main():
         f"trailing `# HNCS-OVERRIDE: {HOOK_NAME}: <reason>` comment to the "
         "command, stating why this specific destructive action is intended "
         "and safe.",
-        severity=SEVERITY, target=command,
+        severity=SEVERITY, target=command, decision=decision,
     )
 
 

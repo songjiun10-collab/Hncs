@@ -18,7 +18,8 @@ import re
 import subprocess
 import sys
 
-from _hook_common import allow, allow_with_override, bash_override, high_tier_decision
+from _hook_common import (allow, allow_with_override, bash_override,
+                           high_tier_decision, require_decision_or_deny)
 
 HOOK_NAME = "protect_branch"
 SEVERITY = "HIGH"
@@ -79,16 +80,21 @@ def main():
         allow()
         return
 
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, branch, reason)
+    if decision is None:
+        return
+
     override_reason = bash_override(HOOK_NAME, command)
     if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, branch, override_reason)
+        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, branch, override_reason,
+                             decision=decision)
         return
 
     high_tier_decision(
         HOOK_NAME, SEVERITY,
         f"{reason} To override: add a trailing `# HNCS-OVERRIDE: "
         f"{HOOK_NAME}: <reason>` comment to the command.",
-        data, target=branch,
+        data, target=branch, decision=decision,
     )
 
 

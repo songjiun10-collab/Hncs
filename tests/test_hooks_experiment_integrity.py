@@ -44,10 +44,21 @@ class TestProtectExperimentIntegrityEndToEnd(unittest.TestCase):
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._tmpdir, "v.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._tmpdir, "o.jsonl"),
             "HNCS_HOOK_OVERRIDE_SENTINEL": os.path.join(self._tmpdir, ".pending.json"),
+            "HNCS_HOOK_DECISION_RECORD_SENTINEL": os.path.join(self._tmpdir, ".pending_decision_record.json"),
         })
 
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
+
+    def _write_decision_record(self, target):
+        sys.path.insert(0, _HOOKS_DIR)
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_DECISION_RECORD_SENTINEL"] = self._env["HNCS_HOOK_DECISION_RECORD_SENTINEL"]
+        import _hook_common
+        _hook_common.write_decision_record(
+            "protect_experiment_integrity", "HIGH", 0.7, "테스트 자기평가", "테스트 위험", target=target)
+        del sys.modules["_hook_common"]
+        os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
 
     def _run_hook(self, tool_input, agent_id=None):
         payload = {"tool_name": "Edit", "tool_input": tool_input}
@@ -63,12 +74,23 @@ class TestProtectExperimentIntegrityEndToEnd(unittest.TestCase):
 
     def test_result_without_ci_asks(self):
         """HIGH tier, direct call: ask(), not deny - see
-        _hook_common.py's 2026-08-15 tier redesign note."""
+        _hook_common.py's 2026-08-15 tier redesign note. decision record
+        required first (2026-08-16 mandatory gate)."""
+        self._write_decision_record("hybrid_engine/EVALUATION.md")
         decision = self._run_hook({
             "file_path": "hybrid_engine/EVALUATION.md",
             "old_string": "old", "new_string": "개선폭 +9.12%, 우세.",
         })
         self.assertEqual(decision, "ask")
+
+    def test_result_without_decision_record_denied(self):
+        """2026-08-16 필수 게이트: decision record 없으면 ask()도 안 뜨고
+        무조건 deny."""
+        decision = self._run_hook({
+            "file_path": "hybrid_engine/EVALUATION.md",
+            "old_string": "old", "new_string": "개선폭 +9.12%, 우세.",
+        })
+        self.assertEqual(decision, "deny")
 
     def test_result_without_ci_from_subagent_denied(self):
         decision = self._run_hook({
@@ -100,6 +122,7 @@ class TestProtectExperimentIntegrityEndToEnd(unittest.TestCase):
         _hook_common.write_sentinel_override(
             "protect_experiment_integrity", "hybrid_engine/EVALUATION.md", "정정 블록쿼트일 뿐")
         del sys.modules["_hook_common"]
+        self._write_decision_record("hybrid_engine/EVALUATION.md")
 
         decision = self._run_hook({
             "file_path": "hybrid_engine/EVALUATION.md",
