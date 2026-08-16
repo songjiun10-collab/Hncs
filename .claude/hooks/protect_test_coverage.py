@@ -116,7 +116,7 @@ def main():
         "commit implies the new code is actually tested, not just "
         "written). To override: add a trailing `# HNCS-OVERRIDE: "
         f"{HOOK_NAME}: <reason>` comment to the commit command.",
-        data,
+        data, target=target,
     )
 
 

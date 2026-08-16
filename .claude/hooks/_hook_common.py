@@ -67,6 +67,23 @@ also never actually a CRITICAL-only gate - see the note in
   기존 override 메커니즘 그대로(이 세션의 learned-LUT 리팩토링이 바로
   이 경로로 진행됐다).
 
+**추가 (2026-08-16, Decision Record 파이프라인)**: 4단계 위에 로깅 전용
+레이어 하나를 얹었다 - `write_decision_record()`/`decision_record()`
+sentinel(에이전트 스스로 위험도를 self-report, `.pending_decision_record.json`)이
+`deny()`/`ask()`/`log_and_allow()`/`allow_with_override()`/
+`allow_with_medium_approval()` 각각에 `target=`/`decision_id=` 인자로
+연결됐다 - **allow/deny를 절대 gating하지 않음**, 기존 4단계 기계적
+규칙이 여전히 유일한 결정권자. 매칭되는 fresh 레코드가 있으면
+`_log_event()`/`_record_override()`가 쓰는 항목에 `decision` 키(self_severity/
+confidence/reason/expected_risk)로 붙는다. `_log_event()`도 새 `decision_kind`
+필드를 받는다 - `deny()`와 `ask()`가 원래 구조적으로 동일한 로그 항목을
+써서 사후에 둘을 구분할 방법이 없었는데, `ask()`의 실제 사람 답변은
+Claude Code 런타임이 훅 프로세스 밖에서 처리해 이 프로세스에서 영원히
+관측 불가능하다는 게 확인돼서(`ask()` 자체 docstring 참고), 최소한
+"이건 ask였다"는 구분이라도 남기려고 추가했다. 전체 설계와 알려진 한계는
+`.claude/hooks/README.md`의 "Decision Record" 섹션, 신규 도구는
+`tools/eval_hook_judgments.py`.
+
 ## Override mechanism
 
 The point (user's own framing): "훅은 개발자를 대신해 판단하지 않는다.
@@ -112,6 +129,9 @@ _MEDIUM_APPROVAL_PATH = os.environ.get(
     os.path.join(_HOOKS_DIR, ".pending_medium_approval.json"))
 _PENDING_CAUTION_PATH = os.environ.get(
     "HNCS_HOOK_PENDING_CAUTION", os.path.join(_HOOKS_DIR, ".pending_caution.json"))
+_DECISION_RECORD_PATH = os.environ.get(
+    "HNCS_HOOK_DECISION_RECORD_SENTINEL",
+    os.path.join(_HOOKS_DIR, ".pending_decision_record.json"))
 
 SEVERITIES = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
 
@@ -120,6 +140,7 @@ _BASH_OVERRIDE_RE = re.compile(
 
 _SENTINEL_MAX_AGE_SECONDS = 600  # 10min - forces a fresh, deliberate write
 _MEDIUM_APPROVAL_MAX_AGE_SECONDS = 600
+_DECISION_RECORD_MAX_AGE_SECONDS = 600
 
 
 def allow():
@@ -127,14 +148,20 @@ def allow():
         "hookEventName": "PreToolUse", "permissionDecision": "allow"}}))
 
 
-def log_and_allow(hook_name, severity, reason):
+def log_and_allow(hook_name, severity, reason, target=None, decision_id=None):
     """LOW tier: record the finding to violations_log.jsonl (so it's
     visible to a human reviewing the log later) but never interrupt the
     call - no deny, no ask, no override needed. For findings real enough
     to be worth a durable trace but not real enough to justify friction on
     the current action (e.g. a missing Agent `model` field - a cost
-    nit, not a correctness/safety issue)."""
-    _log_event(hook_name, severity, reason, overridden=False)
+    nit, not a correctness/safety issue).
+
+    `target`/`decision_id` (2026-08-16): if a fresh, matching decision
+    record exists (see write_decision_record()), attach it to the log
+    entry - see decision_record()'s docstring for the matching rule."""
+    dr = decision_record(hook_name, target=target, decision_id=decision_id)
+    _log_event(hook_name, severity, reason, overridden=False,
+               decision_kind="log_and_allow", target=target, decision=dr)
     allow()
 
 
@@ -148,7 +175,7 @@ def is_subagent_call(data):
     return "agent_id" in data
 
 
-def ask(hook_name, severity, reason):
+def ask(hook_name, severity, reason, target=None, decision_id=None):
     """HIGH tier's default path for a DIRECT orchestrator call only
     (agent_id absent from the hook input - check with is_subagent_call()
     before calling this). Hands off to Claude Code's own interactive
@@ -165,14 +192,24 @@ def ask(hook_name, severity, reason):
     because it's gated on agent_id being absent.
 
     Logged like deny() so violations_log.jsonl carries every HIGH-tier
-    trigger, not only the ones a human happened to deny."""
-    _log_event(hook_name, severity, reason, overridden=False)
+    trigger, not only the ones a human happened to deny.
+
+    **정정(2026-08-16)**: the eventual human answer to this prompt is NOT
+    observable from anywhere in this process - Claude Code's runtime
+    resolves the interactive prompt out-of-process, and this script has
+    already exited by the time that happens. `decision_kind="ask"` in the
+    log entry marks this explicitly so eval_hook_judgments.py reports
+    `ask_unknown` rather than guessing at an outcome it structurally
+    cannot observe."""
+    dr = decision_record(hook_name, target=target, decision_id=decision_id)
+    _log_event(hook_name, severity, reason, overridden=False,
+               decision_kind="ask", target=target, decision=dr)
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "permissionDecision": "ask",
         "permissionDecisionReason": reason}}))
 
 
-def high_tier_decision(hook_name, severity, reason, data):
+def high_tier_decision(hook_name, severity, reason, data, target=None, decision_id=None):
     """Shared HIGH-tier default-path decision, used AFTER a caller has
     already checked for and found no override. Branches on
     is_subagent_call(data): a direct orchestrator call gets a real ask()
@@ -187,27 +224,39 @@ def high_tier_decision(hook_name, severity, reason, data):
             "프롬프트를 띄울 화면이 없음(2026-08-15 실측 확인) - 사람 "
             "승인을 받으려면 컨트롤러가 이 액션을 직접 실행하거나, "
             "디스패치 전에 override를 미리 declare할 것.",
-            severity=severity,
+            severity=severity, target=target, decision_id=decision_id,
         )
     else:
-        ask(hook_name, severity, reason)
+        ask(hook_name, severity, reason, target=target, decision_id=decision_id)
 
 
-def deny(hook_name, reason, severity="HIGH"):
-    _log_event(hook_name, severity, reason, overridden=False)
+def deny(hook_name, reason, severity="HIGH", target=None, decision_id=None):
+    dr = decision_record(hook_name, target=target, decision_id=decision_id)
+    _log_event(hook_name, severity, reason, overridden=False,
+               decision_kind="deny", target=target, decision=dr)
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "permissionDecision": "deny",
         "permissionDecisionReason": reason}}))
 
 
-def allow_with_override(hook_name, severity, rule, target, reason):
+def allow_with_override(hook_name, severity, rule, target, reason, decision_id=None):
     """MID/HIGH/CRITICAL tier, override matched: log to both the violations
     log (so the near-miss is visible in the same place as a real deny)
     and the override audit log (so it's separately searchable), then
-    allow."""
+    allow.
+
+    **정정(2026-08-16)**: the decision-record lookup happens exactly ONCE
+    here and the same result is threaded into both _log_event() and
+    _record_override() - decision_record() consumes (deletes) its sentinel
+    on match, so if each private logger did its own lookup, the second one
+    would always find nothing. Do not "simplify" this into two independent
+    lookups - that would silently break enrichment on override_audit.jsonl,
+    the more interesting of the two logs for judgment eval."""
+    dr = decision_record(rule, target=target, decision_id=decision_id)
     note = f"OVERRIDDEN ({severity}, rule={rule}): {reason}"
-    _log_event(hook_name, severity, note, overridden=True)
-    _record_override(rule, severity, target, reason)
+    _log_event(hook_name, severity, note, overridden=True,
+               decision_kind="override", target=target, decision=dr)
+    _record_override(rule, severity, target, reason, decision=dr)
     allow()
 
 
@@ -317,16 +366,21 @@ def write_medium_approval(rule, target, caution):
                     "timestamp": time.time()}, f)
 
 
-def allow_with_medium_approval(hook_name, severity, rule, target, caution):
+def allow_with_medium_approval(hook_name, severity, rule, target, caution, decision_id=None):
     """MEDIUM tier, higher-agent approval matched (medium_approval()):
     log like an override (visible in violations_log.jsonl next to real
     denials, plus a separate override_audit.jsonl entry tagged with the
     caution text) and allow. Delivering the caution text to the executing
     agent is a separate step (write_pending_caution() + deliver_caution.py)
-    - this function only records that the approval was consumed."""
+    - this function only records that the approval was consumed.
+
+    Shares one decision_record() lookup between both loggers - same reason
+    as allow_with_override(), see its docstring."""
+    dr = decision_record(rule, target=target, decision_id=decision_id)
     note = f"MEDIUM-APPROVED (rule={rule}): {caution}"
-    _log_event(hook_name, severity, note, overridden=True)
-    _record_override(rule, severity, target, f"[상위 에이전트 승인] {caution}")
+    _log_event(hook_name, severity, note, overridden=True,
+               decision_kind="medium_approval", target=target, decision=dr)
+    _record_override(rule, severity, target, f"[상위 에이전트 승인] {caution}", decision=dr)
     allow()
 
 
@@ -364,6 +418,99 @@ def pop_pending_caution(tool_use_id):
     return caution or None
 
 
+def write_decision_record(rule, severity, confidence, reason, expected_risk,
+                           target=None, decision_id=None):
+    """DECISION RECORD (2026-08-16): written by the agent itself, via a
+    Write tool call to `.pending_decision_record.json`, immediately before
+    a guarded action it expects to trigger `rule` - same "agent writes the
+    sentinel right before the call" discipline as write_sentinel_override().
+
+    LOGGING ONLY - nothing reads this to decide allow/deny. It records the
+    agent's OWN self-assessed risk judgment for that specific attempt,
+    attached (if fresh and matching) to whatever log entry the guard hook
+    already produces via deny()/ask()/log_and_allow()/allow_with_override()/
+    allow_with_medium_approval(). `severity` here is the agent's own
+    estimate (one of SEVERITIES) and may legitimately differ from the
+    guard's fixed SEVERITY constant - that mismatch is exactly what
+    eval_hook_judgments.py measures, so it's stored under the log entry's
+    `decision.self_severity` key, never conflated with the entry's own
+    top-level `severity` field (the guard's fixed tier).
+
+    `target` should match whatever the corresponding guard hook already
+    uses as its own override target (file_path/branch/command string - see
+    that hook's `allow_with_override()` call). `decision_id` is a free-
+    chosen short slug for guards with no clean single target string (e.g.
+    Agent-dispatch guards) - either `target` or `decision_id` is required.
+
+    Two honest limitations (see README.md's "Decision Record" section for
+    the full writeup): (1) nothing enforces this gets written - unlike the
+    override sentinel, skipping it blocks nothing, so expect sparse, self-
+    selected data; (2) `decision_id` only helps when the firing rule is
+    already known - it does not solve "I don't know which of the 9 guards
+    will fire."
+
+    `confidence` must be a float in [0.0, 1.0] - this is written by the
+    agent itself, so a malformed call should fail loud rather than log
+    garbage silently."""
+    if target is None and decision_id is None:
+        raise ValueError("write_decision_record requires target or decision_id")
+    try:
+        confidence = float(confidence)
+    except (TypeError, ValueError):
+        raise ValueError("confidence must be a float in [0.0, 1.0]")
+    if not (0.0 <= confidence <= 1.0):
+        raise ValueError("confidence must be a float in [0.0, 1.0]")
+    with open(_DECISION_RECORD_PATH, "w", encoding="utf-8") as f:
+        json.dump({
+            "rule": rule, "target": target, "decision_id": decision_id,
+            "severity": severity, "confidence": confidence, "reason": reason,
+            "expected_risk": expected_risk, "timestamp": time.time(),
+        }, f)
+
+
+def decision_record(rule, target=None, decision_id=None):
+    """Checks `.pending_decision_record.json` for a fresh (<=10min),
+    matching record and consumes it (deletes the file) if found. Matches
+    on `rule` plus EITHER the stored `decision_id` (if the stored record
+    has one) OR the stored `target` (if not) - mirrors how the record was
+    written, so a caller with only `target` can still match a record that
+    was written with the same target, and likewise for decision_id.
+    Returns the stored dict, or None. Called internally by deny()/ask()/
+    log_and_allow()/high_tier_decision()/allow_with_override()/
+    allow_with_medium_approval() - not meant to be called directly by
+    guard hooks. Safe to call with target=None, decision_id=None (matches
+    nothing, returns None) - used by call sites not yet threaded with a
+    target."""
+    if target is None and decision_id is None:
+        return None
+    if not os.path.exists(_DECISION_RECORD_PATH):
+        return None
+    try:
+        with open(_DECISION_RECORD_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    try:
+        age = time.time() - float(data.get("timestamp", 0))
+    except (TypeError, ValueError):
+        return None
+    if age > _DECISION_RECORD_MAX_AGE_SECONDS:
+        return None
+    if data.get("rule") != rule:
+        return None
+    stored_decision_id = data.get("decision_id")
+    if stored_decision_id:
+        if stored_decision_id != decision_id:
+            return None
+    elif data.get("target") != target:
+        return None
+    try:
+        os.remove(_DECISION_RECORD_PATH)
+    except OSError:
+        pass
+    return data
+
+
 def current_head_sha():
     try:
         out = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_repo_root(),
@@ -377,7 +524,22 @@ def _repo_root():
     return os.path.dirname(os.path.dirname(_HOOKS_DIR))
 
 
-def _record_override(rule, severity, target, reason):
+def _decision_payload(decision):
+    """Shared shape for the "decision" field attached to a log entry -
+    only the fields eval_hook_judgments.py needs, never the raw sentinel
+    dict (which also carries `rule`/`target`/`decision_id`/`timestamp`,
+    already present elsewhere on the entry)."""
+    if not decision:
+        return None
+    return {
+        "self_severity": decision.get("severity"),
+        "confidence": decision.get("confidence"),
+        "reason": decision.get("reason"),
+        "expected_risk": decision.get("expected_risk"),
+    }
+
+
+def _record_override(rule, severity, target, reason, decision=None):
     """git_sha is recorded for every override regardless of severity - it's
     an audit-trail field (proves which commit the override was granted
     at), not a gating check. An earlier docstring draft implied CRITICAL
@@ -385,7 +547,13 @@ def _record_override(rule, severity, target, reason):
     verification step; that was never implemented - `sentinel_override()`/
     `bash_override()` don't branch on severity at all. Fixed in place
     rather than silently rewritten, per this project's own "append a
-    dated correction" convention."""
+    dated correction" convention.
+
+    `decision` (2026-08-16): the dict returned by decision_record(), if a
+    matching one was found - attached under a `decision` key when present.
+    Callers must pass an already-resolved lookup (see allow_with_override()/
+    allow_with_medium_approval() docstrings for why this isn't looked up
+    here directly - the sentinel is single-use/consumed on read)."""
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "rule": rule,
@@ -394,6 +562,9 @@ def _record_override(rule, severity, target, reason):
         "reason": reason,
         "git_sha": current_head_sha(),
     }
+    payload = _decision_payload(decision)
+    if payload:
+        entry["decision"] = payload
     try:
         with open(_OVERRIDE_AUDIT_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
@@ -402,7 +573,18 @@ def _record_override(rule, severity, target, reason):
               file=sys.stderr)
 
 
-def _log_event(hook_name, severity, reason, overridden):
+def _log_event(hook_name, severity, reason, overridden, decision_kind=None,
+                target=None, decision=None):
+    """`decision_kind`/`target`/`decision` (2026-08-16): optional, all
+    default to producing an entry byte-identical in shape to before this
+    addition (no `decision_kind`/`target`/`decision` keys at all) when
+    omitted - old entries and any not-yet-threaded caller stay backward
+    compatible. `decision_kind` is one of "deny"/"ask"/"log_and_allow"/
+    "override"/"medium_approval" (mirrors the calling function's name,
+    since deny() and ask() otherwise write structurally identical entries
+    with no way to tell which produced a given line - see ask()'s
+    docstring for why that distinction matters for eval_hook_judgments.py's
+    "ask_unknown" outcome category)."""
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "hook": hook_name,
@@ -410,6 +592,13 @@ def _log_event(hook_name, severity, reason, overridden):
         "overridden": overridden,
         "reason": reason,
     }
+    if decision_kind is not None:
+        entry["decision_kind"] = decision_kind
+    if target is not None:
+        entry["target"] = target
+    payload = _decision_payload(decision)
+    if payload:
+        entry["decision"] = payload
     try:
         with open(_LOG_PATH, "a", encoding="utf-8") as f:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")

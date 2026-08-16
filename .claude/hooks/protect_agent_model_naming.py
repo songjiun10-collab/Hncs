@@ -50,6 +50,10 @@ def main():
         return
     ti = data.get("tool_input") or {}
     model = ti.get("model")
+    # Agent dispatches have no file_path - reuse `description` as the
+    # decision-record target, same as protect_reviewer_prejudging.py does
+    # for the same matcher shape.
+    target = str(ti.get("description", "")) or None
 
     if not model:
         log_and_allow(
@@ -58,7 +62,8 @@ def main():
             "it inherits the session's, usually the priciest).\" This "
             "dispatch has no `model` field. Set model explicitly - "
             "`sonnet` by default, `opus` only for architecture/final "
-            "whole-branch review."
+            "whole-branch review.",
+            target=target,
         )
         return
 
@@ -68,7 +73,8 @@ def main():
             "CLAUDE.md Controller rule: \"Skip haiku - its extra turns on "
             f"multi-step work cost more than the tokens it saves.\" This "
             f"dispatch names model={model!r}. Use `sonnet` (default) or "
-            "`opus` (architecture/final whole-branch review only)."
+            "`opus` (architecture/final whole-branch review only).",
+            target=target,
         )
         return
 

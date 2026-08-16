@@ -73,6 +73,67 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 스펙으로 재확정해서, 남은 MID/HIGH/CRITICAL도 각자 다른 메커니즘으로
 갈라졌다 - 위 표가 현재 상태.
 
+## Decision Record (예측 로그, 2026-08-16)
+
+4단계 위에 얹은 로깅 전용 레이어. 가드된 액션 직전에 에이전트 스스로
+자기 위험도 판단을 기록해두면, 그 액션이 실제로 어떤 훅 결정으로
+이어졌는지에 자동으로 붙는다 - **allow/deny를 절대 gating하지 않는다.**
+기존 4단계 기계적 규칙이 여전히 유일한 결정권자.
+
+**쓰는 법**: `.claude/hooks/.pending_decision_record.json`에
+`write_sentinel_override()`와 같은 방식으로(에이전트가 직접 Write 툴
+호출로) 다음을 써두고, 곧바로 그 액션을 시도한다:
+
+```json
+{"rule": "<발동할 훅의 HOOK_NAME>", "target": "<그 훅이 이미 쓰는 override target과 같은 값>",
+ "decision_id": null, "severity": "<자기평가 등급>", "confidence": 0.0-1.0,
+ "reason": "<왜 이렇게 판단했나>", "expected_risk": "<뭐가 잘못될 수 있나>",
+ "timestamp": <time.time()>}
+```
+
+(`_hook_common.write_decision_record(rule, severity, confidence, reason,
+expected_risk, target=..., decision_id=...)`가 이 파일 쓰기의 단일
+구현 - `target` 또는 `decision_id` 중 하나는 필수, `confidence`는
+`[0.0, 1.0]` float 아니면 `ValueError`.)
+
+매칭되는 fresh(10분 이내) 레코드가 있으면 `deny()`/`ask()`/
+`log_and_allow()`/`allow_with_override()`/`allow_with_medium_approval()`을
+거쳐 `violations_log.jsonl`/`override_audit.jsonl` 항목에 `decision`
+키(`self_severity`/`confidence`/`reason`/`expected_risk`)로 붙는다.
+`self_severity`는 에이전트 자신의 판단이고, 항목의 최상위 `severity`는
+그 훅의 고정 등급 - 이 둘이 다를 수 있고(그게 정상), 그 차이를
+`tools/eval_hook_judgments.py`가 측정한다.
+
+**한계 3가지 (숨기지 않고 명시)**:
+1. **자기강제가 없다.** override sentinel은 안 쓰면 계속 막힌다는
+   자기 이익이 있지만, decision record는 안 써도 아무것도 안 막힌다 -
+   시간에 쫓기면 그냥 안 쓸 것이다. 데이터가 희소하고 자기선택적일
+   것으로 예상한다(신중할 때만 더 자주 쓰는 편향).
+2. **`decision_id`는 "어느 규칙이 발동할지 이미 알 때"만 도움된다.**
+   "9개 가드 중 뭐가 걸릴지 모르겠다"는 상황은 못 푼다 - `target`이
+   그 훅이 쓰는 override target과 정확히 일치해야 매칭되므로, 현실적
+   범위는 CLAUDE.md에 이미 문서화된 뻔한 케이스(`brands/*.py` 수정 →
+   `protect_never_touch`, main에 커밋 → `protect_branch` 등)에 그친다.
+3. **`ask()`의 실제 사람 답변은 구조적으로 관측 불가능하다.** `ask()`
+   docstring 참고 - Claude Code 런타임이 훅 프로세스 밖에서 프롬프트를
+   처리해서, `decision_kind="ask"`인 이벤트는 `tools/eval_hook_judgments.py`
+   에서 항상 `ask_unknown`으로만 보고된다.
+
+**신규 도구**: `tools/eval_hook_judgments.py` - `decision`이 붙은 항목만
+골라 `decision_kind`별로 결과를 자동 분류하고(`deny`→blocked,
+`ask`→ask_unknown, 나머지는 git log로 revert 여부 판정), severity
+과대/과소평가와 confidence×revert 상관을 계산한다. `hybrid_engine/CLAUDE.md`
+의 "평균 차이만으로 승자를 부르지 않는다" 규율 그대로 - 표본이
+`--min-n`(기본 20) 미만이면 rate/verdict는 항상 `None`/"표본 부족",
+raw count만 보여준다. **훅 체인에는 안 걸림 - 어떤 훅의 등급/임계값도
+자동으로 안 바꾼다.** 수동/Routine 실행, `rotate_hook_logs.py`와 같은
+스탠드얼론 관례:
+
+```bash
+python3 -m tools.eval_hook_judgments              # 리포트 + learning_data.jsonl에 기록
+python3 -m tools.eval_hook_judgments --no-record  # 리포트만
+```
+
 ## Override 방법
 
 - **Bash 트리거 훅**: 명령 끝에 `# HNCS-OVERRIDE: <rule>: <이유>` 주석 추가.
@@ -223,11 +284,11 @@ totalToolUseCount, usage, toolStats}` 형태 - 서브에이전트가 실제로
 
 ## 로그 유지관리
 
-`violations_log.jsonl`/`override_audit.jsonl`은 append-only + git-tracked라
-계속 커진다. `tools/rotate_hook_logs.py`가 retention 기간(기본 90일)보다
-오래된 항목을 월별 아카이브 파일로 옮긴다 - 훅 체인에는 안 걸려있음(매
-툴콜마다 로그 크기 재는 오버헤드 방지), 가끔 수동으로 돌리거나
-Routine으로 스케줄:
+`violations_log.jsonl`/`override_audit.jsonl`/`learning_data.jsonl`(2026-08-16
+추가)은 append-only + git-tracked라 계속 커진다. `tools/rotate_hook_logs.py`
+가 retention 기간(기본 90일)보다 오래된 항목을 월별 아카이브 파일로
+옮긴다 - 훅 체인에는 안 걸려있음(매 툴콜마다 로그 크기 재는 오버헤드
+방지), 가끔 수동으로 돌리거나 Routine으로 스케줄:
 
 ```bash
 python3 -m tools.rotate_hook_logs

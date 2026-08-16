@@ -118,7 +118,7 @@ def main():
         f'contains "MEDIUM-APPROVE: {HOOK_NAME} :: {file_path} :: <caution>" '
         "- the next matching call will be let through with that caution "
         "delivered back to you.",
-        severity=SEVERITY,
+        severity=SEVERITY, target=file_path,
     )
 
 

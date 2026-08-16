@@ -53,3 +53,4 @@ models/upscale/
 .claude/hooks/.pending_override.json
 .claude/hooks/.pending_medium_approval.json
 .claude/hooks/.pending_caution.json
+.claude/hooks/.pending_decision_record.json

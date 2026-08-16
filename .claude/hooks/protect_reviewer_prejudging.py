@@ -87,7 +87,7 @@ def main():
             f'.claude/hooks/.pending_override.json with {{"rule": '
             f'"{HOOK_NAME}", "target": "{target}", "reason": "<reason>", '
             '"timestamp": <time.time()>}, then retry immediately.',
-            data,
+            data, target=target,
         )
         return
     allow()

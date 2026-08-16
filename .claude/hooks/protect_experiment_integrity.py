@@ -103,7 +103,7 @@ def main():
         f"{reason} To override: write .claude/hooks/.pending_override.json "
         f'with {{"rule": "{HOOK_NAME}", "target": "{file_path}", "reason": '
         '"<reason>", "timestamp": <time.time()>}, then retry immediately.',
-        data,
+        data, target=file_path,
     )
 
 

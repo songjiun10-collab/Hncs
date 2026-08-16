@@ -112,7 +112,7 @@ def _deny_or_override(target, reason, tool_use_id=None):
         f'contains "MEDIUM-APPROVE: {HOOK_NAME} :: {target} :: <caution>" '
         "- the next matching call will be let through with that caution "
         "delivered back to you.",
-        severity=SEVERITY,
+        severity=SEVERITY, target=target,
     )
 
 

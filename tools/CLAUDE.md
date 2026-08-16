@@ -2,6 +2,23 @@
 
 CLIs and research scripts. Nothing here is imported by shipped code.
 
+## `eval_hook_judgments.py` (2026-08-16)
+
+Second standalone maintenance tool alongside `rotate_hook_logs.py` -
+neither is wired into the `.claude/hooks/` PreToolUse/PostToolUse chain,
+both are run manually or via a scheduled Routine. Reports whether
+`.claude/hooks/_hook_common.py`'s Decision Record entries (an agent's own
+self-assessed risk judgment, logged before a guarded action) matched what
+actually happened (blocked / a human was asked but the answer is
+structurally unobservable / reverted / not reverted). It **never**
+auto-tunes any guard's severity or threshold from that data - a human
+decides that, same as every hook severity change in this project's
+history. Its calibration output must never state a rate below its
+`_MIN_N_FOR_RATE` (default 20) - same "never call a winner from a mean
+difference" statistics rule as `hybrid_engine/CLAUDE.md`, applied here to
+"never call a judgment miscalibrated from a handful of samples." See
+`.claude/hooks/README.md`'s "Decision Record" section for the full design.
+
 ## `evaluate_*.py` conventions
 
 - **Standalone.** Never import from a sibling `evaluate_*.py` — copy the

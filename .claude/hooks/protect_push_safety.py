@@ -93,7 +93,7 @@ def main():
                     "subagent itself could write, so force-push from a "
                     "subagent gets no override path at all. Have the "
                     "controller run this directly.",
-                    severity=SEVERITY,
+                    severity=SEVERITY, target=command,
                 )
                 return
             override_reason = bash_override(HOOK_NAME, command)
@@ -109,7 +109,7 @@ def main():
                 "authorized it in this conversation. To override: add a "
                 f"trailing `# HNCS-OVERRIDE: {HOOK_NAME}: <reason>` comment "
                 "to this command.",
-                severity=SEVERITY,
+                severity=SEVERITY, target=command,
             )
             return
 
@@ -123,7 +123,7 @@ def main():
             f"{_CLAUDE_AUTHOR_EMAIL} && git config user.name Claude` then "
             "re-author HEAD (amend or rebase --exec) before pushing. No "
             "override for this one - just fix it.",
-            severity="HIGH",
+            severity="HIGH", target=command,
         )
         return
 

@@ -95,7 +95,7 @@ def main():
             "주석은 서브에이전트 스스로도 쓸 수 있음)이라는 게 가장 치명적인 "
             "지점이라, 파괴적 명령의 서브에이전트발 시도는 override 불가로 "
             "막는다. 컨트롤러가 직접 실행할 것.",
-            severity=SEVERITY,
+            severity=SEVERITY, target=command,
         )
         return
 
@@ -110,7 +110,7 @@ def main():
         f"trailing `# HNCS-OVERRIDE: {HOOK_NAME}: <reason>` comment to the "
         "command, stating why this specific destructive action is intended "
         "and safe.",
-        severity=SEVERITY,
+        severity=SEVERITY, target=command,
     )
 
 

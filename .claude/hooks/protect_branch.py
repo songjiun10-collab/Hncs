@@ -88,7 +88,7 @@ def main():
         HOOK_NAME, SEVERITY,
         f"{reason} To override: add a trailing `# HNCS-OVERRIDE: "
         f"{HOOK_NAME}: <reason>` comment to the command.",
-        data,
+        data, target=branch,
     )
 
 

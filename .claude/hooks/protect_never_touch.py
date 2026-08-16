@@ -172,24 +172,24 @@ _SUBAGENT_NO_OVERRIDE_NOTE = (
 
 def _deny_or_bash_override(command, target, reason, data):
     if is_subagent_call(data):
-        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY)
+        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY, target=target)
         return
     override_reason = bash_override(HOOK_NAME, command)
     if override_reason:
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
         return
-    deny(HOOK_NAME, reason, severity=SEVERITY)
+    deny(HOOK_NAME, reason, severity=SEVERITY, target=target)
 
 
 def _deny_or_sentinel_override(target, reason, data):
     if is_subagent_call(data):
-        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY)
+        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY, target=target)
         return
     override_reason = sentinel_override(HOOK_NAME, target)
     if override_reason:
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
         return
-    deny(HOOK_NAME, reason, severity=SEVERITY)
+    deny(HOOK_NAME, reason, severity=SEVERITY, target=target)
 
 
 def main():

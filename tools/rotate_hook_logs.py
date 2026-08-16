@@ -21,6 +21,10 @@ _DEFAULT_LOGS = [
                  ".claude", "hooks", "violations_log.jsonl"),
     os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                  ".claude", "hooks", "override_audit.jsonl"),
+    # tools/eval_hook_judgments.py의 _DEFAULT_LEARNING_DATA_LOG와 같은 경로
+    # (2026-08-16 추가) - 독립 스크립트 관례상 문자열 중복, 바꿀 땐 같이.
+    os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                 ".claude", "hooks", "learning_data.jsonl"),
 ]
 
 
