@@ -116,7 +116,7 @@ def main():
         f"{reason} To override: write .claude/hooks/.pending_override.json "
         f'with {{"rule": "{HOOK_NAME}", "target": "{file_path}", "reason": '
         '"<reason>", "timestamp": <time.time()>}, then retry immediately. '
-        "Or: dispatch a sonnet/opus Agent whose response contains "
+        "Or: dispatch an opus Agent whose response contains "
         f'"MEDIUM-APPROVE: {HOOK_NAME} :: {file_path} :: <caution>" - the '
         "next matching call will be let through with that caution "
         "delivered back to you.",

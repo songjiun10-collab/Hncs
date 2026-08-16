@@ -35,8 +35,9 @@ also never actually a CRITICAL-only gate - see the note in
   전달." 일반 override(자기 자신이 사유를 써서 통과)에 더해,
   `record_agent_approval.py`(PostToolUse, Agent matcher)가 실제
   디스패치된 서브에이전트의 응답에서 `MEDIUM-APPROVE: <rule> ::
-  <target> :: <caution>` 마커를 파싱하고(모델이 sonnet/opus일 때만
-  인정) `medium_approval()`로 소비 가능한 승인을 기록한다 - 자기 자신이
+  <target> :: <caution>` 마커를 파싱하고(2026-08-16 정정: "에이전트는
+  오퍼스 허락만 유효" - 모델이 opus일 때만 인정, sonnet도 불인정)
+  `medium_approval()`로 소비 가능한 승인을 기록한다 - 자기 자신이
   바로 못 쓰고 진짜 Agent 디스패치가 있어야 생기는 sentinel이라 일반
   override보다 위조 난이도가 한 단계 높다. 통과시킬 때 caution 문구는
   `write_pending_caution()`으로 `tool_use_id`에 묶어 기록하고,
@@ -265,7 +266,8 @@ def medium_approval(rule, target):
     rule + target) approval written by record_agent_approval.py's
     PostToolUse hook after parsing a `MEDIUM-APPROVE: <rule> :: <target>
     :: <caution>` marker out of an actual dispatched subagent's response
-    (only recorded if that dispatch used sonnet/opus). Unlike the plain
+    (only recorded if that dispatch used opus specifically - 2026-08-16
+    correction, sonnet no longer counts). Unlike the plain
     override sentinel, the calling hook/agent can't write this file
     directly - it only exists after a real Agent dispatch produced a
     matching response, so it's a stronger signal than a bare self-

@@ -9,9 +9,13 @@ approval marker, one line anywhere in the subagent's final response:
 `tool_response.content[0].text` (the dispatched subagent's full final
 response) is confirmed present on PostToolUse's Agent-matcher input
 (2026-08-15, live dispatch + diagnostic hook). Requires the dispatch's
-`resolvedModel` to be sonnet or opus (not haiku, not missing) - the same
-bar CLAUDE.md's Controller rules set for real review/decision work,
-enforced here so a cheap/no-model dispatch can't manufacture an approval.
+`resolvedModel` to be opus specifically (2026-08-16, user correction:
+"에이전트는 오퍼스 허락만 유효" - only an opus dispatch's approval
+counts) - sonnet, haiku, and no-model dispatches are all rejected. A
+higher-stakes bar than CLAUDE.md's general Controller rule (sonnet
+default, opus only for architecture/final whole-branch review), because
+this specific marker is standing in for a human-grade "상위 에이전트"
+sign-off, not routine implementation/review work.
 
 On a match, records the approval via _hook_common.write_medium_approval()
 - consumed by the MEDIUM-tier PreToolUse guard (protect_generated_files.py
@@ -32,7 +36,7 @@ _APPROVE_RE = re.compile(
     r"^\s*MEDIUM-APPROVE:\s*(?P<rule>[\w.-]+)\s*::\s*(?P<target>[^:]+?)\s*::\s*(?P<caution>.+?)\s*$",
     re.MULTILINE,
 )
-_WEAK_MODEL_RE = re.compile(r"haiku", re.IGNORECASE)
+_OPUS_RE = re.compile(r"opus", re.IGNORECASE)
 
 
 def read_input():
@@ -53,8 +57,8 @@ def main():
         return
     tr = data.get("tool_response") or {}
     model = str(tr.get("resolvedModel") or "")
-    if not model or _WEAK_MODEL_RE.search(model):
-        return  # no model, or haiku - not strong enough to count as approval
+    if not _OPUS_RE.search(model):
+        return  # only opus dispatches count as a valid approval
 
     m = _APPROVE_RE.search(response_text(data))
     if not m:

@@ -106,7 +106,7 @@ def _deny_or_override(target, reason, tool_use_id=None):
         f"{reason} To override: write .claude/hooks/.pending_override.json "
         f'with {{"rule": "{HOOK_NAME}", "target": "{target}", "reason": '
         '"<reason>", "timestamp": <time.time()>}, then retry immediately. '
-        "Or: dispatch a sonnet/opus Agent whose response contains "
+        "Or: dispatch an opus Agent whose response contains "
         f'"MEDIUM-APPROVE: {HOOK_NAME} :: {target} :: <caution>" - the '
         "next matching call will be let through with that caution "
         "delivered back to you.",

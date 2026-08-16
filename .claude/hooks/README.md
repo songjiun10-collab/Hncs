@@ -24,10 +24,11 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 - **MEDIUM**: "상위 에이전트가 허용하면 실행 에이전트가 실행, 단
   주의사항 전달." 기존 self-declared override에 더해, 실제 디스패치된
   서브에이전트의 응답에 `MEDIUM-APPROVE: <rule> :: <target> ::
-  <caution>` 마커가 있고 그 디스패치 모델이 sonnet/opus면
+  <caution>` 마커가 있고 그 디스패치 모델이 **opus**면(2026-08-16 정정:
+  "에이전트는 오퍼스 허락만 유효" - sonnet도 불인정)
   (`record_agent_approval.py`, PostToolUse/Agent) 승인을 기록한다 -
-  자기 자신이 못 쓰고 진짜 Agent 디스패치가 있어야 생기는 sentinel이라
-  일반 override보다 위조 난이도가 한 단계 높다. 통과할 때 caution은
+  자기 자신이 못 쓰고 진짜 opus Agent 디스패치가 있어야 생기는
+  sentinel이라 일반 override보다 위조 난이도가 한 단계 높다. 통과할 때 caution은
   `deliver_caution.py`(PostToolUse, Edit|Write|MultiEdit)가
   `additionalContext`로 실행 에이전트에게 돌려준다(같은 `tool_use_id`로
   상관관계). `protect_generated_files.py`/`protect_claim_evidence.py`가
@@ -91,8 +92,8 @@ git-tracked, append-only).
 | `protect_branch.py` | 🟠 HIGH | Bash | main/master/detached HEAD에서 commit·push (직접 호출: ask, 서브에이전트발: override 없인 deny) |
 | `protect_test_coverage.py` | 🟠 HIGH | Bash | 새 소스 파일을 테스트 없이 커밋(신규 파일에만 적용 - 기존 파일 수정은 대상 아님) |
 | `protect_experiment_integrity.py` | 🟠 HIGH | Edit/Write/MultiEdit (EVALUATION.md만) | CI/부트스트랩 언급 없이 수치 결과 기록 |
-| `protect_generated_files.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | `_LEARNED_LUT*` 배열(생성물) 직접 수정 - 상위 에이전트 승인(`MEDIUM-APPROVE`) 가능 |
-| `protect_claim_evidence.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 - 상위 에이전트 승인(`MEDIUM-APPROVE`) 가능 |
+| `protect_generated_files.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | `_LEARNED_LUT*` 배열(생성물) 직접 수정 - 상위 에이전트 승인(`MEDIUM-APPROVE`, opus 디스패치만 인정) 가능 |
+| `protect_claim_evidence.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 - 상위 에이전트 승인(`MEDIUM-APPROVE`, opus 디스패치만 인정) 가능 |
 | `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
 | `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
 | `protect_agent_model_naming.py` | 🟢 LOW | Agent | model 미지정/haiku 디스패치 - 항상 allow, 로그만 남김 |
@@ -125,8 +126,9 @@ git-tracked, append-only).
   상 의도된 트레이드오프 - "의식적 행동 + 로그"까지만 보장하지 승인의
   진위 검증은 안 함. **MEDIUM의 `MEDIUM-APPROVE` 마커도 이 한계에서
   완전히 자유롭진 않다** - 진짜 Agent 디스패치가 있어야 하고 모델이
-  sonnet/opus여야 한다는 조건이 있어서 일반 override보다 위조 난이도는
-  높지만, 컨트롤러가 그 디스패치 프롬프트 자체를 "무조건 승인해"로 짜면
+  opus여야 한다는 조건(2026-08-16 정정: sonnet도 불인정)이 있어서 일반
+  override보다 위조 난이도는 높지만, 컨트롤러가 그 디스패치 프롬프트
+  자체를 "무조건 승인해"로 짜면
   똑같이 우회 가능 - "한 단계 더 어렵게" 만든 것이지 막은 게 아니다.
 - `record_agent_approval.py`/`deliver_caution.py`(2026-08-15 신규)는
   PostToolUse의 `tool_response.content[0].text`/`resolvedModel`(Agent
@@ -206,8 +208,9 @@ totalToolUseCount, usage, toolStats}` 형태 - 서브에이전트가 실제로
 출력한 텍스트(테스트로 심어둔 마커 문자열 포함)가
 `tool_response.content[0].text`에 그대로 보였고, `resolvedModel`이
 실제 실행된 모델(예: `"claude-sonnet-5"`)을 정확히 반영했다.
-`record_agent_approval.py`가 `MEDIUM-APPROVE` 마커를 파싱하고
-sonnet/opus 여부를 확인하는 근거가 이 실측. 진단 훅과 그 `settings.json`
+`record_agent_approval.py`가 `MEDIUM-APPROVE` 마커를 파싱하고 opus 여부를
+확인하는 근거가 이 실측(2026-08-16: 사용자가 sonnet도 불인정으로 정정 -
+"에이전트는 오퍼스 허락만 유효"). 진단 훅과 그 `settings.json`
 연결/`/tmp` 덤프는 실측 후 전부 제거함(이 세션의 다른 실측들과 동일한
 정리 관례).
 

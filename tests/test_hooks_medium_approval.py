@@ -6,8 +6,9 @@
    파일 자체의 순수 함수 계약(fresh/matching/consumed).
 2. `record_agent_approval.py` (PostToolUse, Agent matcher) - 디스패치된
    서브에이전트 응답에서 `MEDIUM-APPROVE: <rule> :: <target> ::
-   <caution>` 마커를 파싱해 승인을 기록. sonnet/opus만 인정, haiku/모델
-   미지정은 기록 안 함.
+   <caution>` 마커를 파싱해 승인을 기록. opus만 인정(2026-08-16 정정 -
+   "에이전트는 오퍼스 허락만 유효" - sonnet/haiku/모델 미지정은 전부
+   기록 안 함).
 3. `deliver_caution.py` (PostToolUse, Edit|Write|MultiEdit matcher) -
    `tool_use_id`로 큐잉된 caution을 `additionalContext`로 전달.
 
@@ -110,9 +111,9 @@ class TestRecordAgentApproval(unittest.TestCase):
             input=payload, env=self._env, capture_output=True, text=True, timeout=15,
         )
 
-    def test_sonnet_response_with_marker_records_approval(self):
+    def test_opus_response_with_marker_records_approval(self):
         self._run({
-            "resolvedModel": "claude-sonnet-5",
+            "resolvedModel": "claude-opus-5",
             "content": [{"type": "text", "text":
                          "검토 결과 문제없음.\n"
                          "MEDIUM-APPROVE: protect_generated_files :: brands/x.py :: "
@@ -123,6 +124,16 @@ class TestRecordAgentApproval(unittest.TestCase):
         self.assertEqual(data["rule"], "protect_generated_files")
         self.assertEqual(data["target"], "brands/x.py")
         self.assertIn("monotonic", data["caution"])
+
+    def test_sonnet_response_with_marker_not_recorded(self):
+        """2026-08-16 정정: "에이전트는 오퍼스 허락만 유효" - sonnet
+        디스패치는 더 이상 MEDIUM 승인으로 인정 안 됨."""
+        self._run({
+            "resolvedModel": "claude-sonnet-5",
+            "content": [{"type": "text", "text":
+                         "MEDIUM-APPROVE: protect_generated_files :: brands/x.py :: 주의\n"}],
+        })
+        self.assertFalse(os.path.exists(self._approval_path))
 
     def test_haiku_response_with_marker_not_recorded(self):
         self._run({
@@ -139,9 +150,9 @@ class TestRecordAgentApproval(unittest.TestCase):
         })
         self.assertFalse(os.path.exists(self._approval_path))
 
-    def test_sonnet_response_without_marker_not_recorded(self):
+    def test_opus_response_without_marker_not_recorded(self):
         self._run({
-            "resolvedModel": "claude-sonnet-5",
+            "resolvedModel": "claude-opus-5",
             "content": [{"type": "text", "text": "다 괜찮아 보입니다."}],
         })
         self.assertFalse(os.path.exists(self._approval_path))
