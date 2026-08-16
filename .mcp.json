@@ -2,7 +2,7 @@
   "mcpServers": {
     "must_hook": {
       "command": "python3",
-      "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/must_hook_server.py"]
+      "args": [".claude/hooks/must_hook_server.py"]
     }
   }
 }
