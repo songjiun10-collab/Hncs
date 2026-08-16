@@ -93,10 +93,13 @@ class TestMainEndToEnd(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self._log_dir, ignore_errors=True)
 
-    def _run_hook(self, tool_name, tool_input):
-        payload = json.dumps({"tool_name": tool_name, "tool_input": tool_input})
+    def _run_hook(self, tool_name, tool_input, agent_id=None):
+        payload = {"tool_name": tool_name, "tool_input": tool_input}
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
-            [sys.executable, hook.__file__], input=payload, env=self._env,
+            [sys.executable, hook.__file__], input=json.dumps(payload), env=self._env,
             capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
@@ -114,6 +117,15 @@ class TestMainEndToEnd(unittest.TestCase):
     def test_non_matching_tool_allowed(self):
         decision = self._run_hook("Read", {"file_path": "brands/hasselblad.py"})
         self.assertEqual(decision, "allow")
+
+    def test_subagent_bash_write_denied_even_with_valid_override(self):
+        """CRITICAL 등급: 서브에이전트발 호출은 override조차 안 받는다
+        (2026-08-15) - bash 주석은 서브에이전트 스스로도 쓸 수 있어서."""
+        cmd = ("sed -i 's/x/y/' brands/hasselblad.py"
+               "  # HNCS-OVERRIDE: protect_never_touch: 사유")
+        decision = self._run_hook(
+            "Bash", {"command": cmd}, agent_id="agt_1")
+        self.assertEqual(decision, "deny")
 
 
 if __name__ == "__main__":

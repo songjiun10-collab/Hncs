@@ -102,7 +102,7 @@ class TestProtectClaimEvidenceEndToEnd(unittest.TestCase):
         with open(os.path.join(self._log_dir, "o.jsonl"), encoding="utf-8") as f:
             entry = json.loads(f.readline())
         self.assertEqual(entry["rule"], "protect_claim_evidence")
-        self.assertEqual(entry["severity"], "MID")
+        self.assertEqual(entry["severity"], "MEDIUM")
 
     def test_backed_claim_allowed(self):
         decision = self._run_hook({

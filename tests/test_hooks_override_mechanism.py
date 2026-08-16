@@ -42,6 +42,19 @@ class TestBashOverrideParsing(unittest.TestCase):
         self.assertIsNone(self.hc.bash_override("protect_never_touch", "git status"))
 
 
+class TestIsSubagentCall(unittest.TestCase):
+    def setUp(self):
+        import _hook_common
+        self.hc = _hook_common
+
+    def test_agent_id_present_is_subagent(self):
+        self.assertTrue(self.hc.is_subagent_call(
+            {"agent_id": "agt_1", "agent_type": "general-purpose"}))
+
+    def test_agent_id_absent_is_not_subagent(self):
+        self.assertFalse(self.hc.is_subagent_call({"tool_name": "Bash"}))
+
+
 class TestSentinelOverride(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.mkdtemp()
@@ -114,11 +127,14 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
-    def _run_hook(self, tool_name, tool_input):
-        payload = json.dumps({"tool_name": tool_name, "tool_input": tool_input})
+    def _run_hook(self, tool_name, tool_input, agent_id=None):
+        payload = {"tool_name": tool_name, "tool_input": tool_input}
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
             [sys.executable, os.path.join(_HOOKS_DIR, "protect_never_touch.py")],
-            input=payload, env=self._env, capture_output=True, text=True, timeout=15,
+            input=json.dumps(payload), env=self._env, capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
         return out["hookSpecificOutput"]["permissionDecision"]
@@ -186,6 +202,25 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
             "file_path": "hybrid_engine/assets/profiles/hasselblad.json",
             "content": "{}",
         })
+        self.assertEqual(decision, "deny")
+
+    def test_subagent_edit_denied_even_with_valid_sentinel(self):
+        """CRITICAL 등급: 서브에이전트발 호출은 sentinel override조차 안
+        받는다(2026-08-15) - self-servable 문제가 가장 치명적인 등급이라
+        서브에이전트 경로 자체를 override 불가로 막았다."""
+        target = "brands/sony_a7rvi_learned.py"
+        sys.path.insert(0, _HOOKS_DIR)
+        sys.modules.pop("_hook_common", None)
+        os.environ["HNCS_HOOK_OVERRIDE_SENTINEL"] = self._env["HNCS_HOOK_OVERRIDE_SENTINEL"]
+        import _hook_common
+        _hook_common.write_sentinel_override("protect_never_touch", target, "테스트 승인")
+        del sys.modules["_hook_common"]
+
+        decision = self._run_hook("Edit", {
+            "file_path": target,
+            "old_string": "def apply_sony_a7rvi_learned(img_bgr, clahe_clip=1.25):",
+            "new_string": "def apply_sony_a7rvi_learned(img_bgr, clahe_clip=2.0):",
+        }, agent_id="agt_1")
         self.assertEqual(decision, "deny")
 
 

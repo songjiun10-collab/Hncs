@@ -26,7 +26,7 @@ import json
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, deny, sentinel_override
+from _hook_common import allow, allow_with_override, high_tier_decision, sentinel_override
 
 HOOK_NAME = "protect_reviewer_prejudging"
 SEVERITY = "HIGH"
@@ -74,8 +74,8 @@ def main():
         if override_reason:
             allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
             return
-        deny(
-            HOOK_NAME,
+        high_tier_decision(
+            HOOK_NAME, SEVERITY,
             "CLAUDE.md subagent-driven-development rule: \"Never tell a "
             "reviewer what not to flag or pre-rate a finding's severity. "
             "Think it's a false positive -> let it be raised, settle it "
@@ -87,7 +87,7 @@ def main():
             f'.claude/hooks/.pending_override.json with {{"rule": '
             f'"{HOOK_NAME}", "target": "{target}", "reason": "<reason>", '
             '"timestamp": <time.time()>}, then retry immediately.',
-            severity=SEVERITY,
+            data,
         )
         return
     allow()

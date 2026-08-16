@@ -75,11 +75,14 @@ class TestProtectDestructiveEndToEnd(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
-    def _run_hook(self, command):
-        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    def _run_hook(self, command, agent_id=None):
+        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
             [sys.executable, os.path.join(_HOOKS_DIR, "protect_destructive.py")],
-            input=payload, env=self._env, capture_output=True, text=True, timeout=15,
+            input=json.dumps(payload), env=self._env, capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
         return out["hookSpecificOutput"]["permissionDecision"]
@@ -103,6 +106,13 @@ class TestProtectDestructiveEndToEnd(unittest.TestCase):
     def test_wrong_rule_override_still_denied(self):
         cmd = "git reset --hard  # HNCS-OVERRIDE: protect_never_touch: 사유"
         self.assertEqual(self._run_hook(cmd), "deny")
+
+    def test_subagent_call_denied_even_with_valid_override(self):
+        """CRITICAL 등급: 서브에이전트발 호출은 override조차 안 받는다 -
+        bash 주석은 서브에이전트 스스로도 쓸 수 있어서 self-servable
+        문제가 가장 치명적인 등급이라 아예 통로를 없앴다(2026-08-15)."""
+        cmd = "git reset --hard  # HNCS-OVERRIDE: protect_destructive: 의도된 초기화"
+        self.assertEqual(self._run_hook(cmd, agent_id="agt_1"), "deny")
 
 
 if __name__ == "__main__":

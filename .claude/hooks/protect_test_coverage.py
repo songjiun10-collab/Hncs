@@ -26,7 +26,7 @@ import re
 import subprocess
 import sys
 
-from _hook_common import allow, allow_with_override, bash_override, deny
+from _hook_common import allow, allow_with_override, bash_override, high_tier_decision
 
 HOOK_NAME = "protect_test_coverage"
 SEVERITY = "HIGH"
@@ -109,14 +109,14 @@ def main():
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
         return
 
-    deny(
-        HOOK_NAME,
+    high_tier_decision(
+        HOOK_NAME, SEVERITY,
         f"This commit adds a new file ({target}) with no test file staged "
         "alongside it (tests/CLAUDE.md: full suite green before every "
         "commit implies the new code is actually tested, not just "
         "written). To override: add a trailing `# HNCS-OVERRIDE: "
         f"{HOOK_NAME}: <reason>` comment to the commit command.",
-        severity=SEVERITY,
+        data,
     )
 
 

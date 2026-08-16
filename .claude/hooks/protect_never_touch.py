@@ -30,7 +30,8 @@ import os
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, bash_override, deny, sentinel_override
+from _hook_common import (allow, allow_with_override, bash_override, deny,
+                           is_subagent_call, sentinel_override)
 
 HOOK_NAME = "protect_never_touch"
 SEVERITY = "CRITICAL"
@@ -159,7 +160,20 @@ def touched_function(file_path, old_string):
     return None, None
 
 
-def _deny_or_bash_override(command, target, reason):
+_SUBAGENT_NO_OVERRIDE_NOTE = (
+    " 이 호출은 서브에이전트발이라(agent_id 있음) override를 받지 않음 - "
+    "CRITICAL 등급에서 override는 self-servable(자기 자신이 사유를 지어내면 "
+    "훅은 검증 불가)이라는 게 가장 치명적인 지점이라, Never-touch는 "
+    "서브에이전트발 시도를 아예 override 불가로 막는다. 컨트롤러가 직접 "
+    "실행할 것(오케스트레이터 직접 호출은 기존 sentinel/bash-marker "
+    "override 그대로 사용 가능)."
+)
+
+
+def _deny_or_bash_override(command, target, reason, data):
+    if is_subagent_call(data):
+        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY)
+        return
     override_reason = bash_override(HOOK_NAME, command)
     if override_reason:
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
@@ -167,7 +181,10 @@ def _deny_or_bash_override(command, target, reason):
     deny(HOOK_NAME, reason, severity=SEVERITY)
 
 
-def _deny_or_sentinel_override(target, reason):
+def _deny_or_sentinel_override(target, reason, data):
+    if is_subagent_call(data):
+        deny(HOOK_NAME, reason + _SUBAGENT_NO_OVERRIDE_NOTE, severity=SEVERITY)
+        return
     override_reason = sentinel_override(HOOK_NAME, target)
     if override_reason:
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
@@ -193,7 +210,8 @@ def main():
                 "hybrid_engine/assets/profiles/. It cannot be modified without "
                 "the user's explicit, in-the-moment sign-off given directly in "
                 "this conversation. To override: add a trailing `# HNCS-OVERRIDE: "
-                f"{HOOK_NAME}: <reason>` comment to this command."
+                f"{HOOK_NAME}: <reason>` comment to this command.",
+                data,
             )
             return
         if is_brand_file(target):
@@ -205,7 +223,8 @@ def main():
                 "whether the write targets a shipped apply_* specifically, so "
                 "it blocks any write-shaped Bash command touching this file to "
                 "be safe. To override: add a trailing `# HNCS-OVERRIDE: "
-                f"{HOOK_NAME}: <reason>` comment to this command."
+                f"{HOOK_NAME}: <reason>` comment to this command.",
+                data,
             )
             return
         allow()
@@ -229,7 +248,8 @@ def main():
             "given directly in this conversation. To override: write "
             f'.claude/hooks/.pending_override.json with {{"rule": "{HOOK_NAME}", '
             f'"target": "{file_path}", "reason": "<reason>", "timestamp": '
-            "<time.time()>}, then retry immediately."
+            "<time.time()>}, then retry immediately.",
+            data,
         )
         return
 
@@ -245,7 +265,8 @@ def main():
                 f"CLAUDE.md Never list: couldn't parse the current contents of "
                 f"{file_path} to check for shipped apply_* functions before this "
                 "Write would overwrite it. Blocking to be safe - ask the user "
-                "for explicit sign-off, or fix whatever broke the parse."
+                "for explicit sign-off, or fix whatever broke the parse.",
+                data,
             )
             return
         if ranges:
@@ -258,7 +279,8 @@ def main():
                 "in-the-moment sign-off given directly in this conversation. To "
                 f'override: write .claude/hooks/.pending_override.json with '
                 f'{{"rule": "{HOOK_NAME}", "target": "{file_path}", "reason": '
-                '"<reason>", "timestamp": <time.time()>}, then retry immediately.'
+                '"<reason>", "timestamp": <time.time()>}, then retry immediately.',
+                data,
             )
             return
         allow()
@@ -278,7 +300,8 @@ def main():
                 f"CLAUDE.md Never list: couldn't parse {file_path} to check "
                 "whether this edit touches a shipped apply_* function. "
                 "Blocking to be safe - ask the user for explicit sign-off, "
-                "or fix whatever broke the parse."
+                "or fix whatever broke the parse.",
+                data,
             )
             return
         if name:
@@ -291,7 +314,8 @@ def main():
                 f'conversation. To override: write '
                 f'.claude/hooks/.pending_override.json with {{"rule": '
                 f'"{HOOK_NAME}", "target": "{file_path}", "reason": "<reason>", '
-                '"timestamp": <time.time()>}, then retry immediately.'
+                '"timestamp": <time.time()>}, then retry immediately.',
+                data,
             )
             return
 

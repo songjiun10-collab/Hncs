@@ -37,7 +37,7 @@ import re
 import subprocess
 import sys
 
-from _hook_common import allow, allow_with_override, bash_override, deny
+from _hook_common import allow, allow_with_override, bash_override, deny, is_subagent_call
 
 HOOK_NAME = "protect_push_safety"
 SEVERITY = "CRITICAL"
@@ -83,6 +83,19 @@ def main():
 
     for m in matches:
         if _FORCE_RE.search(m.group("args")):
+            if is_subagent_call(data):
+                deny(
+                    HOOK_NAME,
+                    "CLAUDE.md: \"Push rejected -> git fetch + git rebase, "
+                    "never force.\" This command force-pushes, and this call "
+                    "is subagent-originated (agent_id present) - CRITICAL-"
+                    "tier override is self-servable via a bash comment the "
+                    "subagent itself could write, so force-push from a "
+                    "subagent gets no override path at all. Have the "
+                    "controller run this directly.",
+                    severity=SEVERITY,
+                )
+                return
             override_reason = bash_override(HOOK_NAME, command)
             if override_reason:
                 allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, command, override_reason)

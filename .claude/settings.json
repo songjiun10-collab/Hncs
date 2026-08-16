@@ -118,6 +118,21 @@
             "type": "command",
             "command": "python3 .claude/hooks/record_whole_branch_review.py",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/record_agent_approval.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/deliver_caution.py",
+            "timeout": 15
           }
         ]
       }

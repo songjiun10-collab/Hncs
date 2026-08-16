@@ -47,13 +47,16 @@ class TestProtectReadyWithoutReviewEndToEnd(unittest.TestCase):
         elif os.path.exists(self._sentinel_path):
             os.remove(self._sentinel_path)
 
-    def _run_hook(self, draft):
-        payload = json.dumps({
+    def _run_hook(self, draft, agent_id=None):
+        payload = {
             "tool_name": "mcp__github__update_pull_request",
             "tool_input": {"draft": draft, "owner": "x", "repo": "y", "pullNumber": 1},
-        })
+        }
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
-            [sys.executable, hook.__file__], input=payload, env=self._env,
+            [sys.executable, hook.__file__], input=json.dumps(payload), env=self._env,
             capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
@@ -62,20 +65,27 @@ class TestProtectReadyWithoutReviewEndToEnd(unittest.TestCase):
     def test_not_a_ready_transition_allowed(self):
         self.assertEqual(self._run_hook(draft=True), "allow")
 
-    def test_ready_with_no_sentinel_denied(self):
+    def test_ready_with_no_sentinel_asks(self):
+        """HIGH tier, direct call: ask(), not deny - see
+        _hook_common.py's 2026-08-15 tier redesign note."""
         if os.path.exists(self._sentinel_path):
             os.remove(self._sentinel_path)
-        self.assertEqual(self._run_hook(draft=False), "deny")
+        self.assertEqual(self._run_hook(draft=False), "ask")
+
+    def test_ready_with_no_sentinel_from_subagent_denied(self):
+        if os.path.exists(self._sentinel_path):
+            os.remove(self._sentinel_path)
+        self.assertEqual(self._run_hook(draft=False, agent_id="agt_1"), "deny")
 
     def test_ready_with_matching_sentinel_allowed(self):
         with open(self._sentinel_path, "w", encoding="utf-8") as f:
             f.write(self._real_head_sha)
         self.assertEqual(self._run_hook(draft=False), "allow")
 
-    def test_ready_with_stale_sentinel_denied(self):
+    def test_ready_with_stale_sentinel_asks(self):
         with open(self._sentinel_path, "w", encoding="utf-8") as f:
             f.write("0" * 40)
-        self.assertEqual(self._run_hook(draft=False), "deny")
+        self.assertEqual(self._run_hook(draft=False), "ask")
 
     def test_override_via_sentinel_allowed_and_audited(self):
         if os.path.exists(self._sentinel_path):

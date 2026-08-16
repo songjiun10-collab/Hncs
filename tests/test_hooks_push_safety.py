@@ -122,11 +122,14 @@ class TestHookEndToEnd(unittest.TestCase):
         shutil.rmtree(self.repo, ignore_errors=True)
         shutil.rmtree(self._log_dir, ignore_errors=True)
 
-    def _run_hook(self, command):
-        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    def _run_hook(self, command, agent_id=None):
+        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
             [sys.executable, hook.__file__],
-            cwd=self.repo, input=payload, env=self._env,
+            cwd=self.repo, input=json.dumps(payload), env=self._env,
             capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
@@ -158,6 +161,14 @@ class TestHookEndToEnd(unittest.TestCase):
         self.assertEqual(entry["rule"], "protect_push_safety")
         self.assertEqual(entry["severity"], "CRITICAL")
         self.assertEqual(entry["reason"], "사용자 명시 승인")
+
+    def test_subagent_force_push_denied_even_with_valid_override(self):
+        """CRITICAL 등급 force-push: 서브에이전트발 호출은 override조차
+        안 받는다(2026-08-15) - protect_destructive.py/protect_never_touch.py
+        와 같은 근거."""
+        cmd = ("git push --force origin main"
+               "  # HNCS-OVERRIDE: protect_push_safety: 사용자 명시 승인")
+        self.assertEqual(self._run_hook(cmd, agent_id="agt_1"), "deny")
 
     def test_authorship_mismatch_has_no_override(self):
         """authorship 체크는 override 대상이 아님 - 항상 고쳐야 함."""

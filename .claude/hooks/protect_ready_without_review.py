@@ -23,7 +23,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from _hook_common import allow, allow_with_override, deny, sentinel_override
+from _hook_common import allow, allow_with_override, high_tier_decision, sentinel_override
 
 HOOK_NAME = "protect_ready_without_review"
 SEVERITY = "HIGH"
@@ -70,8 +70,8 @@ def main():
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
         return
 
-    deny(
-        HOOK_NAME,
+    high_tier_decision(
+        HOOK_NAME, SEVERITY,
         "CLAUDE.md: \"Don't skip the final whole-branch review; it caught "
         f"three critical bugs.\" Blocking draft->ready ({detail}). Dispatch "
         "a final whole-branch review Agent (superpowers:requesting-code-review "
@@ -80,7 +80,7 @@ def main():
         f'.claude/hooks/.pending_override.json with {{"rule": "{HOOK_NAME}", '
         f'"target": "{target}", "reason": "<reason>", "timestamp": '
         "<time.time()>}, then retry immediately.",
-        severity=SEVERITY,
+        data,
     )
 
 

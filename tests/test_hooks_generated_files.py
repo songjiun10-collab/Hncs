@@ -120,7 +120,7 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
         with open(os.path.join(self._log_dir, "o.jsonl"), encoding="utf-8") as f:
             entry = json.loads(f.readline())
         self.assertEqual(entry["rule"], "protect_generated_files")
-        self.assertEqual(entry["severity"], "MID")
+        self.assertEqual(entry["severity"], "MEDIUM")
 
     def test_unrelated_edit_allowed(self):
         decision = self._run_hook("Edit", {

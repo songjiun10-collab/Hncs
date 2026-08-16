@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook (matcher: Edit|Write|MultiEdit), MID severity. This
+"""PreToolUse hook (matcher: Edit|Write|MultiEdit), MEDIUM severity. This
 codebase doesn't have a `src/generated*` directory, but it has the same
 shape of risk: `_LEARNED_LUT`/`_LEARNED_LUT_V2` numpy array literals in
 `brands/*_learned.py` are measurement output from `tools/fit_final_lut.py`
@@ -9,7 +9,7 @@ desync the shipped LUT from anything the fitting pipeline could
 reproduce or re-verify - the exact failure mode "generated file, don't
 hand-edit" guards against elsewhere.
 
-MID severity: deny + sentinel override, not a hard block, since sometimes
+MEDIUM severity: deny + sentinel override, not a hard block, since sometimes
 a small hand-correction genuinely is the intended fix (this session's own
 PAVA non-monotonic-cliff correction was a full regeneration, but a
 one-value typo fix might not warrant re-running a 2-hour fit).
@@ -26,10 +26,11 @@ import os
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, deny, sentinel_override
+from _hook_common import (allow, allow_with_medium_approval, allow_with_override,
+                           deny, medium_approval, sentinel_override, write_pending_caution)
 
 HOOK_NAME = "protect_generated_files"
-SEVERITY = "MID"
+SEVERITY = "MEDIUM"
 
 _LEARNED_LUT_FILE_RE = re.compile(r"(^|/)brands/[^/]*_learned\.py$")
 _LUT_ASSIGN_NAME_RE = re.compile(r"^_LEARNED_LUT\w*$")
@@ -90,16 +91,25 @@ def touched_lut_array(file_path, old_string):
     return None
 
 
-def _deny_or_override(target, reason):
+def _deny_or_override(target, reason, tool_use_id=None):
     override_reason = sentinel_override(HOOK_NAME, target)
     if override_reason:
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
+        return
+    caution = medium_approval(HOOK_NAME, target)
+    if caution is not None:
+        write_pending_caution(tool_use_id, caution)
+        allow_with_medium_approval(HOOK_NAME, SEVERITY, HOOK_NAME, target, caution)
         return
     deny(
         HOOK_NAME,
         f"{reason} To override: write .claude/hooks/.pending_override.json "
         f'with {{"rule": "{HOOK_NAME}", "target": "{target}", "reason": '
-        '"<reason>", "timestamp": <time.time()>}, then retry immediately.',
+        '"<reason>", "timestamp": <time.time()>}, then retry immediately. '
+        "Or: dispatch a sonnet/opus Agent whose response contains "
+        f'"MEDIUM-APPROVE: {HOOK_NAME} :: {target} :: <caution>" - the '
+        "next matching call will be let through with that caution "
+        "delivered back to you.",
         severity=SEVERITY,
     )
 
@@ -112,6 +122,7 @@ def main():
         return
     ti = data.get("tool_input") or {}
     file_path = ti.get("file_path", "")
+    tool_use_id = data.get("tool_use_id")
     if not file_path or not is_learned_brand_file(file_path):
         allow()
         return
@@ -125,7 +136,8 @@ def main():
             "tools/fit_final_lut.py - a Write overwrites the whole file, "
             "which may include hand-editing that array instead of "
             "regenerating it. Confirm this isn't a hand-edit of the LUT "
-            "values, or regenerate via tools/fit_final_lut.py instead."
+            "values, or regenerate via tools/fit_final_lut.py instead.",
+            tool_use_id=tool_use_id,
         )
         return
 
@@ -145,7 +157,8 @@ def main():
                 "the numbers desyncs the shipped LUT from anything the "
                 "fitting pipeline could reproduce. Confirm this is "
                 "intentional (e.g. reverting to a re-generated array), or "
-                "re-run tools/fit_final_lut.py instead."
+                "re-run tools/fit_final_lut.py instead.",
+                tool_use_id=tool_use_id,
             )
             return
 

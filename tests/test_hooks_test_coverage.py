@@ -44,19 +44,30 @@ class TestProtectTestCoverageEndToEnd(unittest.TestCase):
         with open(os.path.join(self.repo, rel_path), "w") as f:
             f.write(content)
 
-    def _run_hook(self, command):
-        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    def _run_hook(self, command, agent_id=None):
+        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
-            [sys.executable, hook.__file__], cwd=self.repo, input=payload,
+            [sys.executable, hook.__file__], cwd=self.repo, input=json.dumps(payload),
             env=self._env, capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
         return out["hookSpecificOutput"]["permissionDecision"]
 
-    def test_new_tools_file_without_test_denied(self):
+    def test_new_tools_file_without_test_asks(self):
+        """HIGH tier, direct call: ask(), not deny - see
+        _hook_common.py's 2026-08-15 tier redesign note."""
         self._write("tools/new_thing.py", "x = 1\n")
         self._run("git", "add", "tools/new_thing.py")
-        self.assertEqual(self._run_hook('git commit -m "add"'), "deny")
+        self.assertEqual(self._run_hook('git commit -m "add"'), "ask")
+
+    def test_new_tools_file_without_test_from_subagent_denied(self):
+        self._write("tools/new_thing.py", "x = 1\n")
+        self._run("git", "add", "tools/new_thing.py")
+        self.assertEqual(
+            self._run_hook('git commit -m "add"', agent_id="agt_1"), "deny")
 
     def test_new_tools_file_with_test_allowed(self):
         self._write("tools/new_thing.py", "x = 1\n")

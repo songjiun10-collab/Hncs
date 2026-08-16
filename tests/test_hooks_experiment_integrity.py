@@ -49,20 +49,32 @@ class TestProtectExperimentIntegrityEndToEnd(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
-    def _run_hook(self, tool_input):
-        payload = json.dumps({"tool_name": "Edit", "tool_input": tool_input})
+    def _run_hook(self, tool_input, agent_id=None):
+        payload = {"tool_name": "Edit", "tool_input": tool_input}
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
-            [sys.executable, hook.__file__], input=payload, env=self._env,
+            [sys.executable, hook.__file__], input=json.dumps(payload), env=self._env,
             capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
         return out["hookSpecificOutput"]["permissionDecision"]
 
-    def test_result_without_ci_denied(self):
+    def test_result_without_ci_asks(self):
+        """HIGH tier, direct call: ask(), not deny - see
+        _hook_common.py's 2026-08-15 tier redesign note."""
         decision = self._run_hook({
             "file_path": "hybrid_engine/EVALUATION.md",
             "old_string": "old", "new_string": "개선폭 +9.12%, 우세.",
         })
+        self.assertEqual(decision, "ask")
+
+    def test_result_without_ci_from_subagent_denied(self):
+        decision = self._run_hook({
+            "file_path": "hybrid_engine/EVALUATION.md",
+            "old_string": "old", "new_string": "개선폭 +9.12%, 우세.",
+        }, agent_id="agt_1")
         self.assertEqual(decision, "deny")
 
     def test_result_with_ci_allowed(self):

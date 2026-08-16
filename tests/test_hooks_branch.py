@@ -51,20 +51,34 @@ class TestProtectBranchEndToEnd(unittest.TestCase):
         shutil.rmtree(self.repo, ignore_errors=True)
         shutil.rmtree(self._log_dir, ignore_errors=True)
 
-    def _run_hook(self, command):
-        payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
+    def _run_hook(self, command, agent_id=None):
+        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
+        if agent_id:
+            payload["agent_id"] = agent_id
+            payload["agent_type"] = "general-purpose"
         proc = subprocess.run(
-            [sys.executable, hook.__file__], cwd=self.repo, input=payload,
+            [sys.executable, hook.__file__], cwd=self.repo, input=json.dumps(payload),
             env=self._env, capture_output=True, text=True, timeout=15,
         )
         out = json.loads(proc.stdout)
         return out["hookSpecificOutput"]["permissionDecision"]
 
-    def test_commit_on_main_denied(self):
-        self.assertEqual(self._run_hook('git commit -m "x"'), "deny")
+    def test_commit_on_main_asks(self):
+        """HIGH tier, direct orchestrator call (no agent_id): real ask()
+        prompt, not a hard deny - see _hook_common.py's 2026-08-15 tier
+        redesign note."""
+        self.assertEqual(self._run_hook('git commit -m "x"'), "ask")
 
-    def test_push_on_main_denied(self):
-        self.assertEqual(self._run_hook("git push origin main"), "deny")
+    def test_push_on_main_asks(self):
+        self.assertEqual(self._run_hook("git push origin main"), "ask")
+
+    def test_commit_on_main_from_subagent_denied(self):
+        """HIGH tier, subagent-originated call (agent_id present): hard
+        deny, no ask fallback - ask() fails open inside a subagent's own
+        turn (confirmed live 2026-08-15), so this path must never route
+        there."""
+        self.assertEqual(
+            self._run_hook('git commit -m "x"', agent_id="agt_1"), "deny")
 
     def test_commit_on_feature_branch_allowed(self):
         subprocess.run(["git", "checkout", "-b", "feature/x"], cwd=self.repo,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook (matcher: Edit|Write|MultiEdit), MID severity. Scoped
+"""PreToolUse hook (matcher: Edit|Write|MultiEdit), MEDIUM severity. Scoped
 to README.md/README.ko.md/CLAUDE.md/hybrid_engine/EVALUATION.md (any
 CLAUDE.md in the tree, not just root - project convention is per-
 directory CLAUDE.md files). Root CLAUDE.md: "Make every claim checkable:
@@ -11,7 +11,7 @@ with no nearby evidence marker (a command in backticks, a file path, "실행"
 /"확인"/"로그"/"run"/"log"/"verified"), it flags it. Many legitimate doc
 edits add a number that's already obviously checkable from context (e.g.
 table row counts) without restating the command inline every time, so
-this is MID (softer default), not HIGH/CRITICAL.
+this is MEDIUM (softer default), not HIGH/CRITICAL.
 
 **정정(2026-08-15)**: 원래 `ask()`(사람 확인 프롬프트)를 썼는데, 서브
 에이전트로 실측한 결과 디스패치된 subagent의 Edit 콜에서는 `ask()`가
@@ -20,7 +20,7 @@ this is MID (softer default), not HIGH/CRITICAL.
 평상시 워크플로우가 Controller가 subagent를 디스패치해서 실제 작업을
 시키는 구조라, `ask()`는 정확히 그 경우에 보호 기능이 0이 됨. deny +
 override로 바꿔서 orchestrator든 subagent든 동일하게 동작하도록 함(둘 다
-결정론적 파일/텍스트 체크지 UI 렌더링에 안 기댐) - MID 등급 라벨은
+결정론적 파일/텍스트 체크지 UI 렌더링에 안 기댐) - MEDIUM 등급 라벨은
 유지하되(정말 사소한 건 override 한 줄로 바로 뚫림), 메커니즘은 HIGH와
 같은 sentinel override."""
 import json
@@ -28,10 +28,11 @@ import os
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, deny, sentinel_override
+from _hook_common import (allow, allow_with_medium_approval, allow_with_override,
+                           deny, medium_approval, sentinel_override, write_pending_caution)
 
 HOOK_NAME = "protect_claim_evidence"
-SEVERITY = "MID"
+SEVERITY = "MEDIUM"
 
 _TARGET_FILE_RE = re.compile(
     r"(^|/)(README(\.\w+)?\.md|CLAUDE\.md|hybrid_engine/EVALUATION\.md)$")
@@ -104,11 +105,21 @@ def main():
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, override_reason)
         return
 
+    caution = medium_approval(HOOK_NAME, file_path)
+    if caution is not None:
+        write_pending_caution(data.get("tool_use_id"), caution)
+        allow_with_medium_approval(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, caution)
+        return
+
     deny(
         HOOK_NAME,
         f"{reason} To override: write .claude/hooks/.pending_override.json "
         f'with {{"rule": "{HOOK_NAME}", "target": "{file_path}", "reason": '
-        '"<reason>", "timestamp": <time.time()>}, then retry immediately.',
+        '"<reason>", "timestamp": <time.time()>}, then retry immediately. '
+        "Or: dispatch a sonnet/opus Agent whose response contains "
+        f'"MEDIUM-APPROVE: {HOOK_NAME} :: {file_path} :: <caution>" - the '
+        "next matching call will be let through with that caution "
+        "delivered back to you.",
         severity=SEVERITY,
     )
 

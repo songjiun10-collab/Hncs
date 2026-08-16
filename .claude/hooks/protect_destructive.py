@@ -15,7 +15,7 @@ import json
 import re
 import sys
 
-from _hook_common import allow, allow_with_override, bash_override, deny
+from _hook_common import allow, allow_with_override, bash_override, deny, is_subagent_call
 
 HOOK_NAME = "protect_destructive"
 SEVERITY = "CRITICAL"
@@ -85,6 +85,18 @@ def main():
     reason = destructive_reason(command)
     if reason is None:
         allow()
+        return
+
+    if is_subagent_call(data):
+        deny(
+            HOOK_NAME,
+            f"{reason} 이 호출은 서브에이전트발이라(agent_id 있음) override를 "
+            "받지 않음 - CRITICAL 등급에서 override는 self-servable(bash "
+            "주석은 서브에이전트 스스로도 쓸 수 있음)이라는 게 가장 치명적인 "
+            "지점이라, 파괴적 명령의 서브에이전트발 시도는 override 불가로 "
+            "막는다. 컨트롤러가 직접 실행할 것.",
+            severity=SEVERITY,
+        )
         return
 
     override_reason = bash_override(HOOK_NAME, command)
