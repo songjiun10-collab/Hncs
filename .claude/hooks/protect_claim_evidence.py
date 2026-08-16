@@ -22,14 +22,18 @@ this is MEDIUM (softer default), not HIGH/CRITICAL.
 override로 바꿔서 orchestrator든 subagent든 동일하게 동작하도록 함(둘 다
 결정론적 파일/텍스트 체크지 UI 렌더링에 안 기댐) - MEDIUM 등급 라벨은
 유지하되(정말 사소한 건 override 한 줄로 바로 뚫림), 메커니즘은 HIGH와
-같은 sentinel override."""
+같은 sentinel override.
+
+**정정(2026-08-16)**: "그 애매한 중간단계?" - plain self-declared
+override가 MEDIUM-APPROVE와 나란히 열려있으니 컨트롤러가 항상 더 쉬운
+쪽(override 한 줄)을 써서 "상위 에이전트 승인" 경로가 사실상 죽은
+코드였음. **plain override 제거, MEDIUM-APPROVE(opus 전용)만 유효**."""
 import json
 import os
 import re
 import sys
 
-from _hook_common import (allow, allow_with_medium_approval, allow_with_override,
-                           deny, medium_approval, sentinel_override, write_pending_caution)
+from _hook_common import allow, allow_with_medium_approval, deny, medium_approval, write_pending_caution
 
 HOOK_NAME = "protect_claim_evidence"
 SEVERITY = "MEDIUM"
@@ -100,11 +104,6 @@ def main():
         allow()
         return
 
-    override_reason = sentinel_override(HOOK_NAME, file_path)
-    if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, override_reason)
-        return
-
     caution = medium_approval(HOOK_NAME, file_path)
     if caution is not None:
         write_pending_caution(data.get("tool_use_id"), caution)
@@ -113,12 +112,11 @@ def main():
 
     deny(
         HOOK_NAME,
-        f"{reason} To override: write .claude/hooks/.pending_override.json "
-        f'with {{"rule": "{HOOK_NAME}", "target": "{file_path}", "reason": '
-        '"<reason>", "timestamp": <time.time()>}, then retry immediately. '
-        "Or: dispatch an opus Agent whose response contains "
-        f'"MEDIUM-APPROVE: {HOOK_NAME} :: {file_path} :: <caution>" - the '
-        "next matching call will be let through with that caution "
+        f"{reason} No plain override for MEDIUM (2026-08-16: removed - it "
+        "made the opus-approval path pointless since a one-line override "
+        "was always easier). Dispatch an opus Agent whose response "
+        f'contains "MEDIUM-APPROVE: {HOOK_NAME} :: {file_path} :: <caution>" '
+        "- the next matching call will be let through with that caution "
         "delivered back to you.",
         severity=SEVERITY,
     )

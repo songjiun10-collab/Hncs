@@ -103,7 +103,10 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
         })
         self.assertEqual(decision, "deny")
 
-    def test_override_via_sentinel_allowed_and_audited(self):
+    def test_plain_sentinel_override_no_longer_works(self):
+        """2026-08-16 정정: "그 애매한 중간단계?" - plain override가
+        MEDIUM-APPROVE와 나란히 있으면 항상 더 쉬운 쪽만 쓰이니 plain
+        override를 제거했다. sentinel을 심어놔도 이제 안 먹혀야 함."""
         sys.modules.pop("_hook_common", None)
         os.environ["HNCS_HOOK_OVERRIDE_SENTINEL"] = self._env["HNCS_HOOK_OVERRIDE_SENTINEL"]
         import _hook_common
@@ -111,6 +114,27 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
             "protect_generated_files", self._file, "사용자 확인함")
         del sys.modules["_hook_common"]
         os.environ.pop("HNCS_HOOK_OVERRIDE_SENTINEL", None)
+
+        decision = self._run_hook("Edit", {
+            "file_path": self._file,
+            "old_string": "1, 2, 3, 4,", "new_string": "9, 9, 9, 9,",
+        })
+        self.assertEqual(decision, "deny")
+
+    def test_medium_approval_still_allows_and_audited(self):
+        """MEDIUM-APPROVE(opus 디스패치 전용)만 유효한 통과 경로."""
+        sys.modules.pop("_hook_common", None)
+        for k, v in self._env.items():
+            if k.startswith("HNCS_HOOK_"):
+                os.environ[k] = v
+        os.environ["HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL"] = os.path.join(
+            self._log_dir, ".pending_medium_approval.json")
+        import _hook_common
+        _hook_common.write_medium_approval(
+            "protect_generated_files", self._file, "opus가 승인함")
+        del sys.modules["_hook_common"]
+        self._env["HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL"] = os.environ.pop(
+            "HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL")
 
         decision = self._run_hook("Edit", {
             "file_path": self._file,

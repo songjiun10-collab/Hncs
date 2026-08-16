@@ -9,8 +9,9 @@ desync the shipped LUT from anything the fitting pipeline could
 reproduce or re-verify - the exact failure mode "generated file, don't
 hand-edit" guards against elsewhere.
 
-MEDIUM severity: deny + sentinel override, not a hard block, since sometimes
-a small hand-correction genuinely is the intended fix (this session's own
+MEDIUM severity: deny unless a genuine "상위 에이전트" (opus) approves via
+the MEDIUM-APPROVE marker mechanism - not a hard block, since sometimes a
+small hand-correction genuinely is the intended fix (this session's own
 PAVA non-monotonic-cliff correction was a full regeneration, but a
 one-value typo fix might not warrant re-running a 2-hour fit).
 
@@ -19,15 +20,21 @@ one-value typo fix might not warrant re-running a 2-hour fit).
 (subagent 컨텍스트엔 프롬프트를 띄울 화면이 없어서로 추정). 이
 프로젝트는 Controller가 subagent를 디스패치해서 실제 작업을 시키는
 워크플로우라 `ask()`는 정확히 그 경우에 보호 기능이 0. deny + sentinel
-override로 바꿔서 orchestrator/subagent 둘 다 동일하게 동작하게 함."""
+override로 바꿔서 orchestrator/subagent 둘 다 동일하게 동작하게 함.
+
+**정정(2026-08-16)**: "그 애매한 중간단계?" - plain self-declared
+override(bash 주석/sentinel)가 MEDIUM-APPROVE와 나란히 열려있으니
+컨트롤러가 항상 더 쉬운 쪽(override 한 줄)을 써서 "상위 에이전트 승인"
+경로가 사실상 죽은 코드였음. **plain override 제거, MEDIUM-APPROVE(opus
+전용)만 유효** - HIGH(ask)/CRITICAL(subagent 차단)처럼 진짜 구분되는
+메커니즘이 되도록."""
 import ast
 import json
 import os
 import re
 import sys
 
-from _hook_common import (allow, allow_with_medium_approval, allow_with_override,
-                           deny, medium_approval, sentinel_override, write_pending_caution)
+from _hook_common import allow, allow_with_medium_approval, deny, medium_approval, write_pending_caution
 
 HOOK_NAME = "protect_generated_files"
 SEVERITY = "MEDIUM"
@@ -92,10 +99,6 @@ def touched_lut_array(file_path, old_string):
 
 
 def _deny_or_override(target, reason, tool_use_id=None):
-    override_reason = sentinel_override(HOOK_NAME, target)
-    if override_reason:
-        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason)
-        return
     caution = medium_approval(HOOK_NAME, target)
     if caution is not None:
         write_pending_caution(tool_use_id, caution)
@@ -103,12 +106,11 @@ def _deny_or_override(target, reason, tool_use_id=None):
         return
     deny(
         HOOK_NAME,
-        f"{reason} To override: write .claude/hooks/.pending_override.json "
-        f'with {{"rule": "{HOOK_NAME}", "target": "{target}", "reason": '
-        '"<reason>", "timestamp": <time.time()>}, then retry immediately. '
-        "Or: dispatch an opus Agent whose response contains "
-        f'"MEDIUM-APPROVE: {HOOK_NAME} :: {target} :: <caution>" - the '
-        "next matching call will be let through with that caution "
+        f"{reason} No plain override for MEDIUM (2026-08-16: removed - it "
+        "made the opus-approval path pointless since a one-line override "
+        "was always easier). Dispatch an opus Agent whose response "
+        f'contains "MEDIUM-APPROVE: {HOOK_NAME} :: {target} :: <caution>" '
+        "- the next matching call will be let through with that caution "
         "delivered back to you.",
         severity=SEVERITY,
     )

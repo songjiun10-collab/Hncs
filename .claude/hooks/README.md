@@ -16,23 +16,26 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 | 등급 | 기본 동작 | Override |
 |---|---|---|
 | 🟢 LOW | allow + 로그 | (해당 없음 - 통과 자체가 로그) |
-| 🟡 MEDIUM | 상위 에이전트 승인이면 통과 + caution 전달, 아니면 deny | `# HNCS-OVERRIDE`/sentinel(기존과 동일) **또는** 실제 Agent 디스패치의 `MEDIUM-APPROVE` 마커 |
+| 🟡 MEDIUM | 상위 에이전트 승인이면 통과 + caution 전달, 아니면 deny | plain override 없음(2026-08-16 제거) - 실제 opus Agent 디스패치의 `MEDIUM-APPROVE` 마커만 유효 |
 | 🟠 HIGH | 직접 호출은 `ask()`(실제 사람 프롬프트), 서브에이전트발은 override 없인 무조건 deny | 위와 동일한 override, 둘 다 여전히 유효 |
 | 🔴 CRITICAL | deny (Never-touch/파괴적 명령/force-push) | 오케스트레이터 직접 호출만 override 가능 - 서브에이전트발은 override 자체가 없음 |
 
 - **LOW**: `log_and_allow()` - 항상 allow, 로그만. 안 바뀜.
 - **MEDIUM**: "상위 에이전트가 허용하면 실행 에이전트가 실행, 단
-  주의사항 전달." 기존 self-declared override에 더해, 실제 디스패치된
-  서브에이전트의 응답에 `MEDIUM-APPROVE: <rule> :: <target> ::
-  <caution>` 마커가 있고 그 디스패치 모델이 **opus**면(2026-08-16 정정:
-  "에이전트는 오퍼스 허락만 유효" - sonnet도 불인정)
-  (`record_agent_approval.py`, PostToolUse/Agent) 승인을 기록한다 -
-  자기 자신이 못 쓰고 진짜 opus Agent 디스패치가 있어야 생기는
-  sentinel이라 일반 override보다 위조 난이도가 한 단계 높다. 통과할 때 caution은
+  주의사항 전달." 실제 디스패치된 서브에이전트의 응답에
+  `MEDIUM-APPROVE: <rule> :: <target> :: <caution>` 마커가 있고 그
+  디스패치 모델이 **opus**면(2026-08-16 정정: "에이전트는 오퍼스 허락만
+  유효" - sonnet도 불인정) (`record_agent_approval.py`, PostToolUse/Agent)
+  승인을 기록한다 - 자기 자신이 못 쓰고 진짜 opus Agent 디스패치가
+  있어야 생기는 sentinel. 통과할 때 caution은
   `deliver_caution.py`(PostToolUse, Edit|Write|MultiEdit)가
   `additionalContext`로 실행 에이전트에게 돌려준다(같은 `tool_use_id`로
   상관관계). `protect_generated_files.py`/`protect_claim_evidence.py`가
-  이 등급.
+  이 등급. **정정(같은 날, "그 애매한 중간단계?")**: plain
+  self-declared override(bash 주석/sentinel)를 이 두 훅에서 완전히
+  제거했다 - MEDIUM-APPROVE와 나란히 있으면 항상 더 쉬운 override
+  쪽만 쓰여서 "상위 에이전트 승인" 경로가 사실상 죽은 코드였음. 이제
+  MEDIUM은 override로 안 뚫림 - opus MEDIUM-APPROVE가 유일한 통과 경로.
 - **HIGH**: "사람 승인." `agent_id` 필드 유무로 분기(아래 "서브에이전트
   훅 적용 여부" 항목에서 확인된 필드) - 오케스트레이터 직접 호출은
   `ask()`(실측 확인된 진짜 사람 프롬프트), 서브에이전트발 호출은
@@ -76,6 +79,10 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 - **Edit/Write/MultiEdit 트리거 훅**: `.claude/hooks/.pending_override.json`에
   `{"rule": "<rule>", "target": "<file_path>", "reason": "<이유>",
   "timestamp": <time.time()>}`를 먼저 쓰고 바로 재시도(10분 내, 1회성 소비).
+- **예외 - `protect_generated_files.py`/`protect_claim_evidence.py`
+  (MEDIUM)**: 위 방법 둘 다 안 먹힘(2026-08-16 제거). opus Agent
+  디스패치의 `MEDIUM-APPROVE` 마커만 유효 - "심각도 4단계" 섹션의
+  MEDIUM 항목 참고.
 
 모든 override는 `override_audit.jsonl`에 `{timestamp, rule, severity,
 target, reason, git_sha}`로 기록됨(git_sha는 훅이 직접 계산 - 위조 불가).
@@ -92,8 +99,8 @@ git-tracked, append-only).
 | `protect_branch.py` | 🟠 HIGH | Bash | main/master/detached HEAD에서 commit·push (직접 호출: ask, 서브에이전트발: override 없인 deny) |
 | `protect_test_coverage.py` | 🟠 HIGH | Bash | 새 소스 파일을 테스트 없이 커밋(신규 파일에만 적용 - 기존 파일 수정은 대상 아님) |
 | `protect_experiment_integrity.py` | 🟠 HIGH | Edit/Write/MultiEdit (EVALUATION.md만) | CI/부트스트랩 언급 없이 수치 결과 기록 |
-| `protect_generated_files.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | `_LEARNED_LUT*` 배열(생성물) 직접 수정 - 상위 에이전트 승인(`MEDIUM-APPROVE`, opus 디스패치만 인정) 가능 |
-| `protect_claim_evidence.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 - 상위 에이전트 승인(`MEDIUM-APPROVE`, opus 디스패치만 인정) 가능 |
+| `protect_generated_files.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | `_LEARNED_LUT*` 배열(생성물) 직접 수정 - plain override 없음, opus 상위 에이전트 승인(`MEDIUM-APPROVE`)만 유효 |
+| `protect_claim_evidence.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 - plain override 없음, opus 상위 에이전트 승인(`MEDIUM-APPROVE`)만 유효 |
 | `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
 | `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
 | `protect_agent_model_naming.py` | 🟢 LOW | Agent | model 미지정/haiku 디스패치 - 항상 allow, 로그만 남김 |
