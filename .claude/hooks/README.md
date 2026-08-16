@@ -98,21 +98,31 @@ direct 호출 구분도 없음). LOW(`protect_agent_model_naming.py`)는
 대상이 아님 - LOW의 "마찰 없음" 설계 자체가 이미 별개로 확정된 결정이라
 여기서 안 뒤집었다.
 
-**쓰는 법**: `.claude/hooks/.pending_decision_record.json`에
-`write_sentinel_override()`와 같은 방식으로(에이전트가 직접 Write 툴
-호출로) 다음을 써두고, 곧바로 그 액션을 시도한다:
+**쓰는 법 - 정정(같은 날, must훅 - "처음부터 다 만들자 pre tool use
+말고" / "MCP 툴 스키마 강제")**: 원래는 아래처럼 Write 툴로
+`.claude/hooks/.pending_decision_record.json`에 자유 텍스트 JSON을
+직접 쓰는 방식이었다 - 필드 누락/타입 오류/범위 밖 confidence를 막을
+수단이 나중에 읽는 쪽 검증뿐이었다. 이제는 `must_hook_server.py`가
+노출하는 **`mcp__must_hook__write_decision_record` MCP 툴을 호출**한다
+- 파라미터 스키마(타입 힌트 + pydantic `Field` 제약: `severity`는
+LOW/MEDIUM/HIGH/CRITICAL 패턴, `confidence`는 0.0-1.0, `reason`/
+`expected_risk`는 non-empty)가 MCP 프로토콜 단에서 검증돼서, 스키마를
+어긴 호출은 서버 코드에 도달하지도 못한다. Write 툴로 이 sentinel
+파일을 직접 쓰는 옛 경로는 `protect_decision_record_bypass.py`(신규,
+override 없음)가 무조건 막는다 - MCP 툴이 유일한 통로.
 
-```json
-{"rule": "<발동할 훅의 HOOK_NAME>", "target": "<그 훅이 이미 쓰는 override target과 같은 값>",
- "decision_id": null, "severity": "<자기평가 등급>", "confidence": 0.0-1.0,
- "reason": "<왜 이렇게 판단했나>", "expected_risk": "<뭐가 잘못될 수 있나>",
- "timestamp": <time.time()>}
+```
+mcp__must_hook__write_decision_record(
+  rule="<발동할 훅의 HOOK_NAME>", target="<그 훅이 이미 쓰는 override target과 같은 값>",
+  severity="<자기평가 등급>", confidence=0.0-1.0,
+  reason="<왜 이렇게 판단했나>", expected_risk="<뭐가 잘못될 수 있나>")
 ```
 
-(`_hook_common.write_decision_record(rule, severity, confidence, reason,
-expected_risk, target=..., decision_id=...)`가 이 파일 쓰기의 단일
-구현 - `target` 또는 `decision_id` 중 하나는 필수, `confidence`는
-`[0.0, 1.0]` float 아니면 `ValueError`.)
+(툴 내부는 `_hook_common.write_decision_record(rule, severity,
+confidence, reason, expected_risk, target=..., decision_id=...)`를 그대로
+호출 - 파일 쓰기/포맷은 여전히 그 함수가 단일 구현. `target` 또는
+`decision_id` 중 하나는 필수 - 스키마가 둘 다 optional이라 이건
+함수 쪽에서 `ValueError`로 잡는다.)
 
 매칭되는 fresh(10분 이내) 레코드가 있으면 `deny()`/`ask()`/
 `log_and_allow()`/`allow_with_override()`/`allow_with_medium_approval()`을
@@ -127,7 +137,12 @@ expected_risk, target=..., decision_id=...)`가 이 파일 쓰기의 단일
    있음** - 위 필수 게이트 추가로 override sentinel과 동일하게 "안 쓰면
    계속 막힌다"는 압박이 생겼다. 원래 이 항목이 지적했던 문제(organic
    테스트 2번 다 자발적으로 안 씀)가 바로 이 정책 변경의 이유였다 - 이제는
-   "안 써도 그만"이 아니라 "안 쓰면 아무 작업도 못 한다."
+   "안 써도 그만"이 아니라 "안 쓰면 아무 작업도 못 한다." **추가
+   정정(같은 날, must훅)**: 강제된 게 "decision record 자체가 존재하는지"
+   뿐이었고, "존재하는 그 내용이 스키마상 유효한지"는 여전히 안 봤다 -
+   에이전트가 Write 툴로 필드 누락/타입 오류 JSON을 써도 나중에 읽을 때야
+   걸렸다. `must_hook_server.py`의 MCP 툴 스키마가 이 틈도 닫는다 -
+   잘못된 호출은 파일이 써지기도 전에 거부됨.
 2. **`decision_id`는 "어느 규칙이 발동할지 이미 알 때"만 도움된다.**
    "9개 가드 중 뭐가 걸릴지 모르겠다"는 상황은 못 푼다 - `target`이
    그 훅이 쓰는 override target과 정확히 일치해야 매칭되므로, 현실적
@@ -188,6 +203,7 @@ MEDIUM/HIGH/CRITICAL 행 전부 decision record 필수 게이트가 먼저 적�
 | `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
 | `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
 | `protect_agent_model_naming.py` | 🟢 LOW | Agent | model 미지정/haiku 디스패치 - 항상 allow, 로그만 남김 |
+| `protect_decision_record_bypass.py` | 🔴 CRITICAL, override 없음 | Edit/Write/MultiEdit | `.pending_decision_record.json` 직접 쓰기 차단 - `mcp__must_hook__write_decision_record`만 유효 통로(must훅) |
 | `record_agent_approval.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) MEDIUM 승인 마커 파싱 + sentinel 기록 |
 | `deliver_caution.py` | PostToolUse, 등급 없음 | Edit/Write/MultiEdit | (차단 아님) MEDIUM 승인의 caution을 `additionalContext`로 전달 |
 | `record_whole_branch_review.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) 전체-브랜치 리뷰 sentinel 기록 |

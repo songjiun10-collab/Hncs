@@ -100,6 +100,22 @@ LOW(`protect_agent_model_naming.py`)는 이 게이트 대상이 아님 - LOW의
 알려진 한계는 `.claude/hooks/README.md`의 "Decision Record" 섹션, 신규
 도구는 `tools/eval_hook_judgments.py`.
 
+**정정(같은 날, must훅 - "처음부터 다 만들자 pre tool use 말고" /
+"MCP 툴 스키마 강제")**: `require_decision_or_deny()`의 deny 메시지가
+안내하던 통로가 바뀌었다. 원래는 "Write 툴로 `.pending_decision_record.json`에
+이런 모양 JSON을 써라"였는데, 이건 자유 텍스트라 필드 누락/타입 오류/
+범위 밖 confidence를 막을 수단이 나중에 읽는 `decision_record()`쪽
+검증뿐이었다. 이제는 `must_hook_server.py`가 노출하는
+`mcp__must_hook__write_decision_record` MCP 툴 호출을 안내한다 - 파라미터
+타입 힌트 + pydantic `Field` 제약(severity는 LOW/MEDIUM/HIGH/CRITICAL
+패턴, confidence는 0.0-1.0, reason/expected_risk는 non-empty)이 MCP
+프로토콜 단에서 검증돼서, 스키마를 어긴 호출은 이 모듈의 코드에
+도달하지도 못한다. 툴 내부는 이 파일의 `write_decision_record()`를 그대로
+호출하므로 저장 포맷/`decision_record()` 읽기 쪽은 전혀 안 바뀌었다 -
+단일 소스 유지. Write 툴로 sentinel 파일을 직접 쓰는 옛 경로는
+`protect_decision_record_bypass.py`(신규, override 없음)가 무조건
+막아서 MCP 툴이 유일한 통로가 되게 했다.
+
 ## Override mechanism
 
 The point (user's own framing): "훅은 개발자를 대신해 판단하지 않는다.
@@ -501,7 +517,18 @@ def write_decision_record(rule, severity, confidence, reason, expected_risk,
 
     `confidence` must be a float in [0.0, 1.0] - this is written by the
     agent itself, so a malformed call should fail loud rather than log
-    garbage silently."""
+    garbage silently.
+
+    **정정(2026-08-16, 두 차례)**: 위 두 문단이 더 이상 정확하지 않다.
+    (1) "LOGGING ONLY - nothing reads this to decide allow/deny"는 그날
+    나중에 `require_decision_or_deny()`가 추가되면서 깨졌다 - 이제 이
+    레코드가 없으면 MEDIUM/HIGH/CRITICAL 전부 무조건 deny된다(모듈
+    docstring의 "그거도 훅 걸어라" 정정 참고). (2) "nothing enforces this
+    gets written"도 같은 이유로 해소됐다. 그리고 이 함수를 에이전트가
+    직접 호출하지 않는다 - must훅(같은 날, 뒤이은 정정) 이후로는
+    `must_hook_server.py`의 `write_decision_record` MCP 툴이 파라미터
+    스키마를 검증한 뒤 이 함수를 대신 호출한다. 남은 유효한 한계는
+    "(2) decision_id는 발동 규칙을 이미 알 때만 도움"뿐."""
     if target is None and decision_id is None:
         raise ValueError("write_decision_record requires target or decision_id")
     try:
@@ -590,12 +617,13 @@ def require_decision_or_deny(hook_name, severity, target, no_decision_reason, de
             hook_name,
             f"{no_decision_reason} 이 등급(MEDIUM/HIGH/CRITICAL)은 override/"
             "승인/ask 여부와 무관하게 decision record가 먼저 있어야 함"
-            "(2026-08-16, 사용자 지시 - 강제, 예외 없음). Write 툴로 "
-            ".claude/hooks/.pending_decision_record.json에 "
-            f'{{"rule": "{hook_name}", "target": "{target}", "decision_id": '
-            'null, "severity": "<자기평가 등급>", "confidence": '
-            '<0.0-1.0>, "reason": "<판단 근거>", "expected_risk": '
-            '"<예상 위험>", "timestamp": <time.time()>}를 먼저 쓰고 재시도할 것.',
+            "(2026-08-16, 사용자 지시 - 강제, 예외 없음). "
+            "mcp__must_hook__write_decision_record 툴을 "
+            f'rule="{hook_name}", target="{target}", severity=<자기평가 '
+            "등급>, confidence=<0.0-1.0>, reason=<판단 근거>, "
+            "expected_risk=<예상 위험>으로 먼저 호출하고 재시도할 것 "
+            "(must훅, 2026-08-16 - 스키마 검증되는 MCP 툴 호출만 유효, "
+            "Write 툴로 sentinel 파일 직접 쓰는 건 protect_decision_record_bypass.py가 막음).",
             severity=severity, target=target, decision=None,
         )
         return None
