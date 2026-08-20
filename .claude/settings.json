@@ -133,6 +133,11 @@
             "type": "command",
             "command": "python3 .claude/hooks/record_agent_approval.py",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/record_consensus_judgment.py",
+            "timeout": 15
           }
         ]
       },
