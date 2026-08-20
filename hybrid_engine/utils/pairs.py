@@ -1,10 +1,17 @@
 """로컬 기여 raw+jpeg 페어(datasets/hasselblad/contributed/<세트>/manifest.csv)를
 공식 raw+jpeg 페어 리스트에 더해주는 공용 헬퍼. evaluate_hncs_structural.py,
 evaluate_chromatic_aberration.py, evaluate_hncs_blend.py 세 스크립트 모두
-"공식 13쌍만 쓰던 load_pairs()"에 이 함수로 로컬 페어를 얹어 74쌍으로
-확장한다(2026-08, local-mixed-2026-07 기여분 61쌍 기준). tools/calibrate.py의
+"공식 13쌍만 쓰던 load_pairs()"에 이 함수로 로컬 페어를 얹어 확장한다
+(2026-08, 당시 local-mixed-2026-07 기여분 61쌍 기준 74쌍). tools/calibrate.py의
 collect_local_pairs()를 그대로 재사용하므로 파일 존재 확인 로직이
 중복되지 않는다.
+
+**정정(2026-08-19)**: 위 "74쌍" 수치는 stale - local-mixed-2026-07은
+이후 사라졌고(datasets/CLAUDE.md), 현재 contributed/ 아래엔 다른 5개
+세트(manifest 기준 492행 - 파일 존재 여부에 따라 실제
+collect_local_pairs() 결과는 더 적을 수 있음)가 있다. 최신 개수를 여기
+다시 숫자로 박아두지 않음 - collect_local_pairs()를 직접 돌려서 확인할
+것, 안 그러면 같은 방식으로 또 stale해진다.
 """
 import os
 import sys

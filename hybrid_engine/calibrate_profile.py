@@ -13,6 +13,7 @@ CIEDE2000 ΔE 루프를 실제로 돌려서 파라미터를 좌표하강으로 �
   python3 -m hybrid_engine.calibrate_profile
 """
 import glob
+import math
 import os
 import sys
 
@@ -1139,6 +1140,166 @@ def run_learned_mode(dataset):
     improvement = (parametric_loss - learned_loss) / parametric_loss * 100
     print(f"개선폭: {improvement:+.1f}%")
     return parametric_loss, learned_loss, lut_path
+
+
+def _sign_test_p(wins, losses):
+    n = wins + losses
+    if n == 0:
+        return 1.0
+    k = min(wins, losses)
+    tail = sum(math.comb(n, i) for i in range(k + 1)) / (2.0 ** n)
+    return min(1.0, 2.0 * tail)
+
+
+def summarize(label_a, des_a, label_b, des_b, n_bootstrap=20000, seed=0):
+    """페어드 비교 - des_b가 des_a보다 작으면(=더 좋으면) 양수 improvement.
+    tools/evaluate_wb_pipeline_variants.py의 summarize()와 같은 통계
+    (부트스트랩 CI, 부호검정). 2026-08에 calibrate_profile_{canon,fuji,
+    leica,nikon,sigma,sony}.py 6개 파일에 문자 그대로 복사돼있던 걸
+    코드 리뷰로 발견해서 여기로 합쳤다 - 이 함수는 브랜드별 로더
+    (_find_pairs/_load_calib_set, hybrid_engine/CLAUDE.md의 "copy the
+    loader" 대상)와 달리 브랜드 무관 순수 통계 함수라 공유해도 그
+    컨벤션을 안 어긴다."""
+    a = np.asarray(des_a, dtype=np.float64)
+    b = np.asarray(des_b, dtype=np.float64)
+    n = len(a)
+    diff = a - b
+    mean_a, mean_b = float(a.mean()), float(b.mean())
+    improvement_pct = (mean_a - mean_b) / mean_a * 100.0 if mean_a else float("nan")
+    wins = int((diff > 0).sum())
+    losses = int((diff < 0).sum())
+
+    rng = np.random.default_rng(seed)
+    boot = np.empty(n_bootstrap)
+    for i in range(n_bootstrap):
+        idx = rng.integers(0, n, n)
+        boot[i] = diff[idx].mean()
+    ci_lo, ci_hi = (float(v) for v in np.percentile(boot, [2.5, 97.5]))
+    p_value = _sign_test_p(wins, losses)
+    inconclusive = ci_lo <= 0.0 <= ci_hi
+
+    print(f"\n=== {label_a} vs {label_b} (n={n}) ===")
+    print(f"평균 {label_a} ΔE00={mean_a:.3f}  평균 {label_b} ΔE00={mean_b:.3f}  "
+          f"{label_b} 개선폭={improvement_pct:+.2f}%")
+    print(f"승({label_b} 더 좋음)/패={wins}/{losses}  부호검정 p={p_value:.4f}")
+    print(f"부트스트랩 95% CI(평균차)=[{ci_lo:+.3f}, {ci_hi:+.3f}]")
+    if inconclusive:
+        print("판정: 보류 (CI가 0 포함)")
+    elif improvement_pct > 0:
+        print(f"판정: {label_b} 우세")
+    else:
+        print(f"판정: {label_a} 우세")
+    return dict(mean_a=mean_a, mean_b=mean_b, improvement_pct=improvement_pct,
+                wins=wins, losses=losses, p_value=p_value, ci=(ci_lo, ci_hi),
+                inconclusive=inconclusive)
+
+
+def _paired_cv_losses(dataset, fixed_overrides, n_folds=4, seed=0, n_passes=1):
+    """페어별(폴드 평균 아님) ΔE00 배열 - nested CV(폴드마다 매트릭스+톤/색
+    재학습, held-out은 그 폴드에서 한 번도 학습에 안 씀). summarize()의
+    페어드 비교 입력으로 쓴다. dataset과 같은 순서로 반환."""
+    rng = np.random.default_rng(seed)
+    order = rng.permutation(len(dataset))
+    folds = np.array_split(order, n_folds)
+    per_pair = np.empty(len(dataset))
+    for fold_idx in folds:
+        fold_idx_set = set(fold_idx.tolist())
+        train_set = [d for i, d in enumerate(dataset) if i not in fold_idx_set]
+        fold_params, _ = _find_matrix_and_recalibrate(
+            train_set, n_passes=n_passes, fixed_overrides=fixed_overrides)
+        for i in fold_idx:
+            per_pair[i] = _mean_loss(fold_params, [dataset[i]])
+    return per_pair
+
+
+def _hue_lut_paired_cv_losses(dataset, base_profile, hue_lut_scratch_path, n_folds=4, seed=0):
+    """base_profile(이미 매트릭스+톤/색+gray_edge까지 재학습된 프로필) 위에
+    hue LUT을 얹었을 때/안 얹었을 때 페어별 ΔE - k-fold nested CV(폴드마다
+    학습 데이터로만 hue LUT을 새로 학습). hue_lut_scratch_path는 브랜드별
+    scratch 경로(assets/luts/<brand>_hue_learned_scratch.npy) - 절대
+    hasselblad_hue_learned.npy와 안 겹치게 호출 쪽에서 넘긴다."""
+    rng = np.random.default_rng(seed)
+    order = rng.permutation(len(dataset))
+    folds = np.array_split(order, n_folds)
+    without_lut = np.empty(len(dataset))
+    with_lut = np.empty(len(dataset))
+    for fold_idx in folds:
+        fold_idx_set = set(fold_idx.tolist())
+        train_set = [d for i, d in enumerate(dataset) if i not in fold_idx_set]
+        lut = learn_hue_lut(train_set, base_profile)
+        np.save(hue_lut_scratch_path, lut)
+        hue_profile = dict(base_profile, learned_hue_lut=hue_lut_scratch_path)
+        for i in fold_idx:
+            without_lut[i] = _mean_loss(base_profile, [dataset[i]])
+            with_lut[i] = _mean_loss(hue_profile, [dataset[i]])
+    return without_lut, with_lut
+
+
+def run_per_brand_calibration(brand_label_ko, dataset_glob_hint, load_calib_set,
+                               hue_lut_scratch_path, n_folds=4, seed=0, n_passes=1):
+    """calibrate_profile_<brand>.py들이 공유하는 실행 드라이버. 브랜드별로
+    다른 건 이 네 인자(브랜드 한글명, "페어 못 찾음" 진단 메시지에 쓸
+    데이터셋 경로 힌트, 로더, hue LUT scratch 경로)뿐이고 나머지 로직은
+    100% 동일하다 - 2026-08 코드 리뷰에서 6개 브랜드 파일이 이 함수
+    부분부터 파일 끝까지 문자 그대로 동일하다는 게 발견됐다.
+    _find_pairs()/load_calib_set 자체는 여전히 각 브랜드 파일에 남아있고
+    (hybrid_engine/CLAUDE.md "copy the loader" 컨벤션), 이 함수는 그
+    결과물(dataset)을 받아서 도는 순수 오케스트레이션이라 로더 분리
+    원칙을 어기지 않는다."""
+    print(f"{brand_label_ko} raw+jpeg 페어 로드 중 (캘리브레이션용 축소 해상도)...")
+    dataset = load_calib_set()
+    print(f"총 {len(dataset)}쌍 로드 완료\n")
+    if not dataset:
+        print(f"페어를 못 찾음 - {dataset_glob_hint} 확인 필요")
+        return
+
+    baseline_loss = _mean_loss(_DEFAULT_PARAMS, dataset)
+    print(f"베이스라인 ΔE (V0.1 기본 파라미터, {brand_label_ko}용 시드 없음): {baseline_loss:.3f}")
+
+    new_params, in_sample_loss = _find_matrix_and_recalibrate(dataset, n_passes=n_passes)
+    in_sample_improvement = (baseline_loss - in_sample_loss) / baseline_loss * 100
+    print(f"\n신규 파이프라인 ΔE (in-sample, 매트릭스+톤/색 재학습): "
+          f"{in_sample_loss:.3f} ({in_sample_improvement:+.1f}%)")
+
+    cv_loss = None
+    if len(dataset) >= n_folds:
+        rng = np.random.default_rng(seed)
+        order = rng.permutation(len(dataset))
+        folds = np.array_split(order, n_folds)
+        fold_losses = []
+        for fi, fold_idx in enumerate(folds):
+            fold_idx_set = set(fold_idx.tolist())
+            train_set = [d for i, d in enumerate(dataset) if i not in fold_idx_set]
+            held_out = [dataset[i] for i in fold_idx]
+            fold_params, _ = _find_matrix_and_recalibrate(train_set, n_passes=n_passes)
+            fold_loss = _mean_loss(fold_params, held_out)
+            fold_losses.append(fold_loss)
+            print(f"  fold {fi + 1}/{n_folds} ΔE={fold_loss:.3f}", flush=True)
+        cv_loss = float(np.mean(fold_losses))
+        cv_improvement = (baseline_loss - cv_loss) / baseline_loss * 100
+        print(f"\n신규 파이프라인 ΔE ({n_folds}-fold 교차검증): {cv_loss:.3f} "
+              f"({cv_improvement:+.1f}%)")
+
+    print(f"\n판정: {'목표(ΔE00<=5) 도달' if (cv_loss or in_sample_loss) <= 5 else '목표(ΔE00<=5) 미달'}")
+
+    print("\n" + "=" * 60)
+    print("Gray World(기본) vs Gray Edge - 페어드 nested CV")
+    gray_world_pairwise = _paired_cv_losses(dataset, fixed_overrides=None, n_folds=n_folds, seed=seed)
+    gray_edge_pairwise = _paired_cv_losses(
+        dataset, fixed_overrides={"color_cast_algorithm": "gray_edge", "gray_edge_p": 1.0},
+        n_folds=n_folds, seed=seed)
+    summarize("gray_world", gray_world_pairwise, "gray_edge", gray_edge_pairwise)
+
+    print("\n" + "=" * 60)
+    print("hue LUT 추가 - gray_edge 기반 프로필 위에")
+    gray_edge_full_params, _ = _find_matrix_and_recalibrate(
+        dataset, n_passes=n_passes,
+        fixed_overrides={"color_cast_algorithm": "gray_edge", "gray_edge_p": 1.0})
+    without_lut, with_lut = _hue_lut_paired_cv_losses(
+        dataset, gray_edge_full_params, hue_lut_scratch_path, n_folds=n_folds, seed=seed)
+    summarize("no_hue_lut", without_lut, "hue_lut", with_lut)
+
+    return baseline_loss, in_sample_loss, cv_loss, new_params
 
 
 def main():
