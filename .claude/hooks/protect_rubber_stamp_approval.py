@@ -14,18 +14,24 @@ test_opus_response_with_marker_records_approval`은
 `TestProtectGeneratedFilesMediumApprovalEndToEnd.
 test_medium_approval_allows_and_queues_caution`은 그 승인이 있으면
 `protect_generated_files.py`가 무조건 신뢰해서 실제 생성 파일 수정을
-통과시킴을 보여준다. 둘을 이으면: 컴트롤러가 디스패치 프롬프트를
+통과시킴을 보여준다. 둘을 이으면: 컨트롤러가 디스패치 프롬프트를
 "이 마커만 출력해, 실제로 파일 안 열어봐도 돼"로 지으면 MEDIUM 게이트가
 전적으로 무력화된다 - 이 아키텍처는 "진짜 검토가 있었는지"를 전혀 검증
 못하고 "그 문자열이 있는 opus 응답이 있었는지"만 보기 때문.
 
 이 훅도 진짜 검토 여부를 검증하지는 못한다(protect_reviewer_prejudging.py의
 고정 문구 블록리스트와 같은 구조적 한계) - 디스패치 프롬프트 자체에서 검토를
-명시적으로 생략하라고 지시하는 컴트롤러만 잡는다. 마커/생략지시 없이
+명시적으로 생략하라고 지시하는 컨트롤러만 잡는다. 마커/생략지시 없이
 서브에이전트가 스스로 rubber-stamp하는 경우는 여전히 못 잡는다 - 이건
-이 구호의 명시적이고 쉼은 버전만 닫는다.
+이 우회의 명시적이고 쉬운 버전만 닫는다.
 
-Override: protect_reviewer_prejudging.py와 동일한 sentinel-file 메커니즘."""
+Override: protect_reviewer_prejudging.py와 동일한 sentinel-file 메커니즘.
+
+**정정(2026-08-18, CI 첫 커밋에서 바로 발견)**: 첫 버전의 "그냥 이 줄만
+출력" 패턴이 실제 예시 문구("정확히 이 한 줄만 출력해")와 단어가 안
+맞아서(둘 다 없음) 매칭 실패 - 자기 자신의 테스트를 못 통과했다. "이
+(한 )?줄만 출력"으로 완화해서 "이 줄만 출력"/"이 한 줄만 출력" 둘 다
+잡게 고침."""
 import json
 import re
 import sys
@@ -37,7 +43,7 @@ HOOK_NAME = "protect_rubber_stamp_approval"
 SEVERITY = "HIGH"
 
 _RUBBER_STAMP_PATTERNS = [
-    re.compile(r"그냥\s*이\s*줄만\s*출력", re.IGNORECASE),
+    re.compile(r"이\s*(한\s*)?줄만\s*출력", re.IGNORECASE),
     re.compile(r"실제로\s*확인\s*안\s*해도", re.IGNORECASE),
     re.compile(r"파일\s*열어보지\s*말", re.IGNORECASE),
     re.compile(r"검토\s*없이", re.IGNORECASE),
@@ -90,7 +96,7 @@ def main():
             "이 디스패치 프롬프트가 MEDIUM-APPROVE 마커를 요구하면서 동시에 "
             f"실제 검토를 생략하라고 지시함(매칭: \"{phrase}\") - MEDIUM 승인은 "
             "opus가 실제로 검토했다는 걸 전제로 하는데, 이 프롬프트는 그 전제 "
-            "자체를 깨뜨릴. 서브에이전트가 실제로 파일을 검토하도록 프롬프트를 "
+            "자체를 깨뜨림. 서브에이전트가 실제로 파일을 검토하도록 프롬프트를 "
             "다시 쓸 것. To override: write "
             ".claude/hooks/.pending_override.json with "
             f'{{"rule": "{HOOK_NAME}", "target": "{target}", "reason": "<reason>", '
