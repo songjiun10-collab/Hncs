@@ -61,6 +61,11 @@
             "type": "command",
             "command": "python3 .claude/hooks/protect_reviewer_prejudging.py",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_rubber_stamp_approval.py",
+            "timeout": 15
           }
         ]
       },
