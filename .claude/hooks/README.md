@@ -7,6 +7,17 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 > 해버리는 것"만 막는다. 의식적으로 override하면 허용하되, 왜 뚫었는지는
 > 항상 남는다.
 
+**Phase 1 완료 (2026-08-19, HNCS Hook Evolution)**: `docs/superpowers/specs/
+2026-08-19-hook-evolution-design.md`(사용자 비전 + 브레인스토밍 결정)와
+`docs/superpowers/plans/2026-08-19-hook-evolution-phase1-consensus.md`
+(구현 플랜)의 Task 1-6이 여기 반영됨 - 아래 "심각도 4단계" HIGH 항목의
+2-Agent Consensus 단락, `record_consensus_judgment.py`, Decision Record의
+`intended_scope`/`deviation` 필드. **아직 시작 안 한 phase 2**: opus
+서브에이전트가 `learning_data.jsonl`을 분석해서 새 Hook 후보를 제안하는
+도구(스펙 item 4), 모든 툴콜을 커버하는 블랭킷 Agent-Drift 관찰(2026-08-19
+브레인스토밍에서 명시적으로 범위 밖으로 결정됨 - 기존 decision-record
+게이트 이벤트 확장으로 충분하다고 판단).
+
 ## Hook의 신념 (2026-08-19, 사용자 작성)
 
 우리는 서브에이전트의 생각과 행동을 연구한다.
@@ -158,6 +169,22 @@ Observe. Attack. Evaluate. Learn. Evolve.
   `protect_experiment_integrity.py`/`protect_reviewer_prejudging.py`/
   `protect_ready_without_review.py`/`protect_rubber_stamp_approval.py`
   6개가 이 등급.
+
+  **2-Agent Consensus 경로(2026-08-19, phase 1)**: 위 6개 훅 전부, ask()/
+  서브에이전트-deny로 가기 전에 먼저 consensus sentinel을 확인한다.
+  컨트롤러가 가드된 액션 **전에** 같은 모델(기본 opus)로 서로 다른
+  프레이밍의 Agent 2개를 독립 디스패치하면(A: "승인 기준으로 검토해라",
+  B: "거부 사유를 적극적으로 찾아라" - 정확한 문구는 상황별) - 각자
+  응답 끝에 `CONSENSUS-VERDICT: <rule> :: <target> :: <role:A|B> ::
+  <SAFE|RISKY> :: <reasoning>`을 붙이도록 지시 -
+  `record_consensus_judgment.py`(PostToolUse, Agent matcher)가 둘 다
+  파싱해서 합의 시 자동 allow/deny, 불일치 시 기존 ask()/deny로 그대로
+  fallback한다. 안 쓰면(디스패치를 아예 안 하면) 오늘까지의 동작과
+  완전히 동일 - 순수 추가 기능, 기존 경로 안 건드림. 코드 쪽에는 아무
+  강제 장치가 없다 - "다른 프레이밍" 규율은 컨트롤러가 지켜야 실제로
+  독립적인 판단이 되는, 순전히 워크플로우 차원의 약속이다(같은
+  프롬프트를 두 번 부르면 상관관계 높은 판단만 나올 위험 - 2026-08-19
+  브레인스토밍에서 명시적으로 확인된 요구사항).
 - **CRITICAL**: 서브에이전트발 호출은 override조차 받지 않고 무조건
   deny - override가 self-servable(자기 자신이 사유를 지어내면 훅은
   검증 불가)이라는 한계가 가장 치명적인 등급이라, 서브에이전트가 스스로
@@ -223,19 +250,26 @@ override 없음)가 무조건 막는다 - MCP 툴이 유일한 통로.
 mcp__must_hook__write_decision_record(
   rule="<발동할 훅의 HOOK_NAME>", target="<그 훅이 이미 쓰는 override target과 같은 값>",
   severity="<자기평가 등급>", confidence=0.0-1.0,
-  reason="<왜 이렇게 판단했나>", expected_risk="<뭐가 잘못될 수 있나>")
+  reason="<왜 이렇게 판단했나>", expected_risk="<뭐가 잘못될 수 있나>",
+  intended_scope="<이 작업의 원래 범위 - 선택>",
+  deviation="<이 액션이 그 범위에서 얼마나 벗어나는가 - 선택>")
 ```
 
 (툴 내부는 `_hook_common.write_decision_record(rule, severity,
-confidence, reason, expected_risk, target=..., decision_id=...)`를 그대로
-호출 - 파일 쓰기/포맷은 여전히 그 함수가 단일 구현. `target` 또는
-`decision_id` 중 하나는 필수 - 스키마가 둘 다 optional이라 이건
-함수 쪽에서 `ValueError`로 잡는다.)
+confidence, reason, expected_risk, target=..., decision_id=...,
+intended_scope=..., deviation=...)`를 그대로 호출 - 파일 쓰기/포맷은
+여전히 그 함수가 단일 구현. `target` 또는 `decision_id` 중 하나는 필수
+- 스키마가 둘 다 optional이라 이건 함수 쪽에서 `ValueError`로 잡는다.
+`intended_scope`/`deviation`은 2026-08-19 phase 1에서 추가된 완전
+optional 필드 - `human_judgment`는 여기 없음, 액션 이후 사람이 매기는
+값이라 이 self-report 시점과 성격이 달라서 phase 2의
+`tools/eval_hook_judgments.py` 출력 스키마 쪽으로 미뤄짐.)
 
 매칭되는 fresh(10분 이내) 레코드가 있으면 `deny()`/`ask()`/
 `log_and_allow()`/`allow_with_override()`/`allow_with_medium_approval()`을
 거쳐 `violations_log.jsonl`/`override_audit.jsonl` 항목에 `decision`
-키(`self_severity`/`confidence`/`reason`/`expected_risk`)로 붙는다.
+키(`self_severity`/`confidence`/`reason`/`expected_risk`, 있으면
+`intended_scope`/`deviation`도)로 붙는다.
 `self_severity`는 에이전트 자신의 판단이고, 항목의 최상위 `severity`는
 그 훅의 고정 등급 - 이 둘이 다를 수 있고(그게 정상), 그 차이를
 `tools/eval_hook_judgments.py`가 측정한다.
@@ -303,19 +337,20 @@ MEDIUM/HIGH/CRITICAL 행 전부 decision record 필수 게이트가 먼저 적�
 | `protect_never_touch.py` | 🔴 CRITICAL | Edit/Write/MultiEdit, Bash | shipped `apply_*` / 프로필 json·dcp 수정 (서브에이전트발은 override 불가) |
 | `protect_push_safety.py` | 🔴 CRITICAL (force-push, 서브에이전트발은 override 불가) / HIGH (authorship, override 없음) | Bash | force push, 잘못된 커밋 작성자로 push |
 | `protect_destructive.py` | 🔴 CRITICAL | Bash | `rm -rf`류(스크래치 경로 제외), `git reset --hard`, `git clean -f`, `git branch -D` (서브에이전트발은 override 불가) |
-| `protect_branch.py` | 🟠 HIGH | Bash | main/master/detached HEAD에서 commit·push (직접 호출: ask, 서브에이전트발: override 없인 deny) |
-| `protect_test_coverage.py` | 🟠 HIGH | Bash | 새 소스 파일을 테스트 없이 커밋(신규 파일에만 적용 - 기존 파일 수정은 대상 아님) |
-| `protect_experiment_integrity.py` | 🟠 HIGH | Edit/Write/MultiEdit (EVALUATION.md만) | CI/부트스트랩 언급 없이 수치 결과 기록 |
+| `protect_branch.py` | 🟠 HIGH | Bash | main/master/detached HEAD에서 commit·push (직접 호출: ask, 서브에이전트발: override 없인 deny, 둘 다 2-agent consensus로 fast-path 가능) |
+| `protect_test_coverage.py` | 🟠 HIGH | Bash | 새 소스 파일을 테스트 없이 커밋(신규 파일에만 적용 - 기존 파일 수정은 대상 아님, 2-agent consensus fast-path 있음) |
+| `protect_experiment_integrity.py` | 🟠 HIGH | Edit/Write/MultiEdit (EVALUATION.md만) | CI/부트스트랩 언급 없이 수치 결과 기록 (2-agent consensus fast-path 있음) |
 | `protect_generated_files.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | `_LEARNED_LUT*` 배열(생성물) 직접 수정 - plain override 없음, opus 상위 에이전트 승인(`MEDIUM-APPROVE`)만 유효 |
 | `protect_claim_evidence.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 - plain override 없음, opus 상위 에이전트 승인(`MEDIUM-APPROVE`)만 유효 |
-| `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
-| `protect_rubber_stamp_approval.py` | 🟠 HIGH | Agent | MEDIUM-APPROVE 마커를 요구하면서 실제 검토 생략을 명시적으로 지시하는 디스패치 프롬프트 (2026-08-18 신규 - 아래 "알려진 한계" 참고) |
-| `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
+| `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 (2-agent consensus fast-path 있음) |
+| `protect_rubber_stamp_approval.py` | 🟠 HIGH | Agent | MEDIUM-APPROVE 마커를 요구하면서 실제 검토 생략을 명시적으로 지시하는 디스패치 프롬프트 (2026-08-18 신규 - 아래 "알려진 한계" 참고, 2-agent consensus fast-path 있음) |
+| `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 (2-agent consensus fast-path 있음) |
 | `protect_agent_model_naming.py` | 🟢 LOW | Agent | model 미지정/haiku 디스패치 - 항상 allow, 로그만 남김 |
-| `protect_decision_record_bypass.py` | 🔴 CRITICAL, override 없음 | Edit/Write/MultiEdit | `.pending_decision_record.json` 직접 쓰기 차단 - `mcp__must_hook__write_decision_record`만 유효 통로(must훅) |
+| `protect_decision_record_bypass.py` | 🔴 CRITICAL, override 없음 | Edit/Write/MultiEdit | `.pending_decision_record.json`/`.pending_consensus.json` 직접 쓰기 차단(2026-08-19 - 후자 추가) - 각자의 전용 통로(MCP 툴/PostToolUse 훅)만 유효 |
 | `record_agent_approval.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) MEDIUM 승인 마커 파싱 + sentinel 기록 |
 | `deliver_caution.py` | PostToolUse, 등급 없음 | Edit/Write/MultiEdit | (차단 아님) MEDIUM 승인의 caution을 `additionalContext`로 전달 |
 | `record_whole_branch_review.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) 전체-브랜치 리뷰 sentinel 기록 |
+| `record_consensus_judgment.py` | PostToolUse, 등급 없음 | Agent | (차단 아님, 2026-08-19 신규) 2-agent consensus의 `CONSENSUS-VERDICT` 마커 파싱 + sentinel 기록 - "심각도 4단계" HIGH 항목 참고 |
 
 `protect_ready_without_review.py`의 override sentinel은
 `record_whole_branch_review.py`가 쓰는 `.last_whole_branch_review_sha`와
