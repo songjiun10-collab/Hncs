@@ -353,6 +353,112 @@ allow까지 끌고 갈 수 있다는 뜻. 대응 방향: `protect_decision_recor
 "Bash"`에도 등록해서 그 경로로의 직접 쓰기를 막아야 함 - 아직 미수정,
 이 항목은 발견 기록.
 
+### 2차 침투테스트 라운드 - 22개 실험, 9개 신규 결함(2026-08-18)
+
+전부 `HNCS_HOOK_*` 환경변수 + 별도 scratch git repo(위와 동일한 격리 -
+실제 리포 상태 안 건드림)에서, 각 훅에 합성 stdin JSON을 직접 넣어 관찰.
+바이패스로 의심되는 것마다 대조군(같은 훅에 "정상적으로 걸려야 하는"
+입력)을 같이 돌려서 오탐이 아님을 확인했다. 아래 9개 전부 실측 확인됨,
+전부 미수정(발견 기록만).
+
+1. **heredoc으로 넘긴 인터프리터 스크립트가 `protect_never_touch.py`의
+   Bash 커버리지를 완전히 건너뜀.** 이 훅의 `_HEREDOC_RE`는 "heredoc
+   본문이 그냥 프로즈일 수 있다"는 오탐을 막으려고 본문을 스캔 전에
+   통째로 지우는데, 이게 heredoc으로 인터프리터에 넘긴 *진짜 실행
+   코드*도 똑같이 지운다. 대조군 `python3 -c "open('brands/hasselblad.py','w').write('x')"`
+   (경로가 커맨드라인에 리터럴로 있음)는 정확히 deny됨. 그런데
+   `python3 - <<'PY'\nopen("brands/hasselblad.py","w").write("x")\nPY`
+   (똑같은 쓰기, 경로가 heredoc 본문 안에만 있음)는 `allow`. 계산 프로필
+   자산(`hybrid_engine/assets/profiles/x.json`)에 대해서도 동일하게
+   재현됨. `protect_destructive.py`도 같은 `_HEREDOC_RE`를 공유해서
+   `shutil.rmtree(...)`를 heredoc으로 넘기면 똑같이 `allow`.
+2. **문자열 리터럴 인접 결합/변수 간접 참조가 `protect_never_touch.py`의
+   Bash `open()` 리터럴-문자열 정규식을 피함.**
+   `open('brand''s/hasselblad.py','w')` (Python이 인접한 문자열 리터럴을
+   런타임에 이어붙이는 걸 이용 - 실제로는 `brands/hasselblad.py`를 염)와
+   `p='brands/hasselblad.py'; open(p,'w')` (경로가 변수를 거침, `open()`
+   호출부엔 리터럴이 없음) 둘 다 `allow`.
+3. **`protect_destructive.py`의 scratch-경로 허용목록이 `..` 상위 이동으로
+   뚫림.** `_SCRATCH_PATH_RE`는 인자에 `./scratchpad/` 부분문자열이
+   있으면 그냥 안전하다고 보는데, `rm -rf ./scratchpad/../not_scratch_dir_at_all`은
+   그 부분문자열을 포함하면서 실제로는 scratchpad 밖을 지운다 - `allow`.
+4. **`eval "..."`이 `_STMT_START`로 커맨드 시작을 인식하는 모든 훅을
+   한 번에 무력화함.** `_STMT_START`는 `git`/`rm` 앞에 `^`, `&&`, `;`,
+   `\n`, `` ` `` 같은 특정 토큰이 와야 매칭되는데, `eval "..."`로 감싸면
+   그 안의 `git`/`rm`은 앞 문자가 `"`라 어떤 토큰과도 안 맞아서 매칭
+   자체가 시작되지 않는다. 실제로 실행되는 명령(`eval`은 인자를 그대로
+   실행함)과 훅이 보는 텍스트가 괴리됨 - `protect_destructive.py`
+   (`eval "rm -rf /home/user/some_real_dir"`), `protect_push_safety.py`
+   (`eval "git push --force origin main"`), `protect_branch.py`
+   (`eval "git commit -m test"`, main 브랜치에서) 셋 다 `allow`로 확인.
+   `_STMT_START`를 그대로 쓰는 `protect_test_coverage.py`도 같은 정규식
+   구조라 이론상 동일하게 뚫릴 것(코드로는 확인, 실측은 별도 안 함).
+   `_STMT_START` 하나에 걸린 이 5개 훅 전부에 공통되는 단일 근본원인 -
+   개별 패치보다 `_STMT_START`/heredoc 처리 자체를 다시 볼 가치가 있음.
+5. **git alias는 `protect_push_safety.py`한테 안 보임.** 이 훅은 커맨드
+   텍스트에서 리터럴 `push`/`--force`를 찾는데, `git pushf origin main`처럼
+   별칭(`git config alias.pushf 'push --force'`)을 쓰면 훅이 보는 텍스트엔
+   `--force`도 `push`(뒤에 바로 `f`가 붙어 단어 경계가 안 생김)도 아예
+   안 나타남 - `allow`. 별칭이 실제로 뭘 실행하는지는 훅이 알 방법이
+   없음.
+6. **`find ... -delete`는 `protect_destructive.py`가 아예 안 봄.** `rm`
+   전용 정규식이라 `find /home/user/some_real_dir -delete`(동등하게
+   파괴적)는 `allow` - 원래 커버 범위 주장에 없던 명령이라 "우회"라기보단
+   범위 공백에 가깝지만, `rm -rf`와 같은 결과를 내는 흔한 대체 명령이라
+   기록해둠.
+7. **`protect_generated_files.py`가 파싱 실패 시 fail-OPEN, 같은 구조의
+   `protect_never_touch.py`는 fail-CLOSED - 실측으로 확인된 진짜 비대칭
+   버그.** `touched_lut_array()`는 `lut_array_ranges()`가 파싱 실패로
+   `None`을 반환하든, 파싱은 됐는데 LUT 배열이 없어서 `[]`를 반환하든
+   똑같이 `if not ranges: return None`으로 처리한다 - 둘 다 "falsy"라
+   "이 edit은 LUT를 안 건드림"으로 합쳐지고, 위에서 그걸 `allow`로 리턴.
+   반면 `protect_never_touch.py`의 `touched_function()`은 파싱 실패를
+   `"__unknown__"` sentinel로 명시적으로 구분해서 "확인 불가 → 안전하게
+   차단"으로 간다. 문법이 깨진 `_LEARNED_LUT` 파일(괄호 안 닫힌 채로
+   scratch에 만듦)에 똑같은 edit을 흘려보내면: `protect_generated_files.py`
+   → `allow`, 바로 옆 `protect_never_touch.py` → `deny`("couldn't parse
+   ... blocking to be safe"). 즉 파일이 어떤 이유로든(중간에 깨진 edit,
+   인코딩 문제 등) 파싱 불가 상태가 되는 순간 MEDIUM 가드는 통째로
+   무력화됨 - CRITICAL 가드가 명시적으로 막아둔 바로 그 실패 모드를.
+8. **`.last_whole_branch_review_sha`(최종 whole-branch-review가 "실제로
+   일어났다"는 sentinel)는 어떤 훅으로도 보호 안 됨 - 발견된 것 중
+   가장 약한 고리.** decision record sentinel은 그래도
+   `protect_decision_record_bypass.py`(Bash로는 새는 CRITICAL 가드,
+   위 항목)가 Edit/Write는 막는데, 이 파일은 리포 전체에서 그 어떤
+   PreToolUse 훅도 참조 안 함(`grep -rl last_whole_branch_review_sha
+   .claude/hooks/*.py`가 이 파일 자신과 `record_whole_branch_review.py`
+   둘만 나옴). isolated scratch git repo에서: 리뷰 sentinel 없이
+   `mcp__github__update_pull_request`(draft:false)를 흘리면 정상적으로
+   `deny`(대조군). 그 상태에서 그냥 `echo -n $(git rev-parse HEAD) >
+   .claude/hooks/.last_whole_branch_review_sha`(Bash `echo`, Agent
+   디스패치도 opus도 MCP 스키마도 전혀 안 씀 - decision record조차 필요
+   없음, `reviewed_sha == current_sha` 매칭 시 그 검사 자체를 안 거치고
+   바로 `allow()`로 리턴하는 코드 경로라서)만으로 재시도하면 `allow` -
+   실제 리뷰가 단 한 번도 안 일어났는데 "최종 리뷰 통과"가 완성됨.
+9. **`protect_claim_evidence.py`의 근거-마커 정규식이 "log로 끝나는
+   아무 단어"를 근거로 침.** `_EVIDENCE_MARKER_RE`의 `log\b`는 앞쪽
+   경계가 없어서 "catalog"/"backlog" 같은 무관한 단어의 끝부분에도
+   매칭된다. 대조군 `"성능이 15% 향상되었다"`(근거 없음)는 정상적으로
+   `deny`. `"성능이 15% 향상되었다 (see catalog)"`(카탈로그는 이 수치와
+   아무 상관 없음)는 `allow` - `.py`/`.md` 마커도 같은 구조적 문제(그
+   확장자로 끝나는 아무 파일 언급이나 다 "근거"로 침).
+
+대응 방향(전부 미수정): (1)(2) heredoc 본문도 실행되는 인터프리터
+호출(`python3 -`, `python3 <file>`, `sh`, `perl` 등)에 넘겨질 땐
+지우지 말고 스캔 대상에 포함시키거나, 최소한 별도로 플래그. (3)
+scratch-경로 검사를 부분문자열 매칭이 아니라 `os.path.normpath` 후
+접두사 비교로. (4) `_STMT_START`에 `eval`/`sh -c`/`bash -c` 뒤도
+"새 명령 시작"으로 추가하거나, 애초에 `eval`/`bash -c`/`sh -c` 자체를
+HIGH로 플래그. (5) 별칭 회피는 텍스트 매칭 설계의 근본 한계 - `git
+config --get-regexp alias\\..*force` 같은 별칭 사전 스캔이 필요하면
+별개 작업. (6) `find -delete`/`shred`/`truncate` 등을 `_RM_RE`와
+동급으로 추가. (7) `touched_lut_array()`도 `protect_never_touch.py`처럼
+파싱 실패를 별도 sentinel로 구분해서 fail-closed로. (8)
+`.last_whole_branch_review_sha`도 `protect_decision_record_bypass.py`류
+가드(Edit/Write **및 Bash** 양쪽 다) 추가. (9) 근거 마커에 단어 경계
+(`\blog\b` 등)와, 파일 확장자 마커는 그 파일이 실제로 존재하는지
+정도는 검증.
+
 ### `ask()`가 사람 없을 때 어떻게 되는지 - 참고용 조사 결과(2026-08-15)
 
 **정정(같은 날, 이후)**: 아래는 원래 "이 프로젝트는 ask()를 완전히
