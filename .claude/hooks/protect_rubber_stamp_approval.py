@@ -31,12 +31,19 @@ Override: protect_reviewer_prejudging.py와 동일한 sentinel-file 메커니즘
 출력" 패턴이 실제 예시 문구("정확히 이 한 줄만 출력해")와 단어가 안
 맞아서(둘 다 없음) 매칭 실패 - 자기 자신의 테스트를 못 통과했다. "이
 (한 )?줄만 출력"으로 완화해서 "이 줄만 출력"/"이 한 줄만 출력" 둘 다
-잡게 고침."""
+잡게 고침.
+
+**추가 (2026-08-19, 2-Agent Consensus)**: override 체크 다음, 기존
+high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
+- 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
+`consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
+아예 안 하면) 기존 동작과 완전히 동일."""
 import json
 import re
 import sys
 
-from _hook_common import (allow, allow_with_override, high_tier_decision,
+from _hook_common import (allow, allow_with_consensus, allow_with_override,
+                           consensus_verdict, high_tier_decision,
                            require_decision_or_deny, sentinel_override)
 
 HOOK_NAME = "protect_rubber_stamp_approval"
@@ -90,6 +97,10 @@ def main():
         if override_reason:
             allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, target, override_reason,
                                  decision=decision)
+            return
+        verdict = consensus_verdict(HOOK_NAME, target)
+        if verdict in ("agree_safe", "agree_risky"):
+            allow_with_consensus(HOOK_NAME, SEVERITY, HOOK_NAME, target, verdict, decision=decision)
             return
         high_tier_decision(
             HOOK_NAME, SEVERITY,
