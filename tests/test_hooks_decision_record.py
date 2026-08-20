@@ -104,6 +104,23 @@ class TestDecisionRecordSentinel(unittest.TestCase):
             self.hc.write_decision_record(
                 "protect_generated_files", "MEDIUM", "high", "r", "e", target="x")
 
+    def test_intended_scope_and_deviation_round_trip(self):
+        """2026-08-19 스키마 확장: 쓸 때 넘긴 intended_scope/deviation이
+        그대로 조회 결과에 담겨 나오는지."""
+        self.hc.write_decision_record(
+            "protect_branch", "HIGH", 0.7, "r", "e", target="feature-x",
+            intended_scope="feature-x 브랜치에서만 커밋", deviation="범위 안 - 이탈 없음")
+        record = self.hc.decision_record("protect_branch", target="feature-x")
+        self.assertEqual(record["intended_scope"], "feature-x 브랜치에서만 커밋")
+        self.assertEqual(record["deviation"], "범위 안 - 이탈 없음")
+
+    def test_intended_scope_and_deviation_default_to_none(self):
+        self.hc.write_decision_record(
+            "protect_branch", "HIGH", 0.7, "r", "e", target="feature-x")
+        record = self.hc.decision_record("protect_branch", target="feature-x")
+        self.assertIsNone(record["intended_scope"])
+        self.assertIsNone(record["deviation"])
+
 
 class TestLogEventDecisionEnrichment(unittest.TestCase):
     def setUp(self):
@@ -166,6 +183,32 @@ class TestLogEventDecisionEnrichment(unittest.TestCase):
         self.hc.deny("some_hook", "reason", severity="HIGH", target="x.py")
         entry = self._last_log_entry()
         self.assertNotIn("decision", entry)
+
+    def test_decision_record_with_intended_scope_and_deviation_attached(self):
+        """2026-08-19 스키마 확장: 값이 있으면 로그 payload에 붙는다 -
+        기존 4개 필드(self_severity/confidence/reason/expected_risk)에
+        추가되는 형태지 대체가 아님."""
+        self.hc.write_decision_record(
+            "some_hook", "HIGH", 0.9, "내 판단", "위험 설명", target="x.py",
+            intended_scope="x.py 한 파일만", deviation="없음")
+        self.hc.deny("some_hook", "reason", severity="HIGH", target="x.py")
+        entry = self._last_log_entry()
+        self.assertEqual(entry["decision"], {
+            "self_severity": "HIGH", "confidence": 0.9,
+            "reason": "내 판단", "expected_risk": "위험 설명",
+            "intended_scope": "x.py 한 파일만", "deviation": "없음",
+        })
+
+    def test_decision_record_without_intended_scope_or_deviation_stays_four_keys(self):
+        """하위 호환 명시적 lock-in: intended_scope/deviation을 안 쓰면
+        (이 파일의 다른 모든 기존 테스트가 그렇듯) decision payload가
+        여전히 정확히 4개 키다 - 신규 필드가 항상 붙는 게 아님."""
+        self.hc.write_decision_record(
+            "some_hook", "HIGH", 0.9, "내 판단", "위험 설명", target="x.py")
+        self.hc.deny("some_hook", "reason", severity="HIGH", target="x.py")
+        entry = self._last_log_entry()
+        self.assertEqual(set(entry["decision"].keys()),
+                          {"self_severity", "confidence", "reason", "expected_risk"})
 
 
 class TestRecordOverrideDecisionEnrichment(unittest.TestCase):
