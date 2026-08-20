@@ -317,6 +317,42 @@ deny+override로 전환(위 "심각도 4단계" 섹션 참고) - deny+override�
 HIGH deny 계열)은 애초에 원래 설계대로 서브에이전트에도 안전하게
 작동했었다 - 이번에 문제였던 건 딱 `ask()`를 쓰던 3개뿐이었다.
 
+### `protect_decision_record_bypass.py`가 Bash를 안 봄 - 실증(2026-08-18)
+
+`.pending_decision_record.json`을 "`must_hook_server.py`의 MCP 툴이
+유일한 통로"로 만들겠다는 설계(위 "Decision Record" 섹션)는
+`protect_decision_record_bypass.py`(CRITICAL, override 없음)가
+Edit/Write/MultiEdit로 그 경로에 직접 쓰는 걸 막는다는 전제였다. 그런데
+`settings.json`의 실제 등록을 확인하면 이 훅은 `matcher: "Edit|Write|
+MultiEdit"`에만 걸려 있고 `Bash`엔 안 걸려 있다 - 즉 `python3 -c
+"...open('.claude/hooks/.pending_decision_record.json','w')..."` 같은
+Bash 명령은 이 CRITICAL 가드를 아예 거치지 않는다. 격리된 환경(전부
+`HNCS_HOOK_*` 환경변수로 스크래치 디렉토리에 리다이렉트 -
+`tests/test_hooks_medium_approval.py`와 동일한 격리 방식, 실제 리포
+상태는 안 건드림)에서 3단계로 실증:
+
+1. 위조 decision record를 raw `python3 -c "...open(...)..."`(Bash, MCP
+   툴 안 거침)로 직접 씀 - `protect_decision_record_bypass.py`에
+   `{"tool_name": "Bash", ...}` 입력을 직접 넣어보면 `tool_name`이
+   `Edit`/`Write`/`MultiEdit`가 아니므로 그냥 `allow()`로 즉시 리턴.
+2. 위조 opus `MEDIUM-APPROVE` 마커(`record_agent_approval.py`에 직접
+   stdin 주입 - 이미 위에서 실증된 한계와 동일 메커니즘)로 medium
+   approval sentinel도 위조.
+3. `protect_generated_files.py`에 `brands/sony_a7rvi_learned.py`의
+   `_LEARNED_LUT` 배열을 건드리는 실제 Edit 모양 입력을 줌 →
+   `{"permissionDecision": "allow"}`, override_audit.jsonl에도
+   `"MEDIUM-APPROVED (rule=protect_generated_files): pentest, no real
+   review happened"` + `decision.self_severity: "LOW"`가 정상 기록됨.
+
+즉 `require_decision_or_deny()`의 "예외 없이 필수" 게이트(2026-08-16
+확정 사항)가 must훅의 스키마 검증을 한 번도 거치지 않고 Bash만으로
+통과 가능 - 이미 알려진 MEDIUM-APPROVE 위조 한계(위 항목)와 합쳐지면
+opus 실제 디스패치도, MCP 스키마 검증도 없이 `_LEARNED_LUT` 수정을
+allow까지 끌고 갈 수 있다는 뜻. 대응 방향: `protect_decision_record_bypass.py`
+(및 필요하면 medium-approval sentinel 경로도 동일하게)를 `matcher:
+"Bash"`에도 등록해서 그 경로로의 직접 쓰기를 막아야 함 - 아직 미수정,
+이 항목은 발견 기록.
+
 ### `ask()`가 사람 없을 때 어떻게 되는지 - 참고용 조사 결과(2026-08-15)
 
 **정정(같은 날, 이후)**: 아래는 원래 "이 프로젝트는 ask()를 완전히
