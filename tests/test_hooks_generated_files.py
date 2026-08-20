@@ -64,6 +64,40 @@ class TestLutArrayRanges(unittest.TestCase):
         self.assertFalse(hook.is_learned_brand_file("tools/fit_final_lut.py"))
 
 
+class TestParseFailureFailsClosed(unittest.TestCase):
+    """**2026-08-19 회귀 테스트**: `touched_lut_array()`가 AST 파싱 실패
+    (`lut_array_ranges()` -> `None`)와 LUT 배열 없음(`-> []`)을 `if not
+    ranges` 한 줄로 동일하게 취급해 fail-OPEN이었던 버그(f64ec50에서
+    수정). 파일이 깨져서 파싱이 안 되면 `"__unknown__"`을 반환해 fail-
+    CLOSED여야 한다 - `protect_never_touch.py`의 `touched_function()`이
+    이미 이 패턴을 쓰고 있으므로, 그 테스트가 있었다면 썼을 패턴을
+    그대로 포팅."""
+
+    def setUp(self):
+        self._tmp = tempfile.NamedTemporaryFile(
+            mode="w", suffix="_learned.py", delete=False, dir="/tmp")
+        # 문법적으로 깨진 파이썬 - ast.parse()가 SyntaxError를 던짐.
+        self._tmp.write("_LEARNED_LUT = np.array([1, 2, 3, 4,\n")
+        self._tmp.close()
+
+    def tearDown(self):
+        os.remove(self._tmp.name)
+
+    def test_lut_array_ranges_returns_none_on_parse_failure(self):
+        self.assertIsNone(hook.lut_array_ranges(self._tmp.name))
+
+    def test_touched_lut_array_fails_closed_on_parse_failure(self):
+        """파싱이 안 되면 old_string이 LUT 배열과 무관해 보여도(혹은 파일에
+        아예 없어도) `"__unknown__"`을 반환해야 한다 - fail-open 버그는
+        정확히 이 경우를 `None`(= "안전함")으로 잘못 취급했었다."""
+        name = hook.touched_lut_array(self._tmp.name, "np.array([1, 2, 3, 4,")
+        self.assertEqual(name, "__unknown__")
+
+    def test_touched_lut_array_fails_closed_even_for_unrelated_edit(self):
+        name = hook.touched_lut_array(self._tmp.name, "this string isn't even in the file")
+        self.assertEqual(name, "__unknown__")
+
+
 class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
     def setUp(self):
         self._dir = tempfile.mkdtemp()
@@ -190,6 +224,20 @@ class TestProtectGeneratedFilesEndToEnd(unittest.TestCase):
             "new_string": '"""updated docstring"""',
         })
         self.assertEqual(decision, "allow")
+
+    def test_unparseable_file_denied_even_for_unrelated_edit(self):
+        """f64ec50 회귀 테스트(E2E): 파일이 깨져서 파싱이 안 되면, edit
+        내용이 LUT와 전혀 무관해 보여도 deny여야 한다. 수정 전에는
+        `if not ranges`가 파싱 실패(`None`)와 LUT 없음(`[]`)을 구분하지
+        못해 그냥 allow로 새어나갔다."""
+        with open(self._file, "w") as f:
+            f.write("_LEARNED_LUT = np.array([1, 2, 3, 4,\n")  # SyntaxError
+        decision = self._run_hook("Edit", {
+            "file_path": self._file,
+            "old_string": "this string isn't in the file at all",
+            "new_string": "irrelevant",
+        })
+        self.assertEqual(decision, "deny")
 
     def test_write_to_learned_file_denied(self):
         decision = self._run_hook("Write", {
