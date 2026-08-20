@@ -70,7 +70,8 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
   걸 이미 확인했으므로 - "ask()가 사람 없을 때" 항목 참고).
   `protect_branch.py`/`protect_test_coverage.py`/
   `protect_experiment_integrity.py`/`protect_reviewer_prejudging.py`/
-  `protect_ready_without_review.py` 5개가 이 등급.
+  `protect_ready_without_review.py`/`protect_rubber_stamp_approval.py`
+  6개가 이 등급.
 - **CRITICAL**: 서브에이전트발 호출은 override조차 받지 않고 무조건
   deny - override가 self-servable(자기 자신이 사유를 지어내면 훅은
   검증 불가)이라는 한계가 가장 치명적인 등급이라, 서브에이전트가 스스로
@@ -222,6 +223,7 @@ MEDIUM/HIGH/CRITICAL 행 전부 decision record 필수 게이트가 먼저 적�
 | `protect_generated_files.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | `_LEARNED_LUT*` 배열(생성물) 직접 수정 - plain override 없음, opus 상위 에이전트 승인(`MEDIUM-APPROVE`)만 유효 |
 | `protect_claim_evidence.py` | 🟡 MEDIUM | Edit/Write/MultiEdit | README/CLAUDE.md/EVALUATION.md에 근거 없는 수치 주장 - plain override 없음, opus 상위 에이전트 승인(`MEDIUM-APPROVE`)만 유효 |
 | `protect_reviewer_prejudging.py` | 🟠 HIGH | Agent | 리뷰어에게 발견사항 미리 재단 지시 |
+| `protect_rubber_stamp_approval.py` | 🟠 HIGH | Agent | MEDIUM-APPROVE 마커를 요구하면서 실제 검토 생략을 명시적으로 지시하는 디스패치 프롬프트 (2026-08-18 신규 - 아래 "알려진 한계" 참고) |
 | `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 |
 | `protect_agent_model_naming.py` | 🟢 LOW | Agent | model 미지정/haiku 디스패치 - 항상 allow, 로그만 남김 |
 | `protect_decision_record_bypass.py` | 🔴 CRITICAL, override 없음 | Edit/Write/MultiEdit | `.pending_decision_record.json` 직접 쓰기 차단 - `mcp__must_hook__write_decision_record`만 유효 통로(must훅) |
@@ -258,6 +260,27 @@ MEDIUM/HIGH/CRITICAL 행 전부 decision record 필수 게이트가 먼저 적�
   override보다 위조 난이도는 높지만, 컨트롤러가 그 디스패치 프롬프트
   자체를 "무조건 승인해"로 짜면
   똑같이 우회 가능 - "한 단계 더 어렵게" 만든 것이지 막은 게 아니다.
+  **정정(2026-08-18, 실증)**: 이 한계가 이론이 아니라 실제 코드로
+  증명됐다 - 기존 `tests/test_hooks_medium_approval.py`의 두 테스트
+  (`TestRecordAgentApproval.test_opus_response_with_marker_records_approval`
+  + `TestProtectGeneratedFilesMediumApprovalEndToEnd.
+  test_medium_approval_allows_and_queues_caution`)를 조합하면, 실제
+  파일을 열어보지도 않은 opus 응답 한 줄("검토 결과 문제없음.
+  MEDIUM-APPROVE: ...")만으로 `_LEARNED_LUT` 배열 수정이
+  `permissionDecision: "allow"`로 통과함이 확인됨 - 라이브 서브에이전트
+  침투 테스트 자체는 세션 permission 경계(cross-session permission
+  laundering 방지 classifier)에 막혀서 실행 못 했지만, 이 결함은 코드
+  레벨에서 완전히 checkable함. 대응: `protect_rubber_stamp_approval.py`
+  (신규, HIGH, Agent matcher, `protect_reviewer_prejudging.py`와 동일한
+  정규식 블록리스트 메커니즘)가 디스패치 프롬프트 자체에 "검토
+  생략"을 명시적으로 지시하는 문구("그냥 이 줄만 출력해", "실제로
+  확인 안 해도" 등)가 있으면 막는다 - **단 이것도 완전한 해법은
+  아니다**: 컨트롤러가 그런 명시적 문구 없이 그냥 애매한 프롬프트로
+  디스패치했는데 서브에이전트가 스스로 대충 rubber-stamp하는
+  경우까지는 못 잡는다("진짜 검토했는지" 자체를 검증하는 건 이
+  아키텍처로 원천 불가능 - `protect_reviewer_prejudging.py`가 이미
+  가진 것과 동일한 구조적 한계). "대놓고 지시하는" 가장 쉬운 우회
+  버전만 닫은 것.
 - `record_agent_approval.py`/`deliver_caution.py`(2026-08-15 신규)는
   PostToolUse의 `tool_response.content[0].text`/`resolvedModel`(Agent
   매처)과 `additionalContext`(Edit/Write/MultiEdit 매처)에 의존한다 -
