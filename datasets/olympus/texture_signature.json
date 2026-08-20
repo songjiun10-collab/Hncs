@@ -1,0 +1,1263 @@
+{
+  "methodology": "샤프닝/미세대비/노이즈/에지헤일로는 이미지 중앙 2400x2400 크롭에서만 계산(Canon/Leica/Hasselblad population 분석과 동일 방법론 - 전체 해상도에서 컨볼루션을 매 장 돌리면 너무 느림). sharpening=중앙크롭 Sobel gradient magnitude(hypot(sobel_x,sobel_y))의 표준편차를 15로 나눈 값 - Canon texture_signature.json과 정확히 동일한 공식(스케일 상수 15 포함)을 그대로 재사용했다(Sony에서 스케일 없이 계산해 다른 브랜드보다 15~20배 크게 나왔던 사고를 피하기 위함). micro_contrast=DoG(sigma1=1,sigma2=2)의 표준편차(스케일 없음) - 이것도 Canon과 동일 공식. noise=tools/iso_noise.py의 estimate_noise_flat_patch(patch_size=48, flat_fraction=0.05) - 분산이 가장 낮은(가장 평평한) 패치 5%에서 Immerkaer 노이즈 추정. overshoot/undershoot=Sobel(gx)로 절대값 상위 1% 강엣지를 찾고, 각 엣지의 가로 1D 프로파일(엣지 좌우 flat_offset=8px 평탄값 대비)에서 근접 윈도우의 로컬 max/min이 얼마나 튀어나오는지를 엣지 스텝 크기(좌우 평탄값 차이) 대비 %로 측정 - Canon의 methodology 설명(강엣지에서 프로파일 뽑아 오버/언더슈트 측정)을 그대로 구현했다. population은 사진 단위 동일 가중치 per-image 평균. n_images/n=123은 tone_signature.json methodology에 적은 dedup 이유(brands/olympus.py docstring 대비 실제 캐시에 OM-1이 1장 더 있음) 참고. [2026-07 수정: tools/iso_noise.py의 estimate_noise_flat_patch() off-by-one 버그(마지막 행/열 패치 누락) 수정 후 noise 필드를 patch_size=48, flat_fraction=0.05로 재계산함 (캐시된 원본 이미지 재사용, 다른 필드는 변경 없음). population 평균 0.627 -> 0.623.]",
+  "n_images": 123,
+  "population": {
+    "sharpening": {
+      "mean": 3.823865725059625,
+      "std": 2.0457622313076835,
+      "n": 123
+    },
+    "micro_contrast": {
+      "mean": 4.431891472853642,
+      "std": 2.7617216662616166,
+      "n": 123
+    },
+    "noise": {
+      "mean": 0.6228897617788413,
+      "std": 0.4444139446116189,
+      "n": 123
+    },
+    "overshoot": {
+      "mean": 235.9928255707443,
+      "std": 131.30703696693064,
+      "n": 123
+    },
+    "undershoot": {
+      "mean": 182.41487957539488,
+      "std": 84.40756406524524,
+      "n": 123
+    }
+  },
+  "per_image": [
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040069.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.6870287782486246,
+      "micro_contrast": 1.5984278959134381,
+      "noise": 0.11036587945169574,
+      "n_edges": 27525,
+      "overshoot": 132.02780271300347,
+      "undershoot": 76.33681186590677
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040078.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.4855123128249703,
+      "micro_contrast": 3.789778408778101,
+      "noise": 0.2905248508285694,
+      "n_edges": 27413,
+      "overshoot": 215.83893269539828,
+      "undershoot": 196.57109102411383
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040083.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.6696583042110165,
+      "micro_contrast": 4.42753412693444,
+      "noise": 0.4828260432900214,
+      "n_edges": 27077,
+      "overshoot": 169.31795956022265,
+      "undershoot": 260.513058056783
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-040090.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 0.8043081250335933,
+      "micro_contrast": 0.7412334669660152,
+      "noise": 0.1327746939736411,
+      "n_edges": 27377,
+      "overshoot": 53.839842588385935,
+      "undershoot": 72.20852047843832
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080095-20MP.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.610072258158969,
+      "micro_contrast": 7.363041967641328,
+      "noise": 0.08667374075007948,
+      "n_edges": 27430,
+      "overshoot": 225.0277761929099,
+      "undershoot": 218.3843053370967
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080097-HH-50MP.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.22064638808093,
+      "micro_contrast": 7.876417583172503,
+      "noise": 0.4689069118028218,
+      "n_edges": 27303,
+      "overshoot": 241.4968355405977,
+      "undershoot": 244.37850270813954
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080109-T-80MP.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.048622756027635,
+      "micro_contrast": 7.65365024008492,
+      "noise": 0.9433419893026873,
+      "n_edges": 26759,
+      "overshoot": 232.6516896963559,
+      "undershoot": 281.9168448173146
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080112.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.587335339159305,
+      "micro_contrast": 7.443747367812495,
+      "noise": 0.08154044403139597,
+      "n_edges": 27125,
+      "overshoot": 258.2046409376899,
+      "undershoot": 233.86243182370507
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080117.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.00475791296731,
+      "micro_contrast": 4.9417640049819935,
+      "noise": 1.403166914603223,
+      "n_edges": 27120,
+      "overshoot": 232.89745162261787,
+      "undershoot": 244.01052587900944
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080120.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.8423654394761053,
+      "micro_contrast": 3.146883500725727,
+      "noise": 0.24857002187779056,
+      "n_edges": 26153,
+      "overshoot": 172.0028554637757,
+      "undershoot": 295.2296180858508
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080171.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.601160666056618,
+      "micro_contrast": 7.947296382738165,
+      "noise": 0.30474013404953915,
+      "n_edges": 27515,
+      "overshoot": 264.0972651908884,
+      "undershoot": 273.57986431475973
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080174-LIVE-ND-OFF.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.125859194011915,
+      "micro_contrast": 5.582256163215876,
+      "noise": 0.4713748429175735,
+      "n_edges": 26829,
+      "overshoot": 264.004044298071,
+      "undershoot": 256.63765505989414
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080175-LIVE-ND64.jpg",
+      "subsampling": null,
+      "sharpening": 5.216500312788673,
+      "micro_contrast": 5.513684716833628,
+      "noise": 0.12053375564447273,
+      "n_edges": 26903,
+      "overshoot": 264.02570931282577,
+      "undershoot": 248.0171238943217
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080177.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.747330009576402,
+      "micro_contrast": 6.958990436832379,
+      "noise": 0.1327746939736411,
+      "n_edges": 27155,
+      "overshoot": 249.04907234082285,
+      "undershoot": 254.52810491787204
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080189.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.336469351694769,
+      "micro_contrast": 3.391363733128391,
+      "noise": 0.511454044221141,
+      "n_edges": 28131,
+      "overshoot": 84.54020235525903,
+      "undershoot": 206.85338828205542
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080197-LIVE-ND64.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.9096681665928634,
+      "micro_contrast": 3.9668706225074875,
+      "noise": 0.0,
+      "n_edges": 27499,
+      "overshoot": 168.84736511193594,
+      "undershoot": 169.26920066383406
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080212.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.961115414411425,
+      "micro_contrast": 7.82128102750253,
+      "noise": 0.5747317980033744,
+      "n_edges": 25528,
+      "overshoot": 154.88977429018942,
+      "undershoot": 432.9352141116975
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080229.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.918739924866016,
+      "micro_contrast": 6.107254629125971,
+      "noise": 0.2369213870161626,
+      "n_edges": 24606,
+      "overshoot": 163.73512636511947,
+      "undershoot": 211.1842352323156
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080236.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.0983794536746894,
+      "micro_contrast": 1.2390310039936183,
+      "noise": 0.48025939493067954,
+      "n_edges": 23685,
+      "overshoot": 61.83433443622928,
+      "undershoot": 198.68670070351274
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080353.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.976552077859478,
+      "micro_contrast": 7.4298485743621585,
+      "noise": 0.1343541698870822,
+      "n_edges": 27270,
+      "overshoot": 302.9200946422322,
+      "undershoot": 298.36172808640293
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080375.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.9827203344735675,
+      "micro_contrast": 6.854554966350539,
+      "noise": 0.22310097277355312,
+      "n_edges": 27684,
+      "overshoot": 154.53150389740983,
+      "undershoot": 229.12306235716585
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-080394.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 7.493238793608512,
+      "micro_contrast": 9.542856897817616,
+      "noise": 1.5726644235643694,
+      "n_edges": 27368,
+      "overshoot": 309.76914189511626,
+      "undershoot": 152.29155003951686
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-090407.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.9397391566018065,
+      "micro_contrast": 7.44892468065594,
+      "noise": 1.4981329038988682,
+      "n_edges": 26878,
+      "overshoot": 217.76106254592113,
+      "undershoot": 404.74383534040476
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-090415.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.176545967729611,
+      "micro_contrast": 3.5806052316153374,
+      "noise": 0.7346537342392842,
+      "n_edges": 25668,
+      "overshoot": 136.1977078361241,
+      "undershoot": 291.6778246840531
+    },
+    {
+      "filename": "OM_System_OM-1_118124_Y-JG-OM-1-090430.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.6273322370591492,
+      "micro_contrast": 1.7887766182810652,
+      "noise": 1.5669388233781452,
+      "n_edges": 26688,
+      "overshoot": 168.04055054857776,
+      "undershoot": 164.29828759212043
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270002.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.1800533618243203,
+      "micro_contrast": 2.334900362345595,
+      "noise": 0.5994111091508914,
+      "n_edges": 25126,
+      "overshoot": 175.44867743266408,
+      "undershoot": 172.751552957761
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270006.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.742437031716482,
+      "micro_contrast": 3.971755699197288,
+      "noise": 0.4037535303733771,
+      "n_edges": 26309,
+      "overshoot": 149.2594151914151,
+      "undershoot": 146.46333374450728
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270014.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.4578601124304873,
+      "micro_contrast": 3.586005810624075,
+      "noise": 0.5828266120597599,
+      "n_edges": 26999,
+      "overshoot": 220.2787595620436,
+      "undershoot": 148.99181647506478
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270022.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.471740530250127,
+      "micro_contrast": 4.55244339000494,
+      "noise": 0.03316899418226277,
+      "n_edges": 26921,
+      "overshoot": 215.24109417282241,
+      "undershoot": 164.23064517206672
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270032.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 4.822304348762265,
+      "micro_contrast": 5.20850766018222,
+      "noise": 0.3155003137098565,
+      "n_edges": 25967,
+      "overshoot": 226.02280838619453,
+      "undershoot": 334.7275909896134
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270034.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 4.077343373725935,
+      "micro_contrast": 4.355706311130713,
+      "noise": 0.5933893572308973,
+      "n_edges": 26717,
+      "overshoot": 194.39493027215136,
+      "undershoot": 255.83854017711965
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270039.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.8103432181067896,
+      "micro_contrast": 3.8684828202342896,
+      "noise": 0.37532296393143755,
+      "n_edges": 25945,
+      "overshoot": 144.31472869814354,
+      "undershoot": 302.70740470859096
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB270041.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.0307950379871724,
+      "micro_contrast": 2.0590770708500394,
+      "noise": 0.6877630430590019,
+      "n_edges": 25230,
+      "overshoot": 177.79507371012522,
+      "undershoot": 124.28977725596783
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB300045.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.730967288632578,
+      "micro_contrast": 5.475032018272282,
+      "noise": 0.41885726879565743,
+      "n_edges": 26740,
+      "overshoot": 354.57058789289573,
+      "undershoot": 188.77420154290644
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PB300051.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.918492085807297,
+      "micro_contrast": 4.295045910303846,
+      "noise": 0.19753320642472558,
+      "n_edges": 27334,
+      "overshoot": 261.5459759629791,
+      "undershoot": 195.88861186176732
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC010074.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.144090940435536,
+      "micro_contrast": 4.387477715137611,
+      "noise": 0.5264590653988314,
+      "n_edges": 26538,
+      "overshoot": 351.967938974009,
+      "undershoot": 185.8704015411635
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC010082.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.37546262564662,
+      "micro_contrast": 4.952172829062138,
+      "noise": 0.8844077942824169,
+      "n_edges": 27355,
+      "overshoot": 255.29733863523757,
+      "undershoot": 176.76902233041625
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020089.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.5970162271968955,
+      "micro_contrast": 4.16475503112498,
+      "noise": 0.6307044756859428,
+      "n_edges": 26246,
+      "overshoot": 327.5194882362215,
+      "undershoot": 178.8751456015054
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020096.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.452853937394872,
+      "micro_contrast": 4.926012345501824,
+      "noise": 0.7236961200897867,
+      "n_edges": 26883,
+      "overshoot": 398.68584227420746,
+      "undershoot": 188.63672008910274
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020103.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.968641768292742,
+      "micro_contrast": 6.032632063122818,
+      "noise": 0.8254735992621465,
+      "n_edges": 26907,
+      "overshoot": 279.40011199067476,
+      "undershoot": 238.0811405644274
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020107.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.904241907536583,
+      "micro_contrast": 6.105031123130918,
+      "noise": 0.8866782909079884,
+      "n_edges": 25497,
+      "overshoot": 350.54071870709197,
+      "undershoot": 211.12457496377243
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020121.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.826633008755637,
+      "micro_contrast": 10.501974307592807,
+      "noise": 1.4561780749480893,
+      "n_edges": 26847,
+      "overshoot": 373.34051914463726,
+      "undershoot": 290.72820925631834
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020122.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.73972377142877,
+      "micro_contrast": 9.181754536676445,
+      "noise": 2.517882040514268,
+      "n_edges": 25922,
+      "overshoot": 315.3112926359872,
+      "undershoot": 337.09574184071437
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020124.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 7.261630729917798,
+      "micro_contrast": 11.219081369097466,
+      "noise": 2.3916226846835715,
+      "n_edges": 27571,
+      "overshoot": 269.4785098187483,
+      "undershoot": 313.7827344772216
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020129.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.757440831024535,
+      "micro_contrast": 8.545854962482943,
+      "noise": 1.4942829313598556,
+      "n_edges": 27641,
+      "overshoot": 237.6344947911449,
+      "undershoot": 279.88366161760297
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020133.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.0113968758286518,
+      "micro_contrast": 1.0748949291954877,
+      "noise": 0.6477825590000245,
+      "n_edges": 22410,
+      "overshoot": 82.50383237146882,
+      "undershoot": 62.20574774411015
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020145.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.590638795664057,
+      "micro_contrast": 1.7400723866446108,
+      "noise": 0.6800630979809766,
+      "n_edges": 19600,
+      "overshoot": 404.66134060020624,
+      "undershoot": 57.63418285432438
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-JG-OM-5-PC020151.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.4382348536827916,
+      "micro_contrast": 2.8566729546671517,
+      "noise": 0.9672315624934837,
+      "n_edges": 26253,
+      "overshoot": 236.73189733630196,
+      "undershoot": 136.09216106625328
+    },
+    {
+      "filename": "OM_System_OM-5_63777_Y-WB-OM5-PA150004.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 10.479707127127336,
+      "micro_contrast": 13.907336226617822,
+      "noise": 0.4630825943720078,
+      "n_edges": 28025,
+      "overshoot": 314.84840726400176,
+      "undershoot": 239.92011263699317
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0021.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.1806677881502017,
+      "micro_contrast": 3.6205884346622863,
+      "noise": 0.42724823458581324,
+      "n_edges": 26381,
+      "overshoot": 242.24328217488042,
+      "undershoot": 85.29002240914758
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0050.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.9648023906622165,
+      "micro_contrast": 1.9012380174237271,
+      "noise": 0.4192521377740177,
+      "n_edges": 28078,
+      "overshoot": 81.96870693697369,
+      "undershoot": 70.73192088416867
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0088.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.1409136232424615,
+      "micro_contrast": 3.369534716088997,
+      "noise": 0.5853932604191018,
+      "n_edges": 26659,
+      "overshoot": 226.99311217921155,
+      "undershoot": 184.8460800917686
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0110.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.010179494960072,
+      "micro_contrast": 2.235398491580944,
+      "noise": 0.5803586809450083,
+      "n_edges": 24942,
+      "overshoot": 260.3452511205441,
+      "undershoot": 104.4047826839104
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0112.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.9022055884023814,
+      "micro_contrast": 2.0089815665670803,
+      "noise": 0.5533101559273297,
+      "n_edges": 25858,
+      "overshoot": 182.26539131962642,
+      "undershoot": 76.94817137933528
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0119.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.771239894230287,
+      "micro_contrast": 4.366987423513264,
+      "noise": 0.7295204375206007,
+      "n_edges": 23813,
+      "overshoot": 462.9870505358215,
+      "undershoot": 85.39904119554151
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0125.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.310147569364374,
+      "micro_contrast": 3.749041855407542,
+      "noise": 0.5738433428020638,
+      "n_edges": 25889,
+      "overshoot": 315.35691947083023,
+      "undershoot": 208.03735947549163
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0149.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.5990316555828747,
+      "micro_contrast": 3.766546831125325,
+      "noise": 0.5704869564860015,
+      "n_edges": 27665,
+      "overshoot": 194.5205143616375,
+      "undershoot": 150.42189943267718
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0160.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.0158591857865649,
+      "micro_contrast": 1.012958694596439,
+      "noise": 0.5690061978171506,
+      "n_edges": 27747,
+      "overshoot": 101.6387656680878,
+      "undershoot": 60.55425564801135
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0172.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.582323434597271,
+      "micro_contrast": 3.7236609388946826,
+      "noise": 0.5718689979102625,
+      "n_edges": 26980,
+      "overshoot": 245.91387861531726,
+      "undershoot": 173.00992696398725
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0210.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.2735631716280498,
+      "micro_contrast": 3.6278436119144666,
+      "noise": 0.5459063625830747,
+      "n_edges": 26466,
+      "overshoot": 263.3319551280467,
+      "undershoot": 145.34515510270012
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-50-200-0214.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.9943247949959746,
+      "micro_contrast": 3.1939768728029505,
+      "noise": 0.5911188606053257,
+      "n_edges": 26190,
+      "overshoot": 233.26407551643072,
+      "undershoot": 140.178922290826
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130019-HandHighRes.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 10.15645097738588,
+      "micro_contrast": 12.49183314685348,
+      "noise": 0.47374405678773507,
+      "n_edges": 21958,
+      "overshoot": 375.53366320168254,
+      "undershoot": 330.82834642391947
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130044-HandHighRes.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.252856445329782,
+      "micro_contrast": 6.773807984050096,
+      "noise": 0.3023709201793775,
+      "n_edges": 26763,
+      "overshoot": 280.2033417974036,
+      "undershoot": 291.1858073629883
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130046.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.6507166269044165,
+      "micro_contrast": 4.978797561211924,
+      "noise": 0.7945751017054553,
+      "n_edges": 25485,
+      "overshoot": 201.87332332049397,
+      "undershoot": 156.94274390780114
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130047.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 7.733686497169147,
+      "micro_contrast": 9.465307252260018,
+      "noise": 0.58292532930435,
+      "n_edges": 28032,
+      "overshoot": 436.3929098201683,
+      "undershoot": 168.05413932137745
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130075.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.065633384970139,
+      "micro_contrast": 4.2178784002193215,
+      "noise": 0.7233999683560164,
+      "n_edges": 28017,
+      "overshoot": 237.4094142253812,
+      "undershoot": 116.6968682305019
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130103.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.795146459949369,
+      "micro_contrast": 2.850032881363779,
+      "noise": 0.5091835475955695,
+      "n_edges": 26412,
+      "overshoot": 234.15813927562039,
+      "undershoot": 152.95413684168483
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130129.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.741642542635924,
+      "micro_contrast": 4.752302037260105,
+      "noise": 0.633863427512825,
+      "n_edges": 28189,
+      "overshoot": 116.58443017625689,
+      "undershoot": 186.8993706092368
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130184.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.5355658008605038,
+      "micro_contrast": 3.6073692656166543,
+      "noise": 0.6708823942341005,
+      "n_edges": 27871,
+      "overshoot": 224.10229761833668,
+      "undershoot": 79.52448648856851
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC130243.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.4059621444193824,
+      "micro_contrast": 3.384427183378364,
+      "noise": 0.6742387805501627,
+      "n_edges": 28115,
+      "overshoot": 79.41345893848538,
+      "undershoot": 206.81187353687946
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140154.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.8417919820321846,
+      "micro_contrast": 4.0969963560996066,
+      "noise": 0.7320870858799424,
+      "n_edges": 27822,
+      "overshoot": 214.2769902140285,
+      "undershoot": 133.30656266257304
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140180.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.6795241601800988,
+      "micro_contrast": 2.6385957575678676,
+      "noise": 0.0,
+      "n_edges": 27979,
+      "overshoot": 210.15353466802185,
+      "undershoot": 133.52095549903916
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140190.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.6706267551247445,
+      "micro_contrast": 2.8839556663414223,
+      "noise": 0.8214261922339536,
+      "n_edges": 25049,
+      "overshoot": 300.7104324697452,
+      "undershoot": 119.49584139485985
+    },
+    {
+      "filename": "Olympus_E-M1X_152575_Y-BETA-WB-PC140277.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.444242671791803,
+      "micro_contrast": 4.846000397711698,
+      "noise": 0.7564702452936891,
+      "n_edges": 27693,
+      "overshoot": 313.95517189132073,
+      "undershoot": 176.3022726729474
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050498.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.4472619055644302,
+      "micro_contrast": 2.4645502100963403,
+      "noise": 0.8944769532306039,
+      "n_edges": 28398,
+      "overshoot": 195.28079574383338,
+      "undershoot": 108.22969105616943
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050510.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 0.8808728703393492,
+      "micro_contrast": 0.9294442232151856,
+      "noise": 0.6894412362170331,
+      "n_edges": 21155,
+      "overshoot": 152.51349077168908,
+      "undershoot": 107.14609404108238
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050512.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.9753419604806395,
+      "micro_contrast": 1.9454247622492453,
+      "noise": 0.5250770239745703,
+      "n_edges": 28403,
+      "overshoot": 148.85820266108547,
+      "undershoot": 83.00419982969419
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050520.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.7245608151007408,
+      "micro_contrast": 1.6260158272753646,
+      "noise": 0.6335672757790548,
+      "n_edges": 24356,
+      "overshoot": 182.13177886751646,
+      "undershoot": 118.24631624493459
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050526.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 4.2684759689443,
+      "micro_contrast": 4.922772061658868,
+      "noise": 0.9829276043833045,
+      "n_edges": 24003,
+      "overshoot": 395.5287446579658,
+      "undershoot": 279.7757374037643
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050532.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.2250938412176782,
+      "micro_contrast": 1.2596709468099496,
+      "noise": 0.6952655536478471,
+      "n_edges": 27323,
+      "overshoot": 146.55732771101745,
+      "undershoot": 134.9109110564423
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050537.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.23034942421224,
+      "micro_contrast": 1.221725636507168,
+      "noise": 0.6984245054747293,
+      "n_edges": 27458,
+      "overshoot": 87.82436489510462,
+      "undershoot": 117.51903645934487
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050552.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.321605825053065,
+      "micro_contrast": 2.2773944741272922,
+      "noise": 0.7027680642366924,
+      "n_edges": 26918,
+      "overshoot": 163.32905183159497,
+      "undershoot": 134.76116627238457
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050563.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.659119646331398,
+      "micro_contrast": 3.6040278352433672,
+      "noise": 0.006317903653764336,
+      "n_edges": 25577,
+      "overshoot": 441.9370920628476,
+      "undershoot": 151.7216471941082
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050574.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 7.57141645026478,
+      "micro_contrast": 8.195586354148968,
+      "noise": 0.07601227833435217,
+      "n_edges": 26915,
+      "overshoot": 420.15292422859295,
+      "undershoot": 199.66374294409923
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050583.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.720038582319115,
+      "micro_contrast": 4.627193643092059,
+      "noise": 1.2725640000105634,
+      "n_edges": 27170,
+      "overshoot": 305.90371313510593,
+      "undershoot": 201.81202204623781
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050584.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.206754331468525,
+      "micro_contrast": 5.326856306747632,
+      "noise": 1.4213308876077955,
+      "n_edges": 27088,
+      "overshoot": 290.783450304157,
+      "undershoot": 225.4696832412398
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7050594.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.328825997126213,
+      "micro_contrast": 1.3970054467429172,
+      "noise": 0.7188589751048733,
+      "n_edges": 27114,
+      "overshoot": 95.1225678838188,
+      "undershoot": 101.257431507635
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060613.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 5.250777952578927,
+      "micro_contrast": 5.8902036552586345,
+      "noise": 0.9856916872318264,
+      "n_edges": 27547,
+      "overshoot": 299.1636721584714,
+      "undershoot": 230.76644406198594
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060614.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.528395409906563,
+      "micro_contrast": 3.854882238512562,
+      "noise": 0.7070129057540652,
+      "n_edges": 27483,
+      "overshoot": 159.8960472349743,
+      "undershoot": 302.93412499350194
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060618.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.11816170906581,
+      "micro_contrast": 4.460582466386892,
+      "noise": 0.6762131254419641,
+      "n_edges": 20821,
+      "overshoot": 843.1872246540121,
+      "undershoot": 233.2154646860895
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060625.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 0.8805490857134051,
+      "micro_contrast": 0.9086009597178013,
+      "noise": 0.44758398697136714,
+      "n_edges": 19044,
+      "overshoot": 44.65867786654808,
+      "undershoot": 52.75663390347344
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060631.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.702473898163064,
+      "micro_contrast": 7.994416259237432,
+      "noise": 0.06525209867403478,
+      "n_edges": 27020,
+      "overshoot": 378.79573442816684,
+      "undershoot": 242.4961771735055
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060632.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.783548585771388,
+      "micro_contrast": 8.359164538780735,
+      "noise": 0.03415616662816344,
+      "n_edges": 27145,
+      "overshoot": 369.3993152511485,
+      "undershoot": 251.33200822675423
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060651.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.955413979264435,
+      "micro_contrast": 3.9932077382797972,
+      "noise": 0.0,
+      "n_edges": 27288,
+      "overshoot": 255.0865636431649,
+      "undershoot": 165.27350829335268
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060657.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 7.9395874309673475,
+      "micro_contrast": 8.357292292899729,
+      "noise": 0.8694027731047267,
+      "n_edges": 23420,
+      "overshoot": 1067.906320218825,
+      "undershoot": 195.4005899166674
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060662.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.3517495773101285,
+      "micro_contrast": 3.7012357283266577,
+      "noise": 0.7106654438038977,
+      "n_edges": 27154,
+      "overshoot": 269.4379855443435,
+      "undershoot": 200.65871847729858
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060663.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.618356286589111,
+      "micro_contrast": 7.889928124511201,
+      "noise": 0.9286331198587674,
+      "n_edges": 26567,
+      "overshoot": 334.99175889639474,
+      "undershoot": 413.6371570961472
+    },
+    {
+      "filename": "Olympus_E-M1_Mark_III_114561_Y-25_50MMF17-P7060671.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.006938753296278,
+      "micro_contrast": 1.104806423072837,
+      "noise": 0.7060257333081645,
+      "n_edges": 16583,
+      "overshoot": 169.99445242209873,
+      "undershoot": 214.99660473945258
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0792.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.568941625495696,
+      "micro_contrast": 2.702879529853475,
+      "noise": 0.7202410165291342,
+      "n_edges": 27670,
+      "overshoot": 189.84724402615092,
+      "undershoot": 139.46400396335943
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0801.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.882252585293289,
+      "micro_contrast": 3.372801990899193,
+      "noise": 0.43968660740416177,
+      "n_edges": 25616,
+      "overshoot": 255.67008344574384,
+      "undershoot": 172.10596448543663
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0810.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.002190538564389,
+      "micro_contrast": 2.2860820240045996,
+      "noise": 0.6851963946996603,
+      "n_edges": 25627,
+      "overshoot": 224.15291846624316,
+      "undershoot": 153.84407178253807
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0815.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.6933580543656002,
+      "micro_contrast": 1.6346613128063021,
+      "noise": 0.5631818803863365,
+      "n_edges": 26057,
+      "overshoot": 183.0988879882001,
+      "undershoot": 148.40110325670472
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0833.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.482785435806302,
+      "micro_contrast": 1.5532460071515346,
+      "noise": 0.6388980069869185,
+      "n_edges": 25943,
+      "overshoot": 116.83682590392743,
+      "undershoot": 96.23993361912278
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0852.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.049160176999098,
+      "micro_contrast": 2.172419857868768,
+      "noise": 0.6485722969567451,
+      "n_edges": 26774,
+      "overshoot": 201.49798055855896,
+      "undershoot": 141.216063724456
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0882.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.7134471208524198,
+      "micro_contrast": 1.7083526154782827,
+      "noise": 0.2398829043538646,
+      "n_edges": 27743,
+      "overshoot": 170.45318948843683,
+      "undershoot": 54.86369824986541
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0891.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.1335249303773103,
+      "micro_contrast": 2.1569500084686197,
+      "noise": 0.28065312636956263,
+      "n_edges": 27251,
+      "overshoot": 232.3564253043571,
+      "undershoot": 61.55645518171327
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0894.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.940373101830752,
+      "micro_contrast": 1.951616941814233,
+      "noise": 0.2898338301164389,
+      "n_edges": 26683,
+      "overshoot": 200.4413652038801,
+      "undershoot": 75.41397800795393
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0931.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 5.029345509231953,
+      "micro_contrast": 5.307759662257116,
+      "noise": 0.06791746427796662,
+      "n_edges": 25985,
+      "overshoot": 319.5300362221099,
+      "undershoot": 195.3934703786944
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0958.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.8693125241618702,
+      "micro_contrast": 2.4158845628295835,
+      "noise": 0.4752248154565861,
+      "n_edges": 25227,
+      "overshoot": 271.1903763317666,
+      "undershoot": 132.25616820644424
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0973.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.0598783277067634,
+      "micro_contrast": 1.0605632334316588,
+      "noise": 0.6275455238590607,
+      "n_edges": 27246,
+      "overshoot": 127.37448651912779,
+      "undershoot": 68.67025804833605
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-0989.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 0.4383535364832927,
+      "micro_contrast": 0.43404222112079505,
+      "noise": 0.3845036676783139,
+      "n_edges": 22582,
+      "overshoot": 44.36412611617953,
+      "undershoot": 8.470305609380492
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-1108.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.670414559736058,
+      "micro_contrast": 1.6570696066222947,
+      "noise": 0.5928957710079469,
+      "n_edges": 27888,
+      "overshoot": 174.96325760912572,
+      "undershoot": 74.54306256955455
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YE-150mm-1220.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.0025582315907253,
+      "micro_contrast": 0.9972443752750227,
+      "noise": 0.5724613013778028,
+      "n_edges": 24401,
+      "overshoot": 103.08909320842218,
+      "undershoot": 77.61301023634343
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250071.jpg",
+      "subsampling": null,
+      "sharpening": 6.1097143621657635,
+      "micro_contrast": 5.963569061271539,
+      "noise": 0.7383062722891167,
+      "n_edges": 28098,
+      "overshoot": 236.70409045406416,
+      "undershoot": 171.32996396859411
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250074.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.2247693411838885,
+      "micro_contrast": 4.486762560329996,
+      "noise": 0.05113553269765509,
+      "n_edges": 27272,
+      "overshoot": 168.82645088242123,
+      "undershoot": 164.0623594294378
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250077.jpg",
+      "subsampling": null,
+      "sharpening": 5.314374066467112,
+      "micro_contrast": 6.2944276351158726,
+      "noise": 1.0408746269576743,
+      "n_edges": 26988,
+      "overshoot": 290.1615476970466,
+      "undershoot": 185.66037457689202
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250080.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 8.94808285592398,
+      "micro_contrast": 13.296289674505784,
+      "noise": 2.41906607867961,
+      "n_edges": 28057,
+      "overshoot": 302.4762162529931,
+      "undershoot": 274.4529365352863
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250085-HiResShot.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.909151385601281,
+      "micro_contrast": 4.530282716185142,
+      "noise": 0.4903285538788665,
+      "n_edges": 27767,
+      "overshoot": 116.92546880537817,
+      "undershoot": 133.56369227200963
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250089.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.8550419305021424,
+      "micro_contrast": 1.815589418272846,
+      "noise": 0.5465973832952051,
+      "n_edges": 27373,
+      "overshoot": 95.87545673099828,
+      "undershoot": 120.33318843807434
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250094.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.3511019498962022,
+      "micro_contrast": 1.2779838947473294,
+      "noise": 0.5340602932322664,
+      "n_edges": 28701,
+      "overshoot": 49.35693786925535,
+      "undershoot": 65.69380423336192
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250100.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.458034544917136,
+      "micro_contrast": 1.36350682365519,
+      "noise": 0.4752248154565861,
+      "n_edges": 28781,
+      "overshoot": 81.17334360575352,
+      "undershoot": 38.8301615541785
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250120.jpg",
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 4.896788061741621,
+      "micro_contrast": 5.371132594455563,
+      "noise": 0.5663408322132186,
+      "n_edges": 26553,
+      "overshoot": 203.4517372495055,
+      "undershoot": 268.59908131849966
+    },
+    {
+      "filename": "Olympus_PEN-F_121290_YP1250123.jpg",
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 5.4560456336639085,
+      "micro_contrast": 5.976729253994554,
+      "noise": 0.5722638668886227,
+      "n_edges": 24707,
+      "overshoot": 198.92020540601374,
+      "undershoot": 362.814507926446
+    }
+  ]
+}

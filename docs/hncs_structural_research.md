@@ -1,0 +1,222 @@
+# HNCS 구조 리서치: 실제 파이프라인 vs `apply_hncs()`
+
+*[English](hncs_structural_research.en.md)*
+
+[메인 README](../README.md)로 돌아가기.
+
+`brands/hasselblad.py`의 `apply_hncs()`(⭐ Stable, 실사용 중)는 실제
+HNCS 파이프라인을 3단계로 단순화한 근사다. 이 문서는 실제 구조를
+출처와 함께 정리하고, 그 구조를 반영한 별도의 **연구용** 실험 모듈
+(`hybrid_engine/research/hncs_structural.py`)이 실제로 정확도를
+개선하는지 측정한 결과를 담는다. `apply_hncs()` 자체는 이 리서치로
+수정되지 않는다 - 설계 근거는
+[2026-07-28-hncs-structural-research-design.md](superpowers/specs/2026-07-28-hncs-structural-research-design.md).
+
+## 출처
+
+- Hasselblad 공식 사이트: hasselblad.com/learn/hasselblad-natural-colour-solution
+  - "필름커브 톤, 지각보상 대비, rich saturation 무조작, 스킨톤
+    hue/채도 무조작, X시스템 전체 일관 적용" 5개 설계 원칙을 공개.
+    **파이프라인의 정확한 단계 수/구현 방식은 공개하지 않음.**
+
+> **정정(2026-08-05, 사용자가 이 페이지 원문 전체를 직접 붙여넣어
+> 검증)**: 위 "rich saturation 무조작"/"스킨톤 hue/채도 무조작"은 실제
+> 페이지 문구와 안 맞는다. 원문: *"The colour data undergoes a series
+> of transformations that remap the captured values. This ensures true
+> contrast, **rich saturation**, and tricky subtle tones – like skin
+> tones – are kept smooth, even between highlights and shadows."* -
+> rich saturation은 "안 건드려서" 나오는 게 아니라 **변환이 만들어내는
+> 결과**라고 명시돼 있다. 스킨톤 보호 문구는 두 번 나오는데, 하나는 위
+> 인용문(초기 렌더링에서 "부드럽게 유지"), 다른 하나는 Phocus 후처리
+> 절: *"The data is also optimised to keep skin tones as unaffected as
+> possible even after applying curves and contrast changes."* - 이건
+> **커브/대비를 편집해도 스킨톤이 덜 흔들린다**는 뜻이지, 초기 렌더링이
+> hue/채도를 아예 안 건드린다는 뜻이 아니다. "무조작"은 과도한 해석이었다.
+>
+> 원문이 실제로 밝히는 구성: **"an independently developed Hasselblad
+> look-up-table (LUT), Hasselblad Film Curve, and unique colour
+> processing that together adapts to any illumination"** - 이름 3개
+> (LUT/필름커브/기타 처리)는 이 프로젝트의 3단계 근사와 맞아떨어지지만,
+> 각 단계의 정확한 알고리즘·조명별 매트릭스 선택 로직은 여전히 비공개 -
+> "정확한 단계 수/구현 방식 비공개"라는 결론 자체는 그대로 유효하다.
+> 추가로 확인된 사실: (1) 카메라 자체의 픽셀 레벨 센서 캘리브레이션은
+> 색 파이프라인과 별개인 제조 단계 보정("stringent pixel-level
+> calibration"), (2) Phocus는 Hasselblad RGB(선형 감마)/Hasselblad
+> L\*RGB(지각 명도, LAB 대부분 색역 포함) 두 작업공간을 제공하고
+> "colour calibration tool"로 사용자 커스텀 캘리브레이션도 지원, (3)
+> 2004년 중형 디지털 카메라 개발 중 시작.
+>
+> **`brands/hasselblad.py`의 docstring도 이 "무조작" 표현을 그대로
+> 인용하고 있다** (`문서화된 HNCS 설계 원칙 (hasselblad.com):` 3/4번
+> 항목) - `apply_hncs()`는 이 리서치 문서의 범위 밖이라 여기서 수정하지
+> 않았다. hue/채도가 실제로 거의 안 변한다는 건 이 프로젝트가 직접 측정한
+> 결과(v8/v9 스킨톤 hue 검증)라 독자적으로 유효하지만, "그게 공식
+> 설계 원칙이라서"라는 인용 근거는 부정확하다 - 별도 확인 필요.
+- blog.tonalphoto.com, "How HNCS Actually Works" - Phocus `.phos`
+  사이드카를 바이트 단위로 diff한 독립 기술 분석. 저자 본인이 글
+  안에서 "공식 지원/가이드가 아니라 개인적 조사와 테스트"라고 명시.
+  **공식 화이트페이퍼는 존재하지 않는다** - 검색으로 확인.
+- "최소 4개 조명(Tungsten/Low Tungsten/Flash/Flash-Daylight)"이라는
+  구체적 개수는 위 블로그 글이 다시 인용한 Luminous Landscape 포럼의
+  커뮤니티 기술 분석 출처 - Hasselblad가 공개한 숫자가 아니다.
+
+세 출처의 확실성 등급이 다르다: 공식 사이트(설계 원칙, 공식) >
+tonalphoto.com(`.phos` 바이트 diff, 비공식이지만 직접 실측) >
+Luminous Landscape 포럼 인용(비공식, 재인용).
+
+## 구조 대비
+
+| 단계 | `apply_hncs()` (Stable, 실사용) | 실제 HNCS (조사 결과) |
+|---|---|---|
+| 입력 | RAW를 이미 카메라 JPEG로 디코드한 8비트 BGR | RAW 센서 데이터 (16비트) |
+| 1 | 전역 노출 리프트 (`exposure_gamma` LUT, v10 추가) | 조명별(illuminant-specific) 3x3 컬러 매트릭스 - 최소 4종 중 WB 설정에 따라 선택 |
+| 2 | CLAHE (지각보상 대비, 사진 모드만 - 비디오는 생략) | 그 매트릭스와 짝지어진 chroma LUT (해당 광원에 맞춘 hue/채도 보정) |
+| 3 | `film_curve` LUT (toe/mid/shoulder 톤커브) | Hasselblad Film Curve (하이라이트 롤오프 + 섀도우 전환) |
+| 화이트밸런스 변경 시 | 영향 없음 (JPEG 입력이라 WB는 이미 반영된 상태) | 2단계부터 전체 재실행 (매트릭스+LUT가 조명에 종속) |
+| hue/채도 조작 | 없음 (원칙 그대로 무조작) | 있음 - 다만 **프리셋 간에는** 없음(아래 참고) |
+
+**단순화의 핵심**: `apply_hncs()`가 근거로 삼은 "스킨톤 hue/채도 무조작"
+원칙은 프리셋(Standard/Nature/Portrait/Product/Square Crop) 비교에서는
+맞다 - `.phos` 사이드카 직접 비교 결과 Brightness/Contrast/Saturation이
+5개 프리셋 전부 0/0/0으로 동일했다. 하지만 그건 "프리셋끼리 색과학을
+안 바꾼다"는 뜻이지 "파이프라인 전체에 채도 보정이 없다"는 뜻이
+아니었다 - 2단계(조명별 chroma LUT)는 프리셋과 무관하게 항상 존재하는
+별도 단계다.
+
+## 실험: 구조를 더 정확히 따라가면 ΔE가 좋아지는가
+
+`hybrid_engine/research/hncs_structural.py`가 위 4단계를 미러링한다
+(RAW 기반, WB 적용 -> 클러스터별 3x3 매트릭스 -> 클러스터별 chroma LUT
+-> 공유 필름커브). 표본(13쌍의 raw+jpeg 페어,
+`datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv`)이 "최소 4개 조명"을
+뒷받침하지 못해 `AsShotNeutral`의 R/B 비율 기반 2-클러스터
+(`cluster_a`/`cluster_b`, 임계값 0.9)로 축소했다 - 10 대 3으로 갈라지는
+간격이 있어 시도할 근거는 있지만, 소수 클러스터가 3쌍뿐이라 통계적으로
+얇고, n=13에서 간격 하나만으로 "실제로 2개의 조명 모집단이 있다"고
+주장할 수는 없다(카메라 세대 아티팩트가 아니라는 것만 확인했다 - 양쪽
+클러스터에 X1D와 X1D II가 섞여 있다).
+
+단, **4단계 중 필름커브는 피팅하지 않았다** - `film_curve()`의 기본값
+(= `apply_hncs()`가 쓰는 값)으로 고정해서 두 방식이 같은 톤커브를 쓰게
+했다. 데이터로 정해진 건 매트릭스/chroma LUT/클러스터 분류 3가지다.
+
+leave-one-out 교차검증(13회, 매회 1쌍을 held-out으로 빼고 나머지로
+피팅)으로 이 실험 모듈과 `apply_hncs()`(같은 raw 기반 baseline에
+적용) 양쪽의 ΔE(CIEDE2000)를 같은 13쌍에 대해 재측정했다.
+
+**결과: 무승부(결론 보류).** 구조 실험(`apply_hncs_structural`)의 평균
+ΔE는 10.191로 `apply_hncs()`의 10.629보다 4.1% 낮았지만, **이 차이는
+0과 구분되지 않는다.**
+
+| 방법 | 평균 ΔE (CIEDE2000) |
+|---|---|
+| `apply_hncs()` (raw 기반 baseline에 적용, 이 실험 안에서 재측정) | 10.629 |
+| 구조 실험 (`apply_hncs_structural`, 클러스터별 매트릭스+chroma LUT+공유 필름커브) | 10.191 |
+
+- 13쌍 중 6쌍에서만 우세하고 7쌍에서 열세 - 부호검정 양측 p = 1.000
+- 페어드 차이의 중앙값은 −0.078 ΔE로 **부호가 반대**(평균만 양수)
+- 폴드 간 표준편차 3.978 ΔE, 페어드 t(df=12) = 0.40
+- 평균 차이의 부트스트랩 95% 신뢰구간 [−1.572, +2.548], 개선폭으로는
+  [−15.8%, +22.9%] - 둘 다 0을 포함한다
+- `x1d-II-sample-09.jpg` **한 장만 빼면 개선폭이 −2.0%로 뒤집힌다**
+
+따라서 "구조를 더 정확히 따라가면 ΔE가 좋아진다"고도 "안 좋아진다"고도
+말할 수 없다. **"4.1% 개선"을 이 실험의 결론으로 인용하면 안 된다.**
+
+자세한 방법론과 한계는 hybrid_engine/EVALUATION.md의 "HNCS 구조 실험" 절 참고.
+
+## 한계
+
+- **이 실험은 "구조"의 효과를 분리하지 못한다** - 구조 실험 쪽은 단계
+  수만 다른 게 아니라 입력 디코드도 다르고(카메라 네이티브 +
+  `AsShotNeutral` WB vs libraw sRGB), 3x3 매트릭스와 chroma 파라미터를
+  타깃에 맞춰 **피팅**한다. `apply_hncs()`는 이 실험 안에서 아무것도
+  학습하지 않는다. 1-클러스터 전역 매트릭스 대조군이 없어서, 차이가
+  났더라도 "조명별 구조" 덕분인지 "매트릭스를 데이터에 맞췄기 때문"인지
+  구분되지 않는다.
+- **정답지가 HNCS 출력이 아니다** - 타깃은 X1D/X1D II **바디가 만든
+  JPEG**이고, 이 문서가 설명하는 HNCS는 Phocus(데스크톱 RAW 현상)의
+  파이프라인이다. 카메라 JPEG 엔진이 같은 4단계를 돈다는 확인은 없다.
+  "구조를 미러링했다"와 "진짜 HNCS 출력에 더 가깝다"는 **다른 주장**이고,
+  이 실험이 재는 건 전자가 아니라 "카메라 JPEG에 얼마나 가까운가"뿐이다.
+- **비교가 대칭이 아니다** - `apply_hncs()`의 `exposure_gamma=0.7` 등은
+  과거에 바로 이 페어들(당시 10쌍)로 그리드서치해 정한 값이라 모든
+  폴드에서 부분적으로 in-sample이다(구조 실험에 불리한 방향). 반대로
+  구조 실험도 필름커브 상수를 그 값에서 물려받았고, 2-클러스터 분할과
+  임계값 0.9도 13쌍 전부를 본 뒤에 정한 것이라 완전한 out-of-sample은
+  아니다. 어느 쪽 편향도 정량화하지 않았다.
+- **`MATRIX_RIDGE=1.0`은 거의 무효다** - `cluster_b` 3쌍 전체(589,824
+  픽셀)로 피팅하면 ridge/trace(XᵀX) = 1.2e-5라 ridge=0.0과 계수 차이가
+  최대 0.16%(이 3쌍 fit 기준)다. 다만 실제 기록에 쓰인 LOOCV는 학습이
+  2쌍뿐인 폴드도 있어 그 경우 계수 차이가 더 크다(최대 ~9.6%, held-out
+  `x1d-II-sample-09` 기준 매트릭스 단계 ΔE -0.065) - 그래도 폴드 표준편차
+  3.978 ΔE에 비하면 무시할 수준이다. 기록된 수치는 정규화 없는
+  최소자승에 가깝고, ridge 값 선택이 최종 결과를 유의미하게 바꾸지
+  않는다("정규화로 과적합을 막았다"고 말할 수 없다).
+- **Phocus의 실제 매트릭스/LUT 값과 다르다** - 우리가 가진 13쌍짜리
+  raw+jpeg 페어로 새로 피팅한 근사치. Hasselblad의 비공개 자산을
+  재현한 게 아니다.
+- **조사 출처가 비공식이다** - 위 "출처" 절 참고. 확실성 등급이 다른
+  정보가 섞여 있다.
+- **2-클러스터는 실제 구조(4개 이상)의 축소판** - 표본 부족으로 인한
+  타협이지 "2개가 맞다"는 주장이 아니다.
+- **표본 13쌍, 클러스터당 3~10쌍(소수 클러스터 3쌍)** - 통계적으로
+  매우 얇음. 교차검증 결과가 양수든 음수든 표본이 늘어나면 재확인이
+  필요하다.
+- **`apply_hncs()`를 대체하지 않는다** - 이 실험이 이겨도 이 스펙
+  범위에서는 Stable로 승격하지 않는다(별도 논의).
+
+## 재검증 (2026-08, 94쌍 로컬 데이터 + 블렌딩 변형 + 1024콤보 그리드)
+
+위 13쌍 결과("무승부, 4.1% 개선이지만 CI가 0을 포함")를 훨씬 큰 표본으로
+다시 확인했다. `tools/evaluate_hncs_structural.py`(신규 - 이 체크아웃엔
+`hybrid_engine`이 없어 `hybrid_engine/research/hncs_structural.py` +
+`tools/evaluate_hncs_structural.py`를 자체 재구현)가 로컬 dpreview 클린
+95쌍 중 손상 파일(`4589763049.3fr`) 1개를 뺀 **94쌍**으로 두 가지를
+동시에 확장했다:
+
+1. **하드클러스터** (기존과 동일 - `AsShotNeutral` R/B 비율 임계값 0.9로
+   `cluster_a`/`cluster_b` 이분)에 더해 **연속 블렌딩 변형**
+   (`compute_blend_weight_rb`, R/B 비율을 그대로 정규화 가중치로 써서
+   두 클러스터 매트릭스/chroma LUT를 섞는 방식)도 새로 테스트
+2. chroma LUT 그리드를 기존 49콤보(`sat_mult`/`hue_shift` 각 7값)에서
+   **1024콤보**(각 32값)로 확장
+3. LOO(13회) 대신 **5-fold CV**로 전환(컴퓨팅 비용 때문 - 94쌍×1024콤보
+   LOO는 비현실적)
+
+필름커브는 이전과 동일하게 `apply_hncs()` v13 기본값
+(`toe_lift=0.005, shoulder_start=0.5, white_point=1.0`)으로 고정, 클러스터
+분포는 88(`cluster_a`) 대 6(`cluster_b`).
+
+**결과: 방향은 같지만 여전히 보류.**
+
+| 비교 | 개선폭 | 승/패 | 부호검정 p | 부트스트랩 95% CI | 판정 |
+|---|---|---|---|---|---|
+| 하드클러스터 vs `apply_hncs()` | +3.81% (10.355→9.960) | 54/40 | 0.180 | [-0.306, +1.075] | 보류 |
+| 블렌딩 vs `apply_hncs()` | +2.62% (10.355→10.083) | 53/41 | 0.256 | [-0.408, +0.936] | 보류 |
+| 하드클러스터 vs 블렌딩(직접 비교) | 블렌딩이 1.24% 더 나쁨 (9.960→10.083) | 27/67 | <0.0001 | [-0.187, -0.059] | **하드클러스터 유의하게 우세** |
+
+13쌍(+4.1%, CI [-15.8%,+22.9%])과 94쌍(+3.81%, CI [-0.306,+1.075])을
+나란히 보면 개선폭 추정치와 CI 폭 모두 좁아졌지만(표본이 7배로 커지며
+당연한 결과), **부호는 계속 양수 쪽으로 일관되고 CI는 여전히 0을
+포함** - "약하지만 방향은 있는" 신호가 표본을 키워도 유의성 문턱을
+못 넘는 상태로 안정화됐다는 뜻이다. 13쌍 결과의 "4.1% 개선을 결론으로
+인용하면 안 된다"는 경고는 94쌍에서도 그대로 유효하다.
+
+**새로운 발견 - 연속 블렌딩은 하드클러스터보다 명확히 나쁘다.** "조명
+간 경계를 하드컷하지 말고 부드럽게 섞으면 더 정확하지 않을까"라는
+가설로 이번에 처음 테스트했는데, 결과는 반대다 - 하드클러스터 대비
+블렌딩이 1.24% 더 나쁘고 이번엔 CI가 0을 포함하지 않는다(통계적으로
+유의). 소수 클러스터(`cluster_b`, 6쌍)가 진짜 별개의 조명 조건이라면
+그 경계에서 자연스럽게 섞이는 것보다 명확히 나누는 쪽이 더 낫다는
+뜻으로 해석할 수 있다 - 다만 이 프로젝트의 다른 곳(위 "한계" 절)에서
+계속 지적됐듯 `cluster_b`가 진짜 조명 클러스터인지 자체가 검증된 적은
+없다.
+
+**이 재검증이 위 "한계" 절을 바꾸지 않는 부분**: 정답지가 여전히 카메라
+JPEG(HNCS 실제 출력이 아님), 비교가 여전히 비대칭(`apply_hncs()` 파라미터
+자체가 이 페어들로 그리드서치된 값), Phocus의 실제 매트릭스/LUT와는
+무관한 재피팅 - 전부 그대로 적용된다.
+
+재현: `python3 -m tools.evaluate_hncs_structural`(94쌍×1024콤보×5-fold,
+약 1시간).

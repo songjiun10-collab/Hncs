@@ -1,0 +1,23 @@
+{
+  "_comment": "v1.3 - 후속 실측 17(Gray Edge 색치우침 알고리즘) + 후속 실측 16(X2D II 챠트 pooling)을 결합. Phase 0의 색치우침 추정을 Gray World에서 Gray Edge(공간 미분/엣지 평균이 무채색이라는 가정, van de Weijer 2007)로 바꾸고, 캘리브레이션 데이터셋에 X2D II ColorChecker 챠트 2장(같은 버스트 9장을 그대로 넣으면 최소자승 적합에 과도한 가중치로 작용해서 오히려 손해 - 대표 2장만 선별)을 X1D 13쌍에 추가해 총 15쌍으로 매트릭스+Phase 1(tone_core)/Phase 2(color_core)를 처음부터 재학습함(calibrate_profile.py --mode raw_baseline_pipeline, fixed_overrides={color_cast_algorithm: gray_edge, gray_edge_p: 1.0}). raw_calib_cache/에 x2dii-chart-31325/31330 페어를 추가해서 기본 캘리브레이션 데이터셋 자체를 15쌍으로 확장함. 원래 13쌍(X1D) 벤치마크 기준 13-fold leave-one-out 교차검증 ΔE00: v1.2(gray_world, X1D만) 9.963 -> gray_edge만 9.024(+9.4%) -> 챠트pooling만 9.598(+3.7%) -> 이 조합(gray_edge+챠트pooling) 8.859(+11.1%, 이 프로젝트의 5% 배포 기준을 처음으로 명확히 넘김). 15쌍 전체 in-sample ΔE: 8.976. 자세한 실측 과정은 EVALUATION.md 후속 실측 16/17/18 참고. gray_edge_p=1.0(1차 미분, 스무딩 없음)이 White Patch/Shades of Gray보다 뚜렷하게 나은 것으로 확인됨(White Patch는 오히려 -18.5%로 명확히 나쁨).",
+  "raw_baseline_matrix": [
+    [1.3550494904260355, -0.06458408423112942, -0.2184964886411485],
+    [-0.16149527201002192, 1.3630333054385753, 0.34466133096628493],
+    [0.36797931875418577, 0.27185867069539893, 1.482472892068865]
+  ],
+  "normalize_exposure": false,
+  "target_gray": 0.18,
+  "color_cast_algorithm": "gray_edge",
+  "gray_edge_p": 1.0,
+  "shadow_lift": 0.0,
+  "shadow_threshold": 0.1,
+  "contrast_n": 1.15,
+  "highlight_rolloff_start": 0.75,
+  "sat_gain": 0.0,
+  "sat_center": 50.0,
+  "sat_width": 35.0,
+  "max_chroma": 80.0,
+  "correct_color_cast": true,
+  "use_color_unification": true,
+  "use_spatial": false
+}

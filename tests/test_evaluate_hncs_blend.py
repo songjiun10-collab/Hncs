@@ -1,0 +1,205 @@
+import csv
+import os
+import tempfile
+import unittest
+
+import numpy as np
+
+from tools.evaluate_hncs_blend import (
+    HARD_CLUSTER_DE, _resize_max_dim, _sign_test_p, load_pairs, summarize,
+)
+
+
+class TestLoadPairs(unittest.TestCase):
+    def _write_manifest_and_cache(self, jpeg_names):
+        csv_fd, csv_path = tempfile.mkstemp(suffix=".csv")
+        cache_dir = tempfile.mkdtemp()
+        fields = ["camera", "lens", "photographer", "jpeg_url", "raw_url",
+                  "page_url", "exif_datetime_original", "exif_camera_model",
+                  "exif_lens", "exif_iso", "exif_focal_length",
+                  "exif_pair_verified"]
+        with os.fdopen(csv_fd, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fields)
+            writer.writeheader()
+            for name in jpeg_names:
+                row = {field: "" for field in fields}
+                row["jpeg_url"] = f"https://cdn.example.com/{name}"
+                writer.writerow(row)
+        for name in jpeg_names:
+            open(os.path.join(cache_dir, f"{name}.3FR"), "w").close()
+            open(os.path.join(cache_dir, f"{name}.target.jpg"), "w").close()
+        self.addCleanup(os.remove, csv_path)
+        return csv_path, cache_dir
+
+    def test_parses_names_and_paths(self):
+        csv_path, cache_dir = self._write_manifest_and_cache(["x1d-xcd45-01.jpg"])
+        pairs = load_pairs(csv_path=csv_path, cache_dir=cache_dir)
+        self.assertEqual(len(pairs), 1)
+        self.assertEqual(pairs[0]["name"], "x1d-xcd45-01.jpg")
+        self.assertTrue(pairs[0]["raw_path"].endswith("x1d-xcd45-01.jpg.3FR"))
+        self.assertTrue(pairs[0]["target_path"].endswith("x1d-xcd45-01.jpg.target.jpg"))
+
+    def test_multiple_rows_preserve_order(self):
+        csv_path, cache_dir = self._write_manifest_and_cache(["a.jpg", "b.jpg"])
+        pairs = load_pairs(csv_path=csv_path, cache_dir=cache_dir)
+        self.assertEqual([p["name"] for p in pairs], ["a.jpg", "b.jpg"])
+
+
+class TestResizeMaxDim(unittest.TestCase):
+    def test_noop_when_already_smaller_than_max_dim(self):
+        img = np.random.default_rng(0).uniform(0, 1, size=(10, 20, 3))
+        out = _resize_max_dim(img, max_dim=1024)
+        self.assertEqual(out.shape, img.shape)
+
+    def test_downsamples_when_larger_than_max_dim(self):
+        img = np.random.default_rng(1).uniform(0, 1, size=(2000, 4000, 3))
+        out = _resize_max_dim(img, max_dim=512)
+        self.assertLessEqual(max(out.shape[:2]), 512)
+        self.assertAlmostEqual(out.shape[1] / out.shape[0], 4000 / 2000, places=1)
+
+
+class TestSignTestP(unittest.TestCase):
+    def test_even_split_is_p_one(self):
+        self.assertAlmostEqual(_sign_test_p(6, 6), 1.0)
+
+    def test_no_pairs_is_p_one(self):
+        self.assertAlmostEqual(_sign_test_p(0, 0), 1.0)
+
+    def test_all_wins_is_significant(self):
+        self.assertLess(_sign_test_p(13, 0), 0.001)
+
+
+class TestHardClusterDeConstant(unittest.TestCase):
+    def test_has_all_74_pairs(self):
+        self.assertEqual(len(HARD_CLUSTER_DE), 74)
+
+    def test_matches_documented_value_for_one_official_pair(self):
+        # tools/evaluate_hncs_structural.py 2026-08 74쌍 재실행 결과
+        self.assertAlmostEqual(HARD_CLUSTER_DE["x1d-II-sample-09.jpg"], 17.884)
+
+    def test_matches_documented_value_for_one_local_pair(self):
+        self.assertAlmostEqual(
+            HARD_CLUSTER_DE["local-mixed-2026-07__6507810936"], 8.607)
+
+
+class TestSummarizeShape(unittest.TestCase):
+    """summarize()가 반환하는 dict의 키/타입만 검증 - 실제 13쌍 실행
+    결과에 대한 회귀 테스트는 실행 후 Step 8에서 별도로 추가한다."""
+
+    def test_returns_expected_keys(self):
+        per_fold = [
+            ("p1", 10.0, 8.0),
+            ("p2", 12.0, 12.5),
+            ("p3", 9.0, 7.5),
+        ]
+        s = summarize(per_fold)
+        for key in ("n", "mean_a", "mean_b", "mean_diff", "median_diff",
+                    "improvement_pct", "b_wins", "a_wins", "sd_diff",
+                    "sem_diff", "t_stat", "sign_test_p", "ci_diff", "ci_pct",
+                    "dropone_pct_min", "dropone_pct_max",
+                    "dropone_flips_sign", "inconclusive", "verdict"):
+            self.assertIn(key, s)
+        self.assertEqual(s["n"], 3)
+        self.assertEqual(s["b_wins"], 2)
+        self.assertEqual(s["a_wins"], 1)
+
+
+# 실제 13쌍 LOO 교차검증 재실행 기록값 - hybrid_engine/EVALUATION.md의
+# "HNCS 조명 블렌딩 실험" 절에 실린 것과 정확히 같다.
+# (name, de_hard, de_blend, weight)
+_RECORDED_RB_RUN = [
+    ("x1d-II-sample-02.jpg", 10.787, 10.871, 0.127),
+    ("x1d-II-sample-09.jpg", 5.249, 8.750, 1.000),
+    ("B0000994.jpg", 14.223, 13.882, 0.804),
+    ("B0001395.jpg", 18.412, 18.424, 0.000),
+    ("x1d-xcd45-01.jpg", 13.194, 12.614, 0.110),
+    ("x1d-xcd45-03.jpg", 8.342, 9.324, 0.308),
+    ("x1d-xcd45-04.jpg", 4.729, 4.641, 0.250),
+    ("x1d-ii-xcd45p-01.jpg", 10.126, 10.002, 0.187),
+    ("x1d-ii-xcd45p-02.jpg", 11.055, 10.552, 0.116),
+    ("x1d-II-sample-01.jpg", 6.452, 7.007, 0.117),
+    ("x1d-II-sample-06.jpg", 11.726, 10.423, 0.065),
+    ("02709.jpg", 13.074, 12.505, 0.808),
+    ("00378.jpg", 5.115, 5.572, 0.183),
+]
+_RECORDED_CCT_RUN = [
+    ("x1d-II-sample-02.jpg", 10.787, 10.668, 0.270),
+    ("x1d-II-sample-09.jpg", 5.249, 8.889, 1.000),
+    ("B0000994.jpg", 14.223, 13.981, 0.891),
+    ("B0001395.jpg", 18.412, 18.502, 0.000),
+    ("x1d-xcd45-01.jpg", 13.194, 12.371, 0.245),
+    ("x1d-xcd45-03.jpg", 8.342, 9.421, 0.476),
+    ("x1d-xcd45-04.jpg", 4.729, 4.663, 0.395),
+    ("x1d-ii-xcd45p-01.jpg", 10.126, 10.023, 0.346),
+    ("x1d-ii-xcd45p-02.jpg", 11.055, 10.585, 0.238),
+    ("x1d-II-sample-01.jpg", 6.452, 6.943, 0.243),
+    ("x1d-II-sample-06.jpg", 11.726, 10.269, 0.177),
+    ("02709.jpg", 13.074, 12.307, 0.894),
+    ("00378.jpg", 5.115, 5.698, 0.335),
+]
+
+
+class TestSummarizeRecordedRun(unittest.TestCase):
+    """hybrid_engine/EVALUATION.md에 기록된 실제 13쌍 LOO 결과를
+    재현하는 회귀 테스트."""
+
+    def test_rb_reproduces_documented_means(self):
+        s = summarize(_RECORDED_RB_RUN)
+        self.assertAlmostEqual(s["mean_a"], 10.191, places=2)
+        self.assertAlmostEqual(s["mean_b"], 10.351, places=2)
+
+    def test_rb_reproduces_documented_sign_test_p(self):
+        s = summarize(_RECORDED_RB_RUN)
+        self.assertAlmostEqual(s["sign_test_p"], 1.0, places=9)
+
+    def test_cct_reproduces_documented_means(self):
+        s = summarize(_RECORDED_CCT_RUN)
+        self.assertAlmostEqual(s["mean_a"], 10.191, places=2)
+        self.assertAlmostEqual(s["mean_b"], 10.332, places=2)
+
+    def test_cct_reproduces_documented_sign_test_p(self):
+        s = summarize(_RECORDED_CCT_RUN)
+        self.assertAlmostEqual(s["sign_test_p"], 0.5810546875, places=9)
+
+
+# 실제 (kL,kC,kH)=(4.1,1.1,1.6) 재검증 재실행 기록값 - RB-vs-CCT
+# 직접비교만(하드클러스터 비교는 가중 모드에서 생략, 스펙 참고). 22쌍
+# (공식 13 + kmichels-x2dii-2026-07 9)에서 돌았다 - local-mixed-2026-07
+# raw/jpeg 파일이 이 컨테이너에 없어서 74쌍이 아니다(EVALUATION.md의
+# 새 하위절 참고). (name, de_rb, de_cct)
+_RECORDED_WEIGHTED_RB_VS_CCT = [
+    ("x1d-II-sample-02.jpg", 5.574, 5.585),
+    ("x1d-II-sample-09.jpg", 5.709, 5.411),
+    ("B0000994.jpg", 7.267, 7.069),
+    ("B0001395.jpg", 10.811, 10.815),
+    ("x1d-xcd45-01.jpg", 3.943, 4.000),
+    ("x1d-xcd45-03.jpg", 3.802, 3.872),
+    ("x1d-xcd45-04.jpg", 2.052, 2.105),
+    ("x1d-ii-xcd45p-01.jpg", 4.380, 4.390),
+    ("x1d-ii-xcd45p-02.jpg", 6.608, 6.621),
+    ("x1d-II-sample-01.jpg", 4.193, 4.161),
+    ("x1d-II-sample-06.jpg", 4.909, 4.902),
+    ("02709.jpg", 6.359, 6.138),
+    ("00378.jpg", 3.089, 3.051),
+    ("kmichels-x2dii-2026-07__B_31325", 5.010, 5.039),
+    ("kmichels-x2dii-2026-07__B_31326", 5.001, 5.032),
+    ("kmichels-x2dii-2026-07__B_31327", 4.981, 5.014),
+    ("kmichels-x2dii-2026-07__B_31328", 4.963, 4.998),
+    ("kmichels-x2dii-2026-07__B_31329", 4.884, 4.921),
+    ("kmichels-x2dii-2026-07__B_31330", 4.868, 4.906),
+    ("kmichels-x2dii-2026-07__B_31331", 4.873, 4.911),
+    ("kmichels-x2dii-2026-07__B_31332", 4.871, 4.909),
+    ("kmichels-x2dii-2026-07__B_31333", 4.869, 4.907),
+]
+
+
+class TestWeightedReverificationRecordedRun(unittest.TestCase):
+    def test_reproduces_documented_weighted_verdict(self):
+        s = summarize(_RECORDED_WEIGHTED_RB_VS_CCT)
+        self.assertAlmostEqual(s["mean_a"], 5.137, places=2)
+        self.assertAlmostEqual(s["mean_b"], 5.125, places=2)
+        self.assertAlmostEqual(s["sign_test_p"], 0.052478790283203125, places=9)
+
+
+if __name__ == "__main__":
+    unittest.main()

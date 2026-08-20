@@ -1,0 +1,588 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. population은 tone_signature.json과 동일하게 사진 단위 동일 가중치 per-image 평균. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. Canon 표본도 라이카와 마찬가지로 얼굴 검출을 거치지 않아 portrait subset은 제공하지 않음. n=115는 버스트 중복 제거 후 표본(위 tone_signature.json methodology 참고).",
+  "n_images": 115,
+  "population": {
+    "sat_mean": {
+      "mean": 89.80047335417375,
+      "std": 29.701063275022612,
+      "n": 115
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A1258.jpg",
+      "sat_mean": 93.15283203125,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A1280.jpg",
+      "sat_mean": 68.59825897216797,
+      "hue_mean": 102.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A1685.jpg",
+      "sat_mean": 76.37598419189453,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2009.jpg",
+      "sat_mean": 87.57666015625,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2207.jpg",
+      "sat_mean": 69.46043395996094,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2227.jpg",
+      "sat_mean": 69.01204681396484,
+      "hue_mean": 99.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2230.jpg",
+      "sat_mean": 68.90662384033203,
+      "hue_mean": 99.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2472.jpg",
+      "sat_mean": 79.54879760742188,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2483.jpg",
+      "sat_mean": 77.82850646972656,
+      "hue_mean": 28.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2733.jpg",
+      "sat_mean": 97.05105590820312,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2736.jpg",
+      "sat_mean": 99.10535430908203,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2759.jpg",
+      "sat_mean": 69.15010070800781,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2784.jpg",
+      "sat_mean": 62.37757873535156,
+      "hue_mean": 94.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2786.jpg",
+      "sat_mean": 91.568115234375,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2791.jpg",
+      "sat_mean": 63.48369598388672,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2887.jpg",
+      "sat_mean": 43.14339065551758,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Canon_EOS_R3_69966_Y-WB-R3-0K1A2917.jpg",
+      "sat_mean": 50.823822021484375,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0083.jpg",
+      "sat_mean": 93.41336822509766,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0091.jpg",
+      "sat_mean": 73.70635223388672,
+      "hue_mean": 165.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0101.jpg",
+      "sat_mean": 78.46481323242188,
+      "hue_mean": 56.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0111.jpg",
+      "sat_mean": 84.82466888427734,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0117.jpg",
+      "sat_mean": 87.37015533447266,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0119.jpg",
+      "sat_mean": 88.66691589355469,
+      "hue_mean": 58.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0122.jpg",
+      "sat_mean": 86.61167907714844,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0130.jpg",
+      "sat_mean": 134.26950073242188,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0132.jpg",
+      "sat_mean": 130.49937438964844,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0137.jpg",
+      "sat_mean": 113.42512512207031,
+      "hue_mean": 46.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0142.jpg",
+      "sat_mean": 98.60678100585938,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0150.jpg",
+      "sat_mean": 138.49990844726562,
+      "hue_mean": 37.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0153.jpg",
+      "sat_mean": 140.641845703125,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0160.jpg",
+      "sat_mean": 102.85749053955078,
+      "hue_mean": 55.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0170.jpg",
+      "sat_mean": 113.36571502685547,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0175.jpg",
+      "sat_mean": 95.9134292602539,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0186.jpg",
+      "sat_mean": 40.82167434692383,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0214.jpg",
+      "sat_mean": 93.95431518554688,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0221.jpg",
+      "sat_mean": 97.96256256103516,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0228.jpg",
+      "sat_mean": 99.52568054199219,
+      "hue_mean": 33.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0236.jpg",
+      "sat_mean": 115.76573944091797,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0272.jpg",
+      "sat_mean": 66.05927276611328,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0278.jpg",
+      "sat_mean": 202.34542846679688,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0292.jpg",
+      "sat_mean": 30.758251190185547,
+      "hue_mean": 66.0
+    },
+    {
+      "filename": "Canon_EOS_R5_72085_Y-WB-008A0331.jpg",
+      "sat_mean": 51.70170974731445,
+      "hue_mean": 46.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0007.jpg",
+      "sat_mean": 65.5009536743164,
+      "hue_mean": 90.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0078.jpg",
+      "sat_mean": 128.46841430664062,
+      "hue_mean": 34.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0106.jpg",
+      "sat_mean": 129.5173797607422,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0148.jpg",
+      "sat_mean": 93.48992156982422,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0152.jpg",
+      "sat_mean": 87.79328918457031,
+      "hue_mean": 53.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0157.jpg",
+      "sat_mean": 111.12296295166016,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0161.jpg",
+      "sat_mean": 131.81582641601562,
+      "hue_mean": 33.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0193.jpg",
+      "sat_mean": 98.17477416992188,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0194.jpg",
+      "sat_mean": 98.56005096435547,
+      "hue_mean": 55.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0234.jpg",
+      "sat_mean": 120.87519073486328,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0238.jpg",
+      "sat_mean": 72.72447967529297,
+      "hue_mean": 61.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0243.jpg",
+      "sat_mean": 159.8527069091797,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0255.jpg",
+      "sat_mean": 89.41464233398438,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0263.jpg",
+      "sat_mean": 73.26728057861328,
+      "hue_mean": 86.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0267.jpg",
+      "sat_mean": 79.62386322021484,
+      "hue_mean": 89.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0292.jpg",
+      "sat_mean": 139.47938537597656,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0305.jpg",
+      "sat_mean": 143.63247680664062,
+      "hue_mean": 63.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0321.jpg",
+      "sat_mean": 127.08627319335938,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0356.jpg",
+      "sat_mean": 116.71309661865234,
+      "hue_mean": 97.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0388.jpg",
+      "sat_mean": 102.9558334350586,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0429.jpg",
+      "sat_mean": 134.24594116210938,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0437.jpg",
+      "sat_mean": 66.54977416992188,
+      "hue_mean": 110.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0450.jpg",
+      "sat_mean": 68.93439483642578,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0451.jpg",
+      "sat_mean": 85.70751953125,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Canon_EOS_R6_66656_Y-EOS-R6-JG-0488.jpg",
+      "sat_mean": 97.57855224609375,
+      "hue_mean": 56.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0003.jpg",
+      "sat_mean": 47.548912048339844,
+      "hue_mean": 89.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0005.jpg",
+      "sat_mean": 45.42957305908203,
+      "hue_mean": 34.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0008.jpg",
+      "sat_mean": 50.25285339355469,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0010.jpg",
+      "sat_mean": 48.299156188964844,
+      "hue_mean": 44.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0015.jpg",
+      "sat_mean": 56.48162841796875,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0017.jpg",
+      "sat_mean": 85.3558120727539,
+      "hue_mean": 113.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0021.jpg",
+      "sat_mean": 45.02642822265625,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0025.jpg",
+      "sat_mean": 45.31289291381836,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0028.jpg",
+      "sat_mean": 75.4014663696289,
+      "hue_mean": 42.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0063.jpg",
+      "sat_mean": 108.90235900878906,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0073.jpg",
+      "sat_mean": 166.44692993164062,
+      "hue_mean": 29.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0079.jpg",
+      "sat_mean": 114.54630279541016,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0110.jpg",
+      "sat_mean": 102.93916320800781,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0121.jpg",
+      "sat_mean": 115.67831420898438,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0140.jpg",
+      "sat_mean": 110.165771484375,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0149.jpg",
+      "sat_mean": 68.12860107421875,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0156.jpg",
+      "sat_mean": 42.59766387939453,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0164.jpg",
+      "sat_mean": 59.053096771240234,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0166.jpg",
+      "sat_mean": 61.41929244995117,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0181.jpg",
+      "sat_mean": 121.0889892578125,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0191.jpg",
+      "sat_mean": 61.77581787109375,
+      "hue_mean": 80.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0197.jpg",
+      "sat_mean": 103.47539520263672,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0243.jpg",
+      "sat_mean": 62.79312515258789,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0245.jpg",
+      "sat_mean": 29.55284881591797,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R8_59832_Y-JG-CANON-R8-0247.jpg",
+      "sat_mean": 86.9804458618164,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0202-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 74.81855773925781,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0314-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 65.3886489868164,
+      "hue_mean": 95.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0322-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 89.866943359375,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0342-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 73.67089080810547,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0370-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 62.84346008300781,
+      "hue_mean": 99.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0403-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 70.8692855834961,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0443-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 90.2550048828125,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0495-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 82.20753479003906,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0514-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 94.25337219238281,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0529-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 89.45791625976562,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0544-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 91.60200500488281,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0556-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 91.47452545166016,
+      "hue_mean": 97.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0577-EF-ADAPTER-BETA.jpg",
+      "sat_mean": 88.87654113769531,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0693.jpg",
+      "sat_mean": 135.86817932128906,
+      "hue_mean": 60.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0700.jpg",
+      "sat_mean": 131.59950256347656,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0709.jpg",
+      "sat_mean": 84.47599029541016,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0724.jpg",
+      "sat_mean": 96.71308135986328,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0729.jpg",
+      "sat_mean": 81.45764923095703,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0735.jpg",
+      "sat_mean": 80.77433013916016,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0746.jpg",
+      "sat_mean": 78.5396957397461,
+      "hue_mean": 75.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0756.jpg",
+      "sat_mean": 94.14249420166016,
+      "hue_mean": 50.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0765.jpg",
+      "sat_mean": 97.75188446044922,
+      "hue_mean": 45.0
+    },
+    {
+      "filename": "Canon_EOS_R_73158_Y-JG-458A0767.jpg",
+      "sat_mean": 115.21410369873047,
+      "hue_mean": 36.0
+    }
+  ]
+}

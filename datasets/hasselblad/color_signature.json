@@ -1,0 +1,893 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료.",
+  "n_images": 124,
+  "population": {
+    "sat_mean": {
+      "mean": 101.44348202982256,
+      "std": 42.49632589450972,
+      "n": 124
+    }
+  },
+  "portrait": {
+    "sat_mean": {
+      "mean": 102.59774450353675,
+      "std": 35.58587106386123,
+      "n": 37
+    },
+    "skin_hue": {
+      "mean": 27.56756756756757,
+      "std": 47.48913989110338,
+      "n": 37
+    }
+  },
+  "per_image": [
+    {
+      "filename": "orig_0.jpg",
+      "sat_mean": 92.19403839111328,
+      "hue_mean": 73.0,
+      "skin_hue": 8.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_1.jpg",
+      "sat_mean": 130.0573272705078,
+      "hue_mean": 19.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_10.jpg",
+      "sat_mean": 91.48272705078125,
+      "hue_mean": 161.0,
+      "skin_hue": 170.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_100.jpg",
+      "sat_mean": 58.82734298706055,
+      "hue_mean": 108.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_101.jpg",
+      "sat_mean": 120.65868377685547,
+      "hue_mean": 103.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_102.jpg",
+      "sat_mean": 72.73259735107422,
+      "hue_mean": 13.0,
+      "skin_hue": 6.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_103.jpg",
+      "sat_mean": 81.51148986816406,
+      "hue_mean": 14.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_104.jpg",
+      "sat_mean": 134.34652709960938,
+      "hue_mean": 107.0,
+      "skin_hue": 138.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_105.jpg",
+      "sat_mean": 122.68367767333984,
+      "hue_mean": 107.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_106.jpg",
+      "sat_mean": 88.72402954101562,
+      "hue_mean": 69.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_107.jpg",
+      "sat_mean": 164.46217346191406,
+      "hue_mean": 103.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_108.jpg",
+      "sat_mean": 128.84213256835938,
+      "hue_mean": 106.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_109.jpg",
+      "sat_mean": 195.71153259277344,
+      "hue_mean": 19.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_11.jpg",
+      "sat_mean": 89.1114730834961,
+      "hue_mean": 110.0,
+      "skin_hue": 6.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_110.jpg",
+      "sat_mean": 115.11705780029297,
+      "hue_mean": 11.0,
+      "skin_hue": 9.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_111.jpg",
+      "sat_mean": 88.21958923339844,
+      "hue_mean": 69.0,
+      "skin_hue": 11.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_112.jpg",
+      "sat_mean": 48.955482482910156,
+      "hue_mean": 109.0,
+      "skin_hue": 9.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_113.jpg",
+      "sat_mean": 203.40170288085938,
+      "hue_mean": 30.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_114.jpg",
+      "sat_mean": 33.63115692138672,
+      "hue_mean": 105.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_115.jpg",
+      "sat_mean": 32.43363952636719,
+      "hue_mean": 108.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_116.jpg",
+      "sat_mean": 43.44856262207031,
+      "hue_mean": 104.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_117.jpg",
+      "sat_mean": 64.56764221191406,
+      "hue_mean": 103.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_118.jpg",
+      "sat_mean": 141.66741943359375,
+      "hue_mean": 94.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_119.jpg",
+      "sat_mean": 44.13691711425781,
+      "hue_mean": 16.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_12.jpg",
+      "sat_mean": 87.17597961425781,
+      "hue_mean": 14.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_120.jpg",
+      "sat_mean": 63.36351776123047,
+      "hue_mean": 105.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_121.jpg",
+      "sat_mean": 70.63903045654297,
+      "hue_mean": 98.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_122.jpg",
+      "sat_mean": 71.46820831298828,
+      "hue_mean": 24.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_123.jpg",
+      "sat_mean": 81.19086456298828,
+      "hue_mean": 104.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_124.jpg",
+      "sat_mean": 60.180686950683594,
+      "hue_mean": 92.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_125.jpg",
+      "sat_mean": 42.665382385253906,
+      "hue_mean": 107.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_126.jpg",
+      "sat_mean": 36.71966552734375,
+      "hue_mean": 106.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_127.jpg",
+      "sat_mean": 50.09808349609375,
+      "hue_mean": 108.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_128.jpg",
+      "sat_mean": 46.77825927734375,
+      "hue_mean": 22.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_129.jpg",
+      "sat_mean": 65.779541015625,
+      "hue_mean": 24.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_13.jpg",
+      "sat_mean": 72.65740966796875,
+      "hue_mean": 100.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_130.jpg",
+      "sat_mean": 55.91947555541992,
+      "hue_mean": 19.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_131.jpg",
+      "sat_mean": 77.51207733154297,
+      "hue_mean": 22.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_132.jpg",
+      "sat_mean": 82.6217269897461,
+      "hue_mean": 12.0,
+      "skin_hue": 10.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_133.jpg",
+      "sat_mean": 126.40415954589844,
+      "hue_mean": 98.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_134.jpg",
+      "sat_mean": 52.51846694946289,
+      "hue_mean": 103.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_135.jpg",
+      "sat_mean": 106.65585327148438,
+      "hue_mean": 19.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_136.jpg",
+      "sat_mean": 120.50862121582031,
+      "hue_mean": 15.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_137.jpg",
+      "sat_mean": 97.55058288574219,
+      "hue_mean": 26.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_138.jpg",
+      "sat_mean": 52.821807861328125,
+      "hue_mean": 104.0,
+      "skin_hue": 90.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_14.jpg",
+      "sat_mean": 130.02484130859375,
+      "hue_mean": 105.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_15.jpg",
+      "sat_mean": 167.99978637695312,
+      "hue_mean": 99.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_16.jpg",
+      "sat_mean": 141.98751831054688,
+      "hue_mean": 104.0,
+      "skin_hue": 5.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_17.jpg",
+      "sat_mean": 119.54975891113281,
+      "hue_mean": 47.0,
+      "skin_hue": 11.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_18.jpg",
+      "sat_mean": 90.93583679199219,
+      "hue_mean": 13.0,
+      "skin_hue": 5.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_19.jpg",
+      "sat_mean": 92.19537353515625,
+      "hue_mean": 12.0,
+      "skin_hue": 5.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_2.jpg",
+      "sat_mean": 55.708404541015625,
+      "hue_mean": 125.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_20.jpg",
+      "sat_mean": 124.02912902832031,
+      "hue_mean": 44.0,
+      "skin_hue": 12.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_21.jpg",
+      "sat_mean": 93.7452163696289,
+      "hue_mean": 19.0,
+      "skin_hue": 11.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_22.jpg",
+      "sat_mean": 95.24234008789062,
+      "hue_mean": 20.0,
+      "skin_hue": 10.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_23.jpg",
+      "sat_mean": 88.64801788330078,
+      "hue_mean": 15.0,
+      "skin_hue": 12.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_24.jpg",
+      "sat_mean": 93.5865249633789,
+      "hue_mean": 25.0,
+      "skin_hue": 10.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_25.jpg",
+      "sat_mean": 76.5608901977539,
+      "hue_mean": 108.0,
+      "skin_hue": 166.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_26.jpg",
+      "sat_mean": 161.1907196044922,
+      "hue_mean": 16.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_27.jpg",
+      "sat_mean": 135.74192810058594,
+      "hue_mean": 100.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_28.jpg",
+      "sat_mean": 72.98603820800781,
+      "hue_mean": 88.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_29.jpg",
+      "sat_mean": 87.73004150390625,
+      "hue_mean": 28.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_3.jpg",
+      "sat_mean": 113.09220123291016,
+      "hue_mean": 39.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_30.jpg",
+      "sat_mean": 80.5635757446289,
+      "hue_mean": 101.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_31.jpg",
+      "sat_mean": 63.102901458740234,
+      "hue_mean": 105.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_32.jpg",
+      "sat_mean": 67.06317138671875,
+      "hue_mean": 45.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_33.jpg",
+      "sat_mean": 112.11529541015625,
+      "hue_mean": 101.0,
+      "skin_hue": 6.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_34.jpg",
+      "sat_mean": 104.04765319824219,
+      "hue_mean": 90.0,
+      "skin_hue": 8.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_35.jpg",
+      "sat_mean": 90.57820129394531,
+      "hue_mean": 25.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_36.jpg",
+      "sat_mean": 96.07275390625,
+      "hue_mean": 15.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_37.jpg",
+      "sat_mean": 123.44886779785156,
+      "hue_mean": 14.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_38.jpg",
+      "sat_mean": 96.15326690673828,
+      "hue_mean": 14.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_39.jpg",
+      "sat_mean": 121.78746795654297,
+      "hue_mean": 19.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_4.jpg",
+      "sat_mean": 87.25159454345703,
+      "hue_mean": 44.0,
+      "skin_hue": 12.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_40.jpg",
+      "sat_mean": 135.0919189453125,
+      "hue_mean": 104.0,
+      "skin_hue": 13.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_41.jpg",
+      "sat_mean": 172.16368103027344,
+      "hue_mean": 108.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_42.jpg",
+      "sat_mean": 193.53359985351562,
+      "hue_mean": 16.0,
+      "skin_hue": 6.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_43.jpg",
+      "sat_mean": 188.2891387939453,
+      "hue_mean": 99.0,
+      "skin_hue": 158.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_44.jpg",
+      "sat_mean": 146.9609375,
+      "hue_mean": 106.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_45.jpg",
+      "sat_mean": 117.31214904785156,
+      "hue_mean": 104.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_46.jpg",
+      "sat_mean": 174.79200744628906,
+      "hue_mean": 96.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_47.jpg",
+      "sat_mean": 99.4828109741211,
+      "hue_mean": 95.0,
+      "skin_hue": 8.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_48.jpg",
+      "sat_mean": 84.42696380615234,
+      "hue_mean": 96.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_49.jpg",
+      "sat_mean": 85.93418884277344,
+      "hue_mean": 102.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_5.jpg",
+      "sat_mean": 60.53129196166992,
+      "hue_mean": 103.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_50.jpg",
+      "sat_mean": 114.36066436767578,
+      "hue_mean": 23.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_51.jpg",
+      "sat_mean": 177.36553955078125,
+      "hue_mean": 22.0,
+      "skin_hue": 12.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_52.jpg",
+      "sat_mean": 56.01108169555664,
+      "hue_mean": 15.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_53.jpg",
+      "sat_mean": 166.6145477294922,
+      "hue_mean": 105.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_54.jpg",
+      "sat_mean": 83.53246307373047,
+      "hue_mean": 18.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_55.jpg",
+      "sat_mean": 171.84922790527344,
+      "hue_mean": 41.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_56.jpg",
+      "sat_mean": 119.42430877685547,
+      "hue_mean": 49.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_57.jpg",
+      "sat_mean": 154.997314453125,
+      "hue_mean": 19.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_58.jpg",
+      "sat_mean": 96.31340789794922,
+      "hue_mean": 22.0,
+      "skin_hue": 12.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_59.jpg",
+      "sat_mean": 50.42823028564453,
+      "hue_mean": 111.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_6.jpg",
+      "sat_mean": 51.235294342041016,
+      "hue_mean": 116.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_60.jpg",
+      "sat_mean": 65.29107666015625,
+      "hue_mean": 103.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_61.jpg",
+      "sat_mean": 79.42300415039062,
+      "hue_mean": 107.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_62.jpg",
+      "sat_mean": 58.285404205322266,
+      "hue_mean": 110.0,
+      "skin_hue": 8.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_63.jpg",
+      "sat_mean": 74.48766326904297,
+      "hue_mean": 103.0,
+      "skin_hue": 11.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_64.jpg",
+      "sat_mean": 157.1712646484375,
+      "hue_mean": 107.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_65.jpg",
+      "sat_mean": 95.31423950195312,
+      "hue_mean": 50.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_66.jpg",
+      "sat_mean": 115.73335266113281,
+      "hue_mean": 23.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_67.jpg",
+      "sat_mean": 70.72757720947266,
+      "hue_mean": 26.0,
+      "skin_hue": 7.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_68.jpg",
+      "sat_mean": 66.172119140625,
+      "hue_mean": 126.0,
+      "skin_hue": 8.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_69.jpg",
+      "sat_mean": 171.12603759765625,
+      "hue_mean": 83.0,
+      "skin_hue": 10.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_7.jpg",
+      "sat_mean": 88.64317321777344,
+      "hue_mean": 37.0,
+      "skin_hue": 9.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_70.jpg",
+      "sat_mean": 138.78904724121094,
+      "hue_mean": 83.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_71.jpg",
+      "sat_mean": 100.66976928710938,
+      "hue_mean": 54.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_72.jpg",
+      "sat_mean": 172.49356079101562,
+      "hue_mean": 109.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_73.jpg",
+      "sat_mean": 121.30358123779297,
+      "hue_mean": 14.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_74.jpg",
+      "sat_mean": 86.95865631103516,
+      "hue_mean": 101.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_75.jpg",
+      "sat_mean": 53.31621551513672,
+      "hue_mean": 35.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_76.jpg",
+      "sat_mean": 109.70259857177734,
+      "hue_mean": 19.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_77.jpg",
+      "sat_mean": 194.31607055664062,
+      "hue_mean": 100.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_8.jpg",
+      "sat_mean": 62.5909538269043,
+      "hue_mean": 74.0,
+      "skin_hue": 15.0,
+      "is_portrait": true
+    },
+    {
+      "filename": "orig_81.jpg",
+      "sat_mean": 73.22565460205078,
+      "hue_mean": 102.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_82.jpg",
+      "sat_mean": 82.67186737060547,
+      "hue_mean": 110.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_84.jpg",
+      "sat_mean": 64.89128875732422,
+      "hue_mean": 26.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_85.jpg",
+      "sat_mean": 236.00233459472656,
+      "hue_mean": 9.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_86.jpg",
+      "sat_mean": 88.7717514038086,
+      "hue_mean": 107.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_9.jpg",
+      "sat_mean": 60.40540313720703,
+      "hue_mean": 96.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_94.jpg",
+      "sat_mean": 172.05467224121094,
+      "hue_mean": 16.0,
+      "skin_hue": null,
+      "is_portrait": false
+    },
+    {
+      "filename": "orig_95.jpg",
+      "sat_mean": 126.50902557373047,
+      "hue_mean": 16.0,
+      "skin_hue": 13.0,
+      "is_portrait": true
+    }
+  ]
+}

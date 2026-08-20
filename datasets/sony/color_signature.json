@@ -1,0 +1,588 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. population은 tone_signature.json과 동일하게 사진 단위 동일 가중치 per-image 평균. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. 얼굴 검출 기반 인물 subset은 제공하지 않음(다른 population-fit 브랜드와 동일한 한계).",
+  "n_images": 115,
+  "population": {
+    "sat_mean": {
+      "mean": 97.58357776144277,
+      "std": 39.42876267284206,
+      "n": 115
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Sony_A7R_104880_YDSC00022.jpg",
+      "sat_mean": 75.72528076171875,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00038.jpg",
+      "sat_mean": 71.95645904541016,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00057.jpg",
+      "sat_mean": 73.92068481445312,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00062.jpg",
+      "sat_mean": 81.77095031738281,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00077.jpg",
+      "sat_mean": 105.34241485595703,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00081.jpg",
+      "sat_mean": 88.48555755615234,
+      "hue_mean": 102.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00098.jpg",
+      "sat_mean": 112.81851959228516,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00137.jpg",
+      "sat_mean": 73.92826843261719,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00148.jpg",
+      "sat_mean": 59.55031967163086,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00149.jpg",
+      "sat_mean": 75.5533218383789,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00163.jpg",
+      "sat_mean": 79.68705749511719,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00169.jpg",
+      "sat_mean": 97.76811218261719,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00240.jpg",
+      "sat_mean": 90.67341613769531,
+      "hue_mean": 69.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00243.jpg",
+      "sat_mean": 113.29776000976562,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00253.jpg",
+      "sat_mean": 151.3575897216797,
+      "hue_mean": 115.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00489.jpg",
+      "sat_mean": 159.1062469482422,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00525.jpg",
+      "sat_mean": 176.10452270507812,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00537.jpg",
+      "sat_mean": 116.98477172851562,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00616.jpg",
+      "sat_mean": 57.968692779541016,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00643.jpg",
+      "sat_mean": 106.1435317993164,
+      "hue_mean": 79.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00901.jpg",
+      "sat_mean": 188.83547973632812,
+      "hue_mean": 9.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00907.jpg",
+      "sat_mean": 132.95297241210938,
+      "hue_mean": 9.0
+    },
+    {
+      "filename": "Sony_A7R_104880_YDSC00911.jpg",
+      "sat_mean": 168.67250061035156,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00256.jpg",
+      "sat_mean": 166.47073364257812,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00263.jpg",
+      "sat_mean": 202.9420623779297,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00268.jpg",
+      "sat_mean": 218.79608154296875,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00274.jpg",
+      "sat_mean": 76.38970184326172,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00278.jpg",
+      "sat_mean": 119.5699234008789,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00281.jpg",
+      "sat_mean": 160.90960693359375,
+      "hue_mean": 46.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00290.jpg",
+      "sat_mean": 106.539794921875,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00295.jpg",
+      "sat_mean": 103.57674407958984,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00297.jpg",
+      "sat_mean": 71.31962585449219,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00312.jpg",
+      "sat_mean": 97.6500244140625,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00314.jpg",
+      "sat_mean": 78.86117553710938,
+      "hue_mean": 156.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00316.jpg",
+      "sat_mean": 115.46605682373047,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00321.jpg",
+      "sat_mean": 133.68849182128906,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00323.jpg",
+      "sat_mean": 136.3158721923828,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00324.jpg",
+      "sat_mean": 135.99705505371094,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00332.jpg",
+      "sat_mean": 133.94761657714844,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00349.jpg",
+      "sat_mean": 116.06088256835938,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00497.jpg",
+      "sat_mean": 134.2032928466797,
+      "hue_mean": 38.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00505.jpg",
+      "sat_mean": 96.08985900878906,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00507.jpg",
+      "sat_mean": 109.42300415039062,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00511.jpg",
+      "sat_mean": 53.89068603515625,
+      "hue_mean": 95.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00512.jpg",
+      "sat_mean": 49.293235778808594,
+      "hue_mean": 96.0
+    },
+    {
+      "filename": "Sony_A7S_98853_YDSC00516.jpg",
+      "sat_mean": 101.39848327636719,
+      "hue_mean": 40.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00014.jpg",
+      "sat_mean": 79.47785949707031,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00017.jpg",
+      "sat_mean": 93.67085266113281,
+      "hue_mean": 6.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00025.jpg",
+      "sat_mean": 79.88579559326172,
+      "hue_mean": 91.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00040.jpg",
+      "sat_mean": 87.3004379272461,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00043.jpg",
+      "sat_mean": 82.0105972290039,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00047.jpg",
+      "sat_mean": 97.11992645263672,
+      "hue_mean": 24.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00085.jpg",
+      "sat_mean": 107.97123718261719,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00109.jpg",
+      "sat_mean": 49.062679290771484,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00112.jpg",
+      "sat_mean": 102.5531997680664,
+      "hue_mean": 10.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00118.jpg",
+      "sat_mean": 91.79602813720703,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00124.jpg",
+      "sat_mean": 76.10189056396484,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00130.jpg",
+      "sat_mean": 59.43609619140625,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00133.jpg",
+      "sat_mean": 75.56140899658203,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00136.jpg",
+      "sat_mean": 83.60470581054688,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00139.jpg",
+      "sat_mean": 76.04638671875,
+      "hue_mean": 12.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00146.jpg",
+      "sat_mean": 102.86734008789062,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00176.jpg",
+      "sat_mean": 95.45112609863281,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00220.jpg",
+      "sat_mean": 108.31280517578125,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00232.jpg",
+      "sat_mean": 52.04357147216797,
+      "hue_mean": 96.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00238.jpg",
+      "sat_mean": 69.8296127319336,
+      "hue_mean": 25.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00246.jpg",
+      "sat_mean": 197.7566680908203,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00251.jpg",
+      "sat_mean": 196.8425750732422,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Sony_A7_99884_YDSC00282.jpg",
+      "sat_mean": 119.94756317138672,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9411.jpg",
+      "sat_mean": 24.757919311523438,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9415.jpg",
+      "sat_mean": 40.4803466796875,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9422.jpg",
+      "sat_mean": 74.25981903076172,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9434.jpg",
+      "sat_mean": 84.55028533935547,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9453.jpg",
+      "sat_mean": 40.242130279541016,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9470.jpg",
+      "sat_mean": 136.9479522705078,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9480.jpg",
+      "sat_mean": 167.9261016845703,
+      "hue_mean": 34.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9493.jpg",
+      "sat_mean": 94.6917495727539,
+      "hue_mean": 72.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9495.jpg",
+      "sat_mean": 94.99800109863281,
+      "hue_mean": 125.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9506.jpg",
+      "sat_mean": 174.6565704345703,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9525.jpg",
+      "sat_mean": 115.66266632080078,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9546.jpg",
+      "sat_mean": 80.12250518798828,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9573.jpg",
+      "sat_mean": 59.192970275878906,
+      "hue_mean": 100.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9588.jpg",
+      "sat_mean": 162.631103515625,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9591.jpg",
+      "sat_mean": 88.46221160888672,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9593.jpg",
+      "sat_mean": 68.79116821289062,
+      "hue_mean": 120.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9603.jpg",
+      "sat_mean": 46.74041748046875,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9631.jpg",
+      "sat_mean": 68.61254119873047,
+      "hue_mean": 14.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-105mm-9640.jpg",
+      "sat_mean": 74.32749938964844,
+      "hue_mean": 99.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-28-200-9207.jpg",
+      "sat_mean": 91.1329574584961,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-28-200-9209.jpg",
+      "sat_mean": 80.48298645019531,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-28-200-9217.jpg",
+      "sat_mean": 149.83924865722656,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "Sony_A7_III_73725_Y-DP-28-200-9220.jpg",
+      "sat_mean": 92.68529510498047,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-FE-24-105-4872.jpg",
+      "sat_mean": 98.05699920654297,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-FE-24-105-4875.jpg",
+      "sat_mean": 104.78486633300781,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-FE-24-105-4937.jpg",
+      "sat_mean": 96.49054718017578,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-0164.jpg",
+      "sat_mean": 129.98257446289062,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-0182.jpg",
+      "sat_mean": 68.29197692871094,
+      "hue_mean": 113.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-0362.jpg",
+      "sat_mean": 40.896488189697266,
+      "hue_mean": 101.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-0365.jpg",
+      "sat_mean": 55.88222885131836,
+      "hue_mean": 120.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-1548.jpg",
+      "sat_mean": 66.92091369628906,
+      "hue_mean": 18.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-1561.jpg",
+      "sat_mean": 120.69542694091797,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-1565.jpg",
+      "sat_mean": 105.49058532714844,
+      "hue_mean": 16.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-1570.jpg",
+      "sat_mean": 92.4253921508789,
+      "hue_mean": 15.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-1576.jpg",
+      "sat_mean": 75.53817749023438,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-A7-IV-TAMRON-28-75-1579.jpg",
+      "sat_mean": 68.58814239501953,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0157.jpg",
+      "sat_mean": 102.1959228515625,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0216.jpg",
+      "sat_mean": 78.43482208251953,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0217.jpg",
+      "sat_mean": 50.623023986816406,
+      "hue_mean": 12.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0248.jpg",
+      "sat_mean": 54.68516540527344,
+      "hue_mean": 21.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0255.jpg",
+      "sat_mean": 37.64023971557617,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0273.jpg",
+      "sat_mean": 44.09282684326172,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0282.jpg",
+      "sat_mean": 45.46076202392578,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0326.jpg",
+      "sat_mean": 72.53817749023438,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0329.jpg",
+      "sat_mean": 80.81153869628906,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Sony_A7_IV_64916_Y-JG-SONY-A7-IV-0332.jpg",
+      "sat_mean": 57.335391998291016,
+      "hue_mean": 14.0
+    }
+  ]
+}
