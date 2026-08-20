@@ -37,6 +37,12 @@ from tools.calibrate import load_neutral_render
 
 MAX_DIM = 250
 N_BINS = 256
+MIN_BIN_SAMPLES = 30  # 이 미만 표본인 bin은 표본 0개인 bin과 동일하게
+# 취급해 보간으로 대체한다 - 소수 노이즈 픽셀 평균이 그대로 LUT에 박혀
+# 비단조 튐(밴딩)을 만드는 문제 방지. 임계값 자체는 미검증(실측
+# 데이터로 재검증 필요), 표본 부족 bin을 보간하는 기존 로직을 재사용.
+# tools/fit_final_lut.py의 동일 가드와 값을 맞춤(tools/CLAUDE.md 관례상
+# evaluate_*.py끼리도 서로 import 안 하고 각자 복사 유지).
 
 
 def _resolve(raw_dirs, filename):
@@ -117,7 +123,12 @@ def _isotonic_regression(y, w):
 
 def _build_lut(sum_target, sum_weight):
     lut = np.zeros(N_BINS)
-    filled = sum_weight > 0
+    filled = sum_weight >= MIN_BIN_SAMPLES
+    if not filled.any():
+        raise ValueError(
+            f"No bin reached MIN_BIN_SAMPLES={MIN_BIN_SAMPLES} samples - not "
+            "enough data to fit a LUT (small dataset). Lower MIN_BIN_SAMPLES "
+            "or collect more raw+jpeg pairs.")
     lut[filled] = sum_target[filled] / sum_weight[filled]
     domain = np.arange(N_BINS)
     if not filled.all():
