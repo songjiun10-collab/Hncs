@@ -21,8 +21,9 @@ apply_sigma_fpl_learned - Experimental. `apply_sigma_fpl_look`(brands/sigma_fpl.
 "Sigma fp L" --manifest datasets/sigma/sigma_new_pairs.csv --raw-dir "/Users/songjiun/local-work" --model "SIGMA fp L" --clahe-clip 1.25
 --toe-lift 0.02 --shoulder-start 0.82 --white-point 1.0`.
 """
-import cv2
 import numpy as np
+
+from core.engine import apply_learned_lut_look
 
 _LEARNED_LUT = np.array([
     6, 6, 8, 8, 8, 11, 13, 18, 19, 20, 23, 25, 28, 28, 31, 33,
@@ -45,12 +46,4 @@ _LEARNED_LUT = np.array([
 
 
 def apply_sigma_fpl_learned(img_bgr, clahe_clip=1.25):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    l = cv2.LUT(l, _LEARNED_LUT)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    return apply_learned_lut_look(img_bgr, _LEARNED_LUT, clahe_clip)

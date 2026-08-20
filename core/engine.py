@@ -44,6 +44,27 @@ def apply_population_fit_look(img_bgr, toe_lift, shoulder_start, white_point, cl
     return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
 
 
+def apply_learned_lut_look(img_bgr, lut, clahe_clip=1.25):
+    """CLAHE(지각보상 대비) + Lab L채널에 raw+jpeg 페어에서 직접 학습한
+    256bin LUT을 적용 - film_curve() 같은 파라메트릭 곡선 대신 실측 LUT을
+    쓴다는 점만 apply_population_fit_look()과 다르다. brands/*_learned.py
+    9개 apply_*_learned[_v2]() 함수가 몸통까지 문자 그대로 동일하게
+    복붙돼있던 걸 2026-08 코드 리뷰로 발견해서 여기로 합쳤다(사용자
+    명시 승인, 각 apply_*_learned()는 자기 LUT 배열을 넘기는 얇은
+    wrapper로 남음 - 시그니처/출력 바이트 단위 동일, behavior-preserving).
+    apply_population_fit_look()과 달리 ensure_uint8()을 안 거친다 - 원본
+    9개 함수 전부 그랬으므로 그대로 보존."""
+    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    l = cv2.LUT(l, lut)
+
+    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+
+
 def make_population_fit_look(toe_lift, shoulder_start, white_point, clahe_clip):
     """apply_population_fit_look()에 브랜드별 상수를 고정한 apply_*_look()
     함수를 만들어 반환한다. functools.partial이 아니라 진짜 def 클로저를

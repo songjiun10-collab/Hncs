@@ -1,8 +1,15 @@
+import csv
+import os
 import random
+import shutil
+import sys
+import tempfile
+import types
 import unittest
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
-from tools.build_local_manifest import RAW_EXT, _match_pairs
+from tools.build_local_manifest import RAW_EXT, _match_pairs, drop_failed
 
 
 class TestRawExt(unittest.TestCase):
@@ -136,6 +143,70 @@ class TestMatchPairsDeterminism(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0][1]["filename"], "J_ZERO.jpg")
         self.assertEqual(result[0][3], 0)  # offset_h
+
+
+def _fake_verify_row(set_dir, row, expected_make="Hasselblad"):
+    return [] if row["filename_raw"] == "PASS.3fr" else ["fake problem"]
+
+
+class TestDropFailedDoesNotDeleteFiles(unittest.TestCase):
+    """append_manifest()가 원본을 src_dir에서 move()해오므로, 검증 실패
+    파일을 drop_failed()가 os.remove()로 영구 삭제하면 유일한 사본이
+    사라진다(리뷰에서 지적된 데이터 유실 위험). rejected/로 옮겨서
+    복구 가능해야 한다.
+
+    verify_row()는 실제로는 tools.verify_contributed_pairs를 통해
+    tools.analyze -> tools.download -> gdown으로 이어지는 무거운 의존성
+    체인을 끌고 오는데, 이 샌드박스엔 gdown이 없다(tests/CLAUDE.md
+    "CI has no image data"). drop_failed()는 이 모듈을 함수 안에서
+    지연 import하므로, sys.modules에 가짜 모듈을 미리 심어두면 실제
+    import가 실행되지 않고 이 스텁이 대신 쓰인다."""
+
+    def setUp(self):
+        self._sys_modules_patch = patch.dict(sys.modules, {
+            "tools.verify_contributed_pairs": types.SimpleNamespace(
+                verify_row=_fake_verify_row),
+        })
+        self._sys_modules_patch.start()
+
+        self.set_dir = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.set_dir, "raw"))
+        os.makedirs(os.path.join(self.set_dir, "jpeg"))
+        for sub, name, content in (
+            ("raw", "PASS.3fr", b"raw-pass"),
+            ("jpeg", "PASS.jpg", b"jpeg-pass"),
+            ("raw", "FAIL.3fr", b"raw-fail"),
+            ("jpeg", "FAIL.jpg", b"jpeg-fail"),
+        ):
+            with open(os.path.join(self.set_dir, sub, name), "wb") as f:
+                f.write(content)
+        with open(os.path.join(self.set_dir, "manifest.csv"), "w", newline="") as f:
+            fieldnames = ["filename_raw", "filename_jpeg", "camera", "lens", "iso",
+                          "wb_setting", "scene_type", "filename_phocus_tiff",
+                          "phocus_settings", "illuminant", "download_url", "notes"]
+            w = csv.DictWriter(f, fieldnames=fieldnames)
+            w.writeheader()
+            for raw, jpeg in (("PASS.3fr", "PASS.jpg"), ("FAIL.3fr", "FAIL.jpg")):
+                w.writerow({k: "" for k in fieldnames} | dict(
+                    filename_raw=raw, filename_jpeg=jpeg))
+
+    def tearDown(self):
+        self._sys_modules_patch.stop()
+        shutil.rmtree(self.set_dir, ignore_errors=True)
+
+    def test_failed_files_moved_to_rejected_not_deleted(self):
+        drop_failed(self.set_dir)
+
+        self.assertTrue(os.path.exists(
+            os.path.join(self.set_dir, "raw", "PASS.3fr")))
+        self.assertFalse(os.path.exists(
+            os.path.join(self.set_dir, "raw", "FAIL.3fr")))
+        self.assertTrue(os.path.exists(
+            os.path.join(self.set_dir, "rejected", "raw", "FAIL.3fr")))
+        self.assertTrue(os.path.exists(
+            os.path.join(self.set_dir, "rejected", "jpeg", "FAIL.jpg")))
+        with open(os.path.join(self.set_dir, "rejected", "raw", "FAIL.3fr"), "rb") as f:
+            self.assertEqual(f.read(), b"raw-fail")
 
 
 if __name__ == "__main__":
