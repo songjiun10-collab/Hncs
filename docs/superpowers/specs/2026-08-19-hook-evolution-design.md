@@ -1,13 +1,17 @@
 # HNCS Hook Evolution - 다음 단계 구상
 
-**상태**: 사용자가 채팅으로 제시한 비전/구상 문서 - 아직 `superpowers:brainstorming`을
-거친 정식 스펙도, `superpowers:writing-plans`을 거친 구현 계획도 아님.
-코드 변경 없음. 이 프로젝트의 spec-before-plan 워크플로우(root
-`CLAUDE.md`의 "Workflow" 절)에 따라 정식 브레인스토밍/플랜 전에 durable
-기록으로 먼저 남겨두는 단계.
+**상태 (2026-08-19 갱신)**: 브레인스토밍 완료(아래 "브레인스토밍
+결정사항" 절) - `superpowers:writing-plans` 단계로 넘어갈 준비 됨.
+`superpowers:brainstorming`/`writing-plans` 둘 다 이 세션엔 설치 안 돼
+있어서(marketplace에 `hook`만 있음) 두 단계 다 스킬 없이 수동으로
+진행 - 스킬의 의도(질문으로 모호성 먼저 걷어내기, 안 정한 것 안 남기고
+넘어가기)는 그대로 지키되 메커니즘만 대체. 아직 코드 변경 없음 - 이
+문서는 스펙, 플랜이 아님(root `CLAUDE.md`의 "Workflow" 절: spec → plan
+→ implement).
 
-**작성자**: 사용자 (2026-08-19, 채팅으로 제시). 아래 1~8절은 사용자
-원문을 거의 그대로 옮김 - "부록: 구현 제약" 절만 이 세션이 추가.
+**작성자**: 1~8절은 사용자 원문(2026-08-19, 채팅으로 제시)을 거의
+그대로 옮김. "부록: 구현 제약"과 "브레인스토밍 결정사항"은 이 세션이
+추가.
 
 ## 1. 기본 철학
 
@@ -236,3 +240,47 @@ docstring: "MEDIUM: 상위 에이전트가 허용하면 실행 에이전트가 �
 "훅이 자체적으로 두 에이전트를 부른다"는 다이어그램의 문자 그대로의
 해석은 안 되고, 컨트롤러 워크플로우 규율(두 번 디스패치 + 순서/격리
 규칙)이 추가로 필요하다는 것만 명시해둔다.
+
+## 브레인스토밍 결정사항 (2026-08-19)
+
+4개 블로킹 질문을 사용자에게 직접 묻고 답 받음 - 안 정하고 넘어가지
+않음(`AskUserQuestion`, `superpowers:brainstorming` 부재로 인한 수동
+대체):
+
+1. **2-Agent Consensus 적용 범위**: **6개 HIGH 훅 전부에 한 번에**
+   (`protect_branch.py`/`protect_test_coverage.py`/
+   `protect_experiment_integrity.py`/`protect_reviewer_prejudging.py`/
+   `protect_ready_without_review.py`/`protect_rubber_stamp_approval.py`) -
+   파일럿(훅 1개만 먼저) 아님. 즉 플랜 단계에서 6개 훅 전부의 HIGH-tier
+   기본 경로(`high_tier_decision()`)를 한 번에 consensus 경로로
+   바꿔야 함 - 부록의 "구현 제약" 3단계(디스패치→PostToolUse 훅→
+   PreToolUse 가드 확인)를 6개 모두에 적용.
+2. **Agent A/B 독립성 확보 방법**: **같은 모델, 다른 프레이밍/역할**
+   (다른 모델 아님 - 예: A는 "opus" B도 "opus"). 부록 1단계("서로의
+   판단을 못 보게")에 이 조건이 추가됨: 프롬프트 자체가
+   역할/관점(예: "승인 기준으로 검토" vs "거부 사유를 적극적으로
+   찾아라")을 다르게 줘야 함 - 같은 프롬프트를 단순히 두 번 부르는 건
+   상관관계 높은 판단만 낼 위험이 크다고 판단됨(질문에서 명시). 플랜
+   단계에서 A/B 각각의 정확한 역할 문구를 확정해야 함 - 아직 미정.
+3. **Agent Drift 관찰 로깅 범위**: **기존 게이트(decision record 있는
+   MEDIUM/HIGH/CRITICAL 이벤트) 위에 `intended_scope`/`deviation` 필드만
+   추가** - 모든 툴콜을 새로 커버하는 블랭킷 훅 아님. 즉 3절의
+   `instruction/intended_scope/agent_action/target/deviation/reason/
+   outcome/human_judgment` 스키마 중 `instruction`/`agent_action`/
+   `target`/`reason`/`outcome`은 이미 Decision Record + 로그 파이프라인이
+   커버하고, `intended_scope`/`deviation`/`human_judgment`만 신규 -
+   `write_decision_record()`(must훅 MCP 툴) 스키마 확장 대상이 이
+   3개로 좁혀짐.
+4. **가설 생성 자동화 수준**: **opus 서브에이전트가
+   `learning_data.jsonl`을 분석해서 새 Hook 후보를 제안** - 사람이
+   로그를 직접 읽는 방식(2~7차 라운드가 해온 방식)에서 한 단계
+   자동화. 단, 이 프로젝트의 기존 원칙("어떤 훅의 등급/임계값도
+   자동으로 안 바꾼다", `tools/CLAUDE.md`/`eval_hook_judgments.py`
+   docstring)과 일관되게 **배포(새 훅 코드 작성/`settings.json` 등록)는
+   여전히 사람 승인 필요** - 제안까지만 자동, 승인/구현은 기존
+   subagent-driven-development 게이트(Implementer→Reviewer→사용자)
+   그대로 통과해야 함.
+
+**다음 단계**: `superpowers:writing-plans`(역시 이 세션엔 미설치 -
+시작 시 동일하게 수동 대체 필요)로 위 4개 결정을 반영한 구현 플랜
+작성.
