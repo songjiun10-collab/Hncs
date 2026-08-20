@@ -6,14 +6,14 @@
 > 수동으로 따른다. Steps는 체크박스(`- [ ]`)로 추적.
 
 **Goal:** 스펙(`docs/superpowers/specs/2026-08-18-hook-framework-extension.md`,
-커밋 e7d276c)의 4개 항목을 `songjiun10-collab/hook`(범용 코어)에 먼저
+커밋 d8f0f71)의 4개 항목을 `songjiun10-collab/hook`(범용 코어)에 먼저
 구현+검증하고, 동일 diff를 `songjiun10-collab/Hncs`의 로컬 복사본에 포팅.
 
 **Architecture:** 두 레포가 `_hook_common.py`/가드 훅을 독립적으로
 유지(라이브 크로스레포 의존 금지, 기존 설계 원칙)하므로 모든 코드
 변경은 "hook 레포에서 구현+테스트 그린" → "Hncs에 동일 diff 포팅+테스트
 그린" 두 단계로 반복된다. 항목 2(ask() 관측)만 예외 - 조사 작업이라
-코드 diff가 조사 결과에 따라 갈림.
+코드 diff가 조사 결과에 따라 갈린다.
 
 **Tech Stack:** Python 3, `unittest`(pytest 아님), `pyotp`(신규 의존성),
 기존 `mcp==2.0.0`.
@@ -27,6 +27,10 @@
   절대 오염시키지 않음.
 - 기존 로그 항목/함수 시그니처는 전부 하위 호환 유지 - 새 파라미터는
   옵션(기본값 있음), 새 로그 필드는 값이 있을 때만 추가.
+- **`bash_override()` 기존 시그니처/리턴 타입은 절대 안 건드림** - TOTP가
+  필요한 3개 훅만 쓰는 신규 함수 `bash_override_with_totp()`로 분리
+  (surgical changes - 3개 훅 때문에 나머지 8개 훅 호출부를 고치지
+  않는다).
 - CRITICAL 등급 훅에서 서브에이전트발 호출은 override조차 안 받는
   기존 규칙 변경 없음 - TOTP는 오케스트레이터 직접 호출 경로에만 추가
   레이어로 얹는다.
@@ -116,23 +120,25 @@ git commit -m "feat: protect_secret_exposure.py 추가 - AWS/GitHub/Slack 토큰
 
 ---
 
-## Task 2: TOTP override key (hook 레포)
+## Task 2: TOTP 추가 확인 단계 (hook 레포)
 
 **Files:**
 - Modify: `hooks/_hook_common.py`
 - Modify: `hooks/protect_destructive.py`, `hooks/protect_push_safety.py`
   (force-push 분기만)
 - Modify: `requirements.txt` (`pyotp` 추가)
-- Create/Modify: `tests/test_hook_common_totp.py` (신규) +
-  `tests/test_hooks_destructive.py`/`test_hooks_push_safety.py`에 TOTP
-  케이스 추가
+- Create: `tests/test_hook_common_totp.py` (신규)
+- Modify: `tests/test_hooks_destructive.py`/`test_hooks_push_safety.py`에
+  TOTP 케이스 추가
 
 **Interfaces:**
 - Consumes: Task 1 없음(독립).
-- Produces: `_hook_common.verify_totp_override_key(code) -> bool`,
-  `bash_override(rule, command, require_totp_key=False) -> reason_or_None`
-  (요구했는데 코드가 없거나 틀리면 None 반환 - 기존 호출부는 시그니처
-  그대로라 하위 호환).
+- Produces: `_hook_common.verify_totp_override_key(code) -> Optional[bool]`
+  (`True`=검증됨/`False`=틀림/`None`=secret 미설정 - 3-state),
+  **신규 함수** `bash_override_with_totp(rule, command) ->
+  (reason_or_None, totp_configured: bool, totp_verified: bool)` -
+  **기존 `bash_override(rule, command) -> reason_or_None`은 시그니처/
+  리턴 타입 전혀 안 바뀜, 코드 한 줄도 안 건드림.**
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
@@ -153,82 +159,84 @@ def test_wrong_code_rejected(self):
 def test_no_secret_configured_returns_none(self):
     os.environ.pop("HNCS_HOOK_OVERRIDE_TOTP_SECRET", None)
     self.assertIsNone(_hook_common.verify_totp_override_key("123456"))
+
+def test_bash_override_unchanged_signature(self):
+    """회귀 lock-in: bash_override()는 이 태스크로 전혀 안 바뀐다."""
+    reason = _hook_common.bash_override(
+        "some_rule", "cmd  # HNCS-OVERRIDE: some_rule: 사유")
+    self.assertEqual(reason, "사유")  # 여전히 문자열 하나만 반환
 ```
 
-`verify_totp_override_key`는 3-state 반환: `True`(검증됨)/`False`(틀림)/
-`None`(secret 미설정 - 폴백 케이스와 "틀림"을 구분해야 감사 로그에
-`totp_configured` 플래그를 정확히 남길 수 있음).
+`verify_totp_override_key`는 3-state 반환(위 스펙과 동일 이유).
 
 - [ ] **Step 2: 테스트 실행 - 실패 확인**
 
 Run: `python3 -m unittest tests.test_hook_common_totp -v`
 Expected: FAIL
 
-- [ ] **Step 3: `_hook_common.py`에 `verify_totp_override_key()` 추가 +
-  `bash_override()` 확장**
+- [ ] **Step 3: `_hook_common.py`에 `verify_totp_override_key()` +
+  `bash_override_with_totp()` 신규 추가 (기존 `bash_override()`는 무수정)**
 
-`bash_override(rule, command, require_totp_key=False)`: 기존처럼 룰+사유
-파싱한 뒤, `require_totp_key`가 True면 커맨드 문자열에서
-`key=(\d{6})` 추가 파싱 - 없으면 `(reason, totp_configured=False,
-totp_verified=False)`, 있는데 `verify_totp_override_key()`가 `None`이면
-동일(secret 미설정), `False`면 override 자체 무효(함수가 `None` 반환 -
-호출부는 override 없음으로 처리), `True`면 `(reason, totp_configured=True,
-totp_verified=True)`. 반환 타입이 문자열에서 튜플로 바뀌므로 **기존
-`bash_override()` 호출부 전부(`protect_never_touch.py` 포함, Hncs
-쪽까지) 시그니처 변경에 맞춰 같이 고쳐야 함** - `require_totp_key`
-기본값 `False`인 호출은 `(reason, False, False)` 튜플을 받되 기존
-로직은 `reason` 부분만 쓰면 되므로 각 훅에서 `reason, *_ =
-bash_override(...)` 형태로 최소 수정.
+`bash_override_with_totp(rule, command)`: 내부적으로 기존
+`bash_override(rule, command)`를 그대로 호출해서 reason을 얻은 뒤(없으면
+`(None, False, False)` 즉시 반환), reason이 있으면 커맨드 문자열에서
+`key=(\d{6})` 추가로 파싱 - 코드가 없으면 `(reason, False, False)`,
+`verify_totp_override_key()`가 `None`(secret 미설정)이면 동일하게
+`(reason, False, False)`, `False`(틀림)면 override 자체 무효로
+`(None, True, False)`, `True`면 `(reason, True, True)`.
 
 - [ ] **Step 4: `protect_destructive.py`/`protect_push_safety.py`
-  force-push 분기에 `require_totp_key=True` 적용, `allow_with_override()`
-  호출에 `totp_verified`/`totp_configured` 전달**
+  force-push 분기에서 `bash_override()` 대신 `bash_override_with_totp()`
+  호출, `allow_with_override()` 호출에 `totp_verified`/`totp_configured`
+  전달**
 
 `allow_with_override()`/`_record_override()`에 `totp_verified=None,
 totp_configured=None` 옵션 파라미터 추가 - 값이 있을 때만
-`override_audit.jsonl` 항목에 키 추가(기존 항목 하위 호환).
+`override_audit.jsonl` 항목에 키 추가(기존 항목/기존 호출부 하위 호환 -
+`None`이면 키 자체를 안 붙임).
 
-- [ ] **Step 5: 테스트 통과 확인**
+- [ ] **Step 5: 테스트 통과 확인 (다른 9개 훅 회귀 없음 확인 포함)**
 
 Run: `python3 -m unittest discover -s tests`
-Expected: 전체 그린
+Expected: 전체 그린, 특히 `test_bash_override_unchanged_signature` +
+`bash_override()`를 쓰는 나머지 훅들의 기존 테스트 전부 무수정 통과.
 
 - [ ] **Step 6: `requirements.txt`에 `pyotp` 추가, 커밋**
 
 ```bash
-git commit -m "feat: CRITICAL override에 TOTP 물리적 키 검증 레이어 추가"
+git commit -m "feat: CRITICAL override에 TOTP 추가 확인 단계 - bash_override_with_totp() 신규 함수로 분리"
 ```
 
 ---
 
-## Task 3: TOTP override key 포팅 (Hncs 레포)
+## Task 3: TOTP 추가 확인 단계 포팅 (Hncs 레포)
 
 **Files:**
 - Modify (Hncs): `.claude/hooks/_hook_common.py`,
   `.claude/hooks/protect_never_touch.py`,
   `.claude/hooks/protect_destructive.py`,
   `.claude/hooks/protect_push_safety.py`, `requirements.txt`
-- Modify (Hncs): `tests/test_hooks_never_touch.py`(기존 파일명 확인 필요),
-  `tests/test_hooks_destructive.py`, `tests/test_hooks_push_safety.py`
+- Modify (Hncs): 대응 테스트 파일들
 - Create (Hncs): `tests/test_hook_common_totp.py`
 
 **Interfaces:**
 - Consumes: Task 2의 완성/검증된 diff 그대로.
 - Produces: 없음(포팅 태스크).
 
-- [ ] **Step 1:** Task 2에서 그린 확인된 `_hook_common.py`/
-  `protect_destructive.py`/`protect_push_safety.py`/
-  `tests/test_hook_common_totp.py` diff를 Hncs의 동일 경로에 적용.
-  **추가로 Hncs 전용** `protect_never_touch.py`의 Bash 경로에도
-  `require_totp_key=True` 적용(hook 레포엔 이 훅이 없음 - Hncs
-  전용이므로 Task 2엔 없던 신규 적용).
+- [ ] **Step 1:** Task 2에서 그린 확인된 `_hook_common.py`(신규 함수 2개
+  추가분만, 기존 함수 무수정)/`protect_destructive.py`/
+  `protect_push_safety.py`/`tests/test_hook_common_totp.py` diff를
+  Hncs의 동일 경로에 적용. **추가로 Hncs 전용** `protect_never_touch.py`의
+  Bash 경로도 `bash_override()` 대신 `bash_override_with_totp()`로
+  전환(hook 레포엔 이 훅이 없음 - Hncs 전용이므로 Task 2엔 없던 신규
+  적용).
 - [ ] **Step 2:** `requirements.txt`에 `pyotp` 추가.
 - [ ] **Step 3:** `python3 -m unittest discover -s tests` (Hncs) 전체 그린
   확인.
 - [ ] **Step 4:** 커밋.
 
 ```bash
-git commit -m "feat: Hncs 로컬 훅에도 TOTP override 검증 포팅 (hook 레포 Task 2 동일 diff)"
+git commit -m "feat: Hncs 로컬 훅에도 TOTP 추가 확인 단계 포팅 (hook 레포 Task 2 동일 diff)"
 ```
 
 ---
@@ -247,7 +255,8 @@ git commit -m "feat: Hncs 로컬 훅에도 TOTP override 검증 포팅 (hook 레
 **Interfaces:**
 - Consumes: Task 1/2와 독립적으로 병행 가능(같은 파일 `_hook_common.py`를
   건드리므로 머지 순서만 주의 - Task 2 이후에 진행 권장, 이 플랜의
-  순서 그대로).
+  순서 그대로). Task 2가 추가한 `bash_override_with_totp()`는 이
+  태스크와 무관 - 건드리지 않는다.
 - Produces: `_log_event(..., agent_type=None, tool_name=None)`,
   `sentinel_override(rule, target)`/`decision_record(rule, target=...)`가
   저장된 sentinel의 `target`에 `*`/`?`가 있으면 `fnmatch.fnmatch(target,
