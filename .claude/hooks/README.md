@@ -488,6 +488,53 @@ override/`is_subagent_call()` 신뢰 로직 자체를 8개로 찔러봤다 - 이
    메시지로 deny - 재사용 불가 확인(공격자가 record 한 번 위조해서 여러
    시도에 우려먹는 경로는 없음).
 
+### 4차 라운드 - MEDIUM(`protect_generated_files`/`protect_claim_evidence`) 6개, 신규 2개(2026-08-18)
+
+이미 알려진 핵심 결함(opus MEDIUM-APPROVE 마커를 실제 검토 없이 그냥
+문자열로 위조 - 이 문서 상단, 이번 세션 1라운드에서 재실증)은 다시 안
+돌렸다. 그 주변에서 아직 안 짚어본 각도만:
+
+1. **`record_agent_approval.py`의 opus 판별이 부분문자열 매칭이라 경계가
+   없음.** `_OPUS_RE = re.compile(r"opus", re.IGNORECASE)`는 `resolvedModel`
+   문자열 어디에든 "opus"가 들어있으면 통과시킨다. `resolvedModel`을
+   `"claude-sonopusnet-5"`(진짜 opus 모델명이 아니라 "opus"라는
+   부분문자열만 우연히 포함하게 지어낸 문자열)로 주면 승인이 정상
+   기록됨. 대조군으로 `"claude-sonnet-5"`(opus 부분문자열 없음)를 주면
+   기록 안 됨 - 우연이 아니라 진짜 부분문자열 매칭 결함임을 확인.
+   (실제 운용에서 `resolvedModel`은 Claude Code 런타임이 채우는 필드라
+   서브에이전트의 응답 텍스트로 직접 조작 못 하지만, 정규식 자체의
+   경계 부재는 코드 레벨 결함으로 기록.)
+2. **`record_agent_approval.py`엔 `is_subagent_call()` 게이트가 아예
+   없음 - CRITICAL 4개는 전부 서브에이전트발 시도를 명시적으로
+   차단하는 것과 대조적.** `agent_id`가 있는(= 이 Agent 디스패치 자체가
+   서브에이전트의 턴 안에서 일어난, 즉 서브에이전트가 자기 자신의 중첩
+   서브서브에이전트를 디스패치한) PostToolUse 입력을 줘도 승인이 똑같이
+   기록됨 - 코드에 애초에 `agent_id` 체크가 없기 때문. 즉 MEDIUM 등급의
+   신뢰 근거("진짜 opus 디스패치가 있어야 함")는 컨트롤러가 직접
+   디스패치했는지 서브에이전트가 자기 권한으로 중첩 디스패치했는지
+   구분을 안 한다 - README에 이미 "한 단계 더 어렵게 만든 것이지 막은
+   게 아니다"로 적혀 있던 한계의 구체적 위치가 바로 여기(이 함수에
+   `is_subagent_call` 호출이 없다는 것)임을 실측으로 특정함.
+3. **Write 경로 end-to-end 재확인.** 기존 위조-승인 실증은 Edit
+   경로만 썼음 - `protect_generated_files.py`의 Write 경로(파일 전체
+   덮어쓰기, `_LEARNED_LUT` 건드리는지 내용 확인 없이 파일명만 보고
+   무조건 게이트)에도 같은 위조 승인이 그대로 먹혀서 `allow`.
+4. **`protect_claim_evidence.py`(같은 MEDIUM, 다른 훅)에도 동일 기법이
+   그대로 통함.** `_LEARNED_LUT` 전용이 아니라 README/CLAUDE.md 근거
+   없는 수치 주장 가드에도 위조 opus 승인 하나로 `allow` - 기존 문서화된
+   한계가 `protect_generated_files.py`에 국한된 게 아니라 MEDIUM 등급
+   공유 메커니즘 자체의 문제임을 재확인.
+5. **(정상 방어 확인) 규칙(rule) 교차 재사용은 안 됨.** `protect_claim_evidence`
+   이름으로 기록된 승인을 `protect_generated_files`가 같은 target
+   문자열로 소비하려 하면 정상적으로 `deny` - `medium_approval()`의
+   rule 정확 매칭은 견고함.
+
+대응 방향(전부 미수정): (1) `_OPUS_RE`를 `resolvedModel`의 알려진 opus
+모델 ID 화이트리스트(또는 최소 `^claude-opus-`류 앵커)로 교체. (2)
+`record_agent_approval.py`에도 `is_subagent_call(data)` 체크를 추가해서
+서브에이전트발 Agent 디스패치의 승인은 (CRITICAL과 동일하게) 기록
+자체를 안 하거나 별도로 약하게 표시.
+
 즉 문제는 "override 판별 로직이 허술하다"가 아니라 순전히 2차 라운드에서
 찾은 "그 로직까지 도달하기 전에 Bash 텍스트 매칭 단계에서 새는" 쪽이었다
 - CRITICAL 등급 자체의 신뢰 체계는 이번 8개 한정으로는 견고함이 확인됨.
