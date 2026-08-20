@@ -22,13 +22,20 @@ uses the same sentinel-file mechanism as `protect_never_touch.py` -
 write `.claude/hooks/.pending_override.json` with rule
 "protect_experiment_integrity" before retrying (e.g. for an entry that's
 explicitly marked inconclusive/no-result, or a correction blockquote that
-doesn't report a new number)."""
+doesn't report a new number).
+
+**추가 (2026-08-19, 2-Agent Consensus)**: override 체크 다음, 기존
+high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
+- 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
+`consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
+아예 안 하면) 기존 동작과 완전히 동일."""
 import json
 import os
 import re
 import sys
 
-from _hook_common import (allow, allow_with_override, high_tier_decision,
+from _hook_common import (allow, allow_with_consensus, allow_with_override,
+                           consensus_verdict, high_tier_decision,
                            require_decision_or_deny, sentinel_override)
 
 HOOK_NAME = "protect_experiment_integrity"
@@ -102,6 +109,11 @@ def main():
     if override_reason:
         allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, override_reason,
                              decision=decision)
+        return
+
+    verdict = consensus_verdict(HOOK_NAME, file_path)
+    if verdict in ("agree_safe", "agree_risky"):
+        allow_with_consensus(HOOK_NAME, SEVERITY, HOOK_NAME, file_path, verdict, decision=decision)
         return
 
     high_tier_decision(
