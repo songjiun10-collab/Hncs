@@ -139,31 +139,15 @@ sentinel 계약(fresh 10분, rule+target 매칭, 1회성 소비)을 따르되, �
 Edit/Write로부터 보호한다(2차 라운드 finding #8 - 새 sentinel을 보호
 없이 내보내지 않는다는 교훈 반영).
 
-## Override mechanism
-
-The point (user's own framing): "훅은 개발자를 대신 판단하지 않는다.
-훅은 '위험한 행동을 무의식적으로 해버리는 것'만 막는다" - hooks don't
-substitute for the developer's judgment; they only stop an unconscious/
-silent slide into a dangerous action. A deliberate, explicitly-declared
-override is always allowed through, but it leaves a permanent trace of
-why.
-
-Two ways to declare an override, matching the two hook trigger shapes:
-
-1. **Bash-triggered guards** (destructive ops, push safety): the command
-   text itself carries a trailing marker comment -
-   `... # HNCS-OVERRIDE: <rule>: <reason>`. Parsed by `bash_override()`.
-2. **Edit/Write/MultiEdit-triggered guards** (never-touch): tool_input has
-   no room for a custom field, so the override is declared via a sentinel
-   file written *before* the guarded call - `.claude/hooks/
-   .pending_override.json` (`{"rule", "target", "reason", "timestamp"}`).
-   Checked (and consumed - single use) by `sentinel_override()`.
-
-Every successful override is logged to `override_audit.jsonl` (separate
-from `violations_log.jsonl`, which is for calls that were actually
-blocked) with `{timestamp, rule, severity, target, reason, git_sha}` -
-`git_sha` is always computed here, never taken from the caller, so the
-audit trail can't be backdated or spoofed by whatever wrote the marker."""
+**정정(2026-08-19, CI가 잡은 실제 버그)**: `allow_with_consensus()`의
+"agree_risky" 분기가 원래 `_log_event(..., decision_kind="consensus_deny")`를
+직접 호출한 다음 `deny()`도 호출했다 - `deny()`가 내부적으로
+`decision_kind="deny"`를 하드코딩해서 또 `_log_event()`를 부르므로,
+로그 항목이 의도한 1개가 아니라 2개(`consensus_deny` 다음 `deny`) 남고
+마지막 항목은 `deny`로 덮였다. 첫 실제 테스트 스위트 실행(GitHub Actions
+CI, PR #10)에서 바로 걸림 - 로컬에서 스위트를 못 돌리고 여러 커밋을
+쌓은 뒤 첫 CI 결과로 발견된 사례. `deny()` 위임을 없애고 그 자리에서
+직접 같은 모양의 JSON을 출력하도록 고침 - 아래 정의 참고."""
 import json
 import os
 import re
@@ -553,7 +537,15 @@ def allow_with_consensus(hook_name, severity, rule, target, verdict, decision_id
     those fall through to the caller's existing high_tier_decision() path
     unchanged). Logs like an override - both violations_log.jsonl (near
     real denials) and override_audit.jsonl (tagged with the consensus
-    outcome) - then allows or denies to match the agreed verdict."""
+    outcome) - then allows or denies to match the agreed verdict.
+
+    **정정(2026-08-19, CI가 잡은 버그)**: agree_risky 분기가 원래
+    deny()에 위임했는데, deny()도 자기 나름의 decision_kind="deny"로
+    _log_event()를 또 부르는 바람에 로그 항목이 2개(consensus_deny 다음
+    deny) 남고 마지막 항목이 deny로 덮이는 문제가 있었다 - 첫 CI 실행에서
+    바로 발견됨. deny()를 안 쓰고 deny()와 같은 모양의 JSON을 여기서
+    직접 출력하도록 고침 - 호출자(가드 훅)가 보는 결과는 동일(permission
+    decision "deny", 같은 reason)하고, 로그 쪽만 정확히 한 번 남는다."""
     dr = decision_record(rule, target=target, decision_id=decision_id) if decision is _UNSET else decision
     note = f"CONSENSUS ({verdict}, rule={rule}): 2-agent independent review agreed"
     if verdict == "agree_safe":
@@ -562,10 +554,12 @@ def allow_with_consensus(hook_name, severity, rule, target, verdict, decision_id
         _record_override(rule, severity, target, note, decision=dr)
         allow()
     else:
-        _log_event(hook_name, severity, note, overridden=False,
+        reason = f"{note} - both independent reviewers judged this risky."
+        _log_event(hook_name, severity, reason, overridden=False,
                    decision_kind="consensus_deny", target=target, decision=dr)
-        deny(hook_name, f"{note} - both independent reviewers judged this risky.",
-             severity=severity, target=target, decision_id=decision_id, decision=dr)
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "permissionDecision": "deny",
+            "permissionDecisionReason": reason}}))
 
 
 def write_pending_caution(tool_use_id, caution):
