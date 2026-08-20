@@ -18,7 +18,13 @@ Write 툴로 이 sentinel 파일을 직접 쓰는 경로는
 바뀌지 않는다 - 이 서버도 결국 `_hook_common.write_decision_record()`를
 그대로 호출해서 쓴다(포맷 단일 소스 유지, 검증 로직 중복 없음).
 
-`.mcp.json`에 stdio 서버로 등록. 실행: `python3 must_hook_server.py`."""
+`.mcp.json`에 stdio 서버로 등록. 실행: `python3 must_hook_server.py`.
+
+**추가 (2026-08-19, Decision Record 스키마 확장)**: `intended_scope`/
+`deviation` 두 optional 파라미터 추가 - `_hook_common.write_decision_record()`
+쪽 신규 파라미터를 그대로 스키마에 노출. `target`/`decision_id`와 같은
+패턴(둘 다 optional, 길이 제약 없음 - 할 말이 없으면 그냥 생략 가능해야지
+빈 문자열을 강제하면 안 됨)."""
 from typing import Annotated, Optional
 
 from pydantic import Field
@@ -47,6 +53,10 @@ def _write_decision_record_tool(
     decision_id: Annotated[Optional[str], Field(
         default=None, description="target이 자연스럽지 않은 가드용 슬러그. "
         "target이 없으면 필수")] = None,
+    intended_scope: Annotated[Optional[str], Field(
+        default=None, description="이 작업의 원래 의도된 범위가 뭐라고 생각하는가")] = None,
+    deviation: Annotated[Optional[str], Field(
+        default=None, description="이 가드된 액션이 그 범위에서 얼마나/어떻게 벗어나는가")] = None,
 ) -> str:
     """가드된 액션 직전에, 그 액션이 걸릴 것으로 예상되는 규칙에 대해
     decision record를 기록한다. 다음 매칭되는 가드 호출이 이 기록을
@@ -54,6 +64,7 @@ def _write_decision_record_tool(
     write_decision_record(
         rule, severity, confidence, reason, expected_risk,
         target=target, decision_id=decision_id,
+        intended_scope=intended_scope, deviation=deviation,
     )
     return f"decision record written: rule={rule} target={target or decision_id}"
 
