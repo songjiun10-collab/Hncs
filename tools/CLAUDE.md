@@ -27,10 +27,20 @@ difference" statistics rule as `hybrid_engine/CLAUDE.md`, applied here to
   `raw_calib_cache/`. Files are `{jpeg_basename}.{raw_ext}` and
   `{jpeg_basename}.target.jpg`. 13 official pairs.
 - To also use contributed pairs (`datasets/hasselblad/contributed/`),
-  wrap the official list in `hybrid_engine.utils.pairs.combine_pairs()` —
-  as of `local-mixed-2026-07`, official+contributed is 74 pairs. Not
-  every `evaluate_*.py` does this; check whether a script calls
-  `combine_pairs()` before assuming its pair count.
+  wrap the official list in `hybrid_engine.utils.pairs.combine_pairs()`.
+  **정정(2026-08-19)**: the "as of `local-mixed-2026-07`, 74 pairs"
+  figure this line used to give is stale - that directory no longer
+  exists (see `datasets/CLAUDE.md`), and 5 different contributed sets
+  exist now instead (`owner-x2dii-2026-08`, `kmichels-x2dii-2026-07`,
+  `local-work-2026-08`, `x1d-x2d100c-restore-2026-08`,
+  `xcd-lenses-2026-08`), totaling 492 manifest rows, not 61. Not
+  restating a new precise total here on purpose: `collect_local_pairs()`
+  only counts a row when both its raw and jpeg files physically exist in
+  the current container, so the manifest row count is an upper bound,
+  not the actual `combine_pairs()` result - check `datasets/CLAUDE.md`'s
+  file-presence caveat or just run it, don't assume a number from this
+  file. Not every `evaluate_*.py` calls `combine_pairs()` either; check
+  whether a script does before assuming its pair count.
 - `_resize_max_dim(img, DOWNSAMPLE_MAX_DIM)` **immediately after decode**.
   A 100MP float64 Hasselblad frame OOMs the box — this already happened.
   Global-statistics ΔE isn't distorted by downsampling.
