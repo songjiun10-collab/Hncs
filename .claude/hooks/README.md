@@ -420,6 +420,9 @@ allow까지 끌고 갈 수 있다는 뜻. 대응 방향: `protect_decision_recor
    ... blocking to be safe"). 즉 파일이 어떤 이유로든(중간에 깨진 edit,
    인코딩 문제 등) 파싱 불가 상태가 되는 순간 MEDIUM 가드는 통째로
    무력화됨 - CRITICAL 가드가 명시적으로 막아둔 바로 그 실패 모드를.
+   **정정(2026-08-19, 수정 완료)**: `f64ec50`에서 `protect_never_touch.py`와
+   동일하게 파싱 실패를 별도로 구분해 fail-closed로 고침 - 아래 "대응
+   방향" (7)번 항목 반영됨.
 8. **`.last_whole_branch_review_sha`(최종 whole-branch-review가 "실제로
    일어났다"는 sentinel)는 어떤 훅으로도 보호 안 됨 - 발견된 것 중
    가장 약한 고리.** decision record sentinel은 그래도
