@@ -14,7 +14,15 @@ docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md).
 **미검증**: 이 모듈이 만든 파일의 구조 유효성(exiftool 파싱)과 수치
 라운드트립은 검증했지만, Lightroom/ACR이 실제로 로드해서 의도한 색을
 내는지는 이 프로젝트의 개발 환경에 Adobe 제품이 없어 확인하지 못했다.
-프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat다."""
+프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat다.
+
+**정정(2026-08-13)**: 실사용자 테스트에서 `hasselblad_x2dii_chart.dcp`가
+Lightroom에 안 뜬다는 보고 - exiftool로 파일 자체는 재검증해서 손상
+아님을 확인(`Validate: OK`), 원인은 여전히 미확정(설치 경로/Lightroom
+재시작 여부/"Camera Matching"은 원래 서드파티가 못 뜨는 카테고리라는
+점 등 후보 다수). 상세:
+docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md
+"알려진 한계" 3번."""
 import struct
 
 import numpy as np

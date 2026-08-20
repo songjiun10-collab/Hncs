@@ -28,8 +28,9 @@ apply_sony_a7rvi_learned - Experimental. `apply_sony_a7rvi_look`(brands/sony_a7r
 반영된 것. 아래 `apply_sony_a7rvi_learned_v2()`가 PAVA(가중 isotonic
 regression)로 이 문제를 고친 버전 - 이 함수는 그대로 두고 나란히 둔다.
 """
-import cv2
 import numpy as np
+
+from core.engine import apply_learned_lut_look
 
 _LEARNED_LUT = np.array([
     93, 93, 75, 20, 26, 25, 28, 23, 37, 31, 37, 41, 39, 45, 44, 50,
@@ -52,15 +53,7 @@ _LEARNED_LUT = np.array([
 
 
 def apply_sony_a7rvi_learned(img_bgr, clahe_clip=1.25):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    l = cv2.LUT(l, _LEARNED_LUT)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    return apply_learned_lut_look(img_bgr, _LEARNED_LUT, clahe_clip)
 
 
 # ==========================================
@@ -98,12 +91,4 @@ _LEARNED_LUT_V2 = np.array([
 
 
 def apply_sony_a7rvi_learned_v2(img_bgr, clahe_clip=1.25):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    l = cv2.LUT(l, _LEARNED_LUT_V2)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    return apply_learned_lut_look(img_bgr, _LEARNED_LUT_V2, clahe_clip)

@@ -25,6 +25,29 @@ from tools.calibrate import load_neutral_render
 
 MAX_DIM = 250
 N_BINS = 256
+MIN_BIN_SAMPLES = 30  # 이 미만 표본인 bin은 표본 0개인 bin과 동일하게
+# 취급해 보간으로 대체한다 - 소수 노이즈 픽셀 평균이 그대로 LUT에 박혀
+# 비단조 튐(밴딩)을 만드는 문제 방지. 임계값 자체는 미검증(실측
+# 데이터로 재검증 필요), 표본 부족 bin을 보간하는 기존 로직을 재사용.
+
+
+def _build_lut(sum_target, sum_weight):
+    lut = np.zeros(N_BINS)
+    filled = sum_weight >= MIN_BIN_SAMPLES
+    if not filled.any():
+        raise ValueError(
+            f"No bin reached MIN_BIN_SAMPLES={MIN_BIN_SAMPLES} samples - not "
+            "enough data to fit a LUT (small dataset). Lower MIN_BIN_SAMPLES "
+            "or collect more raw+jpeg pairs.")
+    lut[filled] = sum_target[filled] / sum_weight[filled]
+    domain = np.arange(N_BINS)
+    if not filled.all():
+        lut = np.interp(domain, domain[filled], lut[filled])
+    # 보간에 쓴 bin은 실측이 아니라 표본 부족 폴백이라 낮은 가중치(1)로
+    # PAVA에 들어가게 함 - 실측 bin(weight=sum_weight)이 우선한다.
+    pava_weight = np.where(filled, sum_weight, 1.0)
+    lut = _isotonic_regression(lut, pava_weight)
+    return np.clip(lut, 0, 255).astype(np.uint8)
 
 
 def _isotonic_regression(y, w):
@@ -124,17 +147,7 @@ def main():
 
     print(f"\n사용된 페어: {n_used}개", flush=True)
 
-    lut = np.zeros(N_BINS)
-    filled = sum_weight > 0
-    lut[filled] = sum_target[filled] / sum_weight[filled]
-    domain = np.arange(N_BINS)
-    if not filled.all():
-        lut = np.interp(domain, domain[filled], lut[filled])
-    # 보간에 쓴 bin은 실측이 아니라 표본 부족 폴백이라 낮은 가중치(1)로
-    # PAVA에 들어가게 함 - 실측 bin(weight=sum_weight)이 우선한다.
-    pava_weight = np.where(filled, sum_weight, 1.0)
-    lut = _isotonic_regression(lut, pava_weight)
-    lut = np.clip(lut, 0, 255).astype(np.uint8)
+    lut = _build_lut(sum_target, sum_weight)
 
     print(f"\n_LEARNED_LUT = np.array([")
     for i in range(0, N_BINS, 16):

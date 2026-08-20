@@ -21,8 +21,9 @@ apply_leica_raw_learned - Experimental. `apply_leica_raw_look`(brands/leica_raw.
 "Leica 5바디 통합" --manifest datasets/leica/leica_new_pairs.csv --raw-dir "/Users/songjiun/local-work" --model "LEICA SL3-P" --model "LEICA Q3 43" --model "LEICA SL2" --model "LEICA M10" --model "LEICA SL2-S" --clahe-clip 1.25
 --toe-lift 0.0 --shoulder-start 0.82 --white-point 1.0`.
 """
-import cv2
 import numpy as np
+
+from core.engine import apply_learned_lut_look
 
 _LEARNED_LUT = np.array([
     11, 11, 4, 5, 6, 5, 7, 8, 11, 11, 11, 13, 14, 14, 16, 18,
@@ -45,12 +46,4 @@ _LEARNED_LUT = np.array([
 
 
 def apply_leica_raw_learned(img_bgr, clahe_clip=1.25):
-    lab = cv2.cvtColor(img_bgr, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-
-    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-
-    l = cv2.LUT(l, _LEARNED_LUT)
-
-    return cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    return apply_learned_lut_look(img_bgr, _LEARNED_LUT, clahe_clip)

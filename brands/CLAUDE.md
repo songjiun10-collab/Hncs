@@ -38,3 +38,23 @@ documents its own overfitting the same way.
 - `hasselblad_learned.py` — Experimental learned LUT
 - `hasselblad_day.py` / `hasselblad_night.py` — Legacy, kept for history
 - everything else — population-fit brands, one function each
+
+## `*_learned.py` files share a body via `core.engine.apply_learned_lut_look`
+
+`fuji_provia_learned.py`, `hasselblad_learned.py`, `leica_raw_learned.py`,
+`sigma_bf_learned.py`, `sigma_fpl_learned.py`, `sony_a7rvi_learned.py`,
+`sony_a7v_learned.py` (9 `apply_*_learned[_v2]` functions total) were
+byte-identical copy-paste (LAB convert → CLAHE → `cv2.LUT` → convert back,
+only the LUT array differed) until a 2026-08 code review + user-approved
+behavior-preserving refactor. Each `apply_*_learned` is now a one-line
+wrapper: `return apply_learned_lut_look(img_bgr, _LEARNED_LUT, clahe_clip)`.
+Verified behavior-preserving both by a standalone script (old-vs-new byte
+comparison on synthetic images, all identical) and by the existing golden
+-hash suite (`tests/test_population_fit_look_golden.py`) passing unchanged.
+A new learned-LUT brand file should call the shared helper, not re-copy
+the body — same principle as `make_population_fit_look()` for the
+parametric brands. This required the user's explicit, in-the-moment
+sign-off per the root CLAUDE.md "Never" rule (modifying a shipped
+`apply_*`), since `protect_never_touch.py` has no bypass — the hook was
+temporarily removed from `.claude/settings.json`, the edits made, then
+restored.
