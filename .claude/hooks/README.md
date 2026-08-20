@@ -7,6 +7,27 @@ CLAUDE.md 규칙 중 기계적으로 강제 가능한 것들을 PreToolUse/PostT
 > 해버리는 것"만 막는다. 의식적으로 override하면 허용하되, 왜 뚫었는지는
 > 항상 남는다.
 
+## `songjiun10-collab/hook` 플러그인과의 관계
+
+이 디렉토리의 훅 12개(범용 성격의 7개 가드 + must_hook 지원 5개) +
+`_hook_common.py`는 원래 `songjiun10-collab/hook`이라는 별도 플러그인
+레포로 추출됐었다(2026-08-18). 그 직후 사용자가 "훅은 냅둬"로 방향을
+되돌려서 - Hncs는 이 12개 + 프로젝트 전용 4개(`protect_never_touch.py`
+등) 전부를 다시 로컬에서 직접 유지한다. **`session-start.sh`는 여전히
+그 플러그인도 추가로 설치한다** (`claude plugin marketplace add`/
+`install`) - 완전히 무해한 중복: Claude Code는 로컬 `.claude/settings.json`에
+등록된 이 디렉토리의 훅과 플러그인이 등록하는 훅을 **둘 다** 실행하므로,
+같은 종류의 가드(예: `protect_destructive`)가 이론상 두 번 평가될 수
+있다. 실제로 통과/차단 판정은 둘 다 동일한 로직이라 결과는 같고, 로그만
+두 벌 남을 수 있다는 정도의 차이 - 정리 안 하기로 확정된 상태다.
+
+**진행 중인 확장 작업**(TOTP 추가 확인 단계, `protect_secret_exposure.py`
+신규 가드, `agent_type`/`tool_name` 로깅 + glob override - 스펙/플랜은
+`docs/superpowers/specs/`, `docs/superpowers/plans/`의
+`2026-08-18-hook-framework-extension.md`)은 **플러그인 레포에서 먼저
+구현+검증한 뒤 이 디렉토리로 동일한 diff를 포팅**하는 순서로 진행 중 -
+이 문서의 아래 내용은 아직 그 확장 이전(포팅 전) 상태를 반영한다.
+
 ## 심각도 4단계
 
 **2026-08-15, 사용자 확정 스펙으로 재설계 - 4단계가 이제 실제로 다르게
