@@ -169,7 +169,9 @@ class TestProtectDecisionRecordBypassCoversConsensusSentinel(unittest.TestCase):
     def setUp(self):
         self._tmpdir = tempfile.mkdtemp()
         self._consensus_path = os.path.join(self._tmpdir, ".pending_consensus.json")
-        self._env = dict(os.environ, HNCS_HOOK_CONSENSUS_SENTINEL=self._consensus_path)
+        self._env = dict(os.environ, HNCS_HOOK_CONSENSUS_SENTINEL=self._consensus_path,
+                          HNCS_HOOK_VIOLATIONS_LOG=os.path.join(self._tmpdir, "v.jsonl"),
+                          HNCS_HOOK_OVERRIDE_AUDIT_LOG=os.path.join(self._tmpdir, "o.jsonl"))
 
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
