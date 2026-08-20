@@ -459,6 +459,39 @@ config --get-regexp alias\\..*force` 같은 별칭 사전 스캔이 필요하면
 (`\blog\b` 등)와, 파일 확장자 마커는 그 파일이 실제로 존재하는지
 정도는 검증.
 
+### 3차 라운드 - CRITICAL의 override/서브에이전트 판별 로직 자체는 안 뚫림(2026-08-18)
+
+2차 라운드는 "패턴매칭 regex가 텍스트를 못 알아봄"류 우회였다. 이번엔
+같은 CRITICAL 4개(`protect_never_touch`/`protect_destructive`/
+`protect_push_safety`/`protect_decision_record_bypass`)가 공유하는
+override/`is_subagent_call()` 신뢰 로직 자체를 8개로 찔러봤다 - 이번엔
+**전부 의도대로 deny됐다, 새 결함 없음**:
+
+1. override sentinel의 `rule`은 맞는데 `target`이 다른 파일 → deny
+   (target mismatch 정상 작동).
+2. override sentinel의 `reason`이 빈 문자열 → deny (`sentinel_override()`의
+   빈 문자열 거부 정상 작동).
+3. override sentinel이 601초 지남(`_SENTINEL_MAX_AGE_SECONDS=600`) →
+   deny (freshness 체크 정상 작동).
+4. (대조군) 신선하고 rule/target 다 맞는 override → allow - 메커니즘
+   자체는 설계대로 동작함을 확인.
+5. `agent_id` 있는(서브에이전트발) 호출 + 완전히 유효한 override
+   sentinel을 `protect_never_touch.py`에 → deny (CRITICAL은 서브에이전트발에
+   override를 아예 안 봄 - 문서화된 대로).
+6. 동일하게 `protect_destructive.py`에 유효한 bash-comment override +
+   agent_id → deny.
+7. 동일하게 `protect_push_safety.py`(force-push)에 유효한 bash-comment
+   override + agent_id → deny.
+8. decision record 1회성 소비 확인: 같은 target에 record를 한 번만 쓰고
+   `protect_destructive.py`를 두 번 연달아 호출 - 첫 호출은 그 record를
+   소비하며 deny, 두 번째 호출은(새 record 없음) "decision record 없음"
+   메시지로 deny - 재사용 불가 확인(공격자가 record 한 번 위조해서 여러
+   시도에 우려먹는 경로는 없음).
+
+즉 문제는 "override 판별 로직이 허술하다"가 아니라 순전히 2차 라운드에서
+찾은 "그 로직까지 도달하기 전에 Bash 텍스트 매칭 단계에서 새는" 쪽이었다
+- CRITICAL 등급 자체의 신뢰 체계는 이번 8개 한정으로는 견고함이 확인됨.
+
 ### `ask()`가 사람 없을 때 어떻게 되는지 - 참고용 조사 결과(2026-08-15)
 
 **정정(같은 날, 이후)**: 아래는 원래 "이 프로젝트는 ask()를 완전히
