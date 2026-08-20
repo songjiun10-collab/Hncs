@@ -27,7 +27,16 @@ override(bash 주석/sentinel)가 MEDIUM-APPROVE와 나란히 열려있으니
 컨트롤러가 항상 더 쉬운 쪽(override 한 줄)을 써서 "상위 에이전트 승인"
 경로가 사실상 죽은 코드였음. **plain override 제거, MEDIUM-APPROVE(opus
 전용)만 유효** - HIGH(ask)/CRITICAL(subagent 차단)처럼 진짜 구분되는
-메커니즘이 되도록."""
+메커니즘이 되도록.
+
+**정정(2026-08-19)**: `touched_lut_array()`가 AST 파싱 실패
+(`lut_array_ranges()` -> `None`)와 LUT 배열 없음(`-> []`)을
+`if not ranges` 한 줄로 동일하게 취급해 fail-OPEN이었음 - 파일이 조금만
+손상돼도 이 가드가 통째로 무력화되는 비대칭 버그(외부 AI 리뷰로
+발견, `protect_never_touch.py`의 `touched_function()`이 이미 쓰고 있는
+`"__unknown__"` fail-closed 패턴과 대조해서 확인). 파싱 실패 시
+`"__unknown__"`을 반환하도록 분리하고, `main()`에서 그 경우를 별도
+deny 경로로 처리하도록 수정."""
 import ast
 import json
 import os
@@ -81,11 +90,16 @@ def line_of_offset(text, offset):
 
 
 def touched_lut_array(file_path, old_string):
+    """Returns the LUT array name touched by old_string, `"__unknown__"` if
+    file_path couldn't be parsed (fail-closed - see lut_array_ranges()), or
+    None if it's clear."""
     if not old_string or not os.path.exists(file_path):
         return None
     with open(file_path, encoding="utf-8") as f:
         text = f.read()
     ranges = lut_array_ranges(file_path)
+    if ranges is None:
+        return "__unknown__"
     if not ranges:
         return None
     idx = text.find(old_string)
@@ -155,6 +169,16 @@ def main():
 
     for e in edits:
         name = touched_lut_array(file_path, e.get("old_string", ""))
+        if name == "__unknown__":
+            _deny_or_override(
+                file_path,
+                f"Couldn't parse the current contents of {file_path} to "
+                "check for _LEARNED_LUT arrays before this edit. Blocking "
+                "to be safe - confirm this isn't a hand-edit of the LUT "
+                "values, or fix whatever broke the parse.",
+                tool_use_id=tool_use_id,
+            )
+            return
         if name:
             _deny_or_override(
                 file_path,
