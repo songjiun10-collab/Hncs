@@ -147,7 +147,21 @@ Edit/Write로부터 보호한다(2차 라운드 finding #8 - 새 sentinel을 보
 마지막 항목은 `deny`로 덮였다. 첫 실제 테스트 스위트 실행(GitHub Actions
 CI, PR #10)에서 바로 걸림 - 로컬에서 스위트를 못 돌리고 여러 커밋을
 쌓은 뒤 첫 CI 결과로 발견된 사례. `deny()` 위임을 없애고 그 자리에서
-직접 같은 모양의 JSON을 출력하도록 고침 - 아래 정의 참고."""
+직접 같은 모양의 JSON을 출력하도록 고침 - 아래 정의 참고.
+
+**추가 (2026-08-19, Decision Record 스키마 확장)**: `write_decision_record()`가
+`intended_scope`/`deviation` 두 필드를 추가로 받는다(둘 다 optional,
+`reason`/`expected_risk`와 같은 자유 텍스트, 별도 검증 없음) -
+`intended_scope`는 에이전트 자신이 생각한 원래 작업 범위,
+`deviation`은 실제 행동이 그 범위에서 얼마나/어떻게 벗어났는지 자기평가.
+`human_judgment`는 의도적으로 여기 안 들어간다 - 2026-08-19 브레인스토밍
+결정대로 이건 액션 *이후* 사람이 결과를 보고 매기는 값이라, 에이전트가
+액션 *직전*에 self-report하는 이 함수의 나머지 필드와 성격이 다르다
+(`tools/eval_hook_judgments.py`의 출력 스키마 쪽 - phase 2, 이 함수
+범위 아님). `_decision_payload()`는 기존 4개 필드와 동일하게 "값이
+있을 때만 로그 항목에 붙인다" 원칙을 따른다 - 안 쓰면 기존
+`violations_log.jsonl`/`override_audit.jsonl` 항목 모양이 한 글자도
+안 바뀐다."""
 import json
 import os
 import re
@@ -597,7 +611,8 @@ def pop_pending_caution(tool_use_id):
 
 
 def write_decision_record(rule, severity, confidence, reason, expected_risk,
-                           target=None, decision_id=None):
+                           target=None, decision_id=None, intended_scope=None,
+                           deviation=None):
     """DECISION RECORD (2026-08-16): written by the agent itself, via a
     Write tool call to `.pending_decision_record.json`, immediately before
     a guarded action it expects to trigger `rule` - same "agent writes the
@@ -619,6 +634,14 @@ def write_decision_record(rule, severity, confidence, reason, expected_risk,
     that hook's `allow_with_override()` call). `decision_id` is a free-
     chosen short slug for guards with no clean single target string (e.g.
     Agent-dispatch guards) - either `target` or `decision_id` is required.
+
+    `intended_scope`/`deviation` (2026-08-19, HNCS Hook Evolution phase 1):
+    both optional, free text like `reason`/`expected_risk` - `intended_scope`
+    is what the agent believes the task's actual boundary was,
+    `deviation` is its own self-assessment of how far the guarded action
+    strays from that boundary. See the module docstring's "Decision
+    Record 스키마 확장" note for why `human_judgment` is deliberately not
+    a parameter here.
 
     Two honest limitations (see README.md's "Decision Record" section for
     the full writeup): (1) nothing enforces this gets written - unlike the
@@ -653,7 +676,8 @@ def write_decision_record(rule, severity, confidence, reason, expected_risk,
         json.dump({
             "rule": rule, "target": target, "decision_id": decision_id,
             "severity": severity, "confidence": confidence, "reason": reason,
-            "expected_risk": expected_risk, "timestamp": time.time(),
+            "expected_risk": expected_risk, "intended_scope": intended_scope,
+            "deviation": deviation, "timestamp": time.time(),
         }, f)
 
 
@@ -759,15 +783,28 @@ def _decision_payload(decision):
     """Shared shape for the "decision" field attached to a log entry -
     only the fields eval_hook_judgments.py needs, never the raw sentinel
     dict (which also carries `rule`/`target`/`decision_id`/`timestamp`,
-    already present elsewhere on the entry)."""
+    already present elsewhere on the entry).
+
+    `intended_scope`/`deviation` (2026-08-19): only added to the payload
+    when the underlying record actually has a non-None value for them -
+    keeps every log entry written before this schema extension (and any
+    written by a caller not yet passing these fields) byte-identical in
+    shape to before this change. Do not make these unconditional keys -
+    that would break every existing exact-dict-equality assertion in
+    tests/test_hooks_decision_record.py."""
     if not decision:
         return None
-    return {
+    payload = {
         "self_severity": decision.get("severity"),
         "confidence": decision.get("confidence"),
         "reason": decision.get("reason"),
         "expected_risk": decision.get("expected_risk"),
     }
+    if decision.get("intended_scope") is not None:
+        payload["intended_scope"] = decision["intended_scope"]
+    if decision.get("deviation") is not None:
+        payload["deviation"] = decision["deviation"]
+    return payload
 
 
 def _record_override(rule, severity, target, reason, decision=None):
