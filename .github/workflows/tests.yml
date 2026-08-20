@@ -1,0 +1,29 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # opencv-python(비headless)이 런타임에 libGL을 요구함 - ubuntu-latest
+      # 기본 이미지엔 없어서 미리 안 깔면 import cv2에서 바로 실패한다.
+      # exiftool은 tests/test_analyze_configs.py의 EXIF Software 태그
+      # 검증 테스트(GitHub 이슈 #4 대응)가 subprocess로 직접 호출한다 -
+      # ubuntu-latest 기본 이미지에 없어서 같이 설치.
+      - name: Install system dependencies for opencv-python and exiftool
+        run: sudo apt-get update && sudo apt-get install -y libgl1 libimage-exiftool-perl
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: python3 -m unittest discover -s tests -v

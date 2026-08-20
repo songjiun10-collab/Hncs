@@ -1,0 +1,428 @@
+{
+  "methodology": "채도(HSV S채널, S>20 마스크)/hue population 특성. population은 tone_signature.json과 동일하게 사진 단위 동일 가중치 per-image 평균. HNCS는 hue/채도를 안 건드리는 설계라 이 값들은 '보정 타깃'이 아니라 원본 population이 실제로 어떤 채도/색상 분포를 갖는지 기록하는 참고 자료. hue_mean은 S>20 마스크 픽셀의 hue 중앙값(median). Sigma 표본도 얼굴 검출을 거치지 않아 portrait subset은 제공하지 않음.",
+  "n_images": 83,
+  "population": {
+    "sat_mean": {
+      "mean": 93.74996810361563,
+      "std": 34.1074968274561,
+      "n": 83
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Sigma_fp_140848_YD-DP-I0027.jpg",
+      "sat_mean": 73.60549926757812,
+      "hue_mean": 112.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-I0032.jpg",
+      "sat_mean": 107.36698913574219,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-I0034.jpg",
+      "sat_mean": 132.96343994140625,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0037.jpg",
+      "sat_mean": 118.56413269042969,
+      "hue_mean": 110.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0040.jpg",
+      "sat_mean": 92.26432800292969,
+      "hue_mean": 75.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0041.jpg",
+      "sat_mean": 82.59941101074219,
+      "hue_mean": 155.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0043.jpg",
+      "sat_mean": 124.64554595947266,
+      "hue_mean": 37.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0045.jpg",
+      "sat_mean": 107.69734191894531,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0046.jpg",
+      "sat_mean": 131.41343688964844,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0049.jpg",
+      "sat_mean": 163.1405487060547,
+      "hue_mean": 37.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0051.jpg",
+      "sat_mean": 166.09902954101562,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0053.jpg",
+      "sat_mean": 181.25843811035156,
+      "hue_mean": 39.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0057.jpg",
+      "sat_mean": 82.59711456298828,
+      "hue_mean": 26.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0067.jpg",
+      "sat_mean": 103.33381652832031,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0113.jpg",
+      "sat_mean": 221.08450317382812,
+      "hue_mean": 33.0
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0123.jpg",
+      "sat_mean": 88.60675811767578,
+      "hue_mean": 98.0
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0129.jpg",
+      "sat_mean": 157.94944763183594,
+      "hue_mean": 10.0
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0458.jpg",
+      "sat_mean": 68.58699798583984,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0522.jpg",
+      "sat_mean": 89.18550109863281,
+      "hue_mean": 113.0
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0533.jpg",
+      "sat_mean": 50.25371170043945,
+      "hue_mean": 102.0
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0547.jpg",
+      "sat_mean": 65.72955322265625,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0552.jpg",
+      "sat_mean": 95.87699127197266,
+      "hue_mean": 29.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0002.jpg",
+      "sat_mean": 152.65841674804688,
+      "hue_mean": 35.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0004.jpg",
+      "sat_mean": 137.1007537841797,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0007.jpg",
+      "sat_mean": 93.94735717773438,
+      "hue_mean": 41.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0026.jpg",
+      "sat_mean": 98.04717254638672,
+      "hue_mean": 50.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0028.jpg",
+      "sat_mean": 59.34197998046875,
+      "hue_mean": 101.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0033.jpg",
+      "sat_mean": 62.63037109375,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0034.jpg",
+      "sat_mean": 84.917724609375,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0038.jpg",
+      "sat_mean": 89.33209228515625,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0044.jpg",
+      "sat_mean": 97.93451690673828,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0052.jpg",
+      "sat_mean": 58.29553985595703,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0073.jpg",
+      "sat_mean": 69.05662536621094,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0098.jpg",
+      "sat_mean": 91.34355163574219,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0101.jpg",
+      "sat_mean": 77.00255584716797,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0104.jpg",
+      "sat_mean": 81.02117156982422,
+      "hue_mean": 108.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0106.jpg",
+      "sat_mean": 87.14291381835938,
+      "hue_mean": 19.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0109.jpg",
+      "sat_mean": 92.26924133300781,
+      "hue_mean": 83.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0111.jpg",
+      "sat_mean": 69.1511459350586,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0119.jpg",
+      "sat_mean": 75.39148712158203,
+      "hue_mean": 36.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0122.jpg",
+      "sat_mean": 37.523277282714844,
+      "hue_mean": 111.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0124.jpg",
+      "sat_mean": 65.84503936767578,
+      "hue_mean": 107.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0133.jpg",
+      "sat_mean": 117.45108795166016,
+      "hue_mean": 109.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0149.jpg",
+      "sat_mean": 104.33091735839844,
+      "hue_mean": 29.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0154.jpg",
+      "sat_mean": 53.43635559082031,
+      "hue_mean": 87.0
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0157.jpg",
+      "sat_mean": 74.75341796875,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0012.jpg",
+      "sat_mean": 53.9255485534668,
+      "hue_mean": 87.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0038.jpg",
+      "sat_mean": 76.13671112060547,
+      "hue_mean": 60.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0045.jpg",
+      "sat_mean": 79.44091796875,
+      "hue_mean": 55.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0055.jpg",
+      "sat_mean": 64.435546875,
+      "hue_mean": 96.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0104.jpg",
+      "sat_mean": 64.99285888671875,
+      "hue_mean": 95.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0134.jpg",
+      "sat_mean": 65.07918548583984,
+      "hue_mean": 104.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0161.jpg",
+      "sat_mean": 140.4357147216797,
+      "hue_mean": 28.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-14_VIVID.jpg",
+      "sat_mean": 130.35130310058594,
+      "hue_mean": 49.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-17.jpg",
+      "sat_mean": 92.15059661865234,
+      "hue_mean": 52.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-19_LANDSCAPE.jpg",
+      "sat_mean": 94.61579132080078,
+      "hue_mean": 43.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-28_VIVID.jpg",
+      "sat_mean": 95.44496154785156,
+      "hue_mean": 17.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-69.jpg",
+      "sat_mean": 130.8373260498047,
+      "hue_mean": 57.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-78.jpg",
+      "sat_mean": 67.68359375,
+      "hue_mean": 48.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-99_LANDSCAPE.jpg",
+      "sat_mean": 53.518714904785156,
+      "hue_mean": 58.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-100_LANDSCAPE.jpg",
+      "sat_mean": 53.496376037597656,
+      "hue_mean": 57.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0007.jpg",
+      "sat_mean": 92.92505645751953,
+      "hue_mean": 32.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0008.jpg",
+      "sat_mean": 112.63172912597656,
+      "hue_mean": 101.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0013.jpg",
+      "sat_mean": 114.90258026123047,
+      "hue_mean": 46.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0023.jpg",
+      "sat_mean": 64.90332794189453,
+      "hue_mean": 105.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0040.jpg",
+      "sat_mean": 95.62740325927734,
+      "hue_mean": 20.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0046.jpg",
+      "sat_mean": 71.48552703857422,
+      "hue_mean": 102.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0080.jpg",
+      "sat_mean": 69.17603302001953,
+      "hue_mean": 46.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0084.jpg",
+      "sat_mean": 55.65443420410156,
+      "hue_mean": 22.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0085-CINE.jpg",
+      "sat_mean": 122.08914947509766,
+      "hue_mean": 30.0
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0089.jpg",
+      "sat_mean": 62.365631103515625,
+      "hue_mean": 50.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0872.jpg",
+      "sat_mean": 114.22237396240234,
+      "hue_mean": 168.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0902.jpg",
+      "sat_mean": 35.51451873779297,
+      "hue_mean": 23.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0905.jpg",
+      "sat_mean": 135.49452209472656,
+      "hue_mean": 13.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0909.jpg",
+      "sat_mean": 72.32925415039062,
+      "hue_mean": 159.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0910.jpg",
+      "sat_mean": 77.04930114746094,
+      "hue_mean": 11.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0967.jpg",
+      "sat_mean": 66.37153625488281,
+      "hue_mean": 103.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0978.jpg",
+      "sat_mean": 83.9202880859375,
+      "hue_mean": 106.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1099.jpg",
+      "sat_mean": 105.83964538574219,
+      "hue_mean": 4.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1110.jpg",
+      "sat_mean": 90.34970092773438,
+      "hue_mean": 10.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1115.jpg",
+      "sat_mean": 86.98233032226562,
+      "hue_mean": 8.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1119.jpg",
+      "sat_mean": 88.39530181884766,
+      "hue_mean": 8.0
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1137.jpg",
+      "sat_mean": 165.72531127929688,
+      "hue_mean": 11.0
+    }
+  ]
+}

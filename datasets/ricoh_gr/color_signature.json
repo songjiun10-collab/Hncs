@@ -1,0 +1,499 @@
+{
+  "methodology": "\ucc44\ub3c4(HSV S\ucc44\ub110, S>20 \ub9c8\uc2a4\ud06c)/hue population \ud2b9\uc131. HNCS\ub294 hue/\ucc44\ub3c4\ub97c \uc548 \uac74\ub4dc\ub9ac\ub294 \uc124\uacc4\ub77c \uc774 \uac12\ub4e4\uc740 '\ubcf4\uc815 \ud0c0\uae43'\uc774 \uc544\ub2c8\ub77c \uc6d0\ubcf8 population\uc774 \uc2e4\uc81c\ub85c \uc5b4\ub5a4 \ucc44\ub3c4/\uc0c9\uc0c1 \ubd84\ud3ec\ub97c \uac16\ub294\uc9c0 \uae30\ub85d\ud558\ub294 \ucc38\uace0 \uc790\ub8cc (datasets/hasselblad/color_signature.json\uacfc \ub3d9\uc77c \ubc29\ubc95\ub860, portrait \uc11c\ube0c\uc14b \uc5c6\uc74c).",
+  "n_images": 81,
+  "population": {
+    "sat_mean": {
+      "mean": 91.23907152811687,
+      "std": 32.63745092540324,
+      "n": 81
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Ricoh_GR_462576_YR0992291-1.jpg",
+      "camera": "GR",
+      "sat_mean": 98.99324035644531,
+      "hue_median": 104.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992296-1-scaled.jpg",
+      "camera": "GR",
+      "sat_mean": 76.85065460205078,
+      "hue_median": 85.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992296-1.jpg",
+      "camera": "GR",
+      "sat_mean": 78.00652313232422,
+      "hue_median": 85.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992305-1.jpg",
+      "camera": "GR",
+      "sat_mean": 94.01546478271484,
+      "hue_median": 98.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992319-1.jpg",
+      "camera": "GR",
+      "sat_mean": 76.1156997680664,
+      "hue_median": 97.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992326-1.jpg",
+      "camera": "GR",
+      "sat_mean": 73.74563598632812,
+      "hue_median": 99.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992329-1.jpg",
+      "camera": "GR",
+      "sat_mean": 179.49063110351562,
+      "hue_median": 104.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992332-1.jpg",
+      "camera": "GR",
+      "sat_mean": 108.56070709228516,
+      "hue_median": 102.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992347-1.jpg",
+      "camera": "GR",
+      "sat_mean": 67.31503295898438,
+      "hue_median": 97.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992354-1.jpg",
+      "camera": "GR",
+      "sat_mean": 132.47894287109375,
+      "hue_median": 126.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992370-1.jpg",
+      "camera": "GR",
+      "sat_mean": 103.99639892578125,
+      "hue_median": 126.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992372-1.jpg",
+      "camera": "GR",
+      "sat_mean": 54.20438003540039,
+      "hue_median": 103.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992374-1.jpg",
+      "camera": "GR",
+      "sat_mean": 58.747310638427734,
+      "hue_median": 106.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992378-1.jpg",
+      "camera": "GR",
+      "sat_mean": 31.26287269592285,
+      "hue_median": 103.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992380-1.jpg",
+      "camera": "GR",
+      "sat_mean": 81.04371643066406,
+      "hue_median": 100.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992387-1.jpg",
+      "camera": "GR",
+      "sat_mean": 70.72947692871094,
+      "hue_median": 102.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992392-1.jpg",
+      "camera": "GR",
+      "sat_mean": 74.51708221435547,
+      "hue_median": 101.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992398-1.jpg",
+      "camera": "GR",
+      "sat_mean": 84.42478942871094,
+      "hue_median": 98.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992402-1.jpg",
+      "camera": "GR",
+      "sat_mean": 98.36175537109375,
+      "hue_median": 58.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992406-1.jpg",
+      "camera": "GR",
+      "sat_mean": 74.52102661132812,
+      "hue_median": 104.0
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992409-1.jpg",
+      "camera": "GR",
+      "sat_mean": 82.72166442871094,
+      "hue_median": 85.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000028.jpg",
+      "camera": "GR III",
+      "sat_mean": 100.73924255371094,
+      "hue_median": 29.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000038.jpg",
+      "camera": "GR III",
+      "sat_mean": 60.8451042175293,
+      "hue_median": 24.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000042.jpg",
+      "camera": "GR III",
+      "sat_mean": 48.58394241333008,
+      "hue_median": 106.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000045.jpg",
+      "camera": "GR III",
+      "sat_mean": 43.653812408447266,
+      "hue_median": 55.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000047.jpg",
+      "camera": "GR III",
+      "sat_mean": 122.4419937133789,
+      "hue_median": 89.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000050.jpg",
+      "camera": "GR III",
+      "sat_mean": 83.46440124511719,
+      "hue_median": 20.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000055.jpg",
+      "camera": "GR III",
+      "sat_mean": 51.511199951171875,
+      "hue_median": 30.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000058.jpg",
+      "camera": "GR III",
+      "sat_mean": 51.821102142333984,
+      "hue_median": 20.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000060.jpg",
+      "camera": "GR III",
+      "sat_mean": 74.51181030273438,
+      "hue_median": 16.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000062.jpg",
+      "camera": "GR III",
+      "sat_mean": 69.75946807861328,
+      "hue_median": 19.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000073.jpg",
+      "camera": "GR III",
+      "sat_mean": 106.10240936279297,
+      "hue_median": 36.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000084.jpg",
+      "camera": "GR III",
+      "sat_mean": 105.60263061523438,
+      "hue_median": 44.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000085.jpg",
+      "camera": "GR III",
+      "sat_mean": 49.50657272338867,
+      "hue_median": 24.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000098.jpg",
+      "camera": "GR III",
+      "sat_mean": 49.52305603027344,
+      "hue_median": 104.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000106.jpg",
+      "camera": "GR III",
+      "sat_mean": 56.8067512512207,
+      "hue_median": 19.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000113.jpg",
+      "camera": "GR III",
+      "sat_mean": 54.15411376953125,
+      "hue_median": 19.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000119.jpg",
+      "camera": "GR III",
+      "sat_mean": 42.216163635253906,
+      "hue_median": 36.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000127.jpg",
+      "camera": "GR III",
+      "sat_mean": 96.96724700927734,
+      "hue_median": 21.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000128.jpg",
+      "camera": "GR III",
+      "sat_mean": 172.90855407714844,
+      "hue_median": 35.0
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000132.jpg",
+      "camera": "GR III",
+      "sat_mean": 125.03614044189453,
+      "hue_median": 34.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000001.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 85.44690704345703,
+      "hue_median": 15.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000003.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 56.155555725097656,
+      "hue_median": 22.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000006.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 96.98029327392578,
+      "hue_median": 40.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000011.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 99.84635925292969,
+      "hue_median": 35.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000017.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 78.66222381591797,
+      "hue_median": 25.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000027.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 116.09323120117188,
+      "hue_median": 36.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000033.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 104.6231460571289,
+      "hue_median": 39.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000044.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 91.5382308959961,
+      "hue_median": 26.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000073.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 86.37945556640625,
+      "hue_median": 35.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000105.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 133.44439697265625,
+      "hue_median": 38.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000117.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 136.46949768066406,
+      "hue_median": 43.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000134.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 102.45512390136719,
+      "hue_median": 109.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000149.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 75.3114013671875,
+      "hue_median": 109.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000152.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 58.23168182373047,
+      "hue_median": 112.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000167.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 71.53425598144531,
+      "hue_median": 12.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000171.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 100.79745483398438,
+      "hue_median": 34.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000176.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 94.77696228027344,
+      "hue_median": 30.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000178.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 100.4645767211914,
+      "hue_median": 107.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000185.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 77.55992126464844,
+      "hue_median": 105.0
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000186.jpg",
+      "camera": "GR IIIx",
+      "sat_mean": 79.05491638183594,
+      "hue_median": 104.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000007.jpg",
+      "camera": "GR II",
+      "sat_mean": 89.34877014160156,
+      "hue_median": 125.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000016.jpg",
+      "camera": "GR II",
+      "sat_mean": 112.8786392211914,
+      "hue_median": 116.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000034.jpg",
+      "camera": "GR II",
+      "sat_mean": 64.40118408203125,
+      "hue_median": 112.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000037.jpg",
+      "camera": "GR II",
+      "sat_mean": 78.66764831542969,
+      "hue_median": 101.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000061.jpg",
+      "camera": "GR II",
+      "sat_mean": 116.7569808959961,
+      "hue_median": 108.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000068.jpg",
+      "camera": "GR II",
+      "sat_mean": 92.86983489990234,
+      "hue_median": 108.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000070.jpg",
+      "camera": "GR II",
+      "sat_mean": 144.48402404785156,
+      "hue_median": 24.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000071.jpg",
+      "camera": "GR II",
+      "sat_mean": 107.04840087890625,
+      "hue_median": 24.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000078.jpg",
+      "camera": "GR II",
+      "sat_mean": 96.99720764160156,
+      "hue_median": 112.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000080.jpg",
+      "camera": "GR II",
+      "sat_mean": 77.2663345336914,
+      "hue_median": 109.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000083.jpg",
+      "camera": "GR II",
+      "sat_mean": 106.05425262451172,
+      "hue_median": 90.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000096.jpg",
+      "camera": "GR II",
+      "sat_mean": 50.05738067626953,
+      "hue_median": 120.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000107.jpg",
+      "camera": "GR II",
+      "sat_mean": 74.04634094238281,
+      "hue_median": 138.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000108.jpg",
+      "camera": "GR II",
+      "sat_mean": 119.37567138671875,
+      "hue_median": 87.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000126.jpg",
+      "camera": "GR II",
+      "sat_mean": 129.98716735839844,
+      "hue_median": 111.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000129.jpg",
+      "camera": "GR II",
+      "sat_mean": 131.2567138671875,
+      "hue_median": 107.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000132.jpg",
+      "camera": "GR II",
+      "sat_mean": 128.52137756347656,
+      "hue_median": 110.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000163.jpg",
+      "camera": "GR II",
+      "sat_mean": 139.70343017578125,
+      "hue_median": 132.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000183.jpg",
+      "camera": "GR II",
+      "sat_mean": 221.69613647460938,
+      "hue_median": 13.0
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000201.jpg",
+      "camera": "GR II",
+      "sat_mean": 96.86298370361328,
+      "hue_median": 59.0
+    }
+  ]
+}

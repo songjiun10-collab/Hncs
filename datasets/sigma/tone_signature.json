@@ -1,0 +1,694 @@
+{
+  "methodology": "population 통계는 사진(이미지) 단위로 동일 가중치를 주는 'per-image 평균' 방식(Canon/Panasonic/Olympus 등 기존 population-fit 브랜드와 동일 원칙 - 픽셀을 그대로 풀링하면 해상도가 다른 표본이 섞일 때 큰 사진 몇 장이 population을 왜곡시킨다는 게 핫셀블라드 분석에서 실측 확인됨). 픽셀 풀링 결과는 joint_distribution.npz에 원본 그대로 남겼다. Sigma 표본은 imaging-resource.com Sigma fp/fp L(Bayer 풀프레임)+sd Quattro/dp2 Quattro/SD1 Merrill(Foveon APS-C, 2세대: Quattro/Merrill) 5바디에서 수집한 뒤 brands/sigma.py docstring에 문서화된 버스트 중복 제거 기준을 적용한 population을 사용한다.",
+  "n_images": 83,
+  "population": {
+    "b2": {
+      "mean": 16.83132530120482,
+      "std": 17.924083063444655,
+      "n": 83
+    },
+    "w995": {
+      "mean": 228.75903614457832,
+      "std": 31.916151578802594,
+      "n": 83
+    },
+    "median": {
+      "mean": 99.33734939759036,
+      "std": 46.963784331732036,
+      "n": 83
+    }
+  },
+  "population_shadow_valid": {
+    "b2": {
+      "mean": 9.28125,
+      "std": 7.201277555927143,
+      "n": 64
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Sigma_fp_140848_YD-DP-I0027.jpg",
+      "b2": 5.0,
+      "w995": 183.0,
+      "median": 103.0,
+      "dark_pct": 18.966874999999998,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-I0032.jpg",
+      "b2": 0.0,
+      "w995": 117.0,
+      "median": 10.0,
+      "dark_pct": 80.1051,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-I0034.jpg",
+      "b2": 4.0,
+      "w995": 180.0,
+      "median": 20.0,
+      "dark_pct": 78.1106875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0037.jpg",
+      "b2": 1.0,
+      "w995": 232.0,
+      "median": 8.0,
+      "dark_pct": 59.491008333333326,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0040.jpg",
+      "b2": 1.0,
+      "w995": 214.0,
+      "median": 64.0,
+      "dark_pct": 43.911766666666665,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0041.jpg",
+      "b2": 3.0,
+      "w995": 213.0,
+      "median": 66.0,
+      "dark_pct": 32.117762500000005,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0043.jpg",
+      "b2": 2.0,
+      "w995": 153.0,
+      "median": 20.0,
+      "dark_pct": 71.42483333333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0045.jpg",
+      "b2": 11.0,
+      "w995": 196.0,
+      "median": 109.0,
+      "dark_pct": 14.186254166666668,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0046.jpg",
+      "b2": 4.0,
+      "w995": 171.0,
+      "median": 69.0,
+      "dark_pct": 36.729850000000006,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0049.jpg",
+      "b2": 5.0,
+      "w995": 254.0,
+      "median": 73.0,
+      "dark_pct": 22.419920833333336,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0051.jpg",
+      "b2": 5.0,
+      "w995": 250.0,
+      "median": 74.0,
+      "dark_pct": 20.755108333333332,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0053.jpg",
+      "b2": 3.0,
+      "w995": 193.0,
+      "median": 15.0,
+      "dark_pct": 73.20402083333335,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0057.jpg",
+      "b2": 3.0,
+      "w995": 214.0,
+      "median": 56.0,
+      "dark_pct": 31.41125833333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0067.jpg",
+      "b2": 1.0,
+      "w995": 117.0,
+      "median": 8.0,
+      "dark_pct": 82.97367916666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0113.jpg",
+      "b2": 3.0,
+      "w995": 161.0,
+      "median": 27.0,
+      "dark_pct": 64.8293125,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_140848_YD-DP-IM0123.jpg",
+      "b2": 12.0,
+      "w995": 254.0,
+      "median": 159.0,
+      "dark_pct": 13.101012500000001,
+      "npix": 24000000
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0129.jpg",
+      "b2": 46.0,
+      "w995": 221.0,
+      "median": 107.0,
+      "dark_pct": 0.9773157050430793,
+      "npix": 60242560
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0458.jpg",
+      "b2": 20.0,
+      "w995": 240.0,
+      "median": 180.0,
+      "dark_pct": 7.320510615750725,
+      "npix": 60242560
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0522.jpg",
+      "b2": 109.0,
+      "w995": 171.0,
+      "median": 138.0,
+      "dark_pct": 0.4053795190642629,
+      "npix": 60242560
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0533.jpg",
+      "b2": 9.0,
+      "w995": 253.0,
+      "median": 136.0,
+      "dark_pct": 11.00095845860468,
+      "npix": 60242560
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0547.jpg",
+      "b2": 16.0,
+      "w995": 233.0,
+      "median": 141.0,
+      "dark_pct": 6.575396198302331,
+      "npix": 60242560
+    },
+    {
+      "filename": "Sigma_fp_L_319417_Y-JG-SIGMA-FP-L-0552.jpg",
+      "b2": 21.0,
+      "w995": 255.0,
+      "median": 218.0,
+      "dark_pct": 7.0804029576432335,
+      "npix": 60242560
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0002.jpg",
+      "b2": 3.0,
+      "w995": 196.0,
+      "median": 44.0,
+      "dark_pct": 46.58937579946224,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0004.jpg",
+      "b2": 20.0,
+      "w995": 239.0,
+      "median": 135.0,
+      "dark_pct": 4.974485529733469,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0007.jpg",
+      "b2": 19.0,
+      "w995": 241.0,
+      "median": 94.0,
+      "dark_pct": 13.598684435938601,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0026.jpg",
+      "b2": 1.0,
+      "w995": 195.0,
+      "median": 12.0,
+      "dark_pct": 89.5108514762315,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0028.jpg",
+      "b2": 19.0,
+      "w995": 249.0,
+      "median": 113.0,
+      "dark_pct": 11.336119622392774,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0033.jpg",
+      "b2": 40.0,
+      "w995": 249.0,
+      "median": 138.0,
+      "dark_pct": 1.9423210428250712,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0034.jpg",
+      "b2": 26.0,
+      "w995": 238.0,
+      "median": 118.0,
+      "dark_pct": 5.222619641971441,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0038.jpg",
+      "b2": 20.0,
+      "w995": 255.0,
+      "median": 119.0,
+      "dark_pct": 22.068451506904744,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0044.jpg",
+      "b2": 25.0,
+      "w995": 214.0,
+      "median": 107.0,
+      "dark_pct": 6.679435628605739,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0052.jpg",
+      "b2": 43.0,
+      "w995": 241.0,
+      "median": 165.0,
+      "dark_pct": 1.373729018195108,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0073.jpg",
+      "b2": 39.0,
+      "w995": 191.0,
+      "median": 149.0,
+      "dark_pct": 2.140631526222361,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0098.jpg",
+      "b2": 40.0,
+      "w995": 255.0,
+      "median": 156.0,
+      "dark_pct": 1.978980057496019,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0101.jpg",
+      "b2": 31.0,
+      "w995": 255.0,
+      "median": 154.0,
+      "dark_pct": 3.5954947447594434,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0104.jpg",
+      "b2": 40.0,
+      "w995": 250.0,
+      "median": 168.0,
+      "dark_pct": 1.9369725996554157,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0106.jpg",
+      "b2": 19.0,
+      "w995": 254.0,
+      "median": 104.0,
+      "dark_pct": 6.0643901571514345,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0109.jpg",
+      "b2": 9.0,
+      "w995": 172.0,
+      "median": 76.0,
+      "dark_pct": 32.6261100696348,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0111.jpg",
+      "b2": 12.0,
+      "w995": 250.0,
+      "median": 70.0,
+      "dark_pct": 17.5926662391991,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0119.jpg",
+      "b2": 8.0,
+      "w995": 255.0,
+      "median": 142.0,
+      "dark_pct": 25.066042311131127,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0122.jpg",
+      "b2": 24.0,
+      "w995": 244.0,
+      "median": 146.0,
+      "dark_pct": 3.723704422494583,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0124.jpg",
+      "b2": 33.0,
+      "w995": 252.0,
+      "median": 148.0,
+      "dark_pct": 4.353775501213877,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0133.jpg",
+      "b2": 6.0,
+      "w995": 221.0,
+      "median": 148.0,
+      "dark_pct": 16.33439017346699,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0149.jpg",
+      "b2": 25.0,
+      "w995": 252.0,
+      "median": 150.0,
+      "dark_pct": 2.9823561539013754,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0154.jpg",
+      "b2": 27.0,
+      "w995": 255.0,
+      "median": 185.0,
+      "dark_pct": 4.303385926527788,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_sd_Quattro_137672_Y_SDI0157.jpg",
+      "b2": 5.0,
+      "w995": 251.0,
+      "median": 108.0,
+      "dark_pct": 16.427047235165894,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0012.jpg",
+      "b2": 17.0,
+      "w995": 254.0,
+      "median": 125.0,
+      "dark_pct": 12.786786683895892,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0038.jpg",
+      "b2": 32.0,
+      "w995": 249.0,
+      "median": 112.0,
+      "dark_pct": 3.671846447777169,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0045.jpg",
+      "b2": 9.0,
+      "w995": 255.0,
+      "median": 72.0,
+      "dark_pct": 28.901671447124542,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0055.jpg",
+      "b2": 15.0,
+      "w995": 254.0,
+      "median": 135.0,
+      "dark_pct": 7.003319807737489,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0104.jpg",
+      "b2": 13.0,
+      "w995": 255.0,
+      "median": 117.0,
+      "dark_pct": 16.800948790364686,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0134.jpg",
+      "b2": 5.0,
+      "w995": 232.0,
+      "median": 169.0,
+      "dark_pct": 33.02277182531913,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YA0161.jpg",
+      "b2": 11.0,
+      "w995": 252.0,
+      "median": 61.0,
+      "dark_pct": 28.866705171378598,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-14_VIVID.jpg",
+      "b2": 10.0,
+      "w995": 237.0,
+      "median": 76.0,
+      "dark_pct": 21.212552740034457,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-17.jpg",
+      "b2": 6.0,
+      "w995": 222.0,
+      "median": 53.0,
+      "dark_pct": 43.26666185357767,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-19_LANDSCAPE.jpg",
+      "b2": 12.0,
+      "w995": 249.0,
+      "median": 113.0,
+      "dark_pct": 9.749467501044196,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-28_VIVID.jpg",
+      "b2": 1.0,
+      "w995": 192.0,
+      "median": 77.0,
+      "dark_pct": 29.567228859934215,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-69.jpg",
+      "b2": 12.0,
+      "w995": 240.0,
+      "median": 102.0,
+      "dark_pct": 20.6299599289947,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-78.jpg",
+      "b2": 3.0,
+      "w995": 233.0,
+      "median": 63.0,
+      "dark_pct": 29.261419257576943,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-99_LANDSCAPE.jpg",
+      "b2": 13.0,
+      "w995": 253.0,
+      "median": 114.0,
+      "dark_pct": 10.817249254379096,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YC-100_LANDSCAPE.jpg",
+      "b2": 16.0,
+      "w995": 250.0,
+      "median": 111.0,
+      "dark_pct": 11.123293392852482,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0007.jpg",
+      "b2": 5.0,
+      "w995": 195.0,
+      "median": 35.0,
+      "dark_pct": 57.32899359940742,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0008.jpg",
+      "b2": 0.0,
+      "w995": 230.0,
+      "median": 9.0,
+      "dark_pct": 65.02294069132275,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0013.jpg",
+      "b2": 27.0,
+      "w995": 226.0,
+      "median": 111.0,
+      "dark_pct": 4.2353449597984705,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0023.jpg",
+      "b2": 5.0,
+      "w995": 222.0,
+      "median": 94.0,
+      "dark_pct": 38.67653513065497,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0040.jpg",
+      "b2": 2.0,
+      "w995": 200.0,
+      "median": 76.0,
+      "dark_pct": 25.723090141814815,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0046.jpg",
+      "b2": 3.0,
+      "w995": 242.0,
+      "median": 154.0,
+      "dark_pct": 34.417318473125015,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0080.jpg",
+      "b2": 3.0,
+      "w995": 231.0,
+      "median": 60.0,
+      "dark_pct": 31.412839445140573,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0084.jpg",
+      "b2": 12.0,
+      "w995": 255.0,
+      "median": 98.0,
+      "dark_pct": 15.745295206705729,
+      "npix": 39321600
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0085-CINE.jpg",
+      "b2": 1.0,
+      "w995": 234.0,
+      "median": 33.0,
+      "dark_pct": 53.93336951307855,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_dp2_Quattro_321057_YSDIM0089.jpg",
+      "b2": 10.0,
+      "w995": 255.0,
+      "median": 82.0,
+      "dark_pct": 24.983944473268593,
+      "npix": 19613184
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0872.jpg",
+      "b2": 66.0,
+      "w995": 248.0,
+      "median": 130.0,
+      "dark_pct": 0.07529279249965293,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0902.jpg",
+      "b2": 53.0,
+      "w995": 248.0,
+      "median": 127.0,
+      "dark_pct": 0.8595526061189782,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0905.jpg",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 89.0,
+      "dark_pct": 33.38295458489518,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0909.jpg",
+      "b2": 49.0,
+      "w995": 236.0,
+      "median": 130.0,
+      "dark_pct": 0.9643334374566153,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0910.jpg",
+      "b2": 59.0,
+      "w995": 248.0,
+      "median": 127.0,
+      "dark_pct": 0.46020321393863667,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0967.jpg",
+      "b2": 19.0,
+      "w995": 254.0,
+      "median": 103.0,
+      "dark_pct": 21.7600847737054,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM0978.jpg",
+      "b2": 27.0,
+      "w995": 255.0,
+      "median": 142.0,
+      "dark_pct": 5.505030456059975,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1099.jpg",
+      "b2": 21.0,
+      "w995": 198.0,
+      "median": 81.0,
+      "dark_pct": 9.88013349472442,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1110.jpg",
+      "b2": 11.0,
+      "w995": 255.0,
+      "median": 82.0,
+      "dark_pct": 21.50511153121963,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1115.jpg",
+      "b2": 16.0,
+      "w995": 255.0,
+      "median": 94.0,
+      "dark_pct": 22.626877201773567,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1119.jpg",
+      "b2": 2.0,
+      "w995": 215.0,
+      "median": 45.0,
+      "dark_pct": 47.11740523696724,
+      "npix": 14751744
+    },
+    {
+      "filename": "Sigma_SD1_Merrill_320607_YSDIM1137.jpg",
+      "b2": 9.0,
+      "w995": 254.0,
+      "median": 93.0,
+      "dark_pct": 21.50873144219422,
+      "npix": 14751744
+    }
+  ]
+}

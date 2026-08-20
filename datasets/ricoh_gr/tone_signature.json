@@ -1,0 +1,829 @@
+{
+  "methodology": "population \ud1b5\uacc4\ub294 \uc0ac\uc9c4(\uc774\ubbf8\uc9c0) \ub2e8\uc704\ub85c \ub3d9\uc77c \uac00\uc911\uce58\ub97c \uc8fc\ub294 'per-image \ud3c9\uade0' \ubc29\uc2dd\uc744 \uc37c\ub2e4 (datasets/hasselblad/tone_signature.json\uacfc \ub3d9\uc77c \ubc29\ubc95\ub860). \uc804\uccb4 \ud53d\uc140\uc744 \uadf8\ub0e5 \ud480\ub9c1\ud574\uc11c \ud1b5\uacc4\ub97c \uad6c\ud558\ub294 \ubc29\uc2dd(\ud53d\uc140 \uac00\uc911)\uc740 \ud574\uc0c1\ub3c4\uac00 \ud45c\ubcf8\ub9c8\ub2e4 \ud06c\uac8c \ucc28\uc774\ub098\ub294 \uacbd\uc6b0 \ud070 \uc0ac\uc9c4 \uba87 \uc7a5\uc774 \uc804\uccb4 population \ud2b9\uc131\uc744 \uc65c\uace1\uc2dc\ud0a8\ub2e4\ub294 \uac8c Hasselblad \ubd84\uc11d\uc5d0\uc11c \uc2e4\uce21\uc73c\ub85c \ud655\uc778\ub410\ub2e4 (\ud53d\uc140 \ud480\ub9c1 \uc2dc b2=1.0\uae4c\uc9c0 \ub5a8\uc5b4\uc84c\ub294\ub370 per-image \ud3c9\uade0\uc740 b2=18.1 - \ub450 \ubc29\ubc95\uc774 10\ubc30 \uc774\uc0c1 \ucc28\uc774). \ud53d\uc140 \ud480\ub9c1 \uacb0\uacfc\ub294 joint_distribution.npz\uc5d0 \uc6d0\ubcf8 \uadf8\ub300\ub85c \ub0a8\uaca8\ub480\uc9c0\ub9cc, \uac01 *_signature.json\uc758 population \ud0c0\uae43\uc740 per-image \ud3c9\uade0\uc744 \uc2e0\ub8b0\uac12\uc73c\ub85c \ucc44\ud0dd. Ricoh GR \ud45c\ubcf8(GR/GR II/GR III/GR IIIx, imaging-resource.com \uac24\ub7ec\ub9ac)\uc5d0\ub294 \ubcc4\ub3c4\uc758 portrait \uc11c\ube0c\uc14b\uc774 \uc5c6\uc5b4 Hasselblad JSON\uc5d0 \uc788\ub358 portrait \uc139\uc158\uc740 \uc0dd\ub7b5.",
+  "n_images": 81,
+  "population": {
+    "b2": {
+      "mean": 9.246913580246913,
+      "std": 7.882674961463728,
+      "n": 81
+    },
+    "w995": {
+      "mean": 245.30864197530863,
+      "std": 13.448247373357919,
+      "n": 81
+    },
+    "median": {
+      "mean": 84.8641975308642,
+      "std": 26.928690966988157,
+      "n": 81
+    }
+  },
+  "population_shadow_valid": {
+    "b2": {
+      "mean": 8.35897435897436,
+      "std": 6.460877052025817,
+      "n": 78
+    }
+  },
+  "by_camera": {
+    "GR": {
+      "b2": {
+        "mean": 7.428571428571429,
+        "std": 5.932729465563437,
+        "n": 21
+      },
+      "w995": {
+        "mean": 245.52380952380952,
+        "std": 14.076725294305415,
+        "n": 21
+      },
+      "median": {
+        "mean": 84.14285714285714,
+        "std": 22.307986428707576,
+        "n": 21
+      }
+    },
+    "GR II": {
+      "b2": {
+        "mean": 6.4,
+        "std": 8.144937077718895,
+        "n": 20
+      },
+      "w995": {
+        "mean": 245.7,
+        "std": 10.982258419833327,
+        "n": 20
+      },
+      "median": {
+        "mean": 66.3,
+        "std": 26.241379536906972,
+        "n": 20
+      }
+    },
+    "GR III": {
+      "b2": {
+        "mean": 11.1,
+        "std": 6.300000000000001,
+        "n": 20
+      },
+      "w995": {
+        "mean": 245.75,
+        "std": 14.45294087720558,
+        "n": 20
+      },
+      "median": {
+        "mean": 97.3,
+        "std": 17.564452738414595,
+        "n": 20
+      }
+    },
+    "GR IIIx": {
+      "b2": {
+        "mean": 12.15,
+        "std": 9.231874132590846,
+        "n": 20
+      },
+      "w995": {
+        "mean": 244.25,
+        "std": 13.9063834263262,
+        "n": 20
+      },
+      "median": {
+        "mean": 91.75,
+        "std": 29.495550511899246,
+        "n": 20
+      }
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Ricoh_GR_462576_YR0992291-1.jpg",
+      "camera": "GR",
+      "b2": 8.0,
+      "w995": 255.0,
+      "median": 70.0,
+      "dark_pct": 29.718274028361346,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992296-1-scaled.jpg",
+      "camera": "GR",
+      "b2": 6.0,
+      "w995": 255.0,
+      "median": 109.0,
+      "dark_pct": 20.755177623820757,
+      "npix": 4341760
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992296-1.jpg",
+      "camera": "GR",
+      "b2": 6.0,
+      "w995": 255.0,
+      "median": 109.0,
+      "dark_pct": 21.083877443022665,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992305-1.jpg",
+      "camera": "GR",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 64.0,
+      "dark_pct": 27.288990880443087,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992319-1.jpg",
+      "camera": "GR",
+      "b2": 6.0,
+      "w995": 250.0,
+      "median": 75.0,
+      "dark_pct": 30.03484241708047,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992326-1.jpg",
+      "camera": "GR",
+      "b2": 7.0,
+      "w995": 243.0,
+      "median": 105.0,
+      "dark_pct": 19.354308662385407,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992329-1.jpg",
+      "camera": "GR",
+      "b2": 2.0,
+      "w995": 248.0,
+      "median": 49.0,
+      "dark_pct": 41.80715166038006,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992332-1.jpg",
+      "camera": "GR",
+      "b2": 2.0,
+      "w995": 225.0,
+      "median": 76.0,
+      "dark_pct": 34.21205307407054,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992347-1.jpg",
+      "camera": "GR",
+      "b2": 18.0,
+      "w995": 241.0,
+      "median": 85.0,
+      "dark_pct": 9.042267475171888,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992354-1.jpg",
+      "camera": "GR",
+      "b2": 1.0,
+      "w995": 237.0,
+      "median": 48.0,
+      "dark_pct": 42.42452840511204,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992370-1.jpg",
+      "camera": "GR",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 65.0,
+      "dark_pct": 34.96886414366883,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992372-1.jpg",
+      "camera": "GR",
+      "b2": 5.0,
+      "w995": 255.0,
+      "median": 83.0,
+      "dark_pct": 18.595240830707283,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992374-1.jpg",
+      "camera": "GR",
+      "b2": 3.0,
+      "w995": 255.0,
+      "median": 72.0,
+      "dark_pct": 25.171314974853576,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992378-1.jpg",
+      "camera": "GR",
+      "b2": 29.0,
+      "w995": 195.0,
+      "median": 72.0,
+      "dark_pct": 6.7314985298096515,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992380-1.jpg",
+      "camera": "GR",
+      "b2": 10.0,
+      "w995": 235.0,
+      "median": 90.0,
+      "dark_pct": 18.077621673669466,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992387-1.jpg",
+      "camera": "GR",
+      "b2": 8.0,
+      "w995": 253.0,
+      "median": 79.0,
+      "dark_pct": 21.405282638623632,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992392-1.jpg",
+      "camera": "GR",
+      "b2": 7.0,
+      "w995": 239.0,
+      "median": 112.0,
+      "dark_pct": 21.554726293926663,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992398-1.jpg",
+      "camera": "GR",
+      "b2": 5.0,
+      "w995": 254.0,
+      "median": 104.0,
+      "dark_pct": 18.934215198863637,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992402-1.jpg",
+      "camera": "GR",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 57.0,
+      "dark_pct": 27.47234191972243,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992406-1.jpg",
+      "camera": "GR",
+      "b2": 9.0,
+      "w995": 253.0,
+      "median": 127.0,
+      "dark_pct": 17.496732357715814,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_462576_YR0992409-1.jpg",
+      "camera": "GR",
+      "b2": 6.0,
+      "w995": 243.0,
+      "median": 116.0,
+      "dark_pct": 17.67471814720206,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000028.jpg",
+      "camera": "GR III",
+      "b2": 9.0,
+      "w995": 253.0,
+      "median": 100.0,
+      "dark_pct": 22.966816666666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000038.jpg",
+      "camera": "GR III",
+      "b2": 12.0,
+      "w995": 249.0,
+      "median": 82.0,
+      "dark_pct": 21.13062916666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000042.jpg",
+      "camera": "GR III",
+      "b2": 4.0,
+      "w995": 243.0,
+      "median": 122.0,
+      "dark_pct": 21.3325875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000045.jpg",
+      "camera": "GR III",
+      "b2": 10.0,
+      "w995": 255.0,
+      "median": 114.0,
+      "dark_pct": 16.93205,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000047.jpg",
+      "camera": "GR III",
+      "b2": 6.0,
+      "w995": 253.0,
+      "median": 107.0,
+      "dark_pct": 16.47423333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000050.jpg",
+      "camera": "GR III",
+      "b2": 4.0,
+      "w995": 245.0,
+      "median": 85.0,
+      "dark_pct": 28.11265,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000055.jpg",
+      "camera": "GR III",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 77.0,
+      "dark_pct": 22.2376,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000058.jpg",
+      "camera": "GR III",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 60.0,
+      "dark_pct": 42.02862916666666,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000060.jpg",
+      "camera": "GR III",
+      "b2": 3.0,
+      "w995": 255.0,
+      "median": 112.0,
+      "dark_pct": 32.10505,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000062.jpg",
+      "camera": "GR III",
+      "b2": 6.0,
+      "w995": 253.0,
+      "median": 96.0,
+      "dark_pct": 13.916575,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000073.jpg",
+      "camera": "GR III",
+      "b2": 14.0,
+      "w995": 255.0,
+      "median": 76.0,
+      "dark_pct": 24.8161375,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000084.jpg",
+      "camera": "GR III",
+      "b2": 15.0,
+      "w995": 225.0,
+      "median": 116.0,
+      "dark_pct": 12.049633333333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000085.jpg",
+      "camera": "GR III",
+      "b2": 9.0,
+      "w995": 255.0,
+      "median": 100.0,
+      "dark_pct": 21.3014875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000098.jpg",
+      "camera": "GR III",
+      "b2": 9.0,
+      "w995": 245.0,
+      "median": 120.0,
+      "dark_pct": 21.700354166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000106.jpg",
+      "camera": "GR III",
+      "b2": 22.0,
+      "w995": 255.0,
+      "median": 100.0,
+      "dark_pct": 9.234545833333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000113.jpg",
+      "camera": "GR III",
+      "b2": 23.0,
+      "w995": 253.0,
+      "median": 100.0,
+      "dark_pct": 7.5624416666666665,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000119.jpg",
+      "camera": "GR III",
+      "b2": 10.0,
+      "w995": 255.0,
+      "median": 97.0,
+      "dark_pct": 32.65115,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000127.jpg",
+      "camera": "GR III",
+      "b2": 13.0,
+      "w995": 239.0,
+      "median": 114.0,
+      "dark_pct": 13.671358333333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000128.jpg",
+      "camera": "GR III",
+      "b2": 19.0,
+      "w995": 211.0,
+      "median": 64.0,
+      "dark_pct": 19.048170833333334,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_III_113946_Y-WB-R0000132.jpg",
+      "camera": "GR III",
+      "b2": 23.0,
+      "w995": 206.0,
+      "median": 104.0,
+      "dark_pct": 8.345945833333333,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000001.jpg",
+      "camera": "GR IIIx",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 85.0,
+      "dark_pct": 23.18359166666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000003.jpg",
+      "camera": "GR IIIx",
+      "b2": 24.0,
+      "w995": 214.0,
+      "median": 122.0,
+      "dark_pct": 4.947941666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000006.jpg",
+      "camera": "GR IIIx",
+      "b2": 12.0,
+      "w995": 255.0,
+      "median": 80.0,
+      "dark_pct": 20.181625,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000011.jpg",
+      "camera": "GR IIIx",
+      "b2": 12.0,
+      "w995": 241.0,
+      "median": 80.0,
+      "dark_pct": 19.6376,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000017.jpg",
+      "camera": "GR IIIx",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 38.0,
+      "dark_pct": 52.2477125,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000027.jpg",
+      "camera": "GR IIIx",
+      "b2": 8.0,
+      "w995": 255.0,
+      "median": 72.0,
+      "dark_pct": 28.0813,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000033.jpg",
+      "camera": "GR IIIx",
+      "b2": 32.0,
+      "w995": 225.0,
+      "median": 80.0,
+      "dark_pct": 5.413166666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000044.jpg",
+      "camera": "GR IIIx",
+      "b2": 11.0,
+      "w995": 225.0,
+      "median": 119.0,
+      "dark_pct": 14.688220833333332,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000073.jpg",
+      "camera": "GR IIIx",
+      "b2": 12.0,
+      "w995": 236.0,
+      "median": 102.0,
+      "dark_pct": 15.701641666666665,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000105.jpg",
+      "camera": "GR IIIx",
+      "b2": 34.0,
+      "w995": 214.0,
+      "median": 95.0,
+      "dark_pct": 3.9931791666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000117.jpg",
+      "camera": "GR IIIx",
+      "b2": 3.0,
+      "w995": 255.0,
+      "median": 45.0,
+      "dark_pct": 44.2612125,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000134.jpg",
+      "camera": "GR IIIx",
+      "b2": 1.0,
+      "w995": 240.0,
+      "median": 81.0,
+      "dark_pct": 27.410175,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000149.jpg",
+      "camera": "GR IIIx",
+      "b2": 2.0,
+      "w995": 252.0,
+      "median": 79.0,
+      "dark_pct": 27.382641666666668,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000152.jpg",
+      "camera": "GR IIIx",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 37.0,
+      "dark_pct": 51.0987875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000167.jpg",
+      "camera": "GR IIIx",
+      "b2": 9.0,
+      "w995": 243.0,
+      "median": 117.0,
+      "dark_pct": 13.3778125,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000171.jpg",
+      "camera": "GR IIIx",
+      "b2": 21.0,
+      "w995": 255.0,
+      "median": 88.0,
+      "dark_pct": 11.1997875,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000176.jpg",
+      "camera": "GR IIIx",
+      "b2": 9.0,
+      "w995": 255.0,
+      "median": 141.0,
+      "dark_pct": 12.382716666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000178.jpg",
+      "camera": "GR IIIx",
+      "b2": 21.0,
+      "w995": 254.0,
+      "median": 132.0,
+      "dark_pct": 5.204566666666667,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000185.jpg",
+      "camera": "GR IIIx",
+      "b2": 9.0,
+      "w995": 255.0,
+      "median": 124.0,
+      "dark_pct": 26.784612499999998,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_IIIx_113794_Y-WB-GRIIIx-R0000186.jpg",
+      "camera": "GR IIIx",
+      "b2": 8.0,
+      "w995": 246.0,
+      "median": 118.0,
+      "dark_pct": 28.226925,
+      "npix": 24000000
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000007.jpg",
+      "camera": "GR II",
+      "b2": 6.0,
+      "w995": 255.0,
+      "median": 53.0,
+      "dark_pct": 36.674093465511206,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000016.jpg",
+      "camera": "GR II",
+      "b2": 0.0,
+      "w995": 255.0,
+      "median": 81.0,
+      "dark_pct": 33.05320263758912,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000034.jpg",
+      "camera": "GR II",
+      "b2": 9.0,
+      "w995": 244.0,
+      "median": 99.0,
+      "dark_pct": 18.848346334272346,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000037.jpg",
+      "camera": "GR II",
+      "b2": 11.0,
+      "w995": 255.0,
+      "median": 56.0,
+      "dark_pct": 36.151202313311686,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000061.jpg",
+      "camera": "GR II",
+      "b2": 8.0,
+      "w995": 247.0,
+      "median": 114.0,
+      "dark_pct": 18.972306607302013,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000068.jpg",
+      "camera": "GR II",
+      "b2": 2.0,
+      "w995": 244.0,
+      "median": 62.0,
+      "dark_pct": 35.41969433369939,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000070.jpg",
+      "camera": "GR II",
+      "b2": 1.0,
+      "w995": 225.0,
+      "median": 55.0,
+      "dark_pct": 40.72580825654125,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000071.jpg",
+      "camera": "GR II",
+      "b2": 2.0,
+      "w995": 253.0,
+      "median": 55.0,
+      "dark_pct": 40.425180192815766,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000078.jpg",
+      "camera": "GR II",
+      "b2": 2.0,
+      "w995": 221.0,
+      "median": 76.0,
+      "dark_pct": 30.23013626615419,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000080.jpg",
+      "camera": "GR II",
+      "b2": 6.0,
+      "w995": 255.0,
+      "median": 88.0,
+      "dark_pct": 27.0865599435797,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000083.jpg",
+      "camera": "GR II",
+      "b2": 1.0,
+      "w995": 248.0,
+      "median": 98.0,
+      "dark_pct": 26.84739911589636,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000096.jpg",
+      "camera": "GR II",
+      "b2": 8.0,
+      "w995": 237.0,
+      "median": 88.0,
+      "dark_pct": 23.26686889244334,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000107.jpg",
+      "camera": "GR II",
+      "b2": 7.0,
+      "w995": 255.0,
+      "median": 90.0,
+      "dark_pct": 18.10158189696333,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000108.jpg",
+      "camera": "GR II",
+      "b2": 39.0,
+      "w995": 255.0,
+      "median": 56.0,
+      "dark_pct": 2.1283815372740005,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000126.jpg",
+      "camera": "GR II",
+      "b2": 6.0,
+      "w995": 246.0,
+      "median": 64.0,
+      "dark_pct": 31.373027726715684,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000129.jpg",
+      "camera": "GR II",
+      "b2": 1.0,
+      "w995": 251.0,
+      "median": 18.0,
+      "dark_pct": 59.87481373941622,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000132.jpg",
+      "camera": "GR II",
+      "b2": 1.0,
+      "w995": 231.0,
+      "median": 28.0,
+      "dark_pct": 56.34911102224981,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000163.jpg",
+      "camera": "GR II",
+      "b2": 4.0,
+      "w995": 255.0,
+      "median": 19.0,
+      "dark_pct": 65.86311015883626,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000183.jpg",
+      "camera": "GR II",
+      "b2": 9.0,
+      "w995": 228.0,
+      "median": 84.0,
+      "dark_pct": 14.621076591147823,
+      "npix": 16084992
+    },
+    {
+      "filename": "Ricoh_GR_II_115459_YR0000201.jpg",
+      "camera": "GR II",
+      "b2": 5.0,
+      "w995": 254.0,
+      "median": 42.0,
+      "dark_pct": 47.68428855917367,
+      "npix": 16084992
+    }
+  ]
+}

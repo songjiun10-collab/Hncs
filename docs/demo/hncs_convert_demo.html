@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HNCS Convert — Camera A → Camera B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#101010; --bg3:#181817;
+  --fg:#f2f2f0; --fg2:#c9c9c4; --mut:#8b8b86; --dim:#4c4c48;
+  --line:#232321; --line2:#373733;
+  --disp:'Archivo Black',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,monospace;
+  --sans:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+  --maxw:1240px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--fg);
+  line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--fg);color:var(--bg)}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--sans)}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px}
+
+/* ---- ambient layers ---- */
+.grain{position:fixed;inset:-100%;z-index:100;pointer-events:none;opacity:.07;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch"/></filter><rect width="300" height="300" filter="url(%23n)" opacity="0.7"/></svg>');
+  animation:grain 7s steps(10) infinite}
+@keyframes grain{
+  0%,100%{transform:translate(0,0)}10%{transform:translate(-5%,-10%)}
+  20%{transform:translate(-15%,5%)}30%{transform:translate(7%,-25%)}
+  40%{transform:translate(-5%,25%)}50%{transform:translate(-15%,10%)}
+  60%{transform:translate(15%,0)}70%{transform:translate(0,15%)}
+  80%{transform:translate(3%,35%)}90%{transform:translate(-10%,10%)}}
+.vignette{position:fixed;inset:0;z-index:99;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 40%,transparent 55%,rgba(0,0,0,.55) 100%)}
+
+/* ---- top bar ---- */
+.top{position:sticky;top:0;z-index:50;background:rgba(10,10,10,.9);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top-in{max-width:var(--maxw);margin:0 auto;padding:0 32px;height:56px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px}
+.brandmark{display:flex;align-items:center;gap:12px}
+.ap{width:26px;height:26px;color:var(--fg);animation:spin 24s linear infinite;flex:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.wm{font-family:var(--mono);font-size:.8rem;font-weight:500;letter-spacing:.1em}
+.wm .dot{color:var(--dim);margin:0 5px}
+.top-right{display:flex;align-items:center;gap:22px}
+.led-wrap{display:flex;align-items:center;gap:8px;font-family:var(--mono);
+  font-size:.62rem;letter-spacing:.14em;color:var(--mut)}
+.led{width:7px;height:7px;background:var(--fg);border-radius:50%;
+  animation:led 2.2s ease-in-out infinite}
+@keyframes led{0%,100%{opacity:1;box-shadow:0 0 9px rgba(242,242,240,.9)}50%{opacity:.2;box-shadow:none}}
+.gh{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;color:var(--fg);
+  border:1px solid var(--line2);padding:7px 13px;transition:.2s}
+.gh:hover{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.filmstrip{height:12px;border-top:1px solid var(--line);
+  background:repeating-linear-gradient(90deg,transparent 0 9px,var(--line2) 9px 21px,transparent 21px 30px);
+  animation:film 6s linear infinite}
+@keyframes film{to{background-position:30px 0}}
+
+/* ---- disclaimer banner (top of page) ---- */
+.disclaimer-banner{background:var(--fg);color:var(--bg);font-family:var(--mono);
+  font-size:.72rem;letter-spacing:.02em;line-height:1.7;padding:14px 0}
+.disclaimer-banner .wrap{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.disclaimer-banner .tag{font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  flex:none;background:var(--bg);color:var(--fg);padding:2px 8px}
+.disclaimer-banner p{flex:1;min-width:240px}
+.disclaimer-banner b{font-weight:700}
+
+/* ---- masthead ---- */
+.masthead{padding:64px 0 0}
+.kicker{font-family:var(--mono);font-size:.66rem;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--mut);margin-bottom:26px}
+.kicker::before{content:"— ";color:var(--dim)}
+.masthead h1{font-family:var(--disp);font-size:clamp(2.4rem,7.4vw,5.4rem);
+  line-height:1.02;letter-spacing:.01em;text-transform:uppercase;margin-bottom:26px}
+.masthead h1 .outline{color:transparent;-webkit-text-stroke:1.5px var(--fg)}
+.masthead h1 .arrow{display:inline-block;font-family:var(--mono);font-weight:400;
+  font-size:.7em;vertical-align:middle;margin:0 .18em;animation:arr 1.5s ease-in-out infinite}
+@keyframes arr{0%,100%{transform:translateX(0);opacity:1}50%{transform:translateX(12px);opacity:.4}}
+.sub{color:var(--fg2);font-weight:300;max-width:62ch;margin-bottom:30px;font-size:1rem}
+.sub b{color:var(--fg);font-weight:500}
+.tickerline{display:flex;flex-wrap:wrap;gap:8px 26px;font-family:var(--mono);
+  font-size:.64rem;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;
+  padding-bottom:34px}
+.tickerline span::before{content:"/ ";color:var(--line2)}
+.marquee{overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:13px 0;white-space:nowrap;cursor:default}
+.mq-in{display:inline-block;font-family:var(--disp);font-size:1rem;
+  letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+  animation:mq 46s linear infinite}
+.marquee:hover .mq-in{animation-play-state:paused;color:var(--mut)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* ---- lab layout ---- */
+.lab{display:grid;grid-template-columns:330px 1fr;gap:44px;padding:46px 0 76px}
+.panel{align-self:start;position:sticky;top:92px}
+.panel-sec{margin-bottom:26px}
+.sec-lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--mut);margin-bottom:12px;
+  display:flex;justify-content:space-between;align-items:baseline}
+.sec-lbl .val{color:var(--fg);font-size:.7rem}
+
+/* dropzone — viewfinder */
+.drop{position:relative;border:1px dashed var(--line2);min-height:118px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  cursor:pointer;transition:background .2s,color .2s,border-color .2s;padding:20px 16px}
+.corner{position:absolute;width:15px;height:15px;border:1px solid var(--fg);
+  transition:width .25s,height .25s;opacity:.85}
+.c-tl{top:8px;left:8px;border-right:none;border-bottom:none}
+.c-tr{top:8px;right:8px;border-left:none;border-bottom:none}
+.c-bl{bottom:8px;left:8px;border-right:none;border-top:none}
+.c-br{bottom:8px;right:8px;border-left:none;border-top:none}
+.drop:hover .corner,.drop.over .corner{width:24px;height:24px}
+.drop:hover{border-color:var(--dim);background:var(--bg2)}
+.drop.over{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.drop.over .corner{border-color:var(--bg)}
+.af{position:absolute;top:13px;right:32px;width:9px;height:9px;border:1px solid var(--dim);
+  animation:af 1.6s ease-in-out infinite}
+@keyframes af{0%,100%{opacity:.15}50%{opacity:1;border-color:var(--fg)}}
+.dt-main{display:block;font-size:.88rem;font-weight:500}
+.dt-sub{display:block;font-family:var(--mono);font-size:.6rem;letter-spacing:.14em;
+  color:var(--dim);margin-top:8px;text-transform:uppercase}
+.drop.over .dt-sub{color:var(--bg)}
+
+/* brand list */
+.brand-list{border-top:1px solid var(--fg);max-height:396px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--line2) transparent}
+.brand-list::-webkit-scrollbar{width:5px}
+.brand-list::-webkit-scrollbar-thumb{background:var(--line2)}
+.bitem{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:12px;
+  width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--line);
+  padding:11px 12px 11px 14px;cursor:pointer;color:var(--fg);position:relative;
+  transition:background .18s,color .18s}
+.bitem .idx{font-family:var(--mono);font-size:.6rem;color:var(--dim);
+  transition:transform .18s,color .18s}
+.bitem .bn{font-size:.92rem;font-weight:500;letter-spacing:-.01em}
+.bitem .bd{display:block;font-size:.7rem;color:var(--mut);margin-top:1px;transition:color .18s}
+.bitem .bs{font-family:var(--mono);font-size:.56rem;letter-spacing:.1em;color:var(--dim);
+  text-transform:uppercase;transition:color .18s}
+.bitem:hover{background:var(--bg3)}
+.bitem:hover .idx{transform:translateX(3px);color:var(--fg)}
+.bitem.active{background:var(--fg);color:var(--bg)}
+.bitem.active .idx,.bitem.active .bd,.bitem.active .bs{color:var(--bg)}
+.bitem.active::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bg)}
+
+/* presets */
+#fujiSec{animation:fadein .3s ease}
+@keyframes fadein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.preset-list{border-top:1px solid var(--line2)}
+.pitem{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;
+  background:none;border:none;border-bottom:1px solid var(--line);padding:9px 12px 9px 14px;
+  cursor:pointer;text-align:left;color:var(--fg2);transition:background .15s,color .15s}
+.pitem .pn{font-size:.82rem}
+.pitem .pd{font-family:var(--mono);font-size:.56rem;letter-spacing:.08em;color:var(--dim);white-space:nowrap}
+.pitem:hover{background:var(--bg3);color:var(--fg)}
+.pitem.active{background:var(--fg);color:var(--bg)}
+.pitem.active .pd{color:var(--bg)}
+
+/* intensity */
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;outline:none;
+  cursor:pointer;background:linear-gradient(to right,var(--fg) var(--fill,100%),var(--line2) var(--fill,100%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;
+  background:var(--fg);border-radius:0;cursor:grab;transition:transform .15s}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25)}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--fg);
+  border:none;border-radius:0;cursor:grab}
+
+/* download */
+.dl{width:100%;padding:14px;background:var(--fg);color:var(--bg);border:1px solid var(--fg);
+  font-family:var(--mono);font-size:.76rem;font-weight:500;letter-spacing:.12em;
+  cursor:pointer;transition:.2s;text-transform:uppercase}
+.dl:hover:not(:disabled){background:transparent;color:var(--fg)}
+.dl:disabled{opacity:.22;cursor:not-allowed}
+
+/* ---- stage ---- */
+.stage-top{display:flex;justify-content:space-between;font-family:var(--mono);
+  font-size:.66rem;letter-spacing:.1em;color:var(--mut);margin-bottom:12px;
+  text-transform:uppercase;min-height:1.3em}
+.status{color:var(--fg)}
+.cursor{display:inline-block;margin-left:4px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+.viewer{position:relative;background:#050505;border:1px solid var(--line2);overflow:hidden;
+  user-select:none;touch-action:none;cursor:ew-resize;margin:0 auto}
+.viewer .layer{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.viewer .top{clip-path:inset(0 0 0 50%)}
+.scan{position:absolute;left:0;right:0;top:0;height:2px;z-index:7;opacity:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(242,242,240,.95),transparent)}
+.viewer.busy .scan{opacity:1;animation:scan .9s linear infinite}
+@keyframes scan{from{top:-2px}to{top:100%}}
+.empty{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;gap:14px;
+  align-items:center;justify-content:center;text-align:center;padding:20px}
+.no-sig{font-family:var(--disp);font-size:clamp(1.4rem,3vw,2.2rem);letter-spacing:.2em;
+  color:var(--dim);animation:nosig 2.4s ease-in-out infinite}
+@keyframes nosig{0%,100%{opacity:.85}50%{opacity:.25}}
+.es-sub{font-size:.84rem;color:var(--mut);font-weight:300}
+.lbl{position:absolute;top:12px;z-index:5;font-family:var(--mono);font-size:.58rem;
+  letter-spacing:.14em;text-transform:uppercase;background:rgba(10,10,10,.85);
+  border:1px solid var(--line2);padding:6px 10px;color:var(--fg);pointer-events:none;line-height:1.5}
+.lbl.l{left:12px}
+.lbl.r{right:12px;text-align:right}
+.lbl .sub{display:block;color:var(--mut);font-size:.54rem;margin-top:3px;
+  letter-spacing:.06em;text-transform:none;max-width:190px}
+.handle{position:absolute;top:0;bottom:0;width:1px;background:var(--fg);z-index:6;
+  transform:translateX(-.5px);pointer-events:none;box-shadow:0 0 10px rgba(242,242,240,.4)}
+.knob{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:14px;height:14px;
+  background:var(--fg);cursor:grab;transition:transform .15s;animation:knobpulse 2.6s ease-in-out infinite}
+@keyframes knobpulse{0%,100%{box-shadow:0 0 0 0 rgba(242,242,240,.35)}50%{box-shadow:0 0 0 9px rgba(242,242,240,0)}}
+.knob:hover{transform:translate(-50%,-50%) scale(1.3)}
+.knob:focus{outline:2px solid var(--fg);outline-offset:4px}
+
+/* histogram */
+.hist-wrap{margin-top:14px}
+.hist-head{display:flex;justify-content:space-between;font-family:var(--mono);
+  font-size:.58rem;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin-bottom:7px}
+.hist{display:flex;align-items:flex-end;gap:2px;height:62px;border:1px solid var(--line);
+  background:var(--bg2);padding:6px}
+.hist i{flex:1;background:var(--fg);min-height:1px;height:1px;opacity:.85;
+  transition:height .4s cubic-bezier(.2,.8,.2,1)}
+.disclaimer{margin-top:16px;font-family:var(--mono);font-size:.7rem;color:var(--fg2);
+  line-height:1.8;max-width:82ch;letter-spacing:.02em;border-left:2px solid var(--fg);
+  background:var(--bg2);padding:12px 16px}
+.disclaimer b{color:var(--fg);font-weight:700}
+
+/* footer */
+footer{border-top:1px solid var(--line);padding:42px 0 60px}
+.foot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:24px;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;color:var(--dim);line-height:2}
+.foot b{color:var(--mut);font-weight:400}
+.foot .gh{margin-top:6px;display:inline-block}
+
+/* reveal */
+.rv{opacity:0;transform:translateY(14px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+
+@media(max-width:960px){
+  .wrap,.top-in{padding-left:22px;padding-right:22px}
+  .lab{grid-template-columns:1fr;gap:36px}
+  .panel{position:static}
+  .brand-list{max-height:none}
+  .led-wrap span{display:none}
+}
+</style>
+</head>
+<body>
+
+<div class="grain"></div>
+<div class="vignette"></div>
+
+<!-- TOP BAR -->
+<header class="top">
+  <div class="top-in">
+    <div class="brandmark">
+      <svg class="ap" viewBox="0 0 200 200" fill="none">
+        <circle cx="100" cy="100" r="90" stroke="currentColor" stroke-width="9"/>
+        <g stroke="currentColor" stroke-width="9" stroke-linecap="round">
+          <line x1="100" y1="16" x2="148" y2="136"/>
+          <line x1="100" y1="16" x2="148" y2="136" transform="rotate(60 100 100)"/>
+          <line x1="100" y1="16" x2="148" y2="136" transform="rotate(120 100 100)"/>
+          <line x1="100" y1="16" x2="148" y2="136" transform="rotate(180 100 100)"/>
+          <line x1="100" y1="16" x2="148" y2="136" transform="rotate(240 100 100)"/>
+          <line x1="100" y1="16" x2="148" y2="136" transform="rotate(300 100 100)"/>
+        </g>
+      </svg>
+      <span class="wm">HNCS<span class="dot">·</span>CONVERT</span>
+    </div>
+    <div class="top-right">
+      <span class="led-wrap"><i class="led"></i><span id="sysState">SYSTEM READY</span></span>
+      <a class="gh" href="https://github.com/songjiun10-collab/Hncs" target="_blank" rel="noopener">GITHUB ↗</a>
+    </div>
+  </div>
+  <div class="filmstrip"></div>
+</header>
+
+<!-- DISCLAIMER BANNER -->
+<div class="disclaimer-banner">
+  <div class="wrap">
+    <span class="tag">주의</span>
+    <p>이 페이지는 각 브랜드의 컬러 사이언스를 <b>브라우저에서 근사한 시뮬레이션</b>입니다. <b>실측 데이터가 아닙니다.</b> 아래 브랜드별 파라미터(감마·콘트라스트·채도·색온도 등)는 임의로 만든 근사값이며, 이 저장소의 실제 <b>apply_*</b> 파이프라인(population-fit 데이터·learned LUT·Gray World 정규화·raw 매트릭스 피팅)과는 무관합니다. 결과물은 참고용 미리보기일 뿐, 검증된 색채측정 결과가 아닙니다.</p>
+  </div>
+</div>
+
+<!-- MASTHEAD -->
+<section class="masthead">
+  <div class="wrap">
+    <div class="kicker rv">Hybrid Engine / Browser Simulation / 12 Brands</div>
+    <h1 class="rv">Camera A <span class="arrow">→</span> <span class="outline">Camera B</span></h1>
+    <p class="sub rv">사진을 업로드하고 타깃 브랜드를 선택하면 브라우저에서 <b>픽셀 단위</b>로 컬러 룩을 재렌더링합니다. Fujifilm은 10개 필름 시뮬레이션 프리셋을 지원하며, 좌우 슬라이더로 원본과 비교하고 아래 히스토그램으로 계조 변화를 실시간 확인합니다.</p>
+    <div class="tickerline rv">
+      <span>12 brands</span><span>브라우저 근사 시뮬레이션</span><span>실측 아님</span>
+    </div>
+  </div>
+  <div class="marquee rv"><div class="mq-in" id="mq"></div></div>
+</section>
+
+<!-- LAB -->
+<main class="wrap">
+  <div class="lab">
+
+    <aside class="panel">
+      <div class="panel-sec rv">
+        <div class="sec-lbl">Source</div>
+        <div class="drop" id="drop">
+          <i class="corner c-tl"></i><i class="corner c-tr"></i><i class="corner c-bl"></i><i class="corner c-br"></i>
+          <span class="af"></span>
+          <div>
+            <span class="dt-main">이미지를 드래그하거나 클릭</span>
+            <span class="dt-sub">JPG · PNG · WebP — Drop file</span>
+          </div>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+      </div>
+
+      <div class="panel-sec rv">
+        <div class="sec-lbl">Target Brand</div>
+        <div class="brand-list" id="brandList"></div>
+      </div>
+
+      <div class="panel-sec" id="fujiSec" style="display:none">
+        <div class="sec-lbl">Film Simulation</div>
+        <div class="preset-list" id="presetList"></div>
+      </div>
+
+      <div class="panel-sec rv">
+        <div class="sec-lbl">Intensity <span class="val" id="intVal">100%</span></div>
+        <input type="range" id="intensity" min="0" max="100" value="100">
+      </div>
+
+      <button class="dl rv" id="download" disabled>Download PNG ↓</button>
+    </aside>
+
+    <div class="stage">
+      <div class="stage-top rv">
+        <span id="fileName">NO FILE LOADED</span>
+        <span class="status" id="status">STANDBY<span class="cursor">▮</span></span>
+      </div>
+
+      <div class="viewer rv" id="viewer">
+        <div class="empty" id="empty">
+          <span class="no-sig">NO SIGNAL</span>
+          <span class="es-sub">이미지를 업로드하세요</span>
+        </div>
+        <img class="layer base" id="baseImg" alt="">
+        <canvas class="layer top" id="outCanvas"></canvas>
+        <div class="scan"></div>
+        <div class="lbl l">Original<span class="sub" id="srcName"></span></div>
+        <div class="lbl r"><span id="lookName">—</span><span class="sub" id="lookDesc"></span></div>
+        <div class="handle" id="handle" style="left:50%">
+          <div class="knob" id="knob" tabindex="0" role="slider" aria-label="비교 슬라이더" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"></div>
+        </div>
+      </div>
+
+      <div class="hist-wrap rv">
+        <div class="hist-head"><span>Luma Histogram</span><span id="histInfo">—</span></div>
+        <div class="hist" id="hist"></div>
+      </div>
+
+      <p class="disclaimer rv">※ 이 페이지는 각 브랜드의 컬러 사이언스를 <b>브라우저에서 근사한 시뮬레이션</b>입니다. 저장소의 실제 apply_* 파이프라인(population-fit 데이터 · learned LUT · Gray World 정규화)과는 무관하며, 결과물은 참고용 미리보기입니다.</p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div>HNCS CONVERT — BROWSER SIMULATION<br>실제 파이프라인 <b>hybrid_engine/convert</b> · EXIF 자동 감지 + 톤 커브 역변환 + ΔE 루프</div>
+      <div>12 BRANDS · 브라우저 근사(실측 아님)<br>
+        <a class="gh" href="https://github.com/songjiun10-collab/Hncs" target="_blank" rel="noopener">원본 저장소 ↗</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var $=function(id){return document.getElementById(id);};
+
+  /* ---------- data ---------- */
+  var BRANDS=[
+    {id:'hasselblad',name:'Hasselblad',sub:'HNCS',desc:'자연스러운 채도 · 부드러운 롤오프',gamma:0.97,contrast:1.06,sat:1.10,temp:3,tint:0,lift:0.008,shoulder:0.82,shoulderSoft:1.6},
+    {id:'fujifilm',name:'Fujifilm',sub:'Film Sim',desc:'10개 필름 시뮬레이션 프리셋',presets:true},
+    {id:'leica',name:'Leica',sub:'M-System',desc:'강한 마이크로콘트라스트 · 단단한 계조',gamma:0.95,contrast:1.15,sat:1.04,temp:1,tint:0,lift:0.004,shoulder:0.88,shoulderSoft:2.0},
+    {id:'phaseone',name:'Phase One',sub:'IQ4',desc:'풍부하고 정확한 색 · Capture One 기본',gamma:0.98,contrast:1.05,sat:1.08,temp:2,tint:1,lift:0.006,shoulder:0.84,shoulderSoft:1.7},
+    {id:'pentax',name:'Pentax',sub:'645Z / K-1',desc:'약간 포화된 자연색',gamma:0.97,contrast:1.08,sat:1.12,temp:2,tint:0,lift:0.006,shoulder:0.85,shoulderSoft:1.8},
+    {id:'ricohgr',name:'Ricoh GR',sub:'GR III',desc:'스냅 느낌 · 살짝 강한 콘트라스트',gamma:0.96,contrast:1.10,sat:1.06,temp:1,tint:0,lift:0.005,shoulder:0.86,shoulderSoft:1.9},
+    {id:'canon',name:'Canon',sub:'EOS R',desc:'따뜻한 스킨톤 · 온화한 색온도',gamma:0.98,contrast:1.04,sat:1.07,temp:6,tint:2,lift:0.008,shoulder:0.83,shoulderSoft:1.6},
+    {id:'nikon',name:'Nikon',sub:'Z / D',desc:'중성적 계조 · 균형 잡힌 콘트라스트',gamma:0.97,contrast:1.07,sat:1.03,temp:1,tint:0,lift:0.005,shoulder:0.85,shoulderSoft:1.8},
+    {id:'sony',name:'Sony',sub:'α',desc:'뉴트럴 · 낮은 콘트라스트',gamma:0.99,contrast:1.02,sat:0.97,temp:0,tint:0,lift:0.006,shoulder:0.87,shoulderSoft:1.5},
+    {id:'panasonic',name:'Panasonic',sub:'LUMIX',desc:'표준 · 균형 잡힌 색',gamma:0.98,contrast:1.05,sat:1.05,temp:2,tint:0,lift:0.006,shoulder:0.85,shoulderSoft:1.7},
+    {id:'olympus',name:'Olympus',sub:'OM / PEN',desc:'선명한 색 · i-Enhance 느낌',gamma:0.96,contrast:1.09,sat:1.14,temp:2,tint:1,lift:0.006,shoulder:0.84,shoulderSoft:1.8},
+    {id:'sigma',name:'Sigma',sub:'Foveon',desc:'높은 채도와 선명도',gamma:0.95,contrast:1.11,sat:1.13,temp:0,tint:0,lift:0.004,shoulder:0.86,shoulderSoft:2.0}
+  ];
+  var FUJI=[
+    {id:'provia',name:'PROVIA / Standard',desc:'표준',sat:1.05,contrast:1.04,gamma:0.98,temp:2,lift:0.006,shoulder:0.85,shoulderSoft:1.7},
+    {id:'velvia',name:'Velvia / Vivid',desc:'고채도 풍경',sat:1.32,contrast:1.10,gamma:0.96,temp:3,lift:0.004,shoulder:0.87,shoulderSoft:1.9},
+    {id:'astia',name:'ASTIA / Soft',desc:'부드러운 스킨톤',sat:1.0,contrast:0.96,gamma:0.99,temp:3,lift:0.010,shoulder:0.83,shoulderSoft:1.5},
+    {id:'classic_chrome',name:'Classic Chrome',desc:'저채도 빈티지',sat:0.76,contrast:1.06,gamma:0.97,temp:5,lift:0.006,shoulder:0.86,shoulderSoft:1.8},
+    {id:'pro_neg_hi',name:'PRO Neg. Hi',desc:'콘트라스트 인물',sat:0.90,contrast:1.08,gamma:0.97,temp:2,lift:0.005,shoulder:0.85,shoulderSoft:1.8},
+    {id:'pro_neg_std',name:'PRO Neg. Std',desc:'부드러운 인물',sat:0.85,contrast:0.92,gamma:0.99,temp:2,lift:0.008,shoulder:0.84,shoulderSoft:1.6},
+    {id:'classic_neg',name:'Classic Neg',desc:'필름 느낌',sat:0.92,contrast:1.02,gamma:0.97,temp:4,lift:0.007,shoulder:0.85,shoulderSoft:1.7},
+    {id:'eterna',name:'ETERNA / Cinema',desc:'시네마 저채도',sat:0.72,contrast:0.90,gamma:0.98,temp:2,lift:0.010,shoulder:0.83,shoulderSoft:1.5},
+    {id:'acros',name:'ACROS',desc:'흑백',mono:true,contrast:1.15,gamma:0.95,lift:0.004,shoulder:0.88,shoulderSoft:2.0},
+    {id:'sepia',name:'Sepia',desc:'세피아',sepia:true,contrast:1.0,gamma:0.98,lift:0.008,shoulder:0.85,shoulderSoft:1.7}
+  ];
+
+  /* ---------- refs / state ---------- */
+  var drop=$('drop'),fileInput=$('fileInput'),brandList=$('brandList'),fujiSec=$('fujiSec'),
+      presetList=$('presetList'),intensity=$('intensity'),intVal=$('intVal'),
+      downloadBtn=$('download'),viewer=$('viewer'),empty=$('empty'),baseImg=$('baseImg'),
+      outCanvas=$('outCanvas'),outCtx=outCanvas.getContext('2d'),fileName=$('fileName'),
+      statusEl=$('status'),sysState=$('sysState'),srcName=$('srcName'),lookName=$('lookName'),
+      lookDesc=$('lookDesc'),handle=$('handle'),knob=$('knob'),stage=document.querySelector('.stage');
+  var currentImage=null,currentBrand='hasselblad',currentFuji='provia';
+
+  /* ---------- marquee ---------- */
+  var names='HASSELBLAD — FUJIFILM — LEICA — PHASE ONE — PENTAX — RICOH GR — CANON — NIKON — SONY — PANASONIC — OLYMPUS — SIGMA — ';
+  $('mq').textContent=names+names;
+
+  /* ---------- histogram ---------- */
+  var histBars=[];
+  (function(){var hb=$('hist');for(var i=0;i<48;i++){var b=document.createElement('i');hb.appendChild(b);histBars.push(b);}})();
+  function renderHist(bins,mean){
+    var max=1,i;
+    for(i=0;i<48;i++){if(bins[i]>max)max=bins[i];}
+    for(i=0;i<48;i++){histBars[i].style.height=Math.max(2,bins[i]/max*100)+'%';}
+    var mp=(currentImage.width*currentImage.height/1e6).toFixed(1);
+    $('histInfo').textContent='MEAN '+Math.round(mean)+' · '+mp+' MP';
+  }
+
+  /* ---------- color engine ---------- */
+  function ci(v){v=v|0;return v<0?0:(v>255?255:v);}
+  function buildCurve(p){
+    var lut=new Uint8ClampedArray(256);
+    var gamma=p.gamma||1,contrast=p.contrast||1,lift=p.lift||0,
+        shoulder=(p.shoulder==null?1:p.shoulder),soft=p.shoulderSoft||1.8;
+    for(var i=0;i<256;i++){
+      var x=i/255;
+      x=lift+x*(1-lift);
+      x=Math.pow(x,gamma);
+      x=0.5+(x-0.5)*contrast;
+      if(shoulder<1&&x>shoulder){
+        var t=(x-shoulder)/(1-shoulder);
+        x=shoulder+(1-shoulder)*(1-Math.pow(1-t,soft));
+      }
+      lut[i]=Math.round(Math.max(0,Math.min(1,x))*255);
+    }
+    return lut;
+  }
+  function resolveLook(){
+    if(currentBrand==='original')return null;
+    if(currentBrand==='fujifilm'){
+      var p=FUJI.filter(function(x){return x.id===currentFuji;})[0];
+      return Object.assign({sat:1,contrast:1,gamma:1,temp:0,tint:0,lift:0,shoulder:1},p);
+    }
+    return BRANDS.filter(function(x){return x.id===currentBrand;})[0];
+  }
+  function transform(src,look,inten){
+    var w=src.width,h=src.height,n=w*h;
+    var out=new ImageData(w,h);
+    var s=src.data,o=out.data;
+    var bins=new Uint32Array(48),lumaSum=0,i,L;
+    if(!look){
+      o.set(s);
+      for(i=0;i<s.length;i+=4){L=(s[i]+s[i+1]+s[i+2])/3;bins[Math.min(47,L/256*48|0)]++;lumaSum+=L;}
+      return{out:out,bins:bins,mean:lumaSum/n};
+    }
+    var curve=buildCurve(look);
+    var sat=look.sat,temp=look.temp||0,tint=look.tint||0,mono=look.mono,sepia=look.sepia;
+    for(i=0;i<s.length;i+=4){
+      var r=s[i],g=s[i+1],b=s[i+2],nr,ng,nb;
+      if(mono){
+        var gray=0.2126*r+0.7152*g+0.0722*b;
+        nr=ng=nb=curve[ci(gray)];
+      }else if(sepia){
+        var gr2=0.2126*r+0.7152*g+0.0722*b;
+        var gc=curve[ci(gr2)];
+        nr=ci(gc+30);ng=ci(gc*0.87+12);nb=ci(gc*0.62);
+      }else{
+        r+=temp;b-=temp;g+=tint*0.4;
+        var lum=0.2126*r+0.7152*g+0.0722*b;
+        r=lum+(r-lum)*sat;g=lum+(g-lum)*sat;b=lum+(b-lum)*sat;
+        nr=curve[ci(r)];ng=curve[ci(g)];nb=curve[ci(b)];
+      }
+      var fr=s[i]+(nr-s[i])*inten,fg=s[i+1]+(ng-s[i+1])*inten,fb=s[i+2]+(nb-s[i+2])*inten;
+      o[i]=fr;o[i+1]=fg;o[i+2]=fb;o[i+3]=s[i+3];
+      L=(fr+fg+fb)/3;bins[Math.min(47,L/256*48|0)]++;lumaSum+=L;
+    }
+    return{out:out,bins:bins,mean:lumaSum/n};
+  }
+
+  /* ---------- status ---------- */
+  function setStatus(txt,busy){
+    statusEl.innerHTML=txt+'<span class="cursor">▮</span>';
+    viewer.classList.toggle('busy',!!busy);
+    sysState.textContent=busy?'PROCESSING':(currentImage?'RENDER OK':'SYSTEM READY');
+  }
+
+  /* ---------- transform runner ---------- */
+  function runTransform(){
+    if(!currentImage)return;
+    setStatus('PROCESSING',true);
+    var t0=performance.now();
+    requestAnimationFrame(function(){setTimeout(function(){
+      var look=resolveLook(),inten=intensity.value/100;
+      var res=transform(currentImage.data,look,inten);
+      outCtx.putImageData(res.out,0,0);
+      renderHist(res.bins,res.mean);
+      var ms=Math.round(performance.now()-t0);
+      setStatus('DONE · '+ms+'MS',false);
+      downloadBtn.disabled=false;
+      updateLabel(look);
+    },20);});
+  }
+  function updateLabel(look){
+    if(!look){lookName.textContent='Original';lookDesc.textContent='변환 없음';return;}
+    if(currentBrand==='fujifilm'){
+      var p=FUJI.filter(function(x){return x.id===currentFuji;})[0];
+      lookName.textContent='Fujifilm · '+p.name;lookDesc.textContent=p.desc;
+    }else{
+      var b=BRANDS.filter(function(x){return x.id===currentBrand;})[0];
+      lookName.textContent=b.name;lookDesc.textContent=b.desc;
+    }
+  }
+
+  /* ---------- image loading ---------- */
+  function setupImage(img,name){
+    var MAX=2400,w=img.naturalWidth,h=img.naturalHeight;
+    var sc=Math.min(1,MAX/Math.max(w,h));
+    w=Math.round(w*sc);h=Math.round(h*sc);
+    var c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(img,0,0,w,h);
+    var data;
+    try{data=c.getContext('2d').getImageData(0,0,w,h);}
+    catch(e){setStatus('CORS ERROR — 직접 업로드 필요',false);return;}
+    currentImage={data:data,width:w,height:h};
+    baseImg.src=c.toDataURL();
+    outCanvas.width=w;outCanvas.height=h;
+    fileName.textContent=name+' · '+w+'×'+h;
+    srcName.textContent=name;
+    empty.style.display='none';
+    sizeViewer();
+    runTransform();
+  }
+  function loadFile(file){
+    if(!file||!file.type.match(/^image\//))return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      var img=new Image();
+      img.onload=function(){setupImage(img,file.name);};
+      img.src=e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  function sizeViewer(){
+    if(!currentImage)return;
+    var sw=stage.clientWidth,ratio=currentImage.width/currentImage.height;
+    var maxH=Math.max(340,window.innerHeight*0.72);
+    var w=sw,h=w/ratio;
+    if(h>maxH){h=maxH;w=h*ratio;}
+    viewer.style.width=w+'px';viewer.style.height=h+'px';
+  }
+  window.addEventListener('resize',sizeViewer);
+
+  /* ---------- upload events ---------- */
+  drop.addEventListener('click',function(){fileInput.click();});
+  fileInput.addEventListener('change',function(){if(fileInput.files[0])loadFile(fileInput.files[0]);});
+  drop.addEventListener('dragover',function(e){e.preventDefault();drop.classList.add('over');});
+  drop.addEventListener('dragleave',function(){drop.classList.remove('over');});
+  drop.addEventListener('drop',function(e){
+    e.preventDefault();drop.classList.remove('over');
+    if(e.dataTransfer.files[0])loadFile(e.dataTransfer.files[0]);
+  });
+
+  /* ---------- brand / preset UI ---------- */
+  var ALL=[{id:'original',name:'Original',sub:'Source',desc:'변환 없음 · 원본 유지'}].concat(BRANDS);
+  ALL.forEach(function(b,i){
+    var btn=document.createElement('button');
+    btn.className='bitem';btn.setAttribute('data-id',b.id);
+    btn.innerHTML='<span class="idx">'+String(i).padStart(2,'0')+'</span>'+
+      '<span><span class="bn">'+b.name+'</span><span class="bd">'+b.desc+'</span></span>'+
+      '<span class="bs">'+b.sub+'</span>';
+    btn.addEventListener('click',function(){selectBrand(b.id);});
+    brandList.appendChild(btn);
+  });
+  FUJI.forEach(function(p){
+    var btn=document.createElement('button');
+    btn.className='pitem';btn.setAttribute('data-id',p.id);
+    btn.innerHTML='<span class="pn">'+p.name+'</span><span class="pd">'+p.desc+'</span>';
+    btn.addEventListener('click',function(){selectPreset(p.id);});
+    presetList.appendChild(btn);
+  });
+  function selectBrand(id){
+    currentBrand=id;
+    document.querySelectorAll('.bitem').forEach(function(x){
+      x.classList.toggle('active',x.getAttribute('data-id')===id);
+    });
+    fujiSec.style.display=(id==='fujifilm')?'block':'none';
+    runTransform();
+  }
+  function selectPreset(id){
+    currentFuji=id;
+    document.querySelectorAll('.pitem').forEach(function(x){
+      x.classList.toggle('active',x.getAttribute('data-id')===id);
+    });
+    runTransform();
+  }
+  selectBrand('hasselblad');
+
+  intensity.addEventListener('input',function(){
+    intensity.style.setProperty('--fill',intensity.value+'%');
+    intVal.textContent=intensity.value+'%';
+    runTransform();
+  });
+
+  /* ---------- download ---------- */
+  downloadBtn.addEventListener('click',function(){
+    outCanvas.toBlob(function(blob){
+      var a=document.createElement('a');
+      var nm=currentBrand==='fujifilm'?('fujifilm_'+currentFuji):currentBrand;
+      a.href=URL.createObjectURL(blob);
+      a.download='hncs_'+nm+'.png';
+      a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+    },'image/png');
+  });
+
+  /* ---------- compare slider ---------- */
+  var pos=50,dragging=false;
+  function setPos(p){
+    pos=Math.max(1,Math.min(99,p));
+    handle.style.left=pos+'%';
+    outCanvas.style.clipPath='inset(0 0 0 '+pos+'%)';
+    knob.setAttribute('aria-valuenow',Math.round(pos));
+  }
+  function fromEvent(e){
+    var r=viewer.getBoundingClientRect();
+    var x=(e.clientX!==undefined?e.clientX:(e.touches&&e.touches[0].clientX))||0;
+    setPos((x-r.left)/r.width*100);
+  }
+  viewer.addEventListener('pointerdown',function(e){dragging=true;viewer.setPointerCapture(e.pointerId);fromEvent(e);});
+  viewer.addEventListener('pointermove',function(e){if(dragging)fromEvent(e);});
+  viewer.addEventListener('pointerup',function(){dragging=false;});
+  viewer.addEventListener('pointercancel',function(){dragging=false;});
+  knob.addEventListener('keydown',function(e){
+    if(e.key==='ArrowLeft'){setPos(pos-3);e.preventDefault();}
+    if(e.key==='ArrowRight'){setPos(pos+3);e.preventDefault();}
+  });
+  setPos(50);
+
+  /* ---------- scroll reveal ---------- */
+  var ro=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');ro.unobserve(e.target);}});
+  },{threshold:0.1});
+  document.querySelectorAll('.rv').forEach(function(el){ro.observe(el);});
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,528 @@
+{
+  "methodology": "샤프닝/미세대비/노이즈/에지헤일로는 이미지 중앙 2400x2400 크롭에서만 계산(전체 해상도에서 Sobel/가우시안 컨볼루션을 45장 다 돌리면 너무 느림 - 핫셀블라드 population 분석과 동일 방법론). 에지헤일로 overshoot는 JPEG 링잉과 진짜 샤프닝 halo를 못 가르는 한계가 있음. population은 사진 단위 동일 가중치 per-image 평균(핫셀블라드와 동일 방법론). [2026-07 수정: tools/iso_noise.py의 estimate_noise_flat_patch() off-by-one 버그(마지막 행/열 패치 누락) 수정 후 noise 필드를 patch_size=32, flat_fraction=0.1로 재계산함 (캐시된 원본 이미지 재사용, 다른 필드는 변경 없음). population 평균 0.503 -> 0.553.]",
+  "n_images": 45,
+  "population": {
+    "sharpening": {
+      "mean": 2.4805554125892852,
+      "std": 1.4884283584193396,
+      "n": 45
+    },
+    "micro_contrast": {
+      "mean": 9.884526462526482,
+      "std": 4.375751354526902,
+      "n": 45
+    },
+    "noise": {
+      "mean": 0.5525310160589915,
+      "std": 0.5512563674191023,
+      "n": 45
+    },
+    "overshoot": {
+      "mean": 22.1629716239694,
+      "std": 19.034272476126088,
+      "n": 45
+    },
+    "undershoot": {
+      "mean": 14.556554383763462,
+      "std": 10.315089928163232,
+      "n": 45
+    }
+  },
+  "per_image": [
+    {
+      "filename": "Leica_M9_221384_YL1000842.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.015442027171695,
+      "micro_contrast": 15.345503353233214,
+      "noise": 0.41196899883981714,
+      "n_edges": 499,
+      "overshoot": 17.08250586256332,
+      "undershoot": 18.095748105448365
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000859.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.0367420137400507,
+      "micro_contrast": 10.352621130579,
+      "noise": 0.15016560126724604,
+      "n_edges": 525,
+      "overshoot": 30.044245448481366,
+      "undershoot": 9.088413226458831
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000862.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.871694121998105,
+      "micro_contrast": 8.385168729543945,
+      "noise": 0.2862894422923462,
+      "n_edges": 536,
+      "overshoot": 7.01197622377747,
+      "undershoot": 6.886371321133476
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000870.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.744944902852933,
+      "micro_contrast": 16.016526464024796,
+      "noise": 0.31367667714479597,
+      "n_edges": 216,
+      "overshoot": 1.943682682449283,
+      "undershoot": 22.742632577736252
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000872.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.2626832541215762,
+      "micro_contrast": 14.286746328773674,
+      "noise": 0.3366541029955802,
+      "n_edges": 503,
+      "overshoot": 33.76255584958277,
+      "undershoot": 20.578897970478216
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000876.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.9552539312588446,
+      "micro_contrast": 13.729586929502887,
+      "noise": 0.36218457616311817,
+      "n_edges": 483,
+      "overshoot": 29.96517772539113,
+      "undershoot": 13.165193595434136
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000880.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.53414306651631,
+      "micro_contrast": 9.05132244103935,
+      "noise": 0.3505798156324191,
+      "n_edges": 749,
+      "overshoot": 3.6626741711593835,
+      "undershoot": 8.510012056228538
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000886.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.8039055232741763,
+      "micro_contrast": 11.709925295099843,
+      "noise": 0.3741374795097382,
+      "n_edges": 577,
+      "overshoot": 6.5979540245017,
+      "undershoot": 8.594457153666845
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000887.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.900727801947966,
+      "micro_contrast": 13.054818619621752,
+      "noise": 0.38214476427592053,
+      "n_edges": 329,
+      "overshoot": 2.314883605526025,
+      "undershoot": 6.211949825366888
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000892.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 0.7196390405212824,
+      "micro_contrast": 6.268988281894731,
+      "noise": 0.3540612437916288,
+      "n_edges": 928,
+      "overshoot": 17.16681833334817,
+      "undershoot": 4.857475225159234
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000896.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.231365730474776,
+      "micro_contrast": 12.509400170919594,
+      "noise": 0.3851620020139024,
+      "n_edges": 553,
+      "overshoot": 6.906337510777879,
+      "undershoot": 10.38641824756364
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000903.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.352351364676063,
+      "micro_contrast": 13.489989364682746,
+      "noise": 0.3339850080735194,
+      "n_edges": 362,
+      "overshoot": 5.087888050938176,
+      "undershoot": 3.592958548742158
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000906.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.981309071651622,
+      "micro_contrast": 15.808584485916919,
+      "noise": 0.3653178615064069,
+      "n_edges": 440,
+      "overshoot": 2.7872680163113297,
+      "undershoot": 9.38933240810394
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000920.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.987023801678322,
+      "micro_contrast": 11.369911786411102,
+      "noise": 0.6969819174737865,
+      "n_edges": 377,
+      "overshoot": 13.552426164802215,
+      "undershoot": 17.90750712402544
+    },
+    {
+      "filename": "Leica_M9_221384_YL1000925.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.92128908673468,
+      "micro_contrast": 14.3410903746569,
+      "noise": 0.3913125250951728,
+      "n_edges": 433,
+      "overshoot": 34.993281938797644,
+      "undershoot": 8.56501647053604
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000007.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.0745059806070771,
+      "micro_contrast": 6.374594427385428,
+      "noise": 0.38237685948653455,
+      "n_edges": 704,
+      "overshoot": 3.039282289318937,
+      "undershoot": 6.137624602450897
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000047.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.6990903580518626,
+      "micro_contrast": 3.79301853435973,
+      "noise": 0.5287128897786499,
+      "n_edges": 123,
+      "overshoot": 35.184201986800126,
+      "undershoot": 29.689472695108226
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000048.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 0.7924848394121684,
+      "micro_contrast": 6.422345599931322,
+      "noise": 0.4983084171882183,
+      "n_edges": 713,
+      "overshoot": 4.4354322660232155,
+      "undershoot": 6.303157571803604
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000054.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.950398815762026,
+      "micro_contrast": 8.012528035214919,
+      "noise": 0.06266570686577501,
+      "n_edges": 77,
+      "overshoot": 49.77391921257141,
+      "undershoot": 27.15979551617443
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000066.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 7.415791569419322,
+      "micro_contrast": 11.865263847260922,
+      "noise": 0.08076913329366556,
+      "n_edges": 40,
+      "overshoot": 84.70725065779979,
+      "undershoot": 28.600359792565754
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000083.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.1107779619075493,
+      "micro_contrast": 7.223302208902071,
+      "noise": 0.012068950951927037,
+      "n_edges": 1022,
+      "overshoot": 4.355886427481807,
+      "undershoot": 3.362721229792184
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000090.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 0.7759293907479965,
+      "micro_contrast": 4.507639242651405,
+      "noise": 0.3039286782990088,
+      "n_edges": 957,
+      "overshoot": 2.8882490502065727,
+      "undershoot": 3.955417354301071
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000091.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.504747370769334,
+      "micro_contrast": 11.601176469678213,
+      "noise": 0.0,
+      "n_edges": 64,
+      "overshoot": 74.93601282065507,
+      "undershoot": 22.312630887692563
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000112.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.7895613754572683,
+      "micro_contrast": 11.247286515641518,
+      "noise": 0.6989547267640053,
+      "n_edges": 54,
+      "overshoot": 39.48051826560311,
+      "undershoot": 48.86856010643463
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000116.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.3808996376756282,
+      "micro_contrast": 3.294998075341503,
+      "noise": 0.890549323125847,
+      "n_edges": 312,
+      "overshoot": 27.882368945091017,
+      "undershoot": 29.330474164633095
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000123.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 2.2484459815806903,
+      "micro_contrast": 9.13840528564444,
+      "noise": 0.9706221707876705,
+      "n_edges": 146,
+      "overshoot": 57.88851838795548,
+      "undershoot": 30.621527444989912
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000128.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.4376311051824804,
+      "micro_contrast": 2.6860677119648395,
+      "noise": 0.7366701984887772,
+      "n_edges": 425,
+      "overshoot": 25.622229684186504,
+      "undershoot": 18.580614162046505
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000130.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.1661422624693598,
+      "micro_contrast": 2.9436640453832394,
+      "noise": 0.6975621555003215,
+      "n_edges": 211,
+      "overshoot": 21.002544282758535,
+      "undershoot": 42.12008243536639
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000136.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.7571805676025507,
+      "micro_contrast": 6.063024939840714,
+      "noise": 0.35870314800390846,
+      "n_edges": 793,
+      "overshoot": 4.753522328889471,
+      "undershoot": 5.89454308939938
+    },
+    {
+      "filename": "Leica_SL2_72660_Y-JS-L1000181.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 1.1777873553643445,
+      "micro_contrast": 5.46828115002383,
+      "noise": 0.4916937036857198,
+      "n_edges": 523,
+      "overshoot": 21.085627097632848,
+      "undershoot": 13.673951389405387
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YISO_6400_L1160685-1.jpg",
+      "quality": 96,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.577341787136027,
+      "micro_contrast": 8.33974000535922,
+      "noise": 0.678762443440589,
+      "n_edges": 478,
+      "overshoot": 3.8401215232608488,
+      "undershoot": 4.4021403095944915
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YISO_6400_L1160701-1.jpg",
+      "quality": 92,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.879266368632082,
+      "micro_contrast": 7.135220382946913,
+      "noise": 3.2734708504995953,
+      "n_edges": 697,
+      "overshoot": 21.715636580556623,
+      "undershoot": 15.436612054464105
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YISO_6400_L1160708-1.jpg",
+      "quality": 97,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 3.1244795628950537,
+      "micro_contrast": 7.766037263801624,
+      "noise": 1.8770700158405758,
+      "n_edges": 669,
+      "overshoot": 8.743371474817103,
+      "undershoot": 4.779606449944219
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000745-NoSharp-1.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 0.9148387499345997,
+      "micro_contrast": 4.756502069390456,
+      "noise": 0.3914285727004798,
+      "n_edges": 356,
+      "overshoot": 19.190595781962166,
+      "undershoot": 10.798012946963599
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000751-NoSharp-1.jpg",
+      "quality": 94,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 6.037681479498307,
+      "micro_contrast": 21.11652042170389,
+      "noise": 1.6855914670840406,
+      "n_edges": 337,
+      "overshoot": 36.341535092531785,
+      "undershoot": 27.384575468325203
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000776-tele-1.jpg",
+      "quality": 94,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.538626390379554,
+      "micro_contrast": 14.330067253553043,
+      "noise": 0.3436169593139996,
+      "n_edges": 563,
+      "overshoot": 18.453061089426768,
+      "undershoot": 9.382236040233174
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1000777-wide-1.jpg",
+      "quality": 96,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.450730675044285,
+      "micro_contrast": 15.03837559396538,
+      "noise": 0.3381627218645711,
+      "n_edges": 468,
+      "overshoot": 27.11658854979226,
+      "undershoot": 6.4561932951704435
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160420-1.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 0.9735071877903111,
+      "micro_contrast": 9.764604478386637,
+      "noise": 0.2947609174797565,
+      "n_edges": 419,
+      "overshoot": 40.194739511466445,
+      "undershoot": 6.943263997534455
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160435-1.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 0.9108046372021439,
+      "micro_contrast": 6.526894909014399,
+      "noise": 0.35069586323772606,
+      "n_edges": 507,
+      "overshoot": 18.315881012951163,
+      "undershoot": 13.16974290492872
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160464-1.jpg",
+      "quality": 98,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.9758718483568027,
+      "micro_contrast": 4.802460596336417,
+      "noise": 1.2100283805359926,
+      "n_edges": 920,
+      "overshoot": 10.615679270186032,
+      "undershoot": 8.589826636593273
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160476-1.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.638995625288529,
+      "micro_contrast": 6.856278814140297,
+      "noise": 0.7843657642699504,
+      "n_edges": 501,
+      "overshoot": 9.340224623333732,
+      "undershoot": 11.218781809268993
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160518-1.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 3.797536230868815,
+      "micro_contrast": 16.41878627879139,
+      "noise": 0.21851764079306357,
+      "n_edges": 531,
+      "overshoot": 25.491664506076194,
+      "undershoot": 16.17798402563566
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160607-1.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:4:0 (1 2)",
+      "sharpening": 1.1303622114033762,
+      "micro_contrast": 6.390885373473882,
+      "noise": 0.6293261635798109,
+      "n_edges": 602,
+      "overshoot": 7.329024365339874,
+      "undershoot": 12.657771966604525
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160616-1.jpg",
+      "quality": 94,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 4.939472121081715,
+      "micro_contrast": 16.44164324105696,
+      "noise": 0.2686502062856836,
+      "n_edges": 434,
+      "overshoot": 37.158175405582696,
+      "undershoot": 10.366020723728736
+    },
+    {
+      "filename": "Leica_X_Vario_464153_YL1160633-1.jpg",
+      "quality": 99,
+      "subsampling": "YCbCr4:2:2 (2 1)",
+      "sharpening": 2.1355893803781703,
+      "micro_contrast": 12.757894286646566,
+      "noise": 0.3112396774333492,
+      "n_edges": 465,
+      "overshoot": 43.57218497995772,
+      "undershoot": 12.09886234212019
+    }
+  ]
+}

@@ -1,0 +1,558 @@
+{
+  "methodology": "사용자가 직접 리뷰 블로그/영상에서 찾아 공유한 동일 장면 다중 필름모드 비교차트 - population 비교(다른 사진들을 모아 통계 비교)와 달리 같은 노출/장면을 프레임 페어로 비교하므로 장면 편향이 없는 더 강한 증거. box_frac은 이미지 폭/높이 대비 비율([x0,y0,x1,y1]). Provia가 없는 차트는 delta 계산 없이 raw stats만 기록.",
+  "charts": [
+    {
+      "id": "chart01",
+      "source": "user_shared",
+      "scene_desc": "cement factory + pond, clear sky",
+      "image_path": "downloaded_samples_fuji_charts/chart01_cementpond_grid10.jpeg",
+      "layout": "2x5 grid",
+      "notes": "B&W 항목은 필터 표기 없어 apply_monochrome에 대응, Sepia는 대응 프리셋 없어 제외",
+      "strips": [
+        {
+          "label_raw": "Provia",
+          "film_mode": "Provia",
+          "is_baseline": true,
+          "box_frac": [
+            0.04,
+            0.04,
+            0.46,
+            0.1
+          ]
+        },
+        {
+          "label_raw": "Velvia",
+          "film_mode": "Velvia",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.04,
+            0.96,
+            0.1
+          ]
+        },
+        {
+          "label_raw": "Astia",
+          "film_mode": "Astia",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.24,
+            0.46,
+            0.3
+          ]
+        },
+        {
+          "label_raw": "Pro Neg Hi",
+          "film_mode": "Pro Neg Hi",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.24,
+            0.96,
+            0.3
+          ]
+        },
+        {
+          "label_raw": "Pro Neg Std",
+          "film_mode": "Pro Neg Std",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.44,
+            0.46,
+            0.5
+          ]
+        },
+        {
+          "label_raw": "Monochrome",
+          "film_mode": "Monochrome",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.44,
+            0.96,
+            0.5
+          ]
+        },
+        {
+          "label_raw": "Acros Yellow Filter",
+          "film_mode": "Acros Yellow Filter",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.64,
+            0.46,
+            0.7
+          ]
+        },
+        {
+          "label_raw": "Acros Red Filter",
+          "film_mode": "Acros Red Filter",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.64,
+            0.96,
+            0.7
+          ]
+        },
+        {
+          "label_raw": "Acros Green Filter",
+          "film_mode": "Acros Green Filter",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.84,
+            0.46,
+            0.9
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart02",
+      "source": "user_shared",
+      "scene_desc": "house/building facade",
+      "image_path": "downloaded_samples_fuji_charts/chart02_house_grid6.jpeg",
+      "layout": "2x3 grid",
+      "notes": "좌상단 무라벨 셀을 Provia 베이스라인으로 추정(확실친 않음) - notes로 caveat 남김. 세피아 제외.",
+      "strips": [
+        {
+          "label_raw": "(무라벨)",
+          "film_mode": "Provia",
+          "is_baseline": true,
+          "box_frac": [
+            0.04,
+            0.04,
+            0.46,
+            0.2333
+          ]
+        },
+        {
+          "label_raw": "Classic Negative",
+          "film_mode": "Classic Negative",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.04,
+            0.96,
+            0.2333
+          ]
+        },
+        {
+          "label_raw": "Eterna Cinema",
+          "film_mode": "Eterna Cinema",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.3733,
+            0.46,
+            0.5667
+          ]
+        },
+        {
+          "label_raw": "Nostalgic Neg",
+          "film_mode": "Nostalgic Neg",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.3733,
+            0.96,
+            0.5667
+          ]
+        },
+        {
+          "label_raw": "Acros",
+          "film_mode": "Acros",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.7067,
+            0.46,
+            0.9
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart03",
+      "source": "user_shared",
+      "scene_desc": "lake + mountains, clear sky",
+      "image_path": "downloaded_samples_fuji_charts/chart03_lake_grid10.jpeg",
+      "layout": "2x5 grid",
+      "notes": "B&W 항목은 apply_monochrome 대응, Sepia 제외",
+      "strips": [
+        {
+          "label_raw": "Provia",
+          "film_mode": "Provia",
+          "is_baseline": true,
+          "box_frac": [
+            0.04,
+            0.04,
+            0.46,
+            0.1
+          ]
+        },
+        {
+          "label_raw": "Velvia",
+          "film_mode": "Velvia",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.04,
+            0.96,
+            0.1
+          ]
+        },
+        {
+          "label_raw": "Astia",
+          "film_mode": "Astia",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.24,
+            0.46,
+            0.3
+          ]
+        },
+        {
+          "label_raw": "Pro Neg Std",
+          "film_mode": "Pro Neg Std",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.24,
+            0.96,
+            0.3
+          ]
+        },
+        {
+          "label_raw": "Pro Neg Hi",
+          "film_mode": "Pro Neg Hi",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.44,
+            0.46,
+            0.5
+          ]
+        },
+        {
+          "label_raw": "Monochrome",
+          "film_mode": "Monochrome",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.44,
+            0.96,
+            0.5
+          ]
+        },
+        {
+          "label_raw": "Acros Yellow Filter",
+          "film_mode": "Acros Yellow Filter",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.64,
+            0.46,
+            0.7
+          ]
+        },
+        {
+          "label_raw": "Acros Red Filter",
+          "film_mode": "Acros Red Filter",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.64,
+            0.96,
+            0.7
+          ]
+        },
+        {
+          "label_raw": "Acros Green Filter",
+          "film_mode": "Acros Green Filter",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.84,
+            0.46,
+            0.9
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart04",
+      "source": "user_shared",
+      "scene_desc": "rooftop apartment buildings, golden hour",
+      "image_path": "downloaded_samples_fuji_charts/chart04_rooftop_grid10.jpeg",
+      "layout": "2x5 grid",
+      "notes": "한글 라벨(프로비아/스탠다드 등). Classic Chrome/Sepia는 대응 프리셋 없어 제외. Pro Neg Hi/Eterna Cinema/Acros를 동일장면으로 확보한 귀중한 소스.",
+      "strips": [
+        {
+          "label_raw": "Provia",
+          "film_mode": "Provia",
+          "is_baseline": true,
+          "box_frac": [
+            0.04,
+            0.04,
+            0.46,
+            0.1
+          ]
+        },
+        {
+          "label_raw": "Velvia",
+          "film_mode": "Velvia",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.04,
+            0.96,
+            0.1
+          ]
+        },
+        {
+          "label_raw": "Astia",
+          "film_mode": "Astia",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.24,
+            0.46,
+            0.3
+          ]
+        },
+        {
+          "label_raw": "Pro Neg Hi",
+          "film_mode": "Pro Neg Hi",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.44,
+            0.46,
+            0.5
+          ]
+        },
+        {
+          "label_raw": "Pro Neg Std",
+          "film_mode": "Pro Neg Std",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.44,
+            0.96,
+            0.5
+          ]
+        },
+        {
+          "label_raw": "Eterna Cinema",
+          "film_mode": "Eterna Cinema",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.64,
+            0.46,
+            0.7
+          ]
+        },
+        {
+          "label_raw": "Acros",
+          "film_mode": "Acros",
+          "is_baseline": false,
+          "box_frac": [
+            0.54,
+            0.64,
+            0.96,
+            0.7
+          ]
+        },
+        {
+          "label_raw": "Monochrome",
+          "film_mode": "Monochrome",
+          "is_baseline": false,
+          "box_frac": [
+            0.04,
+            0.84,
+            0.46,
+            0.9
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart05",
+      "source": "user_shared",
+      "scene_desc": "fallen maple leaves on pavement, shallow DOF",
+      "image_path": "downloaded_samples_fuji_charts/chart05_mapleleaves_diag5.jpeg",
+      "layout": "5 diagonal strips",
+      "notes": "대각선 컷이라 각 라벨 중앙부만 좁게 크롭(폭 0.12)해서 인접 스트립 침범 방지. Provia 베이스라인이 이 차트엔 없어서 비교 delta 계산 불가 - raw stats만 기록.",
+      "strips": [
+        {
+          "label_raw": "Monochrome",
+          "film_mode": "Monochrome",
+          "is_baseline": false,
+          "box_frac": [
+            0.03,
+            0.15,
+            0.15,
+            0.75
+          ]
+        },
+        {
+          "label_raw": "Astia",
+          "film_mode": "Astia",
+          "is_baseline": false,
+          "box_frac": [
+            0.63,
+            0.15,
+            0.75,
+            0.75
+          ]
+        },
+        {
+          "label_raw": "Velvia",
+          "film_mode": "Velvia",
+          "is_baseline": false,
+          "box_frac": [
+            0.83,
+            0.15,
+            0.95,
+            0.75
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart06",
+      "source": "user_shared",
+      "scene_desc": "wheat field with wind turbines",
+      "image_path": "downloaded_samples_fuji_charts/chart06_wheatfield_strip4.webp",
+      "layout": "1 large panel(Classic Chrome, 제외) + 3 strips",
+      "notes": "왼쪽 큰 패널(Classic Chrome)은 대응 프리셋 없어 제외, 우측 3스트립만 사용.",
+      "strips": [
+        {
+          "label_raw": "Provia",
+          "film_mode": "Provia",
+          "is_baseline": true,
+          "box_frac": [
+            0.56,
+            0.1,
+            0.7,
+            0.8
+          ]
+        },
+        {
+          "label_raw": "Velvia",
+          "film_mode": "Velvia",
+          "is_baseline": false,
+          "box_frac": [
+            0.72,
+            0.1,
+            0.86,
+            0.8
+          ]
+        },
+        {
+          "label_raw": "Astia",
+          "film_mode": "Astia",
+          "is_baseline": false,
+          "box_frac": [
+            0.88,
+            0.1,
+            0.99,
+            0.8
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart07",
+      "source": "user_shared",
+      "scene_desc": "Gyeongbokgung palace gate, blue sky",
+      "image_path": "downloaded_samples_fuji_charts/chart07_gyeongbokgung_grid4.jpeg",
+      "layout": "2x2 grid",
+      "notes": "Classic Chrome은 대응 프리셋 없어 제외. 해상도가 작아(420x285) 통계 신뢰도 낮을 수 있음.",
+      "strips": [
+        {
+          "label_raw": "Provia",
+          "film_mode": "Provia",
+          "is_baseline": true,
+          "box_frac": [
+            0.03,
+            0.03,
+            0.47,
+            0.4
+          ]
+        },
+        {
+          "label_raw": "Velvia",
+          "film_mode": "Velvia",
+          "is_baseline": false,
+          "box_frac": [
+            0.53,
+            0.03,
+            0.97,
+            0.4
+          ]
+        },
+        {
+          "label_raw": "Astia",
+          "film_mode": "Astia",
+          "is_baseline": false,
+          "box_frac": [
+            0.03,
+            0.53,
+            0.47,
+            0.9
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chart08",
+      "source": "user_shared",
+      "scene_desc": "portrait, woman against corrugated wall",
+      "image_path": "downloaded_samples_fuji_charts/chart08_portrait_strip4.jpeg",
+      "layout": "4 vertical strips",
+      "notes": "Provia 베이스라인이 없어서 실측 delta 계산 불가 - raw stats만 기록. Classic Neg/Nostalgic Neg를 인물사진으로 확보(피부톤 영향 있을 수 있어 delta 해석시 유의). Classic Chrome은 대응 프리셋 없어 제외.",
+      "strips": [
+        {
+          "label_raw": "Astia",
+          "film_mode": "Astia",
+          "is_baseline": false,
+          "box_frac": [
+            0.28,
+            0.3,
+            0.47,
+            0.97
+          ]
+        },
+        {
+          "label_raw": "Classic Negative",
+          "film_mode": "Classic Negative",
+          "is_baseline": false,
+          "box_frac": [
+            0.53,
+            0.3,
+            0.72,
+            0.97
+          ]
+        },
+        {
+          "label_raw": "Nostalgic Neg",
+          "film_mode": "Nostalgic Neg",
+          "is_baseline": false,
+          "box_frac": [
+            0.78,
+            0.3,
+            0.97,
+            0.97
+          ]
+        }
+      ]
+    }
+  ]
+}

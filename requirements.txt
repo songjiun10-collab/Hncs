@@ -1,0 +1,16 @@
+opencv-contrib-python==5.0.0.93
+numpy==2.4.6
+rawpy==0.27.0
+requests==2.34.2
+gdown==6.1.0
+colour-science==0.4.7
+scikit-image==0.26.0
+scipy==1.17.1
+lensfunpy==1.18.0
+OpenEXR==3.4.14
+imageio-ffmpeg==0.6.0
+Pillow==12.3.0
+torch==2.13.0
+onnxruntime==1.28.0
+onnx==1.22.0
+mcp==2.0.0
