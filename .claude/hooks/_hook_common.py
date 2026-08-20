@@ -63,7 +63,7 @@ also never actually a CRITICAL-only gate - see the note in
   `protect_push_safety.py`(force-push)에서 서브에이전트발 호출은
   override조차 받지 않고 무조건 deny - "override는 self-servable"이라는
   한계가 가장 치명적인 등급이라, 서브에이전트가 스스로 bash 주석/sentinel
-  파일을 쓰 경로 자체를 없았다. 오케스트레이터 직접 호출은
+  파일을 쓰 경로 자체를 없었다. 오케스트레이터 직접 호출은
   기존 override 메커니즘 그대로(이 세션의 learned-LUT 리팩토링이 바로
   이 경로로 진행됐다).
 
@@ -116,6 +116,29 @@ LOW(`protect_agent_model_naming.py`)는 이 게이트 대상이 아님 - LOW의
 `protect_decision_record_bypass.py`(신규, override 없음)가 무조건
 막아서 MCP 툴이 유일한 통로가 되게 했다.
 
+**추가 (2026-08-19, HNCS Hook Evolution phase 1 - 2-Agent Consensus)**:
+HIGH 등급 6개 훅에 새 fast path가 하나 더 생겼다 -
+`docs/superpowers/specs/2026-08-19-hook-evolution-design.md`/
+`docs/superpowers/plans/2026-08-19-hook-evolution-phase1-consensus.md`
+참고. 컨트롤러가 가드된 HIGH-risk 액션 전에 같은 모델(기본 opus), 다른
+프레이밍/역할로 Agent 2개(A, B)를 독립 디스패치하면,
+`record_consensus_judgment.py`(PostToolUse, Agent matcher)가 각 응답의
+`CONSENSUS-VERDICT: <rule> :: <target> :: <role:A|B> :: <SAFE|RISKY> ::
+<reasoning>` 마커를 파싱해서 `write_consensus_verdict()`로 기록한다.
+`consensus_verdict()`가 둘 다 도착했을 때만(한쪽만 있으면 `None`, 계속
+대기) 합의 여부를 판정 - 합의(둘 다 SAFE 또는 둘 다 RISKY)면
+`allow_with_consensus()`가 override와 동일한 방식으로 로그에 남기고
+자동 allow/deny, 불일치(disagree)거나 애초에 디스패치를 안 해서 데이터가
+없으면(`None`) 기존 `high_tier_decision()`(직접호출 ask()/서브에이전트
+deny) 경로로 그대로 fallback한다 - 순수 추가 기능, 안 쓰면 기존 동작과
+완전히 동일. `medium_approval()`/`write_medium_approval()`과 같은
+sentinel 계약(fresh 10분, rule+target 매칭, 1회성 소비)을 따르되, 두
+역할(A/B)이 서로 다른 시점에 도착하는 걸 감안해 "한쪽만 있으면 아직
+안 지운다"는 조건이 하나 추가됐다 - 자세한 계약은 `consensus_verdict()`
+자체 docstring 참고. 이 sentinel도 `protect_decision_record_bypass.py`가
+Edit/Write로부터 보호한다(2차 라운드 finding #8 - 새 sentinel을 보호
+없이 내보내지 않는다는 교훈 반영).
+
 ## Override mechanism
 
 The point (user's own framing): "훅은 개발자를 대신 판단하지 않는다.
@@ -164,6 +187,8 @@ _PENDING_CAUTION_PATH = os.environ.get(
 _DECISION_RECORD_PATH = os.environ.get(
     "HNCS_HOOK_DECISION_RECORD_SENTINEL",
     os.path.join(_HOOKS_DIR, ".pending_decision_record.json"))
+_CONSENSUS_PATH = os.environ.get(
+    "HNCS_HOOK_CONSENSUS_SENTINEL", os.path.join(_HOOKS_DIR, ".pending_consensus.json"))
 
 SEVERITIES = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
 
@@ -173,6 +198,8 @@ _BASH_OVERRIDE_RE = re.compile(
 _SENTINEL_MAX_AGE_SECONDS = 600  # 10min - forces a fresh, deliberate write
 _MEDIUM_APPROVAL_MAX_AGE_SECONDS = 600
 _DECISION_RECORD_MAX_AGE_SECONDS = 600
+_CONSENSUS_MAX_AGE_SECONDS = 600
+_CONSENSUS_ROLES = ("A", "B")
 
 # Distinguishes "no decision was passed, look it up yourself" (the default,
 # backward-compatible behavior) from "decision=None was passed explicitly,
@@ -450,6 +477,97 @@ def allow_with_medium_approval(hook_name, severity, rule, target, caution, decis
     allow()
 
 
+def write_consensus_verdict(rule, target, role, verdict, reasoning):
+    """HNCS Hook Evolution phase 1 (2026-08-19) - called by
+    record_consensus_judgment.py after parsing a genuine CONSENSUS-VERDICT
+    marker out of one of the two independently-dispatched agents'
+    responses. `role` is "A" or "B" (raises ValueError otherwise),
+    `verdict` is "SAFE" or "RISKY". If an existing pending record matches
+    rule+target and is fresh, merges this role's verdict into it (so A and
+    B can arrive in either order, from two separate PostToolUse events);
+    otherwise starts a fresh record - same single-slot-per-target design
+    as every other sentinel here, so a verdict for a *different* target
+    discards whatever was pending for the old one."""
+    if role not in _CONSENSUS_ROLES:
+        raise ValueError(f"role must be one of {_CONSENSUS_ROLES}")
+    existing = None
+    if os.path.exists(_CONSENSUS_PATH):
+        try:
+            with open(_CONSENSUS_PATH, encoding="utf-8") as f:
+                data = json.load(f)
+            age = time.time() - float(data.get("timestamp", 0))
+            if (age <= _CONSENSUS_MAX_AGE_SECONDS
+                    and data.get("rule") == rule and data.get("target") == target):
+                existing = data
+        except Exception:
+            existing = None
+    verdicts = dict(existing.get("verdicts", {})) if existing else {}
+    verdicts[role] = {"verdict": verdict, "reasoning": reasoning}
+    with open(_CONSENSUS_PATH, "w", encoding="utf-8") as f:
+        json.dump({"rule": rule, "target": target, "verdicts": verdicts,
+                    "timestamp": time.time()}, f)
+
+
+def consensus_verdict(rule, target):
+    """Checks `.pending_consensus.json` for a fresh (<=10min), matching
+    (same rule+target) record with BOTH "A" and "B" verdicts present.
+    Returns None if no record, stale, wrong rule/target, or only one role
+    has reported yet (a not-yet-complete record is left alone - deleting
+    it early would discard the first role's verdict before the second one
+    can merge into it). Returns "agree_safe"/"agree_risky" if both roles
+    gave the same verdict, "disagree" otherwise. Consumes (deletes) the
+    record ONLY when both roles are present and a verdict is returned."""
+    if not os.path.exists(_CONSENSUS_PATH):
+        return None
+    try:
+        with open(_CONSENSUS_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    try:
+        age = time.time() - float(data.get("timestamp", 0))
+    except (TypeError, ValueError):
+        return None
+    if age > _CONSENSUS_MAX_AGE_SECONDS:
+        return None
+    if data.get("rule") != rule or data.get("target") != target:
+        return None
+    verdicts = data.get("verdicts", {})
+    if not all(r in verdicts for r in _CONSENSUS_ROLES):
+        return None
+    try:
+        os.remove(_CONSENSUS_PATH)
+    except OSError:
+        pass
+    a, b = verdicts["A"]["verdict"], verdicts["B"]["verdict"]
+    if a == b == "SAFE":
+        return "agree_safe"
+    if a == b == "RISKY":
+        return "agree_risky"
+    return "disagree"
+
+
+def allow_with_consensus(hook_name, severity, rule, target, verdict, decision_id=None, decision=_UNSET):
+    """HIGH tier, 2-agent consensus resolved (consensus_verdict() returned
+    "agree_safe" or "agree_risky" - never called with "disagree"/None,
+    those fall through to the caller's existing high_tier_decision() path
+    unchanged). Logs like an override - both violations_log.jsonl (near
+    real denials) and override_audit.jsonl (tagged with the consensus
+    outcome) - then allows or denies to match the agreed verdict."""
+    dr = decision_record(rule, target=target, decision_id=decision_id) if decision is _UNSET else decision
+    note = f"CONSENSUS ({verdict}, rule={rule}): 2-agent independent review agreed"
+    if verdict == "agree_safe":
+        _log_event(hook_name, severity, note, overridden=True,
+                   decision_kind="consensus_allow", target=target, decision=dr)
+        _record_override(rule, severity, target, note, decision=dr)
+        allow()
+    else:
+        _log_event(hook_name, severity, note, overridden=False,
+                   decision_kind="consensus_deny", target=target, decision=dr)
+        deny(hook_name, f"{note} - both independent reviewers judged this risky.",
+             severity=severity, target=target, decision_id=decision_id, decision=dr)
+
+
 def write_pending_caution(tool_use_id, caution):
     """Records a caution message for delivery via deliver_caution.py's
     PostToolUse hook once the just-approved call actually completes,
@@ -699,11 +817,12 @@ def _log_event(hook_name, severity, reason, overridden, decision_kind=None,
     addition (no `decision_kind`/`target`/`decision` keys at all) when
     omitted - old entries and any not-yet-threaded caller stay backward
     compatible. `decision_kind` is one of "deny"/"ask"/"log_and_allow"/
-    "override"/"medium_approval" (mirrors the calling function's name,
-    since deny() and ask() otherwise write structurally identical entries
-    with no way to tell which produced a given line - see ask()'s
-    docstring for why that distinction matters for eval_hook_judgments.py's
-    "ask_unknown" outcome category)."""
+    "override"/"medium_approval"/"consensus_allow"/"consensus_deny"
+    (mirrors the calling function's name, since deny() and ask()
+    otherwise write structurally identical entries with no way to tell
+    which produced a given line - see ask()'s docstring for why that
+    distinction matters for eval_hook_judgments.py's "ask_unknown"
+    outcome category)."""
     entry = {
         "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "hook": hook_name,
