@@ -600,6 +600,29 @@ allow까지 끌고 갈 수 있다는 뜻. 대응 방향: `protect_decision_recor
    `_EVIDENCE_MARKER_RE`는 파일이 실제로 존재하는지도, 인용된 파일이
    그 수치와 조금이라도 관련 있는지도 전혀 확인 안 함 - 정규식이 텍스트
    어딘가에 `\.py\b`/`\.md\b` 패턴만 있으면 통과시킴.
+10. **(2026-08-19 추가) 근거-마커에 "근처(nearby)" 개념이 아예 없음 -
+    편집 텍스트 전체에서 한 군데만 있으면 무관한 다른 주장까지 다
+    무임승차함.** `protect_experiment_integrity.py`의 `missing_ci_reason()`도
+    `protect_claim_evidence.py`의 `unbacked_claim_reason()`도 둘 다
+    `_RESULT_CLAIM_RE.search(added_text)`/`_CI_MENTION_RE.search(added_text)`처럼
+    **전체 텍스트에 대해** "패턴이 존재하냐"만 boolean으로 보지, 어느
+    주장 근처에 어느 근거가 있는지 짝을 안 짓는다. `hybrid_engine/
+    EVALUATION.md`에 `"브랜드 A: +45% 개선. 브랜드 B: +12% 개선."`
+    (대조군, 근거 전혀 없음)을 흘리면 정상적으로 `ask`(HIGH 등급 직접
+    호출 경로). 그런데 `"브랜드 A: +45% 개선. 브랜드 B: +12% 개선 (CI:
+    [8.1, 15.2], bootstrap n=1000)."`(A는 여전히 무근거, B에만 진짜 CI가
+    붙음)는 `allow` - A의 근거 없는 주장이 B의 진짜 CI에 무임승차해서
+    같이 통과함. `protect_claim_evidence.py`에서도 동일 패턴 확인:
+    `"이 브랜드는 200% 더 빠르다. 별개로 15개 프리셋을 지원한다(\`ls
+    presets/ | wc -l\`로 확인)."` - "200% 더 빠르다"는 완전히 무근거인데
+    뒤쪽 무관한 주장의 backtick 근거 하나로 전체가 `allow`.
+11. **(2026-08-19 추가) backtick 안 내용을 전혀 검증 안 함 - 자기모순
+    텍스트도 "근거"로 통과.** `_EVIDENCE_MARKER_RE`의 `` `[^`]+` ``는
+    backtick 쌍 사이에 아무 텍스트나 있으면 매칭된다 - 그 안이 실제
+    명령/파일인지조차 안 봄. `"성능이 300% 향상되었다 (\`실제로는 그냥
+    지어낸 숫자임, 검증 안 함\`)."` - 근거로 인용된 backtick 텍스트가
+    스스로 "지어낸 숫자"라고 자백하는데도 `allow`. 대조군(같은 문장에서
+    backtick 자체를 제거)은 정상 `deny`(위 F1 기준 확인).
 
 대응 방향(전부 미수정): (1)(2) heredoc 본문도 실행되는 인터프리터
 호출(`python3 -`, `python3 <file>`, `sh`, `perl` 등)에 넘겨질 땐
@@ -615,7 +638,10 @@ config --get-regexp alias\\..*force` 같은 별칭 사전 스캔이 필요하면
 `.last_whole_branch_review_sha`도 `protect_decision_record_bypass.py`류
 가드(Edit/Write **및 Bash** 양쪽 다) 추가. (9) 근거 마커에 단어 경계
 (`\blog\b` 등)와, 파일 확장자 마커는 그 파일이 실제로 존재하는지
-정도는 검증.
+정도는 검증. (10) claim-evidence 짝짓기를 문장/줄 단위로 좁혀서 각
+주장 근처에 각자의 근거가 있는지 확인 - 전체 텍스트 boolean AND가
+아니라. (11) backtick 마커도 최소한 그 안이 실제 셸 명령/파일
+경로처럼 보이는지 정도는 패턴 체크.
 
 ### 3차 라운드 - CRITICAL의 override/서브에이전트 판별 로직 자체는 안 뚫림(2026-08-18)
 
