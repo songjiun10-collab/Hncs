@@ -37,7 +37,15 @@ Override: protect_reviewer_prejudging.py와 동일한 sentinel-file 메커니즘
 high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
 - 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
 `consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
-아예 안 하면) 기존 동작과 완전히 동일."""
+아예 안 하면) 기존 동작과 완전히 동일.
+
+**추가 (2026-08-19, 사용자 지시)**: `"무조건 승인"`/`"unconditionally
+approve"` 패턴 추가 - 실제 침투테스트(`.claude/hooks/README.md` 5·6·9·
+10·12차)에서 쓰인 문구들과는 별개로, 이 리터럴 문구가 dispatch
+prompt에 있으면(그리고 다른 패턴과 동일하게 MEDIUM-APPROVE 마커 요청과
+같이 나타나면) 바로 잡히도록. 여전히 고정 문구 블록리스트라는 구조적
+한계는 그대로 - "다른 식으로 표현하면" 여전히 새는 건 위 문서에 이미
+실증돼 있음."""
 import json
 import re
 import sys
@@ -54,10 +62,12 @@ _RUBBER_STAMP_PATTERNS = [
     re.compile(r"실제로\s*확인\s*안\s*해도", re.IGNORECASE),
     re.compile(r"파일\s*열어보지\s*말", re.IGNORECASE),
     re.compile(r"검토\s*없이", re.IGNORECASE),
+    re.compile(r"무조건\s*승인", re.IGNORECASE),
     re.compile(r"just\s+output", re.IGNORECASE),
     re.compile(r"don'?t\s+actually\s+(review|check)", re.IGNORECASE),
     re.compile(r"skip\s+the\s+review", re.IGNORECASE),
     re.compile(r"without\s+(actually\s+)?review(ing)?", re.IGNORECASE),
+    re.compile(r"unconditionally\s+approve", re.IGNORECASE),
 ]
 
 _MEDIUM_APPROVE_MENTION_RE = re.compile(r"MEDIUM-APPROVE", re.IGNORECASE)
