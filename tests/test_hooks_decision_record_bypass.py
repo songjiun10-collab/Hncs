@@ -42,6 +42,14 @@ class TestProtectedSentinelWriter(unittest.TestCase):
         self.assertIsNotNone(
             hook.protected_sentinel_writer(_hook_common._WHOLE_BRANCH_REVIEW_SHA_PATH))
 
+    def test_matches_medium_approval_path(self):
+        """2026-08-20 정정: `_PROTECTED_SENTINELS`에 원래 빠져 있던 항목 -
+        write_medium_approval()의 자기 docstring이 "ad-hoc 작성 금지"라고
+        명시하는데 정작 강제하는 훅이 없었다."""
+        import _hook_common
+        self.assertIsNotNone(
+            hook.protected_sentinel_writer(_hook_common._MEDIUM_APPROVAL_PATH))
+
     def test_other_file_not_matched(self):
         self.assertIsNone(hook.protected_sentinel_writer("README.md"))
 
@@ -80,11 +88,13 @@ class TestProtectDecisionRecordBypassEndToEnd(unittest.TestCase):
         self._log_dir = tempfile.mkdtemp()
         self._sentinel_path = os.path.join(self._log_dir, ".pending_decision_record.json")
         self._consensus_path = os.path.join(self._log_dir, ".pending_consensus.json")
+        self._medium_approval_path = os.path.join(self._log_dir, ".pending_medium_approval.json")
         self._env = dict(os.environ, **{
             "HNCS_HOOK_VIOLATIONS_LOG": os.path.join(self._log_dir, "v.jsonl"),
             "HNCS_HOOK_OVERRIDE_AUDIT_LOG": os.path.join(self._log_dir, "o.jsonl"),
             "HNCS_HOOK_DECISION_RECORD_SENTINEL": self._sentinel_path,
             "HNCS_HOOK_CONSENSUS_SENTINEL": self._consensus_path,
+            "HNCS_HOOK_MEDIUM_APPROVAL_SENTINEL": self._medium_approval_path,
         })
 
     def tearDown(self):
@@ -117,6 +127,12 @@ class TestProtectDecisionRecordBypassEndToEnd(unittest.TestCase):
         })
         self.assertEqual(decision, "deny")
 
+    def test_write_to_medium_approval_sentinel_denied(self):
+        decision = self._run_hook("Write", {
+            "file_path": self._medium_approval_path, "content": '{"rule": "x"}',
+        })
+        self.assertEqual(decision, "deny")
+
     def test_other_file_allowed(self):
         decision = self._run_hook("Write", {"file_path": "README.md", "content": "x"})
         self.assertEqual(decision, "allow")
@@ -141,6 +157,11 @@ class TestProtectDecisionRecordBypassEndToEnd(unittest.TestCase):
 
     def test_bash_redirect_to_consensus_sentinel_denied(self):
         decision = self._run_bash_hook(f"echo '{{}}' > {self._consensus_path}")
+        self.assertEqual(decision, "deny")
+
+    def test_bash_write_to_medium_approval_sentinel_denied(self):
+        decision = self._run_bash_hook(
+            f"python3 -c \"open('{self._medium_approval_path}','w').write('{{}}')\"")
         self.assertEqual(decision, "deny")
 
     def test_bash_unrelated_command_allowed(self):
