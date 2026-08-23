@@ -91,6 +91,12 @@ class TestDestructiveReason(unittest.TestCase):
     def test_safe_command_not_flagged(self):
         self.assertIsNone(hook.destructive_reason("ls -la"))
 
+    def test_eval_wrapped_rm_rf_still_flagged(self):
+        """2026-08-20 정정 (README 2차 라운드 #4, 실증): eval "rm -rf
+        ..."가 _STMT_START 요건을 못 맞춰서 완전히 안 걸렸다."""
+        self.assertIsNotNone(hook.destructive_reason(
+            'eval "rm -rf /home/user/real_dir"'))
+
 
 class TestProtectDestructiveEndToEnd(unittest.TestCase):
     def setUp(self):

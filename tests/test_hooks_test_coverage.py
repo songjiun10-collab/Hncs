@@ -133,6 +133,14 @@ class TestProtectTestCoverageEndToEnd(unittest.TestCase):
         self.assertEqual(entry["rule"], "protect_test_coverage")
         self.assertEqual(entry["severity"], "HIGH")
 
+    def test_eval_wrapped_commit_still_asks(self):
+        """2026-08-20 정정 (README 2차 라운드 #4, 실증): eval "git commit
+        ..."가 _STMT_START 요건을 못 맞춰서 완전히 안 걸렸다."""
+        self._write("tools/new_thing.py", "x = 1\n")
+        self._run("git", "add", "tools/new_thing.py")
+        self._write_decision_record("tools/new_thing.py")
+        self.assertEqual(self._run_hook('eval "git commit -m add"'), "ask")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -31,14 +31,26 @@ available via a trailing `# HNCS-OVERRIDE: protect_push_safety: <reason>`
 comment (see `_hook_common.py`'s module docstring for the tier design).
 The authorship-mismatch check has no override - there's no legitimate
 reason to push with the wrong author when the fix is one command; it's
-always resolvable rather than something to consciously bypass."""
+always resolvable rather than something to consciously bypass.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #4/#5 - 2개 실측
+결함 수정)**: (1) `eval "git push --force ..."`는 `git`이 큰따옴표
+바로 뒤라 `_STMT_START`가 요구하는 문 시작 위치가 아니어서 완전히
+안 걸렸다 - `_hook_common.unwrap_eval()`로 eval/bash -c/sh -c에 감싸인
+내용도 스캔 대상에 포함시켜 고침. (2) `git config`에 등록된 별칭
+(`git pushf` 같은)이 실제로는 `push --force`를 실행해도, 훅이 보는
+텍스트엔 "push"도 "--force"도 리터럴로 안 나타나서 전혀 못 봤다 -
+`git config --get-regexp '^alias\\.'`로 force-push를 실행하는 별칭
+이름을 미리 조회해서, 그 이름으로의 호출도 force-push로 취급하도록
+추가."""
 import json
 import re
 import subprocess
 import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
-                           is_subagent_call, require_decision_or_deny)
+                           is_subagent_call, require_decision_or_deny,
+                           unwrap_eval)
 
 HOOK_NAME = "protect_push_safety"
 SEVERITY = "CRITICAL"
@@ -55,6 +67,7 @@ _PUSH_INVOCATION_RE = re.compile(
     _STMT_START + r"git(?:\s+" + _GIT_GLOBAL_OPT + r"){0,6}\s+push\b(?P<args>[^\n;&|`]*)"
 )
 _FORCE_RE = re.compile(r"(^|\s)(--force(-with-lease)?(=\S+)?|-f)(\s|$)")
+_ALIAS_LINE_RE = re.compile(r"^alias\.([\w-]+)\s+(.*)$")
 
 
 def read_input():
@@ -70,20 +83,57 @@ def head_author_email():
         return None
 
 
+def force_push_alias_names():
+    """Returns the set of `git config` alias names whose expansion itself
+    force-pushes (contains "push" and a force flag) - so `git <alias>`
+    can be recognized as a force-push even though neither "push" nor
+    "--force" appears literally in the invoking command's own text."""
+    try:
+        out = subprocess.run(["git", "config", "--get-regexp", r"^alias\."],
+                              capture_output=True, text=True, timeout=10)
+    except Exception:
+        return set()
+    if out.returncode != 0:
+        return set()
+    names = set()
+    for line in out.stdout.splitlines():
+        m = _ALIAS_LINE_RE.match(line)
+        if not m:
+            continue
+        name, expansion = m.group(1), m.group(2)
+        if re.search(r"\bpush\b", expansion) and _FORCE_RE.search(expansion + " "):
+            names.add(name)
+    return names
+
+
+def alias_invocation_re(names):
+    if not names:
+        return None
+    alternation = "|".join(re.escape(n) for n in sorted(names))
+    return re.compile(_STMT_START + r"git\s+(?:" + alternation + r")\b(?P<args>[^\n;&|`]*)")
+
+
 def main():
     data = read_input()
     if data.get("tool_name") != "Bash":
         allow()
         return
-    command = str((data.get("tool_input") or {}).get("command", ""))
+    command = unwrap_eval(str((data.get("tool_input") or {}).get("command", "")))
 
-    matches = list(_PUSH_INVOCATION_RE.finditer(command))
-    if not matches:
+    # (match, is_already_known_force) pairs - a plain `git push` match still
+    # needs its own args checked for a force flag; an alias match is force
+    # by construction (force_push_alias_names() already confirmed the
+    # alias's own expansion force-pushes), so it skips that re-check.
+    candidates = [(m, None) for m in _PUSH_INVOCATION_RE.finditer(command)]
+    alias_re = alias_invocation_re(force_push_alias_names())
+    if alias_re:
+        candidates += [(m, True) for m in alias_re.finditer(command)]
+    if not candidates:
         allow()
         return
 
-    for m in matches:
-        if _FORCE_RE.search(m.group("args")):
+    for m, known_force in candidates:
+        if known_force or _FORCE_RE.search(m.group("args")):
             decision = require_decision_or_deny(
                 HOOK_NAME, SEVERITY, command,
                 "CLAUDE.md: \"Push rejected -> git fetch + git rebase, never force.\" "
