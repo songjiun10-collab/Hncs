@@ -288,20 +288,46 @@ instruction record에 같은 패턴을 쓰면 안 된다. "불변 기록"이 목
 한다. 기존 sentinel 3종과 파일/함수 이름이 비슷해서 다음 구현자가
 무심코 소비형으로 만들 위험이 실재한다.
 
-### A5. join key 미정 — 라이브 측정이 선행돼야 한다
+### A5. join key — 라이브 측정 완료 (2026-08-23)
 
-2절의 `call_id`가 이 설계의 전제인데, 이걸 뭘로 삼을지 아직 모른다.
+2절의 `call_id`가 이 설계의 전제였는데, 라이브 Agent 디스패치 1회로
+측정 완료. `record_consensus_judgment.py` 선례(2026-08-15)와 같은
+방식: payload를 통째로 덤프하는 임시 훅(`_tmp_dump_payload.py`)을
+만들어 `.claude/settings.json`의 Agent matcher PreToolUse/PostToolUse
+양쪽에 잠깐 등록하고, `general-purpose`/`sonnet` Agent를 실제로 1회
+디스패치("README.md 첫 줄만 읽어서 그대로 출력")한 뒤 덤프를 확인,
+훅과 settings.json 등록은 측정 직후 원복(diff에 임시 훅 없음).
 
-- 기존 매칭 규율은 `rule + (target | decision_id)`이고, 이건 "가드된
-  액션 1건"을 가리키지 "Agent call 1건"을 가리키지 않는다.
-- PostToolUse payload에 `tool_use_id`가 실제로 오는지는 이 레포에서 한
-  번도 확인 안 됐다(A2의 0건 검색). `resolvedModel` 존재를 2026-08-15에
-  라이브 디스패치로 확인한 것과 **같은 방식의 측정이 먼저** 필요하다.
-- PreToolUse 기록과 PostToolUse 기록을 같은 call로 묶는 것도 이 키에
-  달려 있다. 키가 없으면 timestamp+prompt 해시 같은 임시방편이 되는데,
-  그건 동일 프롬프트 재디스패치에서 깨진다.
+**PreToolUse 최상위 키** (9개):
+`cwd`, `effort`, `hook_event_name`, `permission_mode`, `prompt_id`,
+`session_id`, `tool_input`, `tool_name`, `tool_use_id`,
+`transcript_path`
 
-**측정 전에는 스키마를 확정하지 않는다.**
+**PostToolUse 최상위 키** (11개, PreToolUse + 2개):
+위 9개 + `duration_ms`, `tool_response`
+
+**결론 — `tool_use_id`가 join key다. 확정.**
+
+- `tool_use_id`는 PreToolUse와 PostToolUse 양쪽에 존재하고, 같은 Agent
+  call에서 **동일한 값**이었다(실측: 양쪽 다
+  `toolu_01HyT1VXnq3XbVFFmoZ3MkzM`). A2가 "0건"이라 적었던 건 레포
+  텍스트 검색 결과였을 뿐 — 훅이 실제로 이 필드를 안 쓰고 있었던 것과
+  payload에 필드가 안 오는 것은 다른 문제였다. 필드는 원래 왔다.
+- 부가 확인: PostToolUse에 `tool_input`이 `tool_response`와 함께
+  같이 온다(실측: `tool_input`에 `prompt`/`description`/
+  `subagent_type`/`model` 전부 포함, `tool_response`에
+  `content`/`resolvedModel`/`usage`/`toolStats` 등 포함). 즉
+  instruction(`tool_input`)과 response(`tool_response`)를
+  **PostToolUse 훅 한 곳에서 동시에** 잡을 수 있다 — 2절 스키마 구현에
+  PreToolUse 훅이 따로 필요 없을 수 있다(단, call이 아예 hook에서
+  deny되어 실행되지 않는 경우를 놓치지 않으려면 PreToolUse 기록도
+  여전히 값어치가 있을 수 있음 — 이건 플랜 단계 판단).
+- `session_id`는 두 이벤트에서 동일(세션 단위 식별자, call 단위 아님).
+  `transcript_path`/`cwd`/`permission_mode`/`effort`/`prompt_id`도
+  존재는 확인됐으나 이번 측정 목적(join key)엔 불필요.
+
+측정 전 A5가 우려했던 "timestamp+prompt 해시" 임시방편은 불필요 —
+안정적인 join key(`tool_use_id`)가 실제로 존재한다.
 
 ## 부록 B: 열린 질문 (사용자 결정 필요)
 
@@ -325,5 +351,5 @@ instruction record에 같은 패턴을 쓰면 안 된다. "불변 기록"이 목
 
 ## 다음 단계
 
-부록 B 3개 확정 → A5의 `tool_use_id` 라이브 측정 →
-`superpowers:writing-plans`.
+A5의 `tool_use_id` 라이브 측정 완료(2026-08-23) → 남은 건 부록 B 3개
+확정 → `superpowers:writing-plans`.
