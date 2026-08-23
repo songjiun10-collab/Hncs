@@ -23,7 +23,14 @@ so Bash coverage is file-level (any write-shaped command referencing a
 protected path is blocked), not function-level like the Edit/Write path
 above - coarser, but still a real, text-matching-based net rather than a
 guarantee. A command with no write-shaped pattern that merely reads or
-greps a protected path (e.g. `cat brands/hasselblad.py`) is left alone."""
+greps a protected path (e.g. `cat brands/hasselblad.py`) is left alone.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #1 - 실측 결함
+수정)**: heredoc 본문을 무조건 지우던 게, `python3 - <<'PY'
+... open("brands/hasselblad.py","w").write(...) ... PY`처럼 인터프리터에
+넘겨져서 실제로 실행되는 코드까지 놓쳤다(파일에 진짜 쓰기가 일어남) -
+프로즈 오탐만 막고 인터프리터로 넘어가는 heredoc 본문은 스캔 대상에
+남겨두는 `_hook_common.strip_prose_heredocs()`로 교체."""
 import ast
 import json
 import os
@@ -31,7 +38,8 @@ import re
 import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
-                           is_subagent_call, require_decision_or_deny, sentinel_override)
+                           is_subagent_call, require_decision_or_deny,
+                           sentinel_override, strip_prose_heredocs)
 
 HOOK_NAME = "protect_never_touch"
 SEVERITY = "CRITICAL"
@@ -57,19 +65,11 @@ _PY_WRITE_OPEN_RE = re.compile(
     r"[\"'](?:w|a|wb|ab|x)[\"']")
 
 
-# Strips heredoc bodies (`<<EOF ... EOF` / `<<'EOF' ... EOF` / `<<-EOF ...
-# EOF`) before scanning - otherwise a heredoc body that merely *mentions* a
-# redirect/protected-path pattern as prose (e.g. a commit message explaining
-# this very hook) gets misread as a real write. Same false-positive class
-# `protect_push_safety.py` hit and fixed earlier this session.
-_HEREDOC_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
-
-
 def bash_write_target(command):
     """Returns the matched protected-path string if `command` looks like it
     writes to a protected path, else None. Coarser than the Edit/Write path
     below (file-level, not function-level - see module docstring)."""
-    command = _HEREDOC_RE.sub("", command)
+    command = strip_prose_heredocs(command)
     for rx in (_REDIRECT_TARGET_RE, _SED_INPLACE_TARGET_RE, _TEE_TARGET_RE,
                _CP_MV_DEST_RE, _PY_WRITE_OPEN_RE):
         m = rx.search(command)
