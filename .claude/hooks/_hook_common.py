@@ -395,6 +395,43 @@ def strip_prose_heredocs(command):
     return _HEREDOC_BODY_RE.sub(repl, command)
 
 
+_EVAL_WRAPPER_RE = re.compile(
+    r"\b(?:eval|bash\s+-c|sh\s+-c|zsh\s+-c)\s+"
+    r"(?:\"([^\"]*)\"|'([^']*)'|\$'([^']*)')",
+)
+
+
+def unwrap_eval(command):
+    """Appends the inner text of any `eval "..."`/`bash -c "..."`/
+    `sh -c "..."` wrapper (single- or double-quoted, or `$'...'`) to
+    `command`, each on its own new line, so a caller's `_STMT_START`-
+    anchored regexes see the unwrapped text as a fresh statement (the
+    appended `\\n` satisfies `_STMT_START`'s newline alternative) without
+    having to special-case eval/bash -c themselves. The original command
+    text is left untouched/still present, so this only ever adds
+    detection surface, never removes any.
+
+    **Why this exists (2026-08-20, README 2차 라운드 finding #4)**: every
+    `_STMT_START`-anchored hook here (`protect_destructive.py`,
+    `protect_push_safety.py`, `protect_branch.py`,
+    `protect_test_coverage.py`) only recognizes a new shell statement
+    starting after `^`/`&&`/`||`/`;`/newline/`|`/`(`/backtick/do/then/else
+    - the character right before `git`/`rm` inside `eval "git push
+    --force"` is a quote (`"`), which isn't in that set, so the whole
+    command evades detection even though `eval` actually executes it.
+    Verified live (2026-08-18/19) against `protect_destructive.py`,
+    `protect_push_safety.py`, and `protect_branch.py` - all three let the
+    wrapped command through unchecked."""
+    extracted = []
+    for m in _EVAL_WRAPPER_RE.finditer(command):
+        inner = next(g for g in m.groups() if g is not None)
+        if inner.strip():
+            extracted.append(inner)
+    if not extracted:
+        return command
+    return command + "\n" + "\n".join(extracted)
+
+
 def bash_override(rule, command):
     """Parses a trailing `# HNCS-OVERRIDE: <rule>: <reason>` marker out of
     a Bash command string. Returns the reason string if present and the

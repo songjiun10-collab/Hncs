@@ -12,8 +12,10 @@ comment on the command, same mechanism as `protect_never_touch.py`'s
 Bash path - see `_hook_common.py` module docstring for the full
 override-tier design.
 
-**정정(2026-08-20, README "알려진 한계" 2차 라운드 #2/#3/#6 - 3개 실측
-결함 수정, 그리고 #2에 대한 원래 서술 정정)**: (1) heredoc 본문을
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #2/#3/#4/#6 - 4개
+실측 결함 수정, 그리고 #2에 대한 원래 서술 정정)**: (0) `eval "rm -rf
+..."`가 `_STMT_START`의 문 시작 위치 요건을 못 맞춰서 완전히 안
+걸렸다 - `_hook_common.unwrap_eval()`로 고침. (1) heredoc 본문을
 무조건 지우던 게 `bash - <<'EOF'\nrm -rf ...\nEOF`처럼 셸에 직접
 넘겨진(진짜 셸 문법으로 파싱되는) heredoc 안의 실제 `rm -rf`까지
 놓쳤다 - `_hook_common.strip_prose_heredocs()`(인터프리터에 넘겨진
@@ -40,7 +42,7 @@ import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
                            is_subagent_call, require_decision_or_deny,
-                           strip_prose_heredocs)
+                           strip_prose_heredocs, unwrap_eval)
 
 HOOK_NAME = "protect_destructive"
 SEVERITY = "CRITICAL"
@@ -88,7 +90,7 @@ def _all_targets_under_scratch(args):
 def destructive_reason(command):
     """Returns a human-readable reason string if `command` looks
     destructive, else None."""
-    command = strip_prose_heredocs(command)
+    command = unwrap_eval(strip_prose_heredocs(command))
 
     for m in _RM_RE.finditer(command):
         args = m.group("args")
