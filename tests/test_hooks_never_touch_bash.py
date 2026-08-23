@@ -85,6 +85,23 @@ class TestBashWriteTarget(unittest.TestCase):
         cmd = 'python3 - <<\'PY\'\nopen("brands/hasselblad.py","w").write("x")\nPY'
         self.assertEqual(hook.bash_write_target(cmd), "brands/hasselblad.py")
 
+    def test_adjacent_literal_concat_still_caught(self):
+        """2026-08-20 정정 (README 2차 라운드 #2, 실증): Python이 런타임에
+        이어붙이는 인접 문자열 리터럴(open('brand''s/x.py','w'))이 단일
+        따옴표쌍 가정 정규식을 피해갔다."""
+        cmd = "python3 -c \"open('brand''s/hasselblad.py','w').write('x')\""
+        self.assertIsNotNone(hook.bash_write_target(cmd))
+
+    def test_variable_indirection_still_caught(self):
+        """2026-08-20 정정 (README 2차 라운드 #2, 실증): open() 호출부에
+        리터럴이 아예 없는 변수 간접 참조가 놓쳤다."""
+        cmd = "python3 -c \"p='brands/hasselblad.py'; open(p,'w').write('x')\""
+        self.assertIsNotNone(hook.bash_write_target(cmd))
+
+    def test_variable_indirection_to_unrelated_file_not_flagged(self):
+        cmd = "python3 -c \"p='tools/scratch.py'; open(p,'w').write('x')\""
+        self.assertIsNone(hook.bash_write_target(cmd))
+
 
 class TestMainEndToEnd(unittest.TestCase):
     """main()의 tool_name 라우팅(Bash 분기 vs 기존 Edit/Write/MultiEdit

@@ -524,6 +524,10 @@ allow까지 끌고 갈 수 있다는 뜻. 대응 방향: `protect_decision_recor
    런타임에 이어붙이는 걸 이용 - 실제로는 `brands/hasselblad.py`를 염)와
    `p='brands/hasselblad.py'; open(p,'w')` (경로가 변수를 거침, `open()`
    호출부엔 리터럴이 없음) 둘 다 `allow`.
+   **정정(2026-08-20, 수정 완료)**: `_py_open_literal_target()`(인접
+   리터럴 재결합)/`_py_open_var_target()`(같은 커맨드 내 단일-홉 변수
+   대입 추적)로 두 실측 사례 모두 닫음 - 다단계 대입 체인/계산된 값은
+   여전히 미해결(문서화된 국소 패치, 완전한 데이터흐름 분석 아님).
 3. **`protect_destructive.py`의 scratch-경로 허용목록이 `..` 상위 이동으로
    뚫림.** `_SCRATCH_PATH_RE`는 인자에 `./scratchpad/` 부분문자열이
    있으면 그냥 안전하다고 보는데, `rm -rf ./scratchpad/../not_scratch_dir_at_all`은
@@ -616,6 +620,11 @@ allow까지 끌고 갈 수 있다는 뜻. 대응 방향: `protect_decision_recor
     `"이 브랜드는 200% 더 빠르다. 별개로 15개 프리셋을 지원한다(\`ls
     presets/ | wc -l\`로 확인)."` - "200% 더 빠르다"는 완전히 무근거인데
     뒤쪽 무관한 주장의 backtick 근거 하나로 전체가 `allow`.
+    **정정(2026-08-20, 수정 완료 - `protect_claim_evidence.py`)**: 문장
+    단위 짝짓기로 고침(아래 4차 라운드 섹션에도 같은 날짜 기록). 단,
+    `protect_experiment_integrity.py`의 `missing_ci_reason()`은 동일
+    root cause(별개 파일)인데 그때 같이 안 고쳐졌었다 - 2026-08-20 별도
+    커밋으로 마저 문장 단위 짝짓기로 고침.
 11. **(2026-08-19 추가) backtick 안 내용을 전혀 검증 안 함 - 자기모순
     텍스트도 "근거"로 통과.** `_EVIDENCE_MARKER_RE`의 `` `[^`]+` ``는
     backtick 쌍 사이에 아무 텍스트나 있으면 매칭된다 - 그 안이 실제

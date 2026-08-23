@@ -30,7 +30,19 @@ greps a protected path (e.g. `cat brands/hasselblad.py`) is left alone.
 ... open("brands/hasselblad.py","w").write(...) ... PY`처럼 인터프리터에
 넘겨져서 실제로 실행되는 코드까지 놓쳤다(파일에 진짜 쓰기가 일어남) -
 프로즈 오탐만 막고 인터프리터로 넘어가는 heredoc 본문은 스캔 대상에
-남겨두는 `_hook_common.strip_prose_heredocs()`로 교체."""
+남겨두는 `_hook_common.strip_prose_heredocs()`로 교체.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #2 - 실측 결함
+수정)**: `_PY_WRITE_OPEN_RE`는 `open(...)`의 첫 인자가 단일 따옴표 쌍
+안에 통째로 들어있다고 가정하는데, (1) 인접 문자열 리터럴
+연결(`open('brand''s/hasselblad.py','w')` - Python이 런타임에 이어붙이지만
+정규식은 첫 `'...'` 안에서 매칭이 끊김)과 (2) 변수 간접 참조
+(`p='brands/hasselblad.py'; open(p,'w')` - `open()` 호출부엔 리터럴
+자체가 없음) 둘 다 놓쳤다. `_py_open_literal_target()`(인접 리터럴을
+이어붙여서 재검사)과 `_py_open_var_target()`(같은 커맨드 안에서 그
+변수에 대한 가장 최근 리터럴 대입을 찾아서 재검사, 단일 홉만 - 다단계
+대입 체인이나 표현식으로 계산된 값은 여전히 못 봄, 완전한 데이터흐름
+분석이 아니라 이 두 실측 사례를 닫는 국소 패치)로 보강."""
 import ast
 import json
 import os
@@ -64,6 +76,53 @@ _PY_WRITE_OPEN_RE = re.compile(
     r"open\(\s*f?[\"']([^\"']*" + _PROTECTED_PATH + r")[\"']\s*,\s*"
     r"[\"'](?:w|a|wb|ab|x)[\"']")
 
+_PROTECTED_PATH_BARE_RE = re.compile(_PROTECTED_PATH)
+_QUOTED_SEGMENT_RE = re.compile(r"[\"']([^\"']*)[\"']")
+_PY_OPEN_LITERAL_ARG_RE = re.compile(
+    r"open\(\s*f?((?:[\"'][^\"']*[\"']\s*){1,20})\s*,\s*[\"'](?:w|a|wb|ab|x)[\"']")
+_PY_OPEN_VAR_ARG_RE = re.compile(
+    r"open\(\s*(\w+)\s*,\s*[\"'](?:w|a|wb|ab|x)[\"']")
+_PY_VAR_ASSIGN_RE = re.compile(
+    r"\b(\w+)\s*=\s*f?((?:[\"'][^\"']*[\"']\s*)+)")
+
+
+def _concat_quoted_literal(raw):
+    return "".join(_QUOTED_SEGMENT_RE.findall(raw))
+
+
+def _py_open_literal_target(command):
+    """Adjacent string-literal concatenation - open('brand''s/x.py','w')
+    is one path at runtime (Python joins adjacent literals at parse time)
+    but _PY_WRITE_OPEN_RE's single-literal match ends at the first closing
+    quote. Re-join the quoted segments and re-check against the protected
+    path pattern."""
+    m = _PY_OPEN_LITERAL_ARG_RE.search(command)
+    if not m:
+        return None
+    path_m = _PROTECTED_PATH_BARE_RE.search(_concat_quoted_literal(m.group(1)))
+    return path_m.group(0) if path_m else None
+
+
+def _py_open_var_target(command):
+    """Single-hop heuristic for open(var, 'w') where var was assigned a
+    literal string earlier in the same command (p='brands/x.py';
+    open(p,'w')) - open()'s own call site has no literal for the
+    single-literal regex to match. Only follows one assignment hop, not a
+    full data-flow analysis - a multi-step chain or a computed value still
+    evades this."""
+    m = _PY_OPEN_VAR_ARG_RE.search(command)
+    if not m:
+        return None
+    var = m.group(1)
+    assign_m = None
+    for am in _PY_VAR_ASSIGN_RE.finditer(command[:m.start()]):
+        if am.group(1) == var:
+            assign_m = am
+    if assign_m is None:
+        return None
+    path_m = _PROTECTED_PATH_BARE_RE.search(_concat_quoted_literal(assign_m.group(2)))
+    return path_m.group(0) if path_m else None
+
 
 def bash_write_target(command):
     """Returns the matched protected-path string if `command` looks like it
@@ -75,6 +134,10 @@ def bash_write_target(command):
         m = rx.search(command)
         if m:
             return m.group(1)
+    for fn in (_py_open_literal_target, _py_open_var_target):
+        target = fn(command)
+        if target:
+            return target
     return None
 
 
