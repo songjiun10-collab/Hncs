@@ -23,20 +23,32 @@ deliberately\".
 high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
 - 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
 `consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
-아예 안 하면) 기존 동작과 완전히 동일."""
+아예 안 하면) 기존 동작과 완전히 동일.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #8 - 가장 약한
+고리로 지목됐던 finding)**: `.last_whole_branch_review_sha`는 어떤
+훅으로도 보호 안 되고 있었다 - decision record sentinel과 달리
+`protect_decision_record_bypass.py`의 대상이 아니었고, 격리 scratch
+git repo에서 `echo -n $(git rev-parse HEAD) > .last_whole_branch_review_sha`
+한 줄로(Agent 디스패치도, opus도, decision record도 전혀 안 거치고)
+"최종 리뷰 통과"를 완전히 위조할 수 있음이 실측 확인됐다. 경로를
+`_hook_common.py`의 `_WHOLE_BRANCH_REVIEW_SHA_PATH`로 옮기고
+`protect_decision_record_bypass.py`의 보호 테이블에 추가해서 Edit/Write/
+Bash로의 직접 쓰기를 막았다."""
 import json
 import subprocess
 import sys
 from pathlib import Path
 
-from _hook_common import (allow, allow_with_consensus, allow_with_override,
+from _hook_common import (_WHOLE_BRANCH_REVIEW_SHA_PATH, allow,
+                           allow_with_consensus, allow_with_override,
                            consensus_verdict, high_tier_decision,
                            require_decision_or_deny, sentinel_override)
 
 HOOK_NAME = "protect_ready_without_review"
 SEVERITY = "HIGH"
 
-_SENTINEL = Path(__file__).parent / ".last_whole_branch_review_sha"
+_SENTINEL = Path(_WHOLE_BRANCH_REVIEW_SHA_PATH)
 
 
 def read_input():
