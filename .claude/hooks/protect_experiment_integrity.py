@@ -28,7 +28,15 @@ doesn't report a new number).
 high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
 - 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
 `consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
-아예 안 하면) 기존 동작과 완전히 동일."""
+아예 안 하면) 기존 동작과 완전히 동일.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #10 - 실측 결함
+수정)**: `missing_ci_reason()`이 원래 전체 텍스트에 대해 "CI 언급이
+어딘가 있냐"만 boolean으로 봐서, 진짜 CI가 붙은 결과 하나가 완전히
+무관한 다른 무근거 결과 주장까지 무임승차시켰다(`protect_claim_evidence.py`의
+같은 날 수정과 동일 패턴 - 이 훅은 그때 안 고쳐졌던 나머지 절반).
+문장 단위로 쪼개서 각 결과 주장이 속한 문장 자체에 CI/bootstrap 언급이
+있는지 확인하도록 다시 짰다."""
 import json
 import os
 import re
@@ -51,6 +59,11 @@ _RESULT_CLAIM_RE = re.compile(
 _CI_MENTION_RE = re.compile(
     r"\bCI\b|신뢰구간|bootstrap|부트스트랩|confidence interval", re.IGNORECASE)
 
+# Sentence-ish split, same tradeoff as protect_claim_evidence.py's identical
+# constant - approximate on purpose, good enough to separate the claims
+# that actually appear in this project's docs.
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?\n])\s+")
+
 
 def read_input():
     return json.load(sys.stdin)
@@ -61,20 +74,26 @@ def is_evaluation_md(path):
 
 
 def missing_ci_reason(added_text):
-    """Returns a reason string if `added_text` reports a numeric result
-    with no nearby CI/bootstrap mention, else None."""
-    if not _RESULT_CLAIM_RE.search(added_text):
-        return None
-    if _CI_MENTION_RE.search(added_text):
-        return None
-    return (
-        "This addition to hybrid_engine/EVALUATION.md reports a numeric "
-        "result (%/ΔE/개선폭 pattern) with no CI/bootstrap mention nearby. "
-        "hybrid_engine/CLAUDE.md: \"Never call a winner from a mean "
-        "difference\" - three past \"decisive wins\" here turned out to be "
-        "noise, thread non-determinism, or an env-var leak, all of which a "
-        "CI check would have caught."
-    )
+    """Returns a reason string if any sentence in `added_text` reports a
+    numeric result with no CI/bootstrap mention in that same sentence,
+    else None. Same-sentence only (not whole-text boolean) - see the
+    2026-08-20 정정 in the module docstring for why."""
+    sentences = _SENTENCE_SPLIT_RE.split(added_text)
+    for sentence in sentences:
+        if not _RESULT_CLAIM_RE.search(sentence):
+            continue
+        if _CI_MENTION_RE.search(sentence):
+            continue
+        return (
+            f"This addition to hybrid_engine/EVALUATION.md reports a numeric "
+            f"result (\"{sentence.strip()[:80]}\") with no CI/bootstrap "
+            "mention in that same sentence. hybrid_engine/CLAUDE.md: "
+            "\"Never call a winner from a mean difference\" - three past "
+            "\"decisive wins\" here turned out to be noise, thread "
+            "non-determinism, or an env-var leak, all of which a CI check "
+            "would have caught."
+        )
+    return None
 
 
 def main():
