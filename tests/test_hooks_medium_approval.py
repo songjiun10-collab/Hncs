@@ -104,8 +104,11 @@ class TestRecordAgentApproval(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self._tmpdir, ignore_errors=True)
 
-    def _run(self, tool_response):
-        payload = json.dumps({"tool_name": "Agent", "tool_response": tool_response})
+    def _run(self, tool_response, agent_id=None):
+        data = {"tool_name": "Agent", "tool_response": tool_response}
+        if agent_id is not None:
+            data["agent_id"] = agent_id
+        payload = json.dumps(data)
         subprocess.run(
             [sys.executable, os.path.join(_HOOKS_DIR, "record_agent_approval.py")],
             input=payload, env=self._env, capture_output=True, text=True, timeout=15,
@@ -155,6 +158,29 @@ class TestRecordAgentApproval(unittest.TestCase):
             "resolvedModel": "claude-opus-5",
             "content": [{"type": "text", "text": "다 괜찮아 보입니다."}],
         })
+        self.assertFalse(os.path.exists(self._approval_path))
+
+    def test_substring_opus_model_name_does_not_count(self):
+        """2026-08-20 정정 (README 4차 라운드 #1): _OPUS_RE가 부분문자열
+        매칭이라 "claude-sonopusnet-5" 같은 가짜 모델명도 "opus"가 있다는
+        이유로 통과했던 결함 - 실제 opus 모델 ID 모양으로 앵커링해서 고침."""
+        self._run({
+            "resolvedModel": "claude-sonopusnet-5",
+            "content": [{"type": "text", "text":
+                         "MEDIUM-APPROVE: protect_generated_files :: brands/x.py :: 주의\n"}],
+        })
+        self.assertFalse(os.path.exists(self._approval_path))
+
+    def test_subagent_originated_dispatch_not_recorded(self):
+        """2026-08-20 정정 (README 4차 라운드 #2): 이 훅에 is_subagent_call()
+        게이트가 없어서, 서브에이전트가 자기 턴 안에서 중첩 opus
+        서브서브에이전트를 디스패치해 자기 자신을 승인하는 경로가 CRITICAL
+        4개(protect_never_touch.py 등)와 달리 안 막혀 있었다."""
+        self._run({
+            "resolvedModel": "claude-opus-5",
+            "content": [{"type": "text", "text":
+                         "MEDIUM-APPROVE: protect_generated_files :: brands/x.py :: 주의\n"}],
+        }, agent_id="fake-subagent-1")
         self.assertFalse(os.path.exists(self._approval_path))
 
 

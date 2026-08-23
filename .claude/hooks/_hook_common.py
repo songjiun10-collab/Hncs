@@ -187,6 +187,9 @@ _DECISION_RECORD_PATH = os.environ.get(
     os.path.join(_HOOKS_DIR, ".pending_decision_record.json"))
 _CONSENSUS_PATH = os.environ.get(
     "HNCS_HOOK_CONSENSUS_SENTINEL", os.path.join(_HOOKS_DIR, ".pending_consensus.json"))
+_WHOLE_BRANCH_REVIEW_SHA_PATH = os.environ.get(
+    "HNCS_HOOK_WHOLE_BRANCH_REVIEW_SHA",
+    os.path.join(_HOOKS_DIR, ".last_whole_branch_review_sha"))
 
 SEVERITIES = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
 
