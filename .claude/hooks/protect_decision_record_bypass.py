@@ -31,6 +31,13 @@ change.
 below. Its path moved into `_hook_common.py` first (matching every other
 entry in this table), which is what made adding it here possible.
 
+**정정(2026-08-20, 발견 - `_PROTECTED_SENTINELS`에 빠져 있던 항목)**:
+`.pending_medium_approval.json`(MEDIUM 등급 "상위 에이전트 승인" 결과)도
+같은 패턴 - `write_medium_approval()`의 자기 docstring이 "not meant to
+be written ad-hoc by an agent"라고 명시하는데, 정작 그걸 강제하는 훅이
+없었다(`.pending_override.json`과 혼동하기 쉬운 지점: 그건 설계상
+컨트롤러가 직접 써도 되는 self-servable 파일이지만, 이건 아님). 추가함.
+
 No override, no decision record required for this hook itself -
 requiring a decision record to protect the decision-record mechanism
 would be circular, and any override would defeat the point of the
@@ -57,6 +64,7 @@ import re
 import sys
 
 from _hook_common import (_CONSENSUS_PATH, _DECISION_RECORD_PATH,
+                           _MEDIUM_APPROVAL_PATH,
                            _WHOLE_BRANCH_REVIEW_SHA_PATH, allow, deny)
 
 HOOK_NAME = "protect_decision_record_bypass"
@@ -70,6 +78,9 @@ _PROTECTED_SENTINELS = {
     os.path.abspath(_WHOLE_BRANCH_REVIEW_SHA_PATH): (
         "record_whole_branch_review.py (PostToolUse, 실제 whole-branch-review "
         "Agent 디스패치 감지 후 현재 HEAD sha 기록)"),
+    os.path.abspath(_MEDIUM_APPROVAL_PATH): (
+        "record_agent_approval.py (PostToolUse, 실제 opus Agent 디스패치의 "
+        "MEDIUM-APPROVE 마커 파싱)"),
 }
 
 # Bash coverage - basename-based (not full-path regex like

@@ -499,6 +499,16 @@ allow까지 끌고 갈 수 있다는 뜻. 대응 방향: `protect_decision_recor
 "Bash"`에도 등록해서 그 경로로의 직접 쓰기를 막아야 함 - 아직 미수정,
 이 항목은 발견 기록.
 
+**정정(2026-08-20, 수정 완료 + 빠졌던 절반 추가 발견)**:
+`protect_decision_record_bypass.py`를 `settings.json`의 `Bash` matcher에
+등록하고 Bash 커버리지를 추가해 decision-record/consensus/whole-branch-
+review sentinel 3개는 닫았다. 그런데 이때 위 문단이 "필요하면"이라고
+적어둔 medium-approval sentinel(`.pending_medium_approval.json`)이
+`_PROTECTED_SENTINELS` 테이블에서 실제로 빠져 있었다 - `write_medium_approval()`의
+자기 docstring이 "not meant to be written ad-hoc"라고 명시했는데도 그걸
+강제하는 훅이 없는 채로 3개만 고쳐졌던 것. 별도 커밋으로 테이블에
+추가해서 마저 닫음.
+
 ### 2차 침투테스트 라운드 - 22개 실험, 9개 신규 결함(2026-08-18)
 
 전부 `HNCS_HOOK_*` 환경변수 + 별도 scratch git repo(위와 동일한 격리 -
