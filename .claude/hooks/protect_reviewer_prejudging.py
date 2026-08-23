@@ -27,7 +27,13 @@ fresh, unbiased one), unlike data loss or a corrupted shipped artifact.
 high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
 - 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
 `consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
-아예 안 하면) 기존 동작과 완전히 동일."""
+아예 안 하면) 기존 동작과 완전히 동일.
+
+**정정(2026-08-20, README "알려진 한계" 11차 라운드 - 실증된 rephrase 2개
+추가)**: "그냥 스킵해도 됨"/"an unimportant detail"이 합성 stdin JSON으로
+Tier 1에서 직접 확정된 우회였다 - 두 문구를 블록리스트에 추가. 여전히
+고정 문구 블록리스트라는 구조적 한계 자체는 그대로: 이 두 문구를 또 다르게
+표현하면 다시 샌다."""
 import json
 import re
 import sys
@@ -51,6 +57,8 @@ _PREJUDGING_PATTERNS = [
     re.compile(r"the\s+plan\s+chose", re.IGNORECASE),
     re.compile(r"ignore\s+(this|that|the)\s+finding", re.IGNORECASE),
     re.compile(r"don['’]?t\s+(need\s+to\s+)?worry\s+about\s+.{0,40}(finding|issue)", re.IGNORECASE),
+    re.compile(r"스킵해도\s*됨", re.IGNORECASE),
+    re.compile(r"unimportant\s+detail", re.IGNORECASE),
 ]
 
 
