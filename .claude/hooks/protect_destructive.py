@@ -34,7 +34,12 @@ heredoc은 안 지움)로 교체해서 고쳤다. **원래 README 2차 라운드
 매칭이라 `rm -rf ./scratchpad/../not_scratch_dir`처럼 `../`로 실제로는
 scratchpad 밖을 지우는 명령도 "scratch 경로다"로 오판하고 통과시켰다 -
 `os.path.normpath` 후 접두사 비교로 교체. (3) `find ... -delete`가
-`rm -rf`와 동등하게 파괴적인데 전혀 커버 안 됐다 - 추가."""
+`rm -rf`와 동등하게 파괴적인데 전혀 커버 안 됐다 - 추가.
+
+**추가 (2026-08-20, 사용자 지시 - README "대응 방향" (6) 나머지 절반)**:
+`shred`(덮어쓰기+삭제, 복구 불가)/`truncate`(주어진 크기 뒤 내용 폐기 -
+`-s`/`--size`가 `+`로 시작하는 명시적 확장은 제외)도 `find -delete`와
+동일한 scratch-경로 예외로 추가."""
 import json
 import os
 import re
@@ -57,6 +62,11 @@ _RM_RE = re.compile(
 _RM_RECURSIVE_RE = re.compile(r"(^|\s)(-\w*[rR]\w*|--recursive)(\s|$)")
 _RM_FORCE_RE = re.compile(r"(^|\s)(-\w*f\w*|--force)(\s|$)")
 _FIND_DELETE_RE = re.compile(_STMT_START + r"find\s+(?P<args>[^\n;&|`]*?)-delete\b")
+_SHRED_RE = re.compile(_STMT_START + r"shred\s+(?P<args>[^\n;&|`]*)")
+_TRUNCATE_RE = re.compile(_STMT_START + r"truncate\s+(?P<args>[^\n;&|`]*)")
+_TRUNCATE_GROW_RE = re.compile(r"(?:-s|--size)[= ]\+")
+_TRUNCATE_SIZE_FLAG_RE = re.compile(r"^(?:-s|--size)$")
+_TRUNCATE_SIZE_INLINE_RE = re.compile(r"^(?:-s|--size)=")
 _SCRATCH_PREFIXES = ("/tmp/", "/scratchpad/", "scratchpad/")
 
 _GIT_RESET_HARD_RE = re.compile(_STMT_START + r"git\s+reset\s+.*--hard\b")
@@ -108,6 +118,37 @@ def destructive_reason(command):
                 "whatever it matches, on a path that isn't under /tmp/ or "
                 "a scratchpad/ dir - this permanently deletes files with "
                 "no undo.")
+
+    for m in _SHRED_RE.finditer(command):
+        if _all_targets_under_scratch(m.group("args")):
+            continue
+        return ("`shred` overwrites and deletes files with no recovery "
+                "path, on a path that isn't under /tmp/ or a scratchpad/ "
+                "dir.")
+
+    for m in _TRUNCATE_RE.finditer(command):
+        args = m.group("args")
+        if _TRUNCATE_GROW_RE.search(args):
+            continue
+        # -s/--size takes a separate value token (e.g. "-s 0") that isn't a
+        # path - _all_targets_under_scratch() would otherwise treat "0" as
+        # an unrecognized (non-scratch) "target" and always flag.
+        tokens, skip_next, targets = args.split(), False, []
+        for t in tokens:
+            if skip_next:
+                skip_next = False
+                continue
+            if _TRUNCATE_SIZE_FLAG_RE.match(t):
+                skip_next = True
+                continue
+            if _TRUNCATE_SIZE_INLINE_RE.match(t):
+                continue
+            targets.append(t)
+        if _all_targets_under_scratch(" ".join(targets)):
+            continue
+        return ("`truncate` can discard file content beyond the given "
+                "size with no recovery path, on a path that isn't under "
+                "/tmp/ or a scratchpad/ dir.")
 
     if _GIT_RESET_HARD_RE.search(command):
         return ("`git reset --hard` discards uncommitted changes with no "
