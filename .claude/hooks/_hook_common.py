@@ -352,6 +352,49 @@ def allow_with_override(hook_name, severity, rule, target, reason, decision_id=N
     allow()
 
 
+_HEREDOC_BODY_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
+# A heredoc immediately following one of these interpreters (with only
+# flags/whitespace between, no filename argument - `python3 - <<'PY'` or
+# `python3 <<'PY'`, not `python3 script.py <<'PY'` which isn't reading the
+# heredoc as its program) is executable code, not prose.
+_INTERPRETER_HEREDOC_RE = re.compile(
+    r"\b(?:python3?|sh|bash|zsh|perl|ruby|node)\b(?:\s+-\w+)*\s*-?\s*"
+    r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def strip_prose_heredocs(command):
+    """Strips heredoc bodies from `command` EXCEPT ones fed to a script-
+    executing interpreter, which are left in place so their content still
+    gets scanned by the caller's own regexes.
+
+    **Why this exists (2026-08-20, README 2차 라운드 finding #1/#2)**:
+    `protect_never_touch.py`/`protect_destructive.py` used to strip ALL
+    heredoc bodies unconditionally before scanning, to avoid misreading a
+    heredoc body that merely *mentions* a protected path/destructive
+    command as prose (e.g. a commit message explaining this very hook).
+    That blanket stripping had a false-NEGATIVE side nobody had checked:
+    `python3 - <<'PY'\\nopen("brands/hasselblad.py","w").write(...)\\nPY`
+    is REAL executable code that actually runs and writes to the
+    protected file - stripping it before scanning let it sail through
+    both hooks' Bash coverage entirely (verified live, 2026-08-18/19).
+    `shutil.rmtree(...)` fed the same way bypassed `protect_destructive.py`
+    identically. This function keeps interpreter-fed heredoc bodies in
+    the scanned text while still stripping non-interpreter ones (a heredoc
+    piped to `cat`, or a bare heredoc in prose) - callers should use this
+    instead of stripping unconditionally."""
+    interpreter_spans = [m.span() for m in _INTERPRETER_HEREDOC_RE.finditer(command)]
+
+    def repl(m):
+        for start, end in interpreter_spans:
+            if start <= m.start() < end:
+                return m.group(0)
+        return ""
+
+    return _HEREDOC_BODY_RE.sub(repl, command)
+
+
 def bash_override(rule, command):
     """Parses a trailing `# HNCS-OVERRIDE: <rule>: <reason>` marker out of
     a Bash command string. Returns the reason string if present and the

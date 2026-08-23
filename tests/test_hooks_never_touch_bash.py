@@ -77,6 +77,14 @@ class TestBashWriteTarget(unittest.TestCase):
     def test_no_protected_path_mentioned_not_flagged(self):
         self.assertIsNone(hook.bash_write_target("echo hi >> /tmp/scratch.txt"))
 
+    def test_python_heredoc_write_still_caught(self):
+        """2026-08-20 정정 (README 2차 라운드 #1, 실증): heredoc 본문을
+        무조건 지우던 게, python3 - <<'PY' ... PY로 넘겨져서 실제
+        실행되는 open(...).write(...) 코드까지 놓쳤다 - 실제로 파일에
+        쓰기가 일어남에도 이 훅의 Bash 커버리지를 완전히 우회했었다."""
+        cmd = 'python3 - <<\'PY\'\nopen("brands/hasselblad.py","w").write("x")\nPY'
+        self.assertEqual(hook.bash_write_target(cmd), "brands/hasselblad.py")
+
 
 class TestMainEndToEnd(unittest.TestCase):
     """main()의 tool_name 라우팅(Bash 분기 vs 기존 Edit/Write/MultiEdit

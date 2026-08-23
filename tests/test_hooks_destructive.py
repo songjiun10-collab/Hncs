@@ -60,6 +60,34 @@ class TestDestructiveReason(unittest.TestCase):
                'XEOF\n)"')
         self.assertIsNone(hook.destructive_reason(cmd))
 
+    def test_heredoc_fed_directly_to_shell_still_flagged(self):
+        """2026-08-20 정정 (README 2차 라운드 #2, 실증): heredoc 본문을
+        무조건 지우던 게, bash/sh에 직접 넘겨져서 진짜 셸 문법으로
+        파싱되는 heredoc 안의 실제 rm -rf까지 놓쳤다."""
+        cmd = "bash - <<'EOF'\nrm -rf /home/user/real_dir\nEOF"
+        self.assertIsNotNone(hook.destructive_reason(cmd))
+
+    def test_scratch_path_traversal_still_flagged(self):
+        """2026-08-20 정정 (README 2차 라운드 #3, 실증): 부분문자열
+        매칭이라 `./scratchpad/../x`처럼 `..`로 실제로는 scratchpad
+        밖을 지우는 경로도 "scratch다"로 오판해서 통과시켰다."""
+        cmd = "rm -rf ./scratchpad/../not_scratch_dir_at_all"
+        self.assertIsNotNone(hook.destructive_reason(cmd))
+
+    def test_scratch_path_with_dotdot_staying_inside_still_safe(self):
+        cmd = "rm -rf ./scratchpad/sub/../other_sub"
+        self.assertIsNone(hook.destructive_reason(cmd))
+
+    def test_find_delete_on_real_path_flagged(self):
+        """2026-08-20 정정 (README 2차 라운드 #6): find ... -delete는
+        rm -rf와 동등하게 파괴적인데 전혀 커버 안 됐었다."""
+        self.assertIsNotNone(hook.destructive_reason(
+            "find /home/user/real_dir -delete"))
+
+    def test_find_delete_under_scratchpad_not_flagged(self):
+        self.assertIsNone(hook.destructive_reason(
+            "find ./scratchpad/tmp_stuff -delete"))
+
     def test_safe_command_not_flagged(self):
         self.assertIsNone(hook.destructive_reason("ls -la"))
 
