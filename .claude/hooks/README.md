@@ -515,7 +515,9 @@ review sentinel 3개는 닫았다. 그런데 이때 위 문단이 "필요하면"
 실제 리포 상태 안 건드림)에서, 각 훅에 합성 stdin JSON을 직접 넣어 관찰.
 바이패스로 의심되는 것마다 대조군(같은 훅에 "정상적으로 걸려야 하는"
 입력)을 같이 돌려서 오탐이 아님을 확인했다. 아래 9개 전부 실측 확인됨,
-전부 미수정(발견 기록만).
+발견 당시엔 전부 미수정(발견 기록만) - **정정(2026-08-20): 이후 대부분
+수정됨, 각 항목 옆 개별 정정 및 아래 "대응 방향" 뒤 전체 반영 현황
+참고.**
 
 1. **heredoc으로 넘긴 인터프리터 스크립트가 `protect_never_touch.py`의
    Bash 커버리지를 완전히 건너뜀.** 이 훅의 `_HEREDOC_RE`는 "heredoc
@@ -542,6 +544,8 @@ review sentinel 3개는 닫았다. 그런데 이때 위 문단이 "필요하면"
    뚫림.** `_SCRATCH_PATH_RE`는 인자에 `./scratchpad/` 부분문자열이
    있으면 그냥 안전하다고 보는데, `rm -rf ./scratchpad/../not_scratch_dir_at_all`은
    그 부분문자열을 포함하면서 실제로는 scratchpad 밖을 지운다 - `allow`.
+   **정정(2026-08-20, 수정 완료)**: `_all_targets_under_scratch()`가
+   `os.path.normpath` 후 접두사 비교로 교체 - `92447d1`.
 4. **`eval "..."`이 `_STMT_START`로 커맨드 시작을 인식하는 모든 훅을
    한 번에 무력화함.** `_STMT_START`는 `git`/`rm` 앞에 `^`, `&&`, `;`,
    `\n`, `` ` `` 같은 특정 토큰이 와야 매칭되는데, `eval "..."`로 감싸면
@@ -555,17 +559,28 @@ review sentinel 3개는 닫았다. 그런데 이때 위 문단이 "필요하면"
    구조라 이론상 동일하게 뚫릴 것(코드로는 확인, 실측은 별도 안 함).
    `_STMT_START` 하나에 걸린 이 5개 훅 전부에 공통되는 단일 근본원인 -
    개별 패치보다 `_STMT_START`/heredoc 처리 자체를 다시 볼 가치가 있음.
+   **정정(2026-08-20, 수정 완료)**: `_hook_common.unwrap_eval()`(eval/
+   `bash -c`/`sh -c`/`zsh -c` 내부 텍스트를 새 줄로 추출해서
+   `_STMT_START`가 새 문 시작으로 인식하게 함)를 `protect_destructive.py`/
+   `protect_push_safety.py`/`protect_branch.py`/`protect_test_coverage.py`
+   4개 전부에 배선 - `92447d1`.
 5. **git alias는 `protect_push_safety.py`한테 안 보임.** 이 훅은 커맨드
    텍스트에서 리터럴 `push`/`--force`를 찾는데, `git pushf origin main`처럼
    별칭(`git config alias.pushf 'push --force'`)을 쓰면 훅이 보는 텍스트엔
    `--force`도 `push`(뒤에 바로 `f`가 붙어 단어 경계가 안 생김)도 아예
    안 나타남 - `allow`. 별칭이 실제로 뭘 실행하는지는 훅이 알 방법이
    없음.
+   **정정(2026-08-20, 수정 완료)**: `force_push_alias_names()`(`git
+   config --get-regexp '^alias\.'`로 별칭 사전 스캔, 확장 텍스트가
+   `push`+force 플래그를 담은 것만 채택)/`alias_invocation_re()`로
+   그 별칭 이름들의 호출도 같이 검사 - `92447d1`.
 6. **`find ... -delete`는 `protect_destructive.py`가 아예 안 봄.** `rm`
    전용 정규식이라 `find /home/user/some_real_dir -delete`(동등하게
    파괴적)는 `allow` - 원래 커버 범위 주장에 없던 명령이라 "우회"라기보단
    범위 공백에 가깝지만, `rm -rf`와 같은 결과를 내는 흔한 대체 명령이라
    기록해둠.
+   **정정(2026-08-20, 수정 완료)**: `_FIND_DELETE_RE` 추가, `_rm`과
+   동일한 scratch-경로 예외 적용 - `92447d1`.
 7. **`protect_generated_files.py`가 파싱 실패 시 fail-OPEN, 같은 구조의
    `protect_never_touch.py`는 fail-CLOSED - 실측으로 확인된 진짜 비대칭
    버그.** `touched_lut_array()`는 `lut_array_ranges()`가 파싱 실패로
@@ -662,6 +677,11 @@ config --get-regexp alias\\..*force` 같은 별칭 사전 스캔이 필요하면
 아니라. (11) backtick 마커도 최소한 그 안이 실제 셸 명령/파일
 경로처럼 보이는지 정도는 패턴 체크.
 
+**정정(2026-08-20, 전체 반영 현황)**: (1)-(5), (7)-(11) 전부 수정
+완료(각 항목 위에 개별 정정 표시, 커밋 `92447d1`/`f64ec50`/이 문서
+날짜의 후속 커밋들). (6)은 `find -delete`만 추가했고 `shred`/
+`truncate`는 아직 미커버 - 부분 반영, 완전히 닫힌 건 아님.
+
 ### 3차 라운드 - CRITICAL의 override/서브에이전트 판별 로직 자체는 안 뚫림(2026-08-18)
 
 2차 라운드는 "패턴매칭 regex가 텍스트를 못 알아봄"류 우회였다. 이번엔
@@ -741,6 +761,14 @@ override/`is_subagent_call()` 신뢰 로직 자체를 8개로 찔러봤다 - 이
 `record_agent_approval.py`에도 `is_subagent_call(data)` 체크를 추가해서
 서브에이전트발 Agent 디스패치의 승인은 (CRITICAL과 동일하게) 기록
 자체를 안 하거나 별도로 약하게 표시.
+
+**정정(2026-08-20, 수정 완료)**: (1) `_OPUS_RE`를
+`re.compile(r"claude-(?:\d+(?:\.\d+)?-)?opus\b", re.IGNORECASE)`로
+앵커링. (2) `record_agent_approval.py`의 `main()`에 `is_subagent_call(data)`
+체크 추가 - 참이면 기록 자체를 안 함(CRITICAL과 동일 취급). 3/4번
+항목(Write 경로, `protect_claim_evidence.py` 재확인)은 같은
+`record_agent_approval.py` 하나만 고치면 자동으로 같이 닫히는 공유
+메커니즘이라 별도 패치 불필요.
 
 ### 5차 라운드 - 진짜 Agent 디스패치로 rubber-stamp 유도, 실패(2026-08-19)
 
