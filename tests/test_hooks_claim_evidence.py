@@ -34,6 +34,44 @@ class TestUnbackedClaimReason(unittest.TestCase):
         text = "3배 빨라짐(verified against the recorded run)."
         self.assertIsNone(hook.unbacked_claim_reason(text))
 
+    def test_word_ending_in_log_is_not_evidence(self):
+        """2026-08-20 정정 (README 2차 라운드 #9, 실증 2026-08-19): 원래
+        `log\\b`에 앞쪽 경계가 없어서 "catalog"/"backlog" 같은 무관한
+        단어에도 매칭됐다."""
+        text = "성능이 15% 향상되었다 (see catalog)"
+        self.assertIsNotNone(hook.unbacked_claim_reason(text))
+
+    def test_nonexistent_md_file_mention_is_not_evidence(self):
+        """2026-08-20 정정 (README 7차 라운드): .py/.md 마커가 그 파일이
+        실제로 존재하는지 전혀 확인 안 해서, 존재하지 않는 파일 언급도
+        근거로 통과했다."""
+        text = "성능이 40% 향상되었다 (see nonexistent_totally_made_up_file.md)"
+        self.assertIsNotNone(hook.unbacked_claim_reason(text))
+
+    def test_existing_file_mention_counts_as_evidence(self):
+        text = "이 프로젝트는 tests/CLAUDE.md 관련 15개 규칙을 따른다."
+        self.assertIsNone(hook.unbacked_claim_reason(text))
+
+    def test_unrelated_sentence_does_not_vouch_for_unbacked_claim(self):
+        """2026-08-20 정정 (README 8차 라운드 #10, 실증): 주장-근거 짝짓기가
+        "편집 텍스트 전체 어딘가"라서, 완전히 무관한 다른 문장의 진짜
+        근거가 이 무근거 주장까지 무임승차시켰다 - 같은 문장으로 좁힘."""
+        text = ("이 브랜드는 200% 더 빠르다. "
+                "별개로 15개 프리셋을 지원한다(`ls presets/ | wc -l`로 확인).")
+        reason = hook.unbacked_claim_reason(text)
+        self.assertIsNotNone(reason)
+        self.assertIn("200%", reason)
+
+    def test_backtick_content_must_look_like_a_command_or_path(self):
+        """2026-08-20 정정 (README 8차 라운드 #11, 실증): backtick 안
+        내용을 전혀 검증 안 해서, 자기모순 텍스트도 근거로 통과했다."""
+        text = "성능이 300% 향상되었다 (`거짓말임`)."
+        self.assertIsNotNone(hook.unbacked_claim_reason(text))
+
+    def test_backtick_with_path_shape_still_counts(self):
+        text = "성능이 300% 향상되었다 (`tools/bench.py` 참고)."
+        self.assertIsNone(hook.unbacked_claim_reason(text))
+
 
 class TestIsClaimBearingDoc(unittest.TestCase):
     def test_root_readme_matches(self):
