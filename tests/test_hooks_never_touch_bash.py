@@ -102,6 +102,23 @@ class TestBashWriteTarget(unittest.TestCase):
         cmd = "python3 -c \"p='tools/scratch.py'; open(p,'w').write('x')\""
         self.assertIsNone(hook.bash_write_target(cmd))
 
+    def test_multihop_variable_indirection_still_caught(self):
+        """2026-08-20 정정 (사용자 지시): 단일 홉만 따라가던 걸 다단계로
+        확장 - p='brands/x.py'; q=p; open(q,'w') 같은 체인."""
+        cmd = "python3 -c \"p='brands/hasselblad.py'; q=p; open(q,'w').write('x')\""
+        self.assertIsNotNone(hook.bash_write_target(cmd))
+
+    def test_multihop_variable_indirection_to_unrelated_file_not_flagged(self):
+        cmd = "python3 -c \"p='tools/scratch.py'; q=p; open(q,'w').write('x')\""
+        self.assertIsNone(hook.bash_write_target(cmd))
+
+    def test_hop_limit_exceeded_gives_up_safely(self):
+        """6홉 체인(_MAX_VAR_HOPS=5 초과)은 이 국소 패치의 문서화된
+        한계 - 무한 재귀는 아니지만(hops 카운터로 종료) 값도 못 찾음."""
+        chain = "; ".join(f"v{i}=v{i-1}" for i in range(1, 7))
+        cmd = f"python3 -c \"v0='brands/hasselblad.py'; {chain}; open(v6,'w').write('x')\""
+        self.assertIsNone(hook.bash_write_target(cmd))
+
 
 class TestMainEndToEnd(unittest.TestCase):
     """main()의 tool_name 라우팅(Bash 분기 vs 기존 Edit/Write/MultiEdit

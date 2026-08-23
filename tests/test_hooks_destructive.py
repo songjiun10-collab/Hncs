@@ -97,6 +97,28 @@ class TestDestructiveReason(unittest.TestCase):
         self.assertIsNotNone(hook.destructive_reason(
             'eval "rm -rf /home/user/real_dir"'))
 
+    def test_shred_on_real_path_flagged(self):
+        """2026-08-20 추가 (사용자 지시 - README 대응 방향 (6) 나머지):
+        shred는 rm -rf와 동등하게 파괴적인데 전혀 커버 안 됐었다."""
+        self.assertIsNotNone(hook.destructive_reason(
+            "shred /home/user/real_dir/secret.txt"))
+
+    def test_shred_under_scratchpad_not_flagged(self):
+        self.assertIsNone(hook.destructive_reason(
+            "shred ./scratchpad/tmp_secret.txt"))
+
+    def test_truncate_to_zero_on_real_path_flagged(self):
+        self.assertIsNotNone(hook.destructive_reason(
+            "truncate -s 0 /home/user/real_dir/data.csv"))
+
+    def test_truncate_grow_not_flagged(self):
+        self.assertIsNone(hook.destructive_reason(
+            "truncate -s +10 /home/user/real_dir/data.csv"))
+
+    def test_truncate_under_scratchpad_not_flagged(self):
+        self.assertIsNone(hook.destructive_reason(
+            "truncate -s 0 ./scratchpad/tmp.csv"))
+
 
 class TestProtectDestructiveEndToEnd(unittest.TestCase):
     def setUp(self):

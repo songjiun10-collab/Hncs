@@ -439,6 +439,20 @@ MEDIUM/HIGH/CRITICAL 행 전부 decision record 필수 게이트가 먼저 적�
   체크섬/서명 검증, 또는 최소한 `.claude/hooks/`/`.claude/settings.json`
   자체를 기존 Edit/Write 가드 대상에 추가.
 
+  **정정(2026-08-20, 사용자 명시적 승인 - 절반 반영)**: 설계 판단을
+  사용자에게 물었고("훅 트리 자체를 가드 대상에 추가할까 - 부작용은
+  이 세션 포함 앞으로 훅 파일 수정도 전부 override 필요해짐"),
+  "추가함"으로 승인받아 `protect_hook_integrity.py`(CRITICAL, Edit/Write
+  는 파일 단위 전면 차단, Bash는 `protect_never_touch.py`와 동일한
+  heredoc/인접 리터럴 연결/다단계 변수 간접 참조 대응 포함)를 새로 추가,
+  `.claude/settings.json`의 Edit/Write와 Bash matcher 양쪽에 등록함.
+  `.claude/hooks/*.py`/`session-start.sh`/`.claude/settings.json`만
+  대상(`README.md`/`CLAUDE.md`는 의도적 제외 - 이 프로토콜 자체가 그
+  문서들을 계속 편집하도록 요구함). **체크섬/서명 검증은 여전히
+  미수정** - 이건 Edit/Write 가드로는 못 막는 다른 공격 표면(예: 훅
+  스크립트가 세션 시작 전에 이미 변조된 상태로 배포되는 경우)이라 이
+  절반만으로 위 문단의 위협 클래스를 완전히 닫은 건 아님.
+
 ### 서브에이전트 툴콜의 훅 적용 여부 - 확인 완료(2026-08-15)
 
 실제로 Agent 툴로 서브에이전트를 디스패치해서 실측:
@@ -540,6 +554,10 @@ review sentinel 3개는 닫았다. 그런데 이때 위 문단이 "필요하면"
    리터럴 재결합)/`_py_open_var_target()`(같은 커맨드 내 단일-홉 변수
    대입 추적)로 두 실측 사례 모두 닫음 - 다단계 대입 체인/계산된 값은
    여전히 미해결(문서화된 국소 패치, 완전한 데이터흐름 분석 아님).
+   **추가 정정(2026-08-20, 사용자 지시)**: 단일 홉이었던 부분을
+   `_resolve_var_literal()`(최대 5홉 재귀 체인 추적)로 확장 -
+   `q=p; p='brands/x.py'; open(q,'w')` 같은 다단계 대입도 이제 잡음.
+   계산된 값(f-string 표현식, 문자열 메서드 호출)은 여전히 미해결.
 3. **`protect_destructive.py`의 scratch-경로 허용목록이 `..` 상위 이동으로
    뚫림.** `_SCRATCH_PATH_RE`는 인자에 `./scratchpad/` 부분문자열이
    있으면 그냥 안전하다고 보는데, `rm -rf ./scratchpad/../not_scratch_dir_at_all`은
@@ -581,6 +599,10 @@ review sentinel 3개는 닫았다. 그런데 이때 위 문단이 "필요하면"
    기록해둠.
    **정정(2026-08-20, 수정 완료)**: `_FIND_DELETE_RE` 추가, `_rm`과
    동일한 scratch-경로 예외 적용 - `92447d1`.
+   **추가 정정(2026-08-20, 사용자 지시)**: `shred`/`truncate`도 추가 -
+   `shred`는 find -delete와 동일하게 취급, `truncate`는 `-s`/`--size`가
+   `+`로 시작하는 명시적 확장(`-s +10`)만 예외로 두고 나머지는 flag.
+   대응 방향 (6) 완전히 닫힘.
 7. **`protect_generated_files.py`가 파싱 실패 시 fail-OPEN, 같은 구조의
    `protect_never_touch.py`는 fail-CLOSED - 실측으로 확인된 진짜 비대칭
    버그.** `touched_lut_array()`는 `lut_array_ranges()`가 파싱 실패로
@@ -677,10 +699,9 @@ config --get-regexp alias\\..*force` 같은 별칭 사전 스캔이 필요하면
 아니라. (11) backtick 마커도 최소한 그 안이 실제 셸 명령/파일
 경로처럼 보이는지 정도는 패턴 체크.
 
-**정정(2026-08-20, 전체 반영 현황)**: (1)-(5), (7)-(11) 전부 수정
-완료(각 항목 위에 개별 정정 표시, 커밋 `92447d1`/`f64ec50`/이 문서
-날짜의 후속 커밋들). (6)은 `find -delete`만 추가했고 `shred`/
-`truncate`는 아직 미커버 - 부분 반영, 완전히 닫힌 건 아님.
+**정정(2026-08-20, 전체 반영 현황)**: (1)-(11) 전부 수정 완료(각 항목
+위에 개별 정정 표시, 커밋 `92447d1`/`f64ec50`/이 문서 날짜의 후속
+커밋들 - (6)의 `shred`/`truncate`도 같은 날짜 후속 커밋으로 마저 닫힘).
 
 ### 3차 라운드 - CRITICAL의 override/서브에이전트 판별 로직 자체는 안 뚫림(2026-08-18)
 
