@@ -16,6 +16,7 @@ Before breaking work into tasks, write down **what files get created or changed,
 - Keep things that change together, together. Split by **responsibility**, not by technical layer.
 - In an existing codebase, follow its existing patterns. Don't unilaterally re-architect a codebase that favors large files.
 - Principal angle: a file layout that other teams will build on top of (a shared library, a public module) sets a pattern others will copy — get the boundary right here, because fixing it later means a migration, not a refactor.
+- **Distinguished/Fellow angle:** a layout meant to become a company-wide standard or get open-sourced has to make sense to someone joining in five years with zero memory of why it was drawn this way — write the reasoning down, not just the boundary.
 
 ## 2. Sizing a task
 

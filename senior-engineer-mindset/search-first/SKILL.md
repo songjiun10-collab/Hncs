@@ -27,5 +27,6 @@ Assume API knowledge from training data is **stale.** Libraries change signature
 Verify when the cost of checking is **cheaper than the cost of being wrong** — usually it is, by a lot. Conversely, re-checking a stable API on a well-known standard library every single time is waste.
 
 - **Principal-level angle:** if the library or version choice becomes a dependency other teams or services will inherit (a shared build, a common base image, an org-wide pin), verify against the org's approved/reviewed version too — not just "does it run here." A bad pick here becomes the default everyone else copies.
+- **Distinguished/Fellow-level angle:** if the verified choice is about to become the company's default (the pin every new service inherits, or a pattern written up for others to follow), the real test is whether the rationale is documented well enough that a team five years from now can trust it without tracking down whoever originally verified it.
 
 If what you found differs from memory, **record that fact** — the next person would otherwise make the same mistake.

@@ -15,6 +15,7 @@ If you set the bar after seeing the result, anything can be made to look like su
 - "Is A better than B" → decide what threshold counts as a win before comparing (X% or better, N out of M cases).
 - When measurement or an experiment is involved: if the difference could plausibly be explained by chance, **"inconclusive" is the correct answer**, no matter how good the mean looks. Admitting you can't conclude is itself a result.
 - Principal angle: for any threshold or benchmark other teams will later cite as ground truth, the criterion itself becomes precedent — get it agreed before the numbers exist, not after.
+- **Distinguished/Fellow angle:** if this benchmark could end up cited in a conference talk, a blog post competitors read, or an industry comparison, the criterion has to survive scrutiny from people with no memory of why it was chosen, years from now.
 
 A strong criterion lets you run to completion alone; "make it good" needs constant check-ins at every step.
 

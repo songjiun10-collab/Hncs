@@ -10,6 +10,8 @@ Handing work to an agent is itself a decision. Delegate badly and it's slower th
 
 The same discipline applies one level up: a principal engineer delegating to another engineer or team needs the same brief + scope + verify, not just AI subagents. This skill stays focused on the AI-subagent mechanism, since that's what the hook below actually wires up.
 
+**Distinguished/Fellow angle:** at this tier delegation shifts from handing off tasks to handing off technical *direction* — the deliverable is often a doc, runbook, or review process built to outlive any single delegation, so the practice keeps running after the person who set it up leaves.
+
 ## Decide whether to delegate first
 
 - Is this an independently investigable/executable chunk, or does every step depend on the last result? The latter is faster done directly, one step at a time.

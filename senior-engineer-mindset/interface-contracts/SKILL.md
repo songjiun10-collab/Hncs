@@ -36,3 +36,4 @@ Never make consumers choose between multiple versions of the same dependency or 
 - Is the shape and ownership of data crossing this boundary clear? Is it hard to misuse?
 - Does this change break an existing consumer's **undocumented** observed behavior? Ask this regardless of whether the tests pass.
 - Principal angle: for a widely-consumed interface, a breaking change isn't just a code diff — it's a migration you're imposing on every team downstream. Weigh a deprecation window and a communicated migration path as part of the design, not as cleanup after the fact.
+- Distinguished/Fellow angle: if this becomes the pattern every service in the company copies, the real question is whether other teams can operate it correctly five years out without you personally there to explain the edge cases.

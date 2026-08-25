@@ -95,6 +95,8 @@ Past three failures, it's likely not the hypothesis that's wrong — it's the **
 
 At this point, ask the root question: is this structure even right to begin with? Are you holding onto it out of inertia? **Talk to a person before** attempting the next fix. Principal angle: if the root cause lives in shared or upstream code, other teams may be hitting the same bug blind — fixing it once at the shared layer is worth more than patching every call site that happened to notice.
 
+**Distinguished/Fellow angle:** if the root cause lives in a dependency or pattern used company-wide (or upstream in an open-source project), fixing and publishing it there prevents the next org — not just the next team — from rediscovering it after the people who understood it have moved on.
+
 ## Warning signs — any of these means go back to step 1
 
 - "Let's just fix it fast and investigate later"

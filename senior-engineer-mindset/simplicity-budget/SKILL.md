@@ -16,6 +16,7 @@ Abstractions, config options, extension points added "in case it's needed later"
 - Cut anything unrequested: abstractions built for a single call site, error handling for cases that can't happen
 - Extensibility isn't something you build in now — it's a structure that stays **easy to extend later**
 - Principal angle: an abstraction or config knob added here becomes the template other teams copy once it ships — a speculative extension point left in shared/library code costs more than the same thing in a leaf module, because someone else will build on the wrong joint
+- Distinguished/Fellow angle: an abstraction placed in a company-wide foundation risks becoming the thing that shows up in a conference talk or gets open-sourced — budget its complexity against years and every team in the org, not one quarter's roadmap
 
 ## Complexity check
 

@@ -13,6 +13,7 @@ Code shows **what** was done, not **why**. Six months from now, whoever runs int
 - When you reverse an earlier decision — especially why the old approach stopped fitting
 - When you wrote unnatural-looking code to work around a non-obvious constraint (the spot where someone will look and think "why is this written this way?")
 - Principal angle: when the decision sets a **precedent** other teams or future features will copy — record it even if this instance alone would be trivially reversible, because the pattern it establishes isn't
+- Distinguished/Fellow angle: if the person who made this call could leave tomorrow, the record has to stand on its own — legible to someone joining the company in five years with zero institutional memory of the meeting where this was decided
 
 Skip it where the code explains itself (naming, function decomposition already do the job) — a comment that just restates the code is noise.
 

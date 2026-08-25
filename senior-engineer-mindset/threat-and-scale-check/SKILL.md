@@ -14,6 +14,7 @@ Draw the line between "what I control" and "everything else."
 - Does this action need a permission check? Are you trusting a client-supplied "I'm an admin" claim?
 - Is validation enforced at **only one point** (client-side only, or a DB constraint only)?
 - Principal angle: does this trust boundary cross a service or team line? A gap here isn't just a local bug — it's a contract other teams inherit and copy.
+- **Distinguished/Fellow angle:** would a breach of this boundary be the kind of incident that ends up as a company-wide postmortem or a public disclosure — and does the fix need to hold up as doctrine for years, not just survive this quarter's traffic?
 
 ## Scale — 10x / 1000x
 

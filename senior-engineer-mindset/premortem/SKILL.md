@@ -15,6 +15,7 @@ Ask **"when does this break"** before asking "does this work." Do it after the f
 - The process dies mid-operation — does data end up **half-written**?
 - Encoding, timezone, floating point — anything that drifts silently?
 - Principal angle: if this fails, does the blast radius stay inside this codebase, or does it corrupt shared state, a downstream team's data, or a contract another service depends on? Scope the premortem to the actual blast radius, not just the local function.
+- Distinguished/Fellow angle: for a foundational piece, run the premortem against company-wide scale two or three years out, not next quarter's traffic — a failure mode that's rare today becomes routine once every team is running on it.
 
 You don't have to answer every question. Pick the ones that actually apply to this piece of work, and decide whether to defend against each or deliberately skip it. **If you skip one, say so in writing.**
 
