@@ -17,6 +17,7 @@ Before breaking work into tasks, write down **what files get created or changed,
 - In an existing codebase, follow its existing patterns. Don't unilaterally re-architect a codebase that favors large files.
 - Principal angle: a file layout that other teams will build on top of (a shared library, a public module) sets a pattern others will copy — get the boundary right here, because fixing it later means a migration, not a refactor.
 - **Distinguished/Fellow angle:** a layout meant to become a company-wide standard or get open-sourced has to make sense to someone joining in five years with zero memory of why it was drawn this way — write the reasoning down, not just the boundary.
+- **Executive angle (CTO/VP-Eng):** does this decomposition imply a team boundary (who owns which module, how many people it takes to run it) that needs to be reflected in org structure and headcount, not just in the repo.
 
 ## 2. Sizing a task
 

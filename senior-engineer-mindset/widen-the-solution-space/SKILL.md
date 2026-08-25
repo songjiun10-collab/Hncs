@@ -31,6 +31,7 @@ Run through these quickly, in your head. One line each is enough — don't force
 - **Mention in one line if a rejected candidate was a close call** — the user might actually want that direction, or it becomes a lead if the project pivots later.
 - **Principal-level angle:** for an irreversible or externally-visible choice (schema, API, data format), weigh which candidate is easiest for other teams to adopt or extend — the option that wins on your metrics alone but is hardest for others to build on sets bad precedent.
 - **Distinguished/Fellow angle:** if one candidate is a multi-year, company-wide bet that could get open-sourced or presented at a conference, that candidate has to survive scrutiny from people outside this org entirely — a different bar than "wins on this quarter's metrics."
+- **Executive angle (CTO/VP-Eng):** if the winning candidate becomes the default, weigh how many engineers you can realistically hire or retain who already know it — a technically superior but rare skill set is a hiring bottleneck, not a win.
 
 ## Output
 
