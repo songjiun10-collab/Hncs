@@ -15,6 +15,7 @@ Draw the line between "what I control" and "everything else."
 - Is validation enforced at **only one point** (client-side only, or a DB constraint only)?
 - Principal angle: does this trust boundary cross a service or team line? A gap here isn't just a local bug — it's a contract other teams inherit and copy.
 - **Distinguished/Fellow angle:** would a breach of this boundary be the kind of incident that ends up as a company-wide postmortem or a public disclosure — and does the fix need to hold up as doctrine for years, not just survive this quarter's traffic?
+- **Executive angle (CTO/VP-Eng):** does a breach of this boundary carry regulatory exposure, contractual liability, or customer-trust damage the board would need briefed on — not just an engineering incident to remediate.
 
 ## Scale — 10x / 1000x
 

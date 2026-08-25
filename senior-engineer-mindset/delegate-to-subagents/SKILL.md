@@ -12,6 +12,8 @@ The same discipline applies one level up: a principal engineer delegating to ano
 
 **Distinguished/Fellow angle:** at this tier delegation shifts from handing off tasks to handing off technical *direction* — the deliverable is often a doc, runbook, or review process built to outlive any single delegation, so the practice keeps running after the person who set it up leaves.
 
+**Executive angle (CTO/VP-Eng):** if a delegation pattern keeps recurring (the same kind of review, the same kind of parallel research), that's a signal it should become a role or a team with headcount and budget, not a habit repeated ad hoc by whoever's available.
+
 ## Decide whether to delegate first
 
 - Is this an independently investigable/executable chunk, or does every step depend on the last result? The latter is faster done directly, one step at a time.

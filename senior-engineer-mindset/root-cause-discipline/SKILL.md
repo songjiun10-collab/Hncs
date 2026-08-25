@@ -97,6 +97,8 @@ At this point, ask the root question: is this structure even right to begin with
 
 **Distinguished/Fellow angle:** if the root cause lives in a dependency or pattern used company-wide (or upstream in an open-source project), fixing and publishing it there prevents the next org — not just the next team — from rediscovering it after the people who understood it have moved on.
 
+**Executive angle (CTO/VP-Eng):** if three teams have independently hit the same root cause, that's a signal the org is understaffed or misstructured for that layer, not just a bug to fix — worth a headcount or ownership conversation, not another patch.
+
 ## Warning signs — any of these means go back to step 1
 
 - "Let's just fix it fast and investigate later"

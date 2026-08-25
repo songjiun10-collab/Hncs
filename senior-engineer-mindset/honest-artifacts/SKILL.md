@@ -14,6 +14,7 @@ The most dangerous code isn't wrong code — it's code where **you can't tell ho
 - Are you presenting an estimate as if it were certain?
 - A number that gets quoted outside this task — in a design doc, a status update, another team's decision — carries your confidence level with it whether you state it or not. Label unverified numbers before they travel, not after someone has already built a decision on top of them.
 - **Distinguished/Fellow angle:** A number or methodology solid enough to appear in a conference talk, a blog post, or an open-source release needs to survive scrutiny from people with zero institutional memory of how it was produced — label what's unverified before it becomes the industry's reference point, not after.
+- **Executive angle (CTO/VP-Eng):** A number that ends up in a customer SLA, a sales claim, or a board deck carries legal and reputational risk if it can't be reproduced on demand — verify it before it leaves engineering, not after a customer or investor has already been quoted it.
 - Record the attempts that didn't pan out too — the next person won't hit the same wall again. **Failure is data, not something to hide.**
 
 ## Reproducibility
