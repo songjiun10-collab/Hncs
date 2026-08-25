@@ -1,69 +1,70 @@
 ---
 name: verify-before-claiming
-description: Run the verification and read its output before saying anything is done, fixed, working, or passing — 완료를 선언하기 전에 실제로 돌려본다. Use before any completion claim, before committing or opening a PR, before moving to the next task, and after a subagent or tool reports success. Triggers on the words "should work", "fixed", "done", "passing", "looks good" — and on the urge to celebrate.
+description: Run the verification and read its output before saying anything is done, fixed, working, or passing. Use before any completion claim, before committing or opening a PR, before moving to the next task, and after a subagent or tool reports success. Triggers on the words "should work", "fixed", "done", "passing", "looks good" — and on the urge to celebrate.
 ---
 
-# 주장 전에 검증
+# Verify Before Claiming
 
-**증거가 주장보다 먼저 온다. 예외 없다.**
+**Evidence comes before the claim. No exceptions.**
 
-## 철칙
+## Iron rule
 
 ```
-방금 검증 명령을 돌리지 않았다면, 통과한다고 말할 수 없다
+If you haven't just run the verification command, you cannot say it passes.
 ```
 
-"이전에 돌렸을 때 통과했다"는 검증이 아니다. 코드가 바뀌었다면 다시 돌린다.
+"It passed earlier" is not verification. If the code changed, run it again.
 
-## 게이트 함수
+## Gate function
 
-무언가의 상태를 주장하기 **직전에**:
+**Immediately before** asserting the state of anything:
 
-1. **식별** — 이 주장을 증명하는 명령이 무엇인가?
-2. **실행** — 그 명령을 **전체로, 새로** 돌린다 (부분 실행은 아무것도 증명하지 않는다)
-3. **읽기** — 출력 전문을 읽는다. 종료 코드를 본다. 실패 개수를 센다
-4. **대조** — 출력이 주장을 뒷받침하는가?
-   - 아니면 → 실제 상태를 증거와 함께 말한다
-   - 맞으면 → 주장을 증거와 함께 말한다
-5. **그제서야** 주장한다
+1. **Identify** — what command proves this claim?
+2. **Run** — run that command **in full, fresh** (a partial run proves nothing)
+3. **Read** — read the entire output. Check the exit code. Count the failures.
+4. **Compare** — does the output support the claim?
+   - No → state the actual state, with evidence
+   - Yes → state the claim, with evidence
+5. **Only then** claim it
 
-한 단계라도 건너뛰면 검증이 아니라 추측이다.
+Skip any step and it's not verification — it's a guess.
 
-## 주장별 필요 증거
+## Evidence required per claim
 
-| 주장 | 필요한 것 | 불충분한 것 |
+| Claim | Required | Insufficient |
 |---|---|---|
-| 테스트 통과 | 테스트 명령 출력: 실패 0 | 이전 실행, "통과할 것" |
-| 린트 깨끗 | 린터 출력: 에러 0 | 일부만 확인, 추정 |
-| 빌드 성공 | 빌드 명령: exit 0 | 린트 통과 (린터는 컴파일을 안 한다) |
-| 버그 수정됨 | 원래 증상을 다시 재현: 이제 통과 | 코드 고쳤으니 됐겠지 |
-| 회귀 테스트 작동 | 수정을 되돌려 → **실패 확인** → 복원 → 통과 | 테스트가 한 번 통과함 |
-| 요구사항 충족 | 요구사항 한 줄씩 체크리스트 대조 | 테스트 통과 |
-| 하위 작업 완료 | diff에 실제 변경이 보임 | 도구·에이전트가 "성공" 보고 |
+| Tests pass | test command output: 0 failures | a prior run, "should pass" |
+| Lint clean | linter output: 0 errors | partial check, assumption |
+| Build succeeds | build command: exit 0 | lint passing (a linter doesn't compile) |
+| Bug fixed | reproduce the original symptom again: now passes | "the code is fixed, so it must be" |
+| Regression test works | revert the fix → **confirm it fails** → restore → passes | the test passed once |
+| Requirements met | line-by-line checklist against the requirements | tests pass |
+| Subtask complete | the diff shows a real change | a tool or agent reports "success" |
+| Shared interface/API change | consumers exercised against the new contract, not just your own call sites | your own tests pass |
 
-## 위험 신호 — 멈춘다
+## Red flags — stop
 
-- "될 겁니다", "아마", "~인 것 같습니다"
-- 검증 전에 만족을 표현 ("좋습니다!", "완료!", "이제 됩니다")
-- 검증 없이 커밋·푸시·PR로 넘어가려 함
-- 도구나 하위 에이전트의 성공 보고를 그대로 믿음
-- 일부만 확인하고 전체를 추정
-- "이번 한 번쯤은"
-- 피곤해서 빨리 끝내고 싶음
+- "should work", "probably", "seems like"
+- expressing satisfaction before verification ("great!", "done!", "works now")
+- trying to move to commit/push/PR without verification
+- taking a tool's or subagent's success report at face value
+- checking part of it and assuming the whole
+- "just this once"
+- tired, want to wrap up
 
-## 합리화 차단
+## Rationalization blockers
 
-| 변명 | 실제 |
+| Excuse | Reality |
 |---|---|
-| "이제 될 겁니다" | 그러면 **돌려서** 확인한다 |
-| "확신합니다" | 확신은 증거가 아니다 |
-| "이번 한 번만" | 예외 없음 |
-| "린트 통과했어요" | 린터는 컴파일러가 아니다 |
-| "에이전트가 성공했다고 함" | 독립적으로 확인한다 |
-| "피곤해서요" | 피로는 면제 사유가 아니다 |
-| "부분 확인으로 충분" | 부분은 아무것도 증명 못 한다 |
-| "표현을 다르게 했으니 규칙 밖" | 문자가 아니라 취지를 지킨다 |
+| "It should work now" | Then **run it** and check |
+| "I'm confident" | Confidence isn't evidence |
+| "Just this once" | No exceptions |
+| "Lint passed" | A linter isn't a compiler |
+| "The agent said it succeeded" | Verify independently |
+| "I'm tired" | Fatigue isn't an exemption |
+| "Partial check is enough" | Partial proves nothing |
+| "Worded it differently, so the rule doesn't apply" | Follow the spirit, not the letter |
 
-## 적용 범위
+## Scope
 
-성공·완료를 **암시하는 모든 표현**에 적용된다. 정확한 문구뿐 아니라 다르게 돌려 말한 것, 함의까지 포함이다. 검증을 못 돌리는 상황이면 그렇게 말한다 — "테스트는 아직 안 돌렸습니다"가 "될 겁니다"보다 낫다.
+Applies to **every phrasing that implies** success or completion — not just the exact words, but rephrasings and implications too. The more consumers or teams will build on this claim, the more of them the verification needs to actually cover — a green local suite proves your code works, not that every downstream caller still does. If you can't run the verification, say so — "haven't run the tests yet" beats "should work."

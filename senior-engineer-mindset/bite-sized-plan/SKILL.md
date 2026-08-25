@@ -1,57 +1,58 @@
 ---
 name: bite-sized-plan
-description: Turn an approved design into a plan of independently testable, bite-sized tasks — 설계를 실행 가능한 작은 작업들로 쪼개기. Use after a design is agreed and before touching code on any multi-step work. Also use when a task has sprawled beyond what fits in one sitting, when handing implementation to someone (or something) without your context, or when work keeps drifting from the original intent.
+description: Turn an approved design into a plan of independently testable, bite-sized tasks. Use after a design is agreed and before touching code on any multi-step work. Also use when a task has sprawled beyond what fits in one sitting, when handing implementation to someone (or something) without your context, or when work keeps drifting from the original intent.
 ---
 
-# 잘게 쪼갠 계획
+# Bite-Sized Plan
 
-계획은 **이 코드베이스를 전혀 모르고, 판단력을 기대할 수 없고, 테스트를 싫어하는 유능한 개발자**가 그대로 따라할 수 있을 만큼 구체적이어야 한다. 그 기준을 넘기면 계획이 스스로 설 수 있다는 뜻이다.
+A plan must be concrete enough that **a competent developer who knows nothing about this codebase, has no judgment call to make, and hates writing tests** could follow it as-is. Clear that bar and the plan can stand on its own.
 
-## 1. 먼저 파일 구조를 그린다
+## 1. Sketch the file layout first
 
-작업을 쪼개기 전에 **어떤 파일이 생기고 바뀌는지, 각각 무엇을 책임지는지** 먼저 적는다. 분해 결정이 여기서 고정된다.
+Before breaking work into tasks, write down **what files get created or changed, and what each one is responsible for.** This is where the decomposition gets locked in.
 
-- 파일 하나에 책임 하나. 경계와 인터페이스가 분명한 단위로 나눈다
-- **한 번에 눈에 담기는 크기**가 낫다. 크고 잡다한 파일보다 작고 집중된 파일에서 실수가 적다
-- 같이 바뀌는 것은 같이 둔다. 기술 계층이 아니라 **책임**으로 나눈다
-- 기존 코드베이스라면 기존 패턴을 따른다. 큰 파일을 쓰는 코드베이스를 혼자 재편하지 않는다
+- One responsibility per file. Split along clear boundaries and interfaces.
+- **A size you can hold in your head at once** beats a large, miscellaneous file — small, focused files make fewer mistakes.
+- Keep things that change together, together. Split by **responsibility**, not by technical layer.
+- In an existing codebase, follow its existing patterns. Don't unilaterally re-architect a codebase that favors large files.
+- Principal angle: a file layout that other teams will build on top of (a shared library, a public module) sets a pattern others will copy — get the boundary right here, because fixing it later means a migration, not a refactor.
 
-## 2. 작업 크기 정하기
+## 2. Sizing a task
 
-**작업 하나 = 자기 테스트 사이클을 갖고, 리뷰어의 심사를 받을 가치가 있는 최소 단위.**
+**One task = the smallest unit that has its own test cycle and is worth a reviewer's judgment.**
 
-- 설정·스캐폴딩·문서 단계는 **그것을 필요로 하는 작업 안에 접어 넣는다.** 따로 떼지 않는다
-- 리뷰어가 A는 거절하고 B는 승인할 수 있을 때만 A와 B를 나눈다
-- 각 작업은 **독립적으로 테스트 가능한 산출물**로 끝난다
+- Fold setup, scaffolding, or docs steps **into the task that needs them.** Don't split them out separately.
+- Only split A and B into separate tasks if a reviewer could approve one and reject the other.
+- Each task ends in an **independently testable** deliverable.
 
-## 3. 단계는 2~5분짜리 한 동작
+## 3. Steps are one action, 2-5 minutes each
 
-작업 안의 각 단계는 하나의 행동이다:
+Each step inside a task is a single action:
 
 ```
-1. 실패하는 테스트를 쓴다
-2. 돌려서 실패하는 것을 확인한다
-3. 통과할 최소한의 코드를 쓴다
-4. 돌려서 통과하는 것을 확인한다
-5. 커밋한다
+1. Write a failing test
+2. Run it, confirm it fails
+3. Write the minimum code to pass
+4. Run it, confirm it passes
+5. Commit
 ```
 
-## 4. 각 작업에 들어가야 할 것
+## 4. What every task needs
 
-- 정확한 파일 경로 (추측하게 만들지 않는다)
-- 무엇을 검증하는지, **어떻게** 검증하는지
-- 참고해야 할 문서나 기존 코드의 위치
-- 완료 조건 — 무엇이 되면 이 작업이 끝인가
+- Exact file paths (don't make anyone guess)
+- What it verifies, and **how**
+- Pointers to relevant docs or existing code
+- A completion condition — what state means this task is done
 
-## 5. 범위 점검
+## 5. Scope check
 
-계획이 서로 독립적인 여러 하위 시스템을 덮고 있으면 **계획을 나눈다.** 각 계획은 그것만으로 동작하고 테스트 가능한 결과를 내야 한다.
+If a plan spans several independent subsystems, **split the plan.** Each plan should stand on its own with a working, testable result.
 
-## 위험 신호
+## Warning signs
 
-| 생각 | 실제 |
+| Thought | Reality |
 |---|---|
-| "계획은 됐고 코딩하면서 정리하지" | 코딩하면서 정하는 것은 계획이 아니라 표류다 |
-| "이 작업은 큰데 한 덩어리로 두자" | 한 번에 테스트 못 하면 한 작업이 아니다 |
-| "파일 구조는 나중에 정리" | 분해 결정은 되돌리기 비싸다. 먼저 그린다 |
-| "단계까지 쓰는 건 과하다" | 다음 사람(또는 다음 세션의 나)에게는 과하지 않다 |
+| "Plan's good enough, I'll sort it out while coding" | Deciding while coding is drift, not a plan |
+| "This task is big but let's keep it as one chunk" | If you can't test it in one shot, it isn't one task |
+| "File layout can wait" | Decomposition decisions are expensive to reverse. Sketch them first |
+| "Writing out steps is overkill" | Not for the next person (or you, next session) |
