@@ -1,29 +1,31 @@
 ---
 name: search-first
-description: Check current documentation and prior art before writing code against any external API, library, or framework — 코딩 전에 최신 문서부터. Use whenever the task touches a third-party library, SDK, API, CLI flag, config format, or language/framework version behavior. Especially when writing code from memory about how something works, when a version number is involved, or when an API "should" work a certain way but hasn't been verified.
+description: Check current documentation and prior art before writing code against any external API, library, or framework. Use whenever the task touches a third-party library, SDK, API, CLI flag, config format, or language/framework version behavior. Especially when writing code from memory about how something works, when a version number is involved, or when an API "should" work a certain way but hasn't been verified.
 ---
 
-# 검색 우선
+# Search First
 
-훈련 데이터에 있는 API 지식은 **낡았다고 가정한다.** 라이브러리는 시그니처를 바꾸고, 플래그는 사라지고, 권장 방식은 뒤집힌다. 기억에서 꺼낸 코드는 그럴듯하게 틀리기 때문에 가장 발견하기 어렵다.
+Assume API knowledge from training data is **stale.** Libraries change signatures, flags disappear, recommended patterns flip. Code pulled from memory is the hardest kind of wrong, because it looks plausible.
 
-## 언제 반드시 확인하는가
+## When to Always Verify
 
-- 외부 라이브러리·SDK·API를 호출하는 코드를 쓸 때
-- CLI 플래그, 설정 파일 형식, 환경 변수 이름을 쓸 때
-- 버전 번호가 걸린 동작 ("3.11부터", "v5에서는")
-- "이렇게 하면 될 것이다"라고 생각했는데 **확인한 적은 없을** 때
-- 에러 메시지가 문서와 다르게 나올 때 — 대개 문서가 아니라 내 기억이 낡은 것이다
+- Writing code that calls an external library, SDK, or API
+- Using a CLI flag, a config file format, or an environment variable name
+- Behavior tied to a version number ("since 3.11," "in v5")
+- You think "this should work" but have **never actually verified it**
+- An error message doesn't match the docs — usually your memory is stale, not the docs
 
-## 확인 순서
+## Verification Order
 
-1. **공식 문서·릴리스 노트** — 1차 출처. 블로그·Stack Overflow는 그다음
-2. **설치된 실제 버전** — `package.json`, `requirements.txt`, lockfile을 본다. 최신 문서를 봐도 우리가 쓰는 버전이 아니면 소용없다
-3. **코드베이스의 기존 사용례** — 같은 라이브러리를 이미 쓰고 있다면 그 방식이 이 프로젝트의 정답이다
-4. **필요하면 실제로 실행해본다** — REPL 한 줄이 추측 열 줄보다 싸다
+1. **Official docs and release notes** — the primary source. Blog posts and Stack Overflow come after.
+2. **The actually installed version** — check `package.json`, `requirements.txt`, the lockfile. The latest docs are useless if they don't match the version in use.
+3. **Existing usage in the codebase** — if the same library is already used here, that pattern is the answer for this project.
+4. **Run it for real if needed** — one REPL line is cheaper than ten lines of guessing.
 
-## 비용 감각
+## Cost Sense
 
-확인 비용이 **잘못 짚었을 때의 비용보다 싸면** 확인한다. 대개 훨씬 싸다. 반대로 널리 알려진 표준 라이브러리의 안정적인 API까지 매번 찾아보면 그건 낭비다.
+Verify when the cost of checking is **cheaper than the cost of being wrong** — usually it is, by a lot. Conversely, re-checking a stable API on a well-known standard library every single time is waste.
 
-찾아본 결과가 기억과 달랐다면 **그 사실을 남긴다** — 다음 사람도 같은 착각을 한다.
+- **Principal-level angle:** if the library or version choice becomes a dependency other teams or services will inherit (a shared build, a common base image, an org-wide pin), verify against the org's approved/reviewed version too — not just "does it run here." A bad pick here becomes the default everyone else copies.
+
+If what you found differs from memory, **record that fact** — the next person would otherwise make the same mistake.

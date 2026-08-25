@@ -1,28 +1,29 @@
 ---
 name: design-for-the-next-reader
-description: Design so that the next person to open this code can understand and change it — 6개월 후의 독자와 인터페이스 우선 설계. Use when designing an API, module boundary, or data model; when naming things that other code will depend on; when taking a shortcut that should be labeled; or when deciding how to split responsibilities across files.
+description: Design so that the next person to open this code can understand and change it — interface-first design for the reader six months out. Use when designing an API, module boundary, or data model; when naming things that other code will depend on; when taking a shortcut that should be labeled; or when deciding how to split responsibilities across files.
 ---
 
-# 다음 독자를 위한 설계
+# Design for the next reader
 
-지금 동작하게 만드는 것과, 6개월 뒤 다른 사람(또는 미래의 자신)이 이해하고 고칠 수 있게 만드는 것은 다른 문제다.
+Making it work now and making it something someone else (or future you) can understand and change in six months are different problems.
 
-## 인터페이스 먼저
+## Interface first
 
-구현부터 쓰면 **짜기 편한** API가 나오고, 인터페이스부터 쓰면 **쓰기 편한** API가 나온다.
+Write the implementation first and you get an API that's **easy to build**. Write the interface first and you get one that's **easy to use**.
 
-- 이걸 호출하는 코드는 어떻게 생겼으면 좋겠는가? **그 호출 코드를 먼저 한 줄 써본다**
-- 잘못 쓰기 어려운 형태인가? 인자 순서를 헷갈리게 하지 않는가? 잘못된 상태를 애초에 표현할 수 없게 만들 수 있는가?
-- 이 경계를 넘나드는 데이터의 형태와 책임이 명확한가?
-- 좋은 모듈은 깊다 — **작은 인터페이스 뒤에 많은 동작.** 인터페이스가 내부만큼 복잡해지면 경계를 잘못 그은 것이다
+- What should the calling code look like? **Write that call site first, before anything else.**
+- Is it hard to misuse? Does the argument order invite mix-ups? Can you make invalid states unrepresentable in the first place?
+- Is the shape and ownership of the data crossing this boundary clear?
+- A good module is deep — **a small interface hiding a lot of behavior.** If the interface is as complicated as the internals, the boundary is drawn wrong.
+- Principal angle: an interface used by more than one team is a promise you're making to people you'll never talk to before they build on it — design it as if you can't personally walk every caller through a breaking change later, because you won't be able to.
 
-## 6개월 후의 관점
+## The view from six months out
 
-- 이름과 구조만 보고 무슨 일을 하는지 알 수 있는가?
-- 요구사항이 조금 바뀌면(필드 하나 추가) 이 구조가 버티는가, 다시 짜야 하는가?
-- 프로젝트의 기존 용어를 쓰고 있는가? 같은 개념에 새 이름을 붙이면 다음 사람은 두 개가 다른 건 줄 안다
-- 기존 스타일과 어긋나는가? 내 취향이 더 나아도 **기존 스타일에 맞춘다**
+- Can someone tell what this does from the name and structure alone, without reading the body?
+- If a requirement shifts slightly (one new field), does this structure absorb it, or does it need a rewrite?
+- Are you using the project's existing vocabulary? A new name for an existing concept makes the next reader think there are two different things.
+- Does this clash with the existing style? Even if your taste is better, **match the existing style.**
 
-## 지름길은 라벨을 붙인다
+## Label your shortcuts
 
-하드코딩·임시방편·성능을 위한 트릭을 썼다면 **그 사실과 이유를 남긴다.** 근거 없이 남은 코드는 다음 사람이 손대지 못하거나, 반대로 아무 생각 없이 지운다.
+If you hardcoded something, took a temporary workaround, or traded correctness for performance, **write down that you did it and why.** Code left unexplained either gets left untouched out of fear, or deleted without a thought — both are wrong outcomes.

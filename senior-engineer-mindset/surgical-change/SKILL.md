@@ -1,64 +1,69 @@
 ---
 name: surgical-change
-description: Keep every changed line traceable to the request — 수술적 변경과 폭발 반경. Use when editing existing code, especially code you didn't write; when tempted to clean up something you noticed while reading; when a diff is growing beyond the ask; or when deciding whether to delete code that looks dead.
+description: Keep every changed line traceable to the request. Use when editing existing code, especially code you didn't write; when tempted to clean up something you noticed while reading; when a diff is growing beyond the ask; or when deciding whether to delete code that looks dead.
 ---
 
-# 수술적 변경
+# Surgical Change
 
-바뀐 **모든 줄**이 요청과 직접 연결되어야 한다. 리뷰어가 "이건 왜 바뀌었지?"라고 묻는 순간 리뷰 비용이 몇 배가 된다.
+Every line you change must connect directly to the request. The moment a reviewer asks "why did this change?", review cost multiplies.
 
-## 하지 않을 것
+## Don't
 
-- 요청 범위 밖의 코드·주석·포맷을 건드리지 않는다
-- 읽다가 눈에 거슬린 코드를 "김에 정리"하지 않는다 — **요청받은 리팩터링은 환영, 지나가다 하는 정리는 금물**
-- 망가지지 않은 걸 리팩터링하지 않는다
-- 기존 스타일이 내 취향과 달라도 맞춘다
+- Don't touch code, comments, or formatting outside the request's scope
+- Don't "clean up while you're in there" just because something caught your eye — **requested refactoring is welcome, drive-by tidying is not**
+- Don't refactor what isn't broken
+- Match the existing style even when it's not what you'd choose
 
-## 죽은 코드
+## Dead code
 
-- 관련 없는 죽은 코드는 **삭제하지 말고 언급만** 한다. 정말 죽었는지는 대개 밖에서 확인해야 안다
-- **내 변경이 만들어낸 고아 코드**만 치운다
+- Unrelated dead code: **mention it, don't delete it.** Whether it's really dead usually needs outside confirmation
+- Clean up only the **orphans your own change created**
 
-## 기록은 덧붙인다
+## Append the record, don't overwrite it
 
-옛 접근법·실험 이력·docstring의 히스토리는 기준선(baseline)으로서 가치가 있다. 덮어쓰지 말고 덧붙인다. 왜 그 방식을 안 썼는지가 사라지면 다음 사람이 같은 길로 다시 들어간다.
+Old approaches, experiment history, docstring history — all have value as a baseline. Append, don't overwrite. Lose the record of why an approach wasn't taken, and the next person walks into the same dead end.
 
-## 구조 변경이 **작업 자체**일 때
+## When restructuring **is** the task
 
-모듈 분리, 파일 이동, README 재작성은 그게 요청일 때는 환영한다. 위 규칙은 그걸 금지하는 게 아니라, **관계없는 변경 안에 끼워 넣는 것**을 금지한다.
+Module splits, file moves, README rewrites are welcome when that's what was asked. The rule above isn't banning that — it's banning **smuggling it into an unrelated change.**
 
-## 손대기 전에: 체스터턴의 울타리
+## Before touching it: Chesterton's Fence
 
-기존 코드를 지우거나 단순화하기 전에 **왜 그렇게 짜여 있는지**부터 확인한다. 자세한 절차는 `chestertons-fence` 참고 — 이유를 모른 채 부수지 않는다는 게 핵심이다.
+Before deleting or simplifying existing code, confirm **why it's written that way** first. See `chestertons-fence` for the full procedure — the core idea: don't break what you don't understand.
 
-## 변경 크기
+## Change size
 
-작은 변경이 리뷰하기 쉽고, 머지가 빠르고, 배포가 안전하다.
+Small changes review easier, merge faster, and ship safer.
 
-| 규모 | 판단 |
+| Size | Verdict |
 |---|---|
-| ~100줄 | 좋음. 한 번에 리뷰 가능 |
-| ~300줄 | 하나의 논리적 단위라면 괜찮음 |
-| ~1000줄 | 너무 크다. 쪼갠다 |
+| ~100 lines | Good. Reviewable in one pass |
+| ~300 lines | Fine if it's one logical unit |
+| ~1000 lines | Too big. Split it |
 
-**diff 크기만이 아니라 파일 크기도 본다.** 작은 diff라도 이미 큰 파일을 더 키우면 신호다 — 헬퍼·서브모듈로 먼저 뽑아낼지 묻는다. 먼저 쪼개고, 그 다음에 추가한다.
+**Watch file size, not just diff size.** Even a small diff is a signal if it grows an already-large file further — ask whether to extract a helper or submodule first. Split first, then add.
 
-**리팩터링과 기능 추가는 분리한다.** 기존 코드를 정리하면서 새 동작도 추가하는 건 사실 두 개의 변경이다 — 따로 낸다. 이름 변경 같은 사소한 정리는 리뷰어 재량에 맡길 수 있다.
+**Separate refactoring from feature work.** Tidying existing code while adding new behavior is really two changes — ship them separately. Trivial cleanup like a rename can be left to reviewer discretion.
 
-## 심각도 라벨
+## Blast radius beyond this diff
 
-지적할 때 필수/선택을 구분해서 라벨을 붙인다. 안 붙이면 사소한 걸 필수처럼 다루게 된다.
+- If the change touches a shared interface, config format, or library other teams depend on, "surgical" means bounded by **the interface**, not just this repo — audit external callers before merging, not after they file a bug.
+- Whatever pattern lands here is what other engineers copy without re-deriving the reasoning behind it. A shortcut taken here can quietly become the org-wide convention — hold shared code to a higher bar than a one-off script.
 
-| 표시 | 의미 |
+## Severity labels
+
+Label findings as required vs. optional. Skip the labels and minor points get treated as blockers.
+
+| Marker | Meaning |
 |---|---|
-| (표시 없음) | 필수 — 머지 전 반드시 반영 |
-| **Critical:** | 머지 차단 — 보안 취약점, 데이터 손실, 기능 손상 |
-| **Nit:** | 사소함, 선택 — 무시해도 됨 (포맷, 스타일 취향) |
-| **Optional:** / **Consider:** | 제안 — 고려할 가치는 있지만 필수 아님 |
-| **FYI** | 정보 제공용 — 조치 불필요 |
+| (none) | Required — must be addressed before merge |
+| **Critical:** | Blocks merge — security vulnerability, data loss, broken functionality |
+| **Nit:** | Minor, optional — safe to ignore (formatting, style preference) |
+| **Optional:** / **Consider:** | Suggestion — worth thinking about, not required |
+| **FYI** | Informational — no action needed |
 
-**중요한 것부터 말한다.** 정확성·보안 문제를 맨 앞에, 구조적 퇴행과 놓친 단순화가 그다음, 나머지는 뒤로. 사소한 지적 열 개 밑에 진짜 문제 하나를 묻지 않는다 — 구조적 문제가 하나 있으면 **그게 곧 리뷰다.**
+**Lead with what matters.** Correctness and security first, structural regressions and missed simplifications next, everything else after. Don't bury one real problem under ten nitpicks — a single structural issue **is** the review.
 
-## "나중에 정리할게요"를 받아주지 않는다
+## Don't accept "I'll clean it up later"
 
-경험상 나중으로 미룬 정리는 대개 일어나지 않는다. 이번 변경 안에서 정리를 요구하거나, 정말 급하면 별도 이슈를 **담당자까지 정해서** 만든다.
+In practice, deferred cleanup mostly never happens. Either require it in this change, or if it's genuinely urgent, file a separate issue **with an owner assigned to it.**

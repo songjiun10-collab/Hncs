@@ -1,37 +1,40 @@
 ---
 name: adversarial-review
 description: >-
-  Materialize a review posture biased to disprove, not approve, before a non-trivial decision stands — 승인이 아니라 반박을 목표로 하는 리뷰. Use for architectural decisions made under uncertainty, non-trivial code about to be committed, non-obvious claims ("이건 안전하다", "이건 확장된다"), or unfamiliar code — while course-correction is still cheap, not just at the end. Sharper version of fresh-context-review — the framing of the review request decides the answer.
+  Materialize a review posture biased to disprove, not approve, before a non-trivial decision stands. Use for architectural decisions made under uncertainty, non-trivial code about to be committed, non-obvious claims ("this is safe", "this scales"), or unfamiliar code — while course-correction is still cheap, not just at the end. Sharper version of fresh-context-review — the framing of the review request decides the answer.
 ---
 
-# 반박 편향 리뷰
+# Disprove-Biased Review
 
-자신감 있는 답이 맞는 답은 아니다. 세션이 길어질수록 가정이 조용히 "사실"로 굳는다. 이 스킬은 **승인이 아니라 반박을 목표로 하는** 리뷰 태도를 완성된 결과물이 나오기 **전에** 꺼내는 것이다.
+A confident answer isn't the same as a correct one. The longer a session runs, the more quietly assumptions harden into "facts." This skill pulls out a review posture **biased to disprove, not approve** — **before** the finished result exists.
 
-**끝난 작업물의 판정이 아니다.** 아직 되돌리기 싼 시점에, 진행 중인 결정을 미리 심문하는 것이다.
+**This isn't a verdict on finished work.** It's interrogating a decision while it's still in flight, while course-correction is still cheap.
 
-## 언제 적용하는가 — "사소하지 않다"의 기준
+## When it applies — the bar for "non-trivial"
 
-다음 중 하나라도 해당하면 사소하지 않다:
+Any one of these makes it non-trivial:
 
-- 분기 로직을 새로 넣거나 바꾼다
-- 모듈·서비스 경계를 넘는다
-- 타입 시스템이나 컴파일러가 검증할 수 없는 성질을 주장한다 (스레드 안전성, 멱등성, 순서, 불변식)
-- 정확성이 미래의 독자가 볼 수 없는 맥락에 의존한다
-- 되돌릴 수 없다 (프로덕션 배포, 데이터 마이그레이션, 공개 API 변경)
+- introduces or changes branching logic
+- crosses a module or service boundary
+- claims a property the type system or compiler can't verify (thread-safety, idempotency, ordering, invariants)
+- correctness depends on context a future reader can't see
+- it's irreversible (production deploy, data migration, public API change)
+- it crosses a team or service ownership boundary, or sets a pattern other teams are likely to copy — the review then has to ask what happens elsewhere if this spreads, not just whether it's correct here
 
-**적용 안 함**: 기계적 작업(이름 변경, 포맷팅, 파일 이동), 명확한 지시를 그대로 따르는 것, 기존 코드 읽기·요약, 명백히 맞는 한 줄 변경. **매 키스트로크를 의심하면 아무것도 못 낸다** — 위 기준을 만족할 때만 적용한다.
+**Doesn't apply**: mechanical work (renames, formatting, moving files), following an explicit instruction as given, reading or summarizing existing code, an obviously-correct one-line change. **Suspect every keystroke and nothing ships** — apply this only when the bar above is actually met.
 
-## 진행 순서
+## Procedure
 
-1. **주장** — "X는 Y라는 이유로 안전하다" 형태로 두세 줄에 압축한다. 이렇게 못 쓰면 결정이 아니라 느낌이다
-2. **추출** — 검토에 필요한 **결과물과 계약만** 남긴다. 그 결론에 이른 과정(추론)은 벗겨낸다. 과정을 같이 넘기면 그 과정에 대한 동의를 받아올 뿐이다. 한눈에 담기는 크기로 줄인다 — 안 되면 먼저 쪼갠다
-3. **반박** — **적대적으로** 프레이밍한다. "이거 괜찮아 보여?"가 아니라 **"이 결과물에서 틀린 걸 찾아라."** 질문 방식이 답을 결정한다
-4. **대조** — 나온 지적을 결과물 텍스트와 하나씩 대조해 분류한다: 실제 결함 / 이미 처리됨 / 범위 밖
-5. **중단 조건** — 사소한 지적만 남았거나, 3회 반복했거나, 사용자가 그만해도 된다고 하면 멈춘다
+1. **Claim** — compress it into two or three lines, in the form "X is safe because Y." If you can't phrase it that way, it's a feeling, not a decision.
+2. **Extract** — keep only the **output and its contract** needed for review. Strip the reasoning that got you there. Hand over the reasoning too and you just get agreement with that reasoning. Shrink it to something reviewable at a glance — split it first if you can't.
+3. **Disprove** — frame the request **adversarially**. Not "does this look OK?" but **"find what's wrong with this."** The question's phrasing decides the answer.
+4. **Reconcile** — take what comes back and check each point against the actual output text; sort into: real defect / already handled / out of scope.
+5. **Stop condition** — stop once only minor points remain, after three passes, or when the user says it's enough.
 
-## 핵심 원리
+## Core principles
 
-**프레이밍이 답을 결정한다.** "이거 문제 있어?"라고 물으면 문제없다는 답이 돌아오기 쉽다. "이 안에서 문제를 찾아라"라고 물으면 실제로 찾는다. 리뷰 요청 문구 자체가 리뷰의 품질을 결정한다.
+**Framing decides the answer.** Ask "is this a problem?" and the easy answer is no. Ask "find the problem in this" and one actually gets found. The wording of the review request determines the quality of the review.
 
-**맥락을 벗겨야 진짜 리뷰다.** 결론에 이른 이유까지 넘기면, 그 이유에 설득된 검토를 받는다. 결과물과 계약만 넘긴다.
+**Only stripped context makes it a real review.** Hand over the reasoning that led to the conclusion and you get a review that's been talked into that reasoning. Hand over only the output and its contract.
+
+**Decisions with wide blast radius need reviewers who don't share your stake in them.** A choice other teams will build interfaces on top of, or copy as precedent, deserves a reviewer who isn't invested in your original reasoning being right — self-review from inside the same context tends to confirm rather than disprove.

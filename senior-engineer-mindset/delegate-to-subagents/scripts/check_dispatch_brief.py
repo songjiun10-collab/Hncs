@@ -9,7 +9,7 @@ Mechanizes two of delegate-to-subagents/SKILL.md's checks:
    directory - tracked with a small on-disk counter, incremented on
    PreToolUse and decremented on PostToolUse. 2-3 concurrent dispatches
    on independent domains is the normal, encouraged case (see SKILL.md's
-   "서로 다른 독립 도메인이면 병렬이 정상이다") - this only fires past
+   "Parallel is normal across independent domains") - this only fires past
    OPEN_DISPATCH_WARN_THRESHOLD, where a big fan-out is harder to keep
    independent and harder to reconcile than the usual 2-3-way split.
 
@@ -124,18 +124,18 @@ def main():
 
     if len(open_dispatches) >= OPEN_DISPATCH_WARN_THRESHOLD:
         note(
-            f"{len(open_dispatches)}개의 서브에이전트 dispatch가 이미 열려 있는데 또 시작합니다 - "
-            "2~3개짜리 독립 도메인 병렬은 정상이지만, 이 정도로 많으면 정말 다 서로 무관한 "
-            "파일/도메인인지, 나중에 합칠 때 검토 가능한 크기인지 한 번 확인하세요."
+            f"{len(open_dispatches)} other subagent dispatches are already open and this starts another - "
+            "2-3 concurrent independent-domain dispatches is normal, but at this count, double-check they're "
+            "all actually unrelated files/domains and small enough to review when you merge them back."
         )
         hit = True
 
     brief = extract_brief(payload.get("tool_input"))
     if len(brief) > LONG_BRIEF_CHARS and not PATH_LIKE_RE.search(brief):
         note(
-            f"브리핑이 {len(brief)}자인데 파일 경로처럼 보이는 토큰이 없습니다 - "
-            "대화 요약이나 붙여넣은 텍스트를 그대로 넘기고 있는 건 아닌지 확인하세요. "
-            "파일 경로를 주고 서브에이전트가 직접 읽게 하는 쪽이 보통 더 쌉니다."
+            f"The brief is {len(brief)} chars with no path-shaped tokens in it - "
+            "check whether this is a pasted conversation summary or raw text rather than a scoped task. "
+            "Passing file paths and letting the subagent read them itself is usually cheaper."
         )
         hit = True
 

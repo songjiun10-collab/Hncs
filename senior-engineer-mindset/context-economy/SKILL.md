@@ -1,30 +1,31 @@
 ---
 name: context-economy
-description: Decide what information goes where — in context, in a file, or dropped — 컨텍스트 경제. Use when handing work off (to another session, agent, or person), when a task involves large files or long outputs, when writing a plan or spec that must outlive the conversation, or when the conversation is getting long enough that earlier details are at risk. Also use when deciding whether an answer should be chat text or a durable artifact.
+description: Decide what information goes where — in context, in a file, or dropped. Use when handing work off (to another session, agent, or person), when a task involves large files or long outputs, when writing a plan or spec that must outlive the conversation, or when the conversation is getting long enough that earlier details are at risk. Also use when deciding whether an answer should be chat text or a durable artifact.
 ---
 
-# 컨텍스트 경제
+# Context Economy
 
-**컨텍스트 창은 최적화하고, 나머지는 전부 영속화한다.**
+**Optimize the context window; persist everything else.**
 
-대화에 붙여넣은 것은 그 세션 내내 자리를 차지하고, 대화가 끝나면 사라진다. 최악의 조합이다 — 비싸면서 휘발성이다. 파일은 반대다: 필요할 때만 읽고, 끝나도 남는다.
+Anything pasted into the conversation occupies space for the rest of the session and vanishes when the session ends — the worst combination: expensive and volatile. Files are the opposite: read only when needed, and they outlive the conversation.
 
-## 무엇을 어디에 두는가
+## What Goes Where
 
-| 성격 | 어디에 |
+| Nature | Where |
 |---|---|
-| 이번 판단에만 필요한 것 | 컨텍스트 (그리고 버린다) |
-| 다시 볼 것 / 남아야 할 것 | 파일 |
-| 다른 사람·세션이 이어받을 것 | 파일 + 위치를 알려주는 포인터 |
-| 크고 대부분 안 쓰이는 것 | 파일에 두고 **필요한 부분만** 읽는다 |
+| Needed only for this one judgment | Context (then drop it) |
+| Will be revisited / must survive | File |
+| Another person or session will pick it up | File + a pointer to its location |
+| Large and mostly unused | Leave in the file, read **only the needed part** |
 
-## 실전 규칙
+## Practical Rules
 
-- **텍스트가 아니라 파일을 넘긴다.** 긴 로그·전체 파일·대량 출력을 대화에 붙여넣지 말고, 경로를 넘기고 필요한 부분만 읽게 한다
-- **결과물을 요청받았으면 파일로 낸다.** 분석·이력·기록 요청은 대개 파일(또는 커밋)을 뜻한다. 대화에 뿌린 산문은 세션이 끝나면 전달되지 않은 것과 같다
-- **핸드오프는 작업 하나만 담는다** — 할 일 + 건드리는 인터페이스 + 제약. 세션 히스토리 전체가 아니다
-- 대화가 길어지면 **지금까지의 결정을 파일에 고정**한다. 나중에 기억보다 그 파일을 믿는다
+- **Hand off files, not text.** Don't paste long logs, whole files, or bulk output into the conversation — pass the path and let the reader pull only what's needed.
+- **A requested deliverable ships as a file.** A request for analysis, a history, or a record usually means a file (or a commit). Prose scattered into chat is as good as undelivered once the session ends.
+- **A handoff carries one task** — what to do + the interfaces it touches + constraints. Not the whole session history.
+- As a conversation grows, **pin the decisions made so far to a file.** Trust that file over memory later.
+- **Principal-level angle:** a spec or interface note other teams will build against is leverage for them, not just a record for you — losing it to compaction or session end breaks their ability to work independently, not just yours.
 
-## 요약이 아니라 포인터
+## Pointers, Not Summaries
 
-"이 파일에는 A, B, C가 있습니다"라고 요약해서 컨텍스트를 채우는 대신, **어디를 보면 되는지**를 남긴다. 요약은 낡고 원본은 안 낡는다.
+Instead of filling context with "this file has A, B, C," leave **where to look**. Summaries go stale; sources don't.
