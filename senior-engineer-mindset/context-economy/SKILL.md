@@ -25,6 +25,7 @@ Anything pasted into the conversation occupies space for the rest of the session
 - **A handoff carries one task** — what to do + the interfaces it touches + constraints. Not the whole session history.
 - As a conversation grows, **pin the decisions made so far to a file.** Trust that file over memory later.
 - **Principal-level angle:** a spec or interface note other teams will build against is leverage for them, not just a record for you — losing it to compaction or session end breaks their ability to work independently, not just yours.
+- **Distinguished/Fellow-level angle:** if the doc is on track to become the company-wide reference people cite for years, write it so it survives without you in the room — one that only makes sense with your unwritten context is a bus-factor-of-one liability, no matter whose name is on it.
 
 ## Pointers, Not Summaries
 

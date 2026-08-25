@@ -24,6 +24,8 @@ Mix two kinds of judgment into one pass and you miss both. Keep them separate.
 
 On a change to a shared interface, add a third lens: **who else calls this, and does the review still hold from their vantage point** — not just the caller you happened to test against.
 
+- **Distinguished/Fellow angle:** For a change likely to set precedent across the whole org or outlive its author's tenure, review it as the person who inherits it in five years would — with none of the context, only what's written down.
+
 ## Verify it yourself
 
 - Don't trust a report or your memory — **actually run the tests**

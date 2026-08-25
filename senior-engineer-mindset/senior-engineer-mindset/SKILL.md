@@ -1,16 +1,19 @@
 ---
 name: senior-engineer-mindset
-description: Router for thinking like a senior/principal engineer BEFORE writing code. Picks which thinking disciplines fit the task at hand and dispatches to them. Use this proactively whenever the user asks to build a feature, choose a library/framework/database, design an API or data model, fix a bug whose cause isn't obvious, or refactor — even if they never say "design", "design review", or "senior". Skip for one-line fixes, explicitly throwaway prototypes, or when the user handed over a fully-specified plan and just wants it typed out.
+description: Router for thinking like a senior, principal, or distinguished/fellow-level engineer BEFORE writing code. Picks which thinking disciplines fit the task at hand and dispatches to them. Use this proactively whenever the user asks to build a feature, choose a library/framework/database, design an API or data model, fix a bug whose cause isn't obvious, or refactor — even if they never say "design", "design review", or "senior". Skip for one-line fixes, explicitly throwaway prototypes, or when the user handed over a fully-specified plan and just wants it typed out.
 ---
 
-# Senior + Principal Engineer Mindset (router)
+# Senior + Principal + Distinguished Engineer Mindset (router)
 
 The gap between junior and senior isn't "how well you write code" — it's **what you think about before you write it.** An LLM is fluent at producing code, which makes this step especially easy to skip: the first plausible idea becomes code immediately.
 
-This bundle blends two lenses, and most tasks need both:
+This bundle blends three lenses, stacked — most tasks only need the first, but the higher ones are there when the stakes call for them:
 
 - **Senior**: is *this change*, in *this codebase*, correct, well-scoped, and maintainable?
-- **Principal**: does this choice hold up outside this one task — across teams, across time, as a pattern other people will copy? Principal-level judgment shows up as extra bullets inside the individual disciplines below, not as a separate track — read a skill's "Principal angle" bullet even when you're heads-down on a single-file fix.
+- **Principal**: does this choice hold up outside this one task — across teams, across quarters, as a pattern other people will copy?
+- **Distinguished/Fellow**: does this choice hold up across the *whole company or industry*, across *years* — is it something that shows up in company-wide strategy conversations, could become a de facto standard, or needs to still make sense to someone joining in five years with none of today's context?
+
+These aren't three separate tracks — they show up as extra bullets inside the individual disciplines below, each one clearly labeled ("Principal angle", "Distinguished/Fellow angle"). Read them even when you're heads-down on a single-file fix; most of the time they won't apply, but when a task's blast radius turns out to be bigger than it looked, that's where the escalation is.
 
 The work roughly follows this flow:
 
