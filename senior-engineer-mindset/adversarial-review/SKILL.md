@@ -20,6 +20,7 @@ Any one of these makes it non-trivial:
 - correctness depends on context a future reader can't see
 - it's irreversible (production deploy, data migration, public API change)
 - it crosses a team or service ownership boundary, or sets a pattern other teams are likely to copy — the review then has to ask what happens elsewhere if this spreads, not just whether it's correct here
+- **Hncs example:** touching a shipped `apply_*` function or a calibration artifact (`hybrid_engine/assets/profiles/*.json`/`*.dcp`) is exactly this bar — irreversible in effect (every downstream consumer depends on the current output), which is why the project gates it on the user's explicit, in-the-moment sign-off rather than routine review
 - **Distinguished/Fellow angle:** if it could become company-wide doctrine, get open-sourced, or get cited in a conference talk competitors watch, the disproof has to hold up for years and outside the building — would it still survive review from someone joining in five years with none of the institutional memory behind it?
 - **Executive angle (CTO/VP-Eng):** if it changes headcount or team shape, commits to vendor/infra spend, or moves regulatory, competitive, or customer-trust risk (a build-vs-buy call, a data-access grant, killing a team), the disproof needs a reviewer who'd have to defend that budget or that risk to a board, not just someone who'd maintain the resulting code.
 
@@ -38,5 +39,7 @@ Any one of these makes it non-trivial:
 **Framing decides the answer.** Ask "is this a problem?" and the easy answer is no. Ask "find the problem in this" and one actually gets found. The wording of the review request determines the quality of the review.
 
 **Only stripped context makes it a real review.** Hand over the reasoning that led to the conclusion and you get a review that's been talked into that reasoning. Hand over only the output and its contract.
+
+**A good mean isn't a claim yet.** In Hncs, three past "decisive wins" — a calibration change that looked better on average — turned out under adversarial scrutiny to be noise, thread non-determinism, and an `OMP_NUM_THREADS` leak silently rendering part of every frame black. "This improves the fit" is exactly the kind of non-obvious claim this skill targets: disprove it (bootstrap CI straddling zero? a positive control confirming the knob does anything at all?) before it stands as a result.
 
 **Decisions with wide blast radius need reviewers who don't share your stake in them.** A choice other teams will build interfaces on top of, or copy as precedent, deserves a reviewer who isn't invested in your original reasoning being right — self-review from inside the same context tends to confirm rather than disprove.

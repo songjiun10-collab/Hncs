@@ -13,6 +13,7 @@ Draw the line between "what I control" and "everything else."
 - Are passwords, API keys, or tokens exposed in code, logs, or error messages?
 - Does this action need a permission check? Are you trusting a client-supplied "I'm an admin" claim?
 - Is validation enforced at **only one point** (client-side only, or a DB constraint only)?
+- Environments are a trust boundary too, not just people and networks: does this code (or test) assume something is present that isn't guaranteed everywhere it runs? Concrete case (Hncs): CI has no image data — `raw_calib_cache/` and `downloaded_samples*/` exist locally but aren't committed, so a test that reads from them passes on a laptop and fails (or silently skips) in CI. The fix is the same shape as any trust-boundary fix: mock the decode layer or unit-test the pure logic, don't let the untrusted/unavailable environment leak into what the test depends on.
 - Principal angle: does this trust boundary cross a service or team line? A gap here isn't just a local bug — it's a contract other teams inherit and copy.
 - **Distinguished/Fellow angle:** would a breach of this boundary be the kind of incident that ends up as a company-wide postmortem or a public disclosure — and does the fix need to hold up as doctrine for years, not just survive this quarter's traffic?
 - **Executive angle (CTO/VP-Eng):** does a breach of this boundary carry regulatory exposure, contractual liability, or customer-trust damage the board would need briefed on — not just an engineering incident to remediate.

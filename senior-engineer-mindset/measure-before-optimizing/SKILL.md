@@ -21,6 +21,22 @@ Don't optimize without evidence. "This seems slow" is a guess, not a problem —
 - "It's a neutral change, leave it in for now" — if it didn't help, revert it; don't accumulate code with no justification
 - Declaring "it's fast now" with no guardrail (monitoring, a benchmark test) against regression
 
+## A concrete instance: don't trust a mean difference
+
+Hncs's `hybrid_engine/CLAUDE.md` makes this literal, not metaphorical:
+its `summarize()` never calls a winner from a mean difference alone — it
+runs a paired t-test + sign test + a bootstrap 95% CI (20000 draws,
+fixed seed) + a drop-one sensitivity check, and a CI straddling zero is
+inconclusive no matter how good the mean looks. A null result ("this
+knob does nothing") needs a positive control before it's trusted, not
+just a flat-looking chart — the project has two near-misses on record
+where a real effect would have looked null (an X-Trans demosaic path
+silently collapsing; a `darktable` subprocess env leak that rendered 75%
+of every frame black at exit code 0, invisible because nothing checked
+output plausibility). Three past "decisive wins" in this same repo later
+turned out to be noise, thread non-determinism, and that same env leak —
+which is exactly the class of mistake this skill exists to prevent.
+
 ## Is it even worth optimizing
 
 If you measured and the bottleneck is negligible against the overall path, it's not something to optimize — it's something to **skip**. Performance is a budget: spend it only where you have evidence it's actually felt.

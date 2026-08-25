@@ -78,6 +78,9 @@ In rough workflow order:
 | Running subagents / multiple agents | delegate-to-subagents · bite-sized-plan |
 | Choice other teams will likely copy | record-the-why · weigh-tradeoffs · interface-contracts |
 | Same correction/preference keeps recurring across sessions | persistent-memory · delegate-to-subagents |
+| Hncs: recalibrating a brand's profile / touching `hybrid_engine` calibration | adversarial-review · weigh-tradeoffs · record-the-why |
+| Hncs: adding a CLI flag to an `evaluate_*.py` script | surgical-change · verifiability-first |
+| Hncs: a new brand needs its own shared helper vs. reusing existing shared orchestration code | widen-the-solution-space · simplicity-budget · weigh-tradeoffs |
 
 Not in the table? Start with `clarify-the-real-problem` + `premortem` + `weigh-tradeoffs`.
 
@@ -86,8 +89,8 @@ Not in the table? Start with `clarify-the-real-problem` + `premortem` + `weigh-t
 Before the first question, **say out loud** which track this task is on — so the user can overrule it.
 
 - **Spike** — a feasibility question ("can this work?", "is this possible?", "just roughly"). The deliverable is **an answer, not code.** State what you'll try in 2-3 sentences, check it the cheapest way possible, and mark whatever you built as throwaway.
-- **Bounded** — a narrow change to a flow that **already exists** in this repo. Adding a flag, a small endpoint, a one-file edit. The bar isn't "I know this kind of app" — it's **I can point to the flow being changed, right here.** No flow to point to means it isn't bounded. Present a short design in chat and stop.
-- **Structural** — a new project, a new subsystem, or changing component relationships or an interface others depend on. Walk the full path: questions → alternatives → design → plan (`bite-sized-plan`).
+- **Bounded** — a narrow change to a flow that **already exists** in this repo. Adding a flag, a small endpoint, a one-file edit. The bar isn't "I know this kind of app" — it's **I can point to the flow being changed, right here.** No flow to point to means it isn't bounded. Present a short design in chat and stop. (Hncs: adding a CLI flag to one `evaluate_*.py` script.)
+- **Structural** — a new project, a new subsystem, or changing component relationships or an interface others depend on. Walk the full path: questions → alternatives → design → plan (`bite-sized-plan`). (Hncs: recalibrating a brand's profile, or any change to `hybrid_engine`'s shared orchestration/statistics code that every brand's calibration script depends on.)
 
 **When unsure, pick the heavier track.** The ratchet only turns one way — if hidden complexity shows up mid-task, escalate the track (stop and say so). It never goes back down.
 

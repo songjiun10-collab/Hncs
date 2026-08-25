@@ -41,6 +41,9 @@ Skip any step and it's not verification — it's a guess.
 | Requirements met | line-by-line checklist against the requirements | tests pass |
 | Subtask complete | the diff shows a real change | a tool or agent reports "success" |
 | Shared interface/API change | consumers exercised against the new contract, not just your own call sites | your own tests pass |
+| Hncs: ready to commit | `python3 -m unittest discover -s tests` run fresh, 0 failures | it passed on a previous commit |
+
+**Real incident (Hncs):** a session hit 7 failing golden-hash tests, spent real time reinstalling opencv and A/B-testing versions, and committed a confident root cause ("a recording mistake") without checking `git log origin/main -- <file>` first. A different session had already fixed the same 7 hashes the day before — the actual cause was an unpinned `requirements.txt` letting CI and local resolve different opencv builds. The claim wasn't verified against the one command that would have surfaced it.
 
 ## Red flags — stop
 

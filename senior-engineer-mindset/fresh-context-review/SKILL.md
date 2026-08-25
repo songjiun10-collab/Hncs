@@ -33,6 +33,18 @@ On a change to a shared interface, add a third lens: **who else calls this, and 
 - Actually read the diff. What you think you fixed and what actually changed can differ
 - Can't confirm something from the diff? **Mark it unconfirmed.** Don't wave it through
 
+## A real instance of what fresh eyes catch
+
+A 2026-08 review of Hncs's per-brand calibration scripts found that 6
+brand files had copy-pasted the same orchestration/statistics code
+(`summarize()`, `_paired_cv_losses()`, `run_per_brand_calibration()`)
+byte-for-byte instead of sharing it — and the copy had already drifted
+into a real bug: a hardcoded `datasets/leica/...` path leftover in 5 of
+6 files' error messages. Nothing in any single file looked wrong from
+inside it — each one worked and passed its own tests. The problem was
+only visible from outside the context each file was written in, which
+is exactly the blind spot this skill exists to strip away.
+
 ## No self-censoring
 
 Don't pre-filter findings before the review with "this is probably fine." Even something you think is a false positive goes on the list — judge it later. Pre-grading buries the real problems along with the noise.

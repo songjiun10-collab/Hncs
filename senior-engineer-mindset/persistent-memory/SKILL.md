@@ -12,9 +12,11 @@ This isn't a workaround to feel bad about — an explicit file beats implicit me
 
 ## When to make one
 
-- The same kind of correction has come up more than once ("no, always use tabs here," "don't touch the generated files," "this client wants short replies")
+- The same kind of correction has come up more than once ("no, always use tabs here," "don't touch the generated files")
 - You're starting a task type you expect to repeat (a recurring review, a recurring report format, a recurring delegation brief)
 - Don't make one for a correction you're confident won't recur — that's just noise to maintain
+
+**Worked example:** a session once hit 7 failing golden-hash tests, spent real time reinstalling `opencv` and A/B-testing versions, and committed a confident but wrong root cause ("a recording mistake"). A different session had already found and fixed the same 7 hashes a day earlier on `main` — the real cause was an unpinned `requirements.txt` letting CI and local resolve different `opencv` builds. The recovered hash values matched byte-for-byte; the story didn't. A one-line memory note — "check `git log origin/main -- <file>` before concluding a hash mismatch is just stale data" — is exactly the kind of correction this skill exists to capture: narrow, likely to recur, and cheap to write down once so nobody re-derives it the slow way again.
 
 ## Where it belongs
 

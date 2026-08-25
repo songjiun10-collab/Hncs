@@ -25,6 +25,22 @@ The most dangerous code isn't wrong code — it's code where **you can't tell ho
 - Does that procedure run as **one command**, or does it live only in someone's head?
 - Will the number you're committing now reproduce from the same inputs six months from now? (random seeds, external data drift, version differences)
 
+## Hncs's own version of this practice
+
+This isn't hypothetical here. Each `apply_*` file's docstring carries
+its full fitting history (sample size, sources, what was tried and
+rejected) — new data gets a dated paragraph appended, the old one is
+never rewritten. `hybrid_engine/EVALUATION.md` records every experiment,
+win/loss/inconclusive, on purpose: "the failures are the asset," ~20
+rejected approaches kept on the record so the next session doesn't
+re-run them. When a finding later turns out wrong, the fix is a dated
+correction blockquote added **in place** — original claim, correction
+date, and how the mistake was caught, right next to the thing it
+corrects — so the original claim stays visible as history instead of
+being edited away. That's what "record the attempts that
+didn't pan out" looks like as a working convention instead of an
+aspiration.
+
 ## Metric traps
 
 Optimize a score long enough and the score improves while the actual goal drifts away.

@@ -23,8 +23,10 @@ Skip it where the code explains itself (naming, function decomposition already d
 - Check this repo's existing convention first (an ADR directory, design docs, commit message format) and match it — don't invent a new format
 - No convention → at minimum, in the commit message or a comment near the code: **decision + rejected alternatives + reasoning**
 - If `weigh-tradeoffs` already compared the alternatives, carry that result over as-is — don't rewrite it
+- Example from this codebase: Hncs has no ADR directory — its actual mechanism is each `apply_*` docstring carrying its full fitting history (sample size, sources, what was tried and rejected), and `hybrid_engine/EVALUATION.md` logging every experiment win/loss/inconclusive, including the ~20 rejected approaches. That's the convention a new decision here should join, not a fresh ADR format.
 
 ## Never delete the record
 
 - When a decision changes, don't delete and rewrite the old record — **overturn it with a new one.** Why it changed is itself information a future reader (or another team hitting the same tradeoff) needs.
 - "I'll clean it up later" means the context at that moment — why this was the best call then — is gone for good. Right after the decision is the cheapest time to write it down.
+- Example: when a finding in `EVALUATION.md` later turns out wrong, Hncs appends a dated correction blockquote **in place** — `> **정정(YYYY-MM-DD, how it was caught)**: ...` — right after the original claim, and leaves the original text standing as history. Done 4 times so far. The wrong conclusion isn't deleted; it's overturned where a reader will actually find it.

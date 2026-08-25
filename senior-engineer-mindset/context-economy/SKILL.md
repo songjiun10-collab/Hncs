@@ -20,8 +20,8 @@ Anything pasted into the conversation occupies space for the rest of the session
 
 ## Practical Rules
 
-- **Hand off files, not text.** Don't paste long logs, whole files, or bulk output into the conversation — pass the path and let the reader pull only what's needed.
-- **A requested deliverable ships as a file.** A request for analysis, a history, or a record usually means a file (or a commit). Prose scattered into chat is as good as undelivered once the session ends.
+- **Hand off files, not text.** Don't paste long logs, whole files, or bulk output into the conversation — pass the path and let the reader pull only what's needed. A multi-hour calibration run's raw per-fold output belongs in a file, not pasted into the context that produced it.
+- **A requested deliverable ships as a file.** A request for analysis, a history, or a record usually means a file (or a commit). Prose scattered into chat is as good as undelivered once the session ends — `hybrid_engine/EVALUATION.md` is exactly this: every experiment lands there, win/loss/inconclusive, so the next session reads one file instead of re-deriving (or re-running) what was already tried.
 - **A handoff carries one task** — what to do + the interfaces it touches + constraints. Not the whole session history.
 - As a conversation grows, **pin the decisions made so far to a file.** Trust that file over memory later.
 - **Principal-level angle:** a spec or interface note other teams will build against is leverage for them, not just a record for you — losing it to compaction or session end breaks their ability to work independently, not just yours.

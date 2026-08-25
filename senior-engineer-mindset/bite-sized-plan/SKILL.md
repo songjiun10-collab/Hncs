@@ -26,6 +26,7 @@ Before breaking work into tasks, write down **what files get created or changed,
 - Fold setup, scaffolding, or docs steps **into the task that needs them.** Don't split them out separately.
 - Only split A and B into separate tasks if a reviewer could approve one and reject the other.
 - Each task ends in an **independently testable** deliverable.
+- Concrete case (Hncs): a multi-hour calibration experiment isn't one undifferentiated task — `hybrid_engine/EVALUATION.md` records each experiment as its own per-pair results table plus a `TestSummarizeRecordedRun`-style regression test that hardcodes the real per-fold numbers from that run and asserts `summarize()` reproduces them. That test is small, runs in seconds, and lets a reviewer approve or reject the recorded result without re-running the multi-hour experiment — exactly the "independently testable" bar this section asks for.
 
 ## 3. Steps are one action, 2-5 minutes each
 
