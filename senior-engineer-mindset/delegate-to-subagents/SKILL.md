@@ -16,7 +16,7 @@ The same discipline applies one level up: a principal engineer delegating to ano
 
 ## Decide whether to delegate first
 
-- Is this an independently investigable/executable chunk, or does every step depend on the last result? The latter is faster done directly, one step at a time.
+- Is this an independently investigable/executable chunk, or does every step depend on the last result? The latter is faster done directly, one step at a time. **Hncs example:** `evaluate_*.py`/`calibrate_profile_<brand>.py` are deliberately standalone per brand — never importing a sibling, copying the loader instead — so one brand's calibration run is a genuinely independent scope you can hand to its own subagent. The brand-agnostic orchestration/statistics code (`summarize()`, `_paired_cv_losses()`, `run_per_brand_calibration()`) is the opposite case: it's shared, not copied, so it is *not* independent scope — a change there has to be one coordinated dispatch, not sliced per brand.
 - **Parallel is normal across independent domains.** Fixing 3 unrelated failures (different files, different causes) means calling dispatch multiple times in one turn — that's what parallel execution looks like. Each agent gets zero session history, a narrow scope (one file / one subsystem), explicit constraints ("don't touch production code"), and a concrete deliverable. Related failures (fixing one might fix another) stay sequential, not split into parallel dispatches.
 - **Never let two dispatches edit the same live file at once.** Even across unrelated domains, if files overlap, pull that file out and handle it sequentially.
   - Deliberately having multiple agents solve the same problem differently, to compare approaches, is a different case — run those in isolated workspaces each (e.g. git worktrees). Note a worktree only sees committed content — if a worker needs uncommitted drafts or scripts, copy those files in explicitly; assuming "it'll be visible anyway" means the worker won't find them.
@@ -73,6 +73,7 @@ If you do reach for a coordinator, treat it as a real design decision, not just 
 
 ## Common failures
 
+- **"Independent" scope that secretly shares code.** A 2026-08 review of Hncs found 6 brand calibration files had copy-pasted their shared orchestration code byte-for-byte instead of it staying centralized — which had already caused a real bug (a hardcoded `datasets/leica/...` path left over in 5 of 6 files' error messages). Slicing work "one dispatch per brand" looked independent; the code underneath wasn't, and the duplication is what let the bug spread silently.
 - Multiple agents edit the same file at once and clobber each other
 - Moving to the next step without verification just because a subagent said "done"
 - A delegated chunk too large for you to review the result — if you can't review it, it was sliced wrong to begin with

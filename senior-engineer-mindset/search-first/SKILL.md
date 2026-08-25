@@ -11,14 +11,14 @@ Assume API knowledge from training data is **stale.** Libraries change signature
 
 - Writing code that calls an external library, SDK, or API
 - Using a CLI flag, a config file format, or an environment variable name
-- Behavior tied to a version number ("since 3.11," "in v5")
+- Behavior tied to a version number ("since 3.11," "in v5") — e.g. `hybrid_engine/` requires Python 3.12 and `colour-science==0.4.7`, but this machine's default `python3` is 3.9, which silently resolves an older, broken `colour-science` instead of erroring — any `hybrid_engine.*` import just fails, for a reason the traceback doesn't say out loud
 - You think "this should work" but have **never actually verified it**
 - An error message doesn't match the docs — usually your memory is stale, not the docs
 
 ## Verification Order
 
 1. **Official docs and release notes** — the primary source. Blog posts and Stack Overflow come after.
-2. **The actually installed version** — check `package.json`, `requirements.txt`, the lockfile. The latest docs are useless if they don't match the version in use.
+2. **The actually installed version** — check `package.json`, `requirements.txt`, the lockfile, and which interpreter is actually running (`python3 -V`, not just what the venv is named). The latest docs are useless if they don't match the version in use, and a pinned `requirements.txt` doesn't help if the interpreter resolving it is the wrong one.
 3. **Existing usage in the codebase** — if the same library is already used here, that pattern is the answer for this project.
 4. **Run it for real if needed** — one REPL line is cheaper than ten lines of guessing.
 

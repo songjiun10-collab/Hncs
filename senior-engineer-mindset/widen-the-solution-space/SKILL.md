@@ -16,7 +16,7 @@ Run through these quickly, in your head. One line each is enough — don't force
 3. **The simplest possible thing** — embarrassingly simple. Surprisingly often the right answer.
 4. **Build nothing** — can an existing library, feature, or manual process replace this?
 5. **Eliminate the problem** — can something upstream change so this situation never arises in the first place?
-6. **The opposite direction** — what if the premise is flipped? (push↔pull, sync↔async, store↔recompute, eager↔lazy)
+6. **The opposite direction** — what if the premise is flipped? (push↔pull, sync↔async, store↔recompute, eager↔lazy, shared↔copied). "Extract shared code" isn't always the right pole either way: Hncs's brand-agnostic statistics/orchestration (`summarize()`, `run_per_brand_calibration()`) belongs shared — copy-pasting it across brand files caused a real bug, a hardcoded `datasets/leica/...` path left in 5 of 6 files' error messages — while the per-brand `evaluate_*.py` loaders are deliberately kept copied, not shared, so experiments don't couple as they accumulate. Same axis, opposite answer depending on which piece of code it is.
 7. **Solve it at a different layer** — in the DB instead of the app, in infra instead of code, at build time instead of runtime
 8. **A scoped-down version** — a solution covering 80%. Is the remaining 20% actually needed?
 9. **Borrow from an adjacent domain** — does a pattern familiar from a different domain fit here?

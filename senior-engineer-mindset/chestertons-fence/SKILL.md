@@ -29,6 +29,21 @@ Judge whether the reason still holds:
 - **Distinguished/Fellow angle:** If the reason this fence exists lives only in one person's head, write it down now — a fence whose justification depends on someone who might leave in the next reorg is a fence nobody five years from now will know is safe to remove.
 - **Executive angle (CTO/VP-Eng):** If the fence exists because of a regulatory, contractual, or compliance constraint, removing it is a business-risk decision for legal/compliance to sign off on, not an engineering judgment call — the cost of guessing wrong is an audit finding or a broken customer contract, not a bug.
 
+## A fence you might mistake for clutter
+
+Not every fence is subtle. In Hncs, `brands/*.py`'s `apply_*` functions
+are the shipped artifact — the project's whole deliverable — so an edit
+to one looks like an ordinary code change but isn't: the project's own
+rule requires the user's explicit, in-the-moment sign-off first,
+mechanically enforced by a `PreToolUse` hook that denies by default.
+The same holds for `hybrid_engine/assets/profiles/*.json`/`*.dcp` —
+shipped calibration artifacts, not a research script's scratch output,
+even though nothing in the file itself marks it that way. The reason
+isn't mysterious once you look for it (these are the contract every
+downstream caller of `apply_*` relies on) — but "this looks editable"
+isn't the same question as "is this safe to edit," and skipping straight
+to the second without asking the first is the trap.
+
 ## Common traps
 
 - "I don't know why this is here, but it looks unused, so delete it" — whether it's really unused usually needs **outside** confirmation (search callers, production logs, other services)

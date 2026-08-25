@@ -21,6 +21,7 @@ The most expensive code is code that re-implements something that already exists
 - Does a similar function or module already exist in the codebase?
 - Does the standard library or an existing dependency already provide this?
 - The instant you're about to reinstall packages, A/B a library version, or start walking back through commit history — spend one minute first. Spending hours reinventing an answer that already exists is common, and the reinvented version is usually explained less accurately than the original.
+- Real incident (Hncs): a session hit 7 failing golden-hash tests, spent real time reinstalling opencv and A/B-testing versions, and committed a confident but wrong root cause ("a recording mistake"). A different session had already fixed the same 7 hashes on `main` the day before — the real cause was an unpinned `requirements.txt` letting CI and local resolve different opencv builds, whose HSV-roundtrip genuinely differed in the lowest bits. The recovered hash values matched byte-for-byte; the story didn't. `git log origin/main -- <file>` costs a minute and would have shown the fix was already there — run it before treating any mismatch as "these are just stale."
 
 ## 1. Cause, not symptom — investigation phase
 

@@ -27,6 +27,17 @@ Old approaches, experiment history, docstring history — all have value as a ba
 
 Module splits, file moves, README rewrites are welcome when that's what was asked. The rule above isn't banning that — it's banning **smuggling it into an unrelated change.**
 
+## An enforced example of a scoped exception
+
+Hncs pins this with a `PreToolUse` hook (`protect_never_touch.py`) that
+denies, by default, any edit to a shipped `apply_*` function or
+calibration profile — no silent bypass. The only sanctioned way through
+it is the user's explicit, in-the-moment sign-off for that specific
+change. That's the shape a surgical exception should take in general:
+not "I judged this cleanup to be safe," but a scope named in advance,
+approved by the person who owns the boundary, with the approval itself
+part of the record — not a blanket opt-out for future changes nearby.
+
 ## Before touching it: Chesterton's Fence
 
 Before deleting or simplifying existing code, confirm **why it's written that way** first. See `chestertons-fence` for the full procedure — the core idea: don't break what you don't understand.
