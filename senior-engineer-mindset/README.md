@@ -1,0 +1,157 @@
+# Senior + Principal + Distinguished + Executive Engineer Mindset — Skill Bundle (Hncs fork)
+
+코드를 쓰기 전에 시니어·프린시펄·디스팅귀시드/펠로우·**임원급(CTO/VP-Eng)** 엔지니어처럼 사고하게 만드는 스킬 모음 — 네 겹의 렌즈(이 작업, 팀 간, 회사/업계 전체, 조직/비즈니스 권한)를 쌓아올린 구조이고, 대부분의 작업은 첫 번째만 필요함. 하나의 거대한 스킬 대신 **작고 조합 가능한 discipline들**로 쪼갬.
+
+## 이 사본은 Hncs 전용이지 포터블 번들이 아님
+
+2026-08-25부로 이 사본은 포터블·도메인 무관 번들인 [songjiun10-collab/senior-thinking-skills](https://github.com/songjiun10-collab/Senior-thinking-skills)에서 **분기(fork)**됐음 — **더 이상 3-way 동기화 안 됨**. 여기 있는 스킬 전부가 Hncs 자체 CLAUDE.md 파일에서 뽑은 실제 예시(never-touch `apply_*` 규칙, `hybrid_engine/`의 통계 강제 규칙, golden-hash 오진 사고, copy-the-loader-vs-shared-orchestration 관례 등)로 근거를 갖췄음 — 일반적인 자리표시자 시나리오 대신. 각 항목 뒤에 있는 일반 원칙 자체는 그대로고, 예시만 Hncs 전용으로 바뀜.
+
+실질적 효과: 여기서 한 수정은 public repo로 안 넘어가고, 거기서 한 수정(새 discipline, 번역 수정, 구조 변경)은 아직 필요하면 여기 수동으로 재적용해야 함. 의도적 선택이지 방치가 아님 — 어떻게/왜 그랬는지는 아래 changelog 항목 참고.
+
+## 구조
+
+호출 축을 따라 나뉨:
+
+- **user-invoked (router)** — 사람이 직접 호출. 역할은 오케스트레이션. 아래 model-invoked 스킬들을 호출할 수 있지만 **다른 router는 절대 호출 안 함**.
+- **model-invoked (discipline)** — 사람이 직접 호출할 수도 있지만, 에이전트가 작업 상황에 맞으면 알아서 꺼내 씀. 재사용 가능한 discipline들이 여기 있음.
+
+## 목록
+
+### Router (user-invoked)
+
+| 스킬 | 역할 |
+|---|---|
+| `senior-engineer-mindset` | 작업에 맞는 discipline을 골라 라우팅. 스케일 조정과 출력 형식도 여기서 관리 |
+
+### Disciplines (model-invoked)
+
+| 단계 | 스킬 | 역할 |
+|---|---|---|
+| Verify | `search-first` | 외부 API/라이브러리: 기억이 아니라 문서로 확인 |
+| Verify | `context-economy` | 컨텍스트에 넣을지 파일에 넣을지 나눔 |
+| Verify | `persistent-memory` | 반복되는 correction/preference를 매 세션 다시 배우지 않고 durable 파일(+ CLI)에 기록 |
+| Understand | `clarify-the-real-problem` | 요청 뒤의 진짜 목표를 파냄 |
+| Explore | `widen-the-solution-space` | 후보 접근법을 12개 축으로 넓힌 뒤 2-3개로 좁힘 |
+| Decide | `weigh-tradeoffs` | 대안 비교 + 결정이 얼마나 무거운지(가역성) 판단 |
+| Decide | `record-the-why` | 결정과 기각된 대안을 영구 기록(ADR) |
+| Design | `premortem` | 실패 시나리오와 실패 감지 방법 |
+| Design | `simplicity-budget` | YAGNI + 복잡도 예산 |
+| Design | `design-for-the-next-reader` | 인터페이스 우선 + 6개월 후 독자 |
+| Design | `interface-contracts` | Hyrum's Law — 노출하는 모든 건 약속이 됨 |
+| Design | `threat-and-scale-check` | 신뢰 경계 · 규모 · 다층 방어 |
+| Verification | `verifiability-first` | 성공 기준 선언 + 테스트 가능한 설계 |
+| Plan | `bite-sized-plan` | 파일 구조 → 작업 분해 → 2-5분 단위 스텝 |
+| Delegate | `delegate-to-subagents` | 서브에이전트에게 언제/어떻게 위임할지 판단, 브리핑, 검증(+ 선택적 PreToolUse/PostToolUse 훅 번들) |
+| Debug | `root-cause-discipline` | 이미 해결된 문제인지 확인 → 근본 원인 → 증거 |
+| Execution | `chestertons-fence` | 제거·단순화 전에 왜 존재하는지 이해 |
+| Execution | `surgical-change` | 요청과 무관한 줄을 추가하지 않음(+ 변경 규모/심각도 라벨) |
+| Execution | `measure-before-optimizing` | 성능: 추측이 아니라 증거(측정)부터 |
+| Execution | `honest-artifacts` | 미검증 라벨 · 재현성 · 지표 함정 |
+| Look back | `fresh-context-review` | 작성 당시 맥락을 걷어내고, 두 축(스펙 준수 · 코드 품질)으로 다시 리뷰 |
+| Look back | `verify-before-claiming` | 증거 없이 완료를 주장하지 않음 |
+| Look back | `adversarial-review` | 되돌리기 쉬운 시점에 반박 편향으로 캐물음 |
+
+## 사용법
+
+셋 다 유효함:
+
+1. **전부 설치하고 그대로 둠** — router가 상황을 읽고 알아서 고름
+2. **필요한 discipline만 설치** — 각각 독립적으로 동작함. 디버깅 discipline만 필요하면 `root-cause-discipline`만 가져가면 됨
+3. **분기해서 편집** — 팀 관례에 맞게 다시 쓸 걸 전제로 작성됨
+
+## 설계 원칙
+
+- **30-70줄짜리 스킬 23개**가 1100줄짜리 스킬 하나보다 나음. 필요한 것만 컨텍스트에 로드되고, 불필요한 부분만 지울 수 있음
+- 각 스킬의 `description`이 **언제 발동하는지**를 담당. 본문은 **뭘 할지**만, 그 외엔 아무것도 없음
+- 스케일 조정은 router의 일. 함수 하나짜리 작업에 설계 메모를 쓰는 건 실패
+
+## Sources
+
+이 번들은 10곳에서 아이디어를 가져와 재구성했음.
+
+| 소스 | 링크 | 가져온 것 |
+|---|---|---|
+| addyosmani/agent-skills | https://github.com/addyosmani/agent-skills | Hyrum's Law(API 설계), Chesterton's Fence(단순화 전 이해), 반박 편향 리뷰(adversarial framing), 변경 규모 임계값(~100/300/1000줄), 심각도 라벨(Critical/Nit/Optional/FYI), "나중에 정리할게" 거부, measure→identify→fix→re-measure(성능 최적화), 이유를 기록하는 ADR 스타일 문서화 |
+| obra/superpowers | https://github.com/obra/superpowers | **가장 많이 참조** — 4단계 체계적 디버깅 + 3회 실패 규칙, "완료" 전 검증 게이트, 단방향 래칫을 가진 spike/bounded/structural 3단계 분류, 잘게 쪼갠 계획, red-flag/rationalization 표, YAGNI, 복잡도 축소, 증거 우선 — 서브에이전트 위임(디스패치 전 baseline 기록, 보고서/리뷰를 파일로, 판정을 기록하는 상한 있는 fix→re-review 루프, 컨트롤러는 스스로 고치지 않음 — subagent-driven-development에서) |
+| songjiun10-collab/Hncs | https://github.com/songjiun10-collab/Hncs | 미검증 값 라벨링, 재현성 감사, 지표 과적합 회피(보수적 선택 우선), 수술적 변경, 깊이 파기 전 기존 답 확인, 위험도별 등급 게이트, 서브에이전트 위임 원칙(최소 브리핑, 한 번에 하나씩, 직접 보고서 검증 — CLAUDE.md의 "Controller/Implementer" 섹션에서) |
+| mattpocock/skills | https://github.com/mattpocock/skills | **전체 구조** — user-invoked-router / model-invoked-discipline 분리, 작고 조합 가능한 스킬, spec-axis/standards-axis 리뷰 분리 |
+| affaan-m/ECC | https://github.com/affaan-m/ECC | 코딩 전 문서 확인(research-first), fresh-context 리뷰, context economy("컨텍스트는 최적화, 나머지는 영구 보존"), 워크플로 루프 |
+| shinpr/sub-agents-skills | https://github.com/shinpr/sub-agents-skills | 역할별 서브에이전트 권한 분리(리뷰/구현/테스트는 지시뿐 아니라 권한 자체를 분리해야 함) |
+| WenyuChiou/agent-collab-skills | https://github.com/WenyuChiou/agent-collab-skills | Adversarial debate(중요한 결정에서 두 에이전트를 반대편에 세움), 경쟁 탐색 결과 조율 |
+| rohitg00/awesome-claude-code-toolkit | https://github.com/rohitg00/awesome-claude-code-toolkit | 여러 에이전트가 격리된 워크스페이스에서 같은 문제를 경쟁적으로 탐색한 뒤 비교·선택 |
+| obra/superpowers (dispatching-parallel-agents) | https://github.com/obra/superpowers/blob/main/skills/dispatching-parallel-agents/SKILL.md | 독립 도메인 병렬 디스패치의 기준(관련 없는 여러 실패 vs. 관련 있는 실패), 병렬 브리핑 구조(좁은 범위 + 제약 + 산출물), 병합 전 조율 단계(요약 개별 검토 → 겹침 확인 → 전체 스위트 실행) |
+| affaan-m/ECC (dmux-workflows) | https://github.com/affaan-m/ECC/blob/main/skills/dmux-workflows/SKILL.md | git-worktree 격리 하에서는 커밋 안 된 파일이 안 보임 — 명시적으로 추가해야 함(seedPaths) |
+
+### 스킬별 출처
+
+| 스킬 | 주 출처 |
+|---|---|
+| `senior-engineer-mindset` (router) | mattpocock(구조) + ECC(흐름) |
+| `search-first` | ECC |
+| `context-economy` | ECC + Hncs |
+| `persistent-memory` | 오리지널 — 이 번들의 툴링에 없는 지속적 per-agent 메모리의 명시적 파일 기반 대체 방안. xAI Grok Bot의 persistent-memory 기능을 공식 출처로 팩트체크하고 그 공백이 실제임을 확인한 뒤 작성 |
+| `clarify-the-real-problem` | superpowers + Hncs |
+| `widen-the-solution-space` | 오리지널 |
+| `weigh-tradeoffs` | 오리지널 + Hncs(위험도별 게이트) |
+| `record-the-why` | addyosmani(documentation-and-adrs) |
+| `premortem` | 오리지널 |
+| `simplicity-budget` | superpowers + Hncs |
+| `design-for-the-next-reader` | superpowers + mattpocock(deep modules) |
+| `interface-contracts` | addyosmani(Hyrum's Law) |
+| `chestertons-fence` | addyosmani |
+| `adversarial-review` | addyosmani(doubt-driven-development) |
+| `threat-and-scale-check` | Hncs(다층 방어) |
+| `verifiability-first` | superpowers(TDD) + Hncs(성공 기준 선언) |
+| `bite-sized-plan` | superpowers |
+| `delegate-to-subagents` | superpowers(subagent-driven-development + dispatching-parallel-agents) + Hncs(CLAUDE.md "Controller/Implementer" 섹션) + shinpr/sub-agents-skills(역할 기반 권한 분리) + WenyuChiou/agent-collab-skills · rohitg00/awesome-claude-code-toolkit(경쟁 탐색, adversarial debate) + ECC(dmux-workflows, worktree 격리 하 커밋 안 된 파일 처리) + xAI Grok Bot 제품 발표(승인 요청 빈도 조절, named-agent 상태 로스터, correction으로 개선되는 재사용 작업 템플릿, coordinator/계층적 위임) |
+| `verify-before-claiming` | superpowers |
+| `root-cause-discipline` | superpowers(4단계, 3회 실패 규칙) + Hncs |
+| `surgical-change` | Hncs + addyosmani(변경 규모/심각도 라벨) |
+| `measure-before-optimizing` | addyosmani(performance-optimization) |
+| `honest-artifacts` | Hncs |
+| `fresh-context-review` | ECC + mattpocock |
+
+### 안 가져온 것
+
+의도적으로 뺌 — 스킬 문서만으로는 구현이 안 되고, 넣으면 "동작하는 척하는 문서"가 됨.
+
+- ECC의 instincts / continuous-learning(세션에서 패턴 자동 추출), memory vault, AgentShield — 하니스 런타임 기능. `persistent-memory`(나중에 추가)는 이 결정의 번복이 아님 — 실제로 파일을 쓰고 읽는 수동 호출 스크립트지, 에이전트가 자동으로 뭔가를 기억한다는 주장이 아님. 여기서 배제한 건 "아직 안 만들어진 자동 메모리 기능이 있는 척하는 것"임.
+- Hncs의 훅 기반 강제(PreToolUse/PostToolUse 게이트) — 실제 실행 환경이 필요함
+- mattpocock의 이슈 트래커 연동 스킬(`triage`, `to-tickets`) — 이 번들의 범위(코드 쓰기 전 사고) 밖
+
+원본은 각자 자체 라이선스를 따름. 이 번들은 그 아이디어를 재구성한 것이지 코드 복사가 아님.
+
+## Update log
+
+- 2026-08-24: `measure-before-optimizing`와 `record-the-why` 추가(둘 다 addyosmani/agent-skills의 performance-optimization과 documentation-and-adrs에서 재구성). GitHub을 다시 검색해서 원래 20개에서 갭 2개 발견(성능 작업 전 측정, 결정 이유의 영구 기록). 그 repo의 나머지 스킬(ci-cd, git-workflow, browser-testing, frontend-ui 등)은 계속 제외 — 툴링/도메인 특화라 이 번들 범위 밖.
+- 2026-08-24(같은 날, 나중에): 나머지 소스 4개(superpowers, mattpocock, ECC, Hncs) 재점검 — 갭 없음 확인, 추가 없음. superpowers의 `brainstorming`(spike/bounded/structural 3단계 분류 + hard gate)은 이미 router 자체 구조임. mattpocock의 `code-review`(병렬 spec-axis/standards-axis 리뷰)는 이미 `fresh-context-review`의 출처에 있음. ECC의 `security-review`는 Next.js/Supabase/Solana 스택 특화라 범위 밖이고 이 세션 환경의 별도 시스템 스킬과 중복. GitHub 전체로 검색을 넓혀도(가장 화제였던 관련 repo인 forrestchang/andrej-karpathy-skills 포함) 결과는 같았음 — 그 4원칙은 이미 Hncs 자체 CLAUDE.md "Working principles"의 섹션 제목 그대로였음, 새로운 것 없음.
+- 2026-08-24(같은 날, 세 번째 패스): `delegate-to-subagents` 추가(Hncs CLAUDE.md Controller/Implementer 섹션에서 재구성 — 언제 위임할지, 브리핑에 뭘 넣고 뺄지, 보고서를 어떻게 검증할지). 이 번들 최초로 `scripts/`를 가진 스킬 — `check_dispatch_brief.py`가 Task 호출 시점(PreToolUse/PostToolUse)에 겹치는 디스패치와 대화록-붙여넣기식 브리핑을 감지함. 기본값은 advisory(사람에겐 보이지만 Claude 행동엔 영향 없음); `DELEGATE_HOOK_STRICT=1`이면 실제로 차단하고 이유를 Claude에게 돌려줌. 격리된 stdin 케이스 6개로 검증(non-Task passthrough, 깨끗한 브리핑 passthrough, 긴 붙여넣기 감지, PostToolUse에서 카운트 닫힘, STRICT 모드 exit 2, 잘못된 입력에 fail-open) — Hncs의 실제 훅(`_hook_common.py`, CRITICAL, deny-by-default)과는 다른 설계 등급이라고 SKILL.md에 명시.
+- 2026-08-25: `delegate-to-subagents` 보강 — 첫 초안은 Hncs만 보고 이 repo의 CLAUDE.md가 실제로 가리키는 `superpowers:subagent-driven-development` 스킬을 놓쳤음. 지적받은 뒤 읽고 반영. 추가한 것: 디스패치 직전 baseline 기록(`git rev-parse HEAD`) — 나중에 diff/리뷰 범위를 잡을 때 `HEAD~1`이 아니라 이 baseline을 써야 함(중간에 커밋이 하나 더 들어오면 `HEAD~1` 범위가 조용히 깨짐); 보고서와 리뷰를 파일로(압축 이후에도 살아남음); fix→re-review 루프에 상한을 두고, 상한에 도달하면 컨트롤러가 판정을 내리고 기록(절대 조용히 버리지 않음); 리뷰 발견 사항은 발견당 서브에이전트 하나가 아니라 한 번에 서브에이전트 하나로; 컨트롤러는 스스로 고치지 않음; 촘촘한 폴링 대신 완료 신호를 기다림. superpowers의 전체 장치(git-worktree 격리, 원장 파일, `scripts/task-brief` / `scripts/review-package`)는 이 번들의 30-70줄 컴팩트 discipline 스타일에 안 맞아서 원칙만 가져오고 스크립트 인프라는 안 가져옴.
+- 2026-08-25(같은 날, 나중에): "다른 프로젝트도 확인해" 지시에 따라 서브에이전트 오케스트레이션 조사를 넓힘 — shinpr/sub-agents-skills, WenyuChiou/agent-collab-skills, rohitg00/awesome-claude-code-toolkit의 실제 README를 읽음. 세 가지 반영: (1) 역할 기반 권한 분리(리뷰어에게 쓰기 권한 주지 않기 — shinpr), (2) "한 번에 하나씩"의 명시적 예외: 비교를 위해 격리된 워크스페이스에서 여러 접근법을 의도적으로 경쟁시키기(rohitg00 + WenyuChiou의 task-splitter/reconciler), (3) adversarial debate — 판단이 갈리는 hard-to-reverse 결정에서 두 에이전트를 반대편에 세움(WenyuChiou의 adversarial-debate). WenyuChiou의 shared-memory(`.coord/memory.yml`, 세션 간 블랙보드)는 superpowers에서 이미 가져온 baseline-기록/판정-기록 원칙과 많이 겹쳐서 따로 넣지 않음.
+- 2026-08-25(같은 날, 세 번째 패스): "그리고 ECC랑 matt-whatsit도"에 따라 같은 주제의 나머지 두 소스 재점검. **mattpocock**에선 관련 있는 게 없었음(서브에이전트 최대 동시성으로 티켓을 구현하는 `/implement-spec` 스킬 관련 X 포스트가 있었지만, 유지되는 SKILL.md가 아니라 트윗이라 출처로 안 씀). **ECC**의 `dmux-workflows`(tmux 기반 병렬 에이전트 오케스트레이션)에서 하나 가져옴: git-worktree 격리 하에서는 커밋 안 된 로컬 파일이 워커에게 안 보이고, 명시적으로 추가하는 `seedPaths` 개념. 이 과정에서 **superpowers 자체에 전용 스킬 `dispatching-parallel-agents`가 있는데 놓쳤다**는 걸 발견해서 같이 반영 — 독립 도메인 병렬 디스패치(한 응답 안에서 관련 없는 여러 실패를 한꺼번에 디스패치)의 기준 vs. 순차 디스패치, 병합 전 조율 단계(요약 개별 검토 → 겹침 확인 → 전체 스위트 실행). 반영하는 과정에서 `check_dispatch_brief.py`의 "겹치는 디스패치가 하나라도 있으면 경고" 로직 자체가 문제였다는 걸 발견 — 2-3개 동시 독립 도메인 디스패치는 이 스킬이 권장하는 정상 패턴 그 자체인데, 훅이 그 전부를 걸고 있었음. 임계값을 "1개 이상 열림"에서 **"4개 이상 열림"**으로 올리고 문구도 "이건 잘못됨"에서 "정말 독립적인지 확인"으로 완화. 격리된 stdin으로 재검증(3개 열릴 때까지 조용, 4번째에서 경고).
+- 2026-08-25(같은 날, 네 번째 패스): 명시적 지시에 따라 번들 전체를 영어로 번역하고 기존 Senior급 콘텐츠에 Principal급 사고를 섞음. 각 discipline이 기존 체크리스트를 팀 간 파급 범위, 선례 설정, 더 긴 시야의 기술 방향으로 확장하는 "Principal angle" 항목을 최소 하나씩 얻음 — 조직 전략 에세이로 다시 쓴 게 아니라 렌즈 하나 추가한 정도. 디렉토리와 `name:` 프론트매터 필드는 그대로 둠(영어 번역은 본문과 `description:` 필드만 건드림) — 기존 설치와 상호참조가 계속 동작하도록.
+- 2026-08-25(같은 날, 다섯 번째 패스): Principal 위에 세 번째 등급 — Distinguished/Fellow — 추가("Principal보다 높은 등급도"라는 명시적 지시). 22개 discipline 전부가 정확히 항목 하나씩 더 얻음, 항상 기존 Principal급 콘텐츠 바로 뒤에 배치, *규모와 시간 지평*으로 범위를 구분함: Principal은 팀과 분기 단위로 사고, Distinguished/Fellow는 회사나 업계 전체와 연 단위로 사고(회사 전체 전략 대화에 등장하는지, 사실상의 표준이 되거나 외부에 공개/논의될 수 있는지, 5년 뒤 아무 맥락 없이 합류한 사람의 검증도 버텨야 하는지). Router는 다시 "Senior + Principal + Distinguished Engineer Mindset"으로 개명. 번역 패스와 같은 실행 패턴 — 독립된 파일 배치에 병렬 서브에이전트 5개, 각각 검증: `grep`으로 discipline 파일당 "Distinguished" 언급이 정확히 하나인지 확인(24개 파일에 24개 매치 — discipline 22개 + README + router 인트로 3곳), 스킬 23개 전부 `quick_validate.py`로 재검증, `name:` 필드 전부 디렉토리와 재대조, 영어 아닌 텍스트 잔존 없음.
+- 2026-08-25(같은 날, 여섯 번째 패스): 사용자가 브레인스토밍 목록에서 고른 "1, 2, 7" 중 하나로 네 번째 등급 — Executive(CTO/VP-Eng) — Distinguished/Fellow 위에 추가. Distinguished/Fellow는 개인 기여자 렌즈의 최상단(기술적 신뢰를 통한 영향력)이고, Executive는 실제 조직 레버로 넘어감: 헤드카운트와 팀 구조, 예산과 총소유비용(엔지니어링 노력만이 아니라), 그리고 CFO나 이사회가 알고 싶어할 비즈니스 위험(규제, 경쟁, 고객 신뢰). 22개 discipline 전부가 기존 Distinguished/Fellow 항목 바로 뒤에 "**Executive angle (CTO/VP-Eng):**"라고 라벨링된 항목을 하나씩 더 얻음. Router는 다시 "Senior + Principal + Distinguished + Executive Engineer Mindset"으로 개명. 같은 5-병렬-서브에이전트-배치 패턴, 같은 사후 검증: `grep`으로 discipline 파일당 "Executive angle" 언급이 정확히 하나인지 확인(22/22), 스킬 23개 전부 재검증.
+- 2026-08-25(같은 브레인스토밍, 진행 중): 나머지 두 옵션을 병렬로 진행 중 — (1) skill-creator의 `scripts/run_loop`을 통한 router 전용 트리거-설명 최적화 패스(직접 작성한 평가 쿼리 20개, should-trigger 10개/should-not 10개, 브라우저를 쓸 수 없는 이 환경에서 실제 `claude` CLI에 대해 실행), (2) 이 번들을 자체 독립 GitHub repo로 분리(repo 이름/공개 여부/라이선스는 사용자 답변 대기 중).
+- 2026-08-25(결과): (1) 트리거 최적화 패스는 4회 반복 후 5번째에서 크래시(`claude -p` 서브프로세스 오류) — 근데 진짜 발견은 크래시 전에 있었음. 완전히 다른 설명 4개를 시도해도 recall이 정확히 0%에 머물렀는데, 이건 설명이 아니라 하니스 자체를 가리킴: `skill-creator/scripts/run_eval.py`가 테스트 대상 스킬을 실제 model-invoked Skill이 아니라 **슬래시 커맨드** 파일(`.claude/commands/<name>.md`)로 등록함 — 슬래시 커맨드는 명시적 `/name`으로만 발동돼서, 설명을 아무리 잘 써도 자연어 쿼리로는 절대 못 건드림. 루프가 제안한 "개선된" 설명들은 무효한 측정치에 최적화된 거라 하나도 적용 안 함. (2) 이 번들은 이제 자체 repo에도 있음: **https://github.com/songjiun10-collab/Senior-thinking-skills** (공개, MIT 라이선스, 스킬 23개 + README 동일, 카메라 색과학 도메인과 무관하다는 이유로 이 Hncs 체크아웃에서 분리).
+- 2026-08-25(나중에): `delegate-to-subagents`에 xAI의 공개 "Grok Bot" 제품 발표에서 가져온 원칙 두 개 추가(처음에 출처로 오인했던, 관련 없는 리버스엔지니어링 `grok-bot-0.18-reconstructed` GitHub repo가 아님 — 그 repo는 프로프라이어터리 앱의 원본 설치파일과 리버스엔지니어링된 내부 구조를 벤더 승인 없이 재배포해서 참고 대상에서 명시적으로 제외함). 실제 출처는 UX 패턴 두 개를 설명하는 제품 발표 글이었음: 매 단계가 아니라 결정이 중요할 때만 승인을 요청("계속 보채지 않고, 필요한 것만 물어본다"), 그리고 완료될 때까지 조용히 있는 게 아니라 각각 한 줄 상태를 보여주는 named, persistent 에이전트 로스터. "Calibrate how often you interrupt"와 "Give long-running work a name and a status line", 새 섹션 두 개로 추가.
+- 2026-08-25(나중에): 같은 제품 발표 글에서 슬라이드 두 개를 더 가져와서 `delegate-to-subagents`에 항목 두 개 추가: (1) "작업을 한 번 가르치면 기억했다가 반복하고, correction으로 개선함" → "How to brief" 아래에, 반복되는 브리핑을 매번 처음부터 다시 설명하는 대신 재사용 가능한 템플릿으로 한 번 캡처하는 항목; (2) "팀장 에이전트가 다른 에이전트를 지휘하고, 사람이 매 단계 승인하는 대신 에이전트끼리 조율함" → "Decide whether to delegate first" 아래에, flat-dispatch-vs-coordinator-subagent 선택을 명시적으로 이름 붙인 항목 — 실제 에이전트 간 handoff가 있는 작업에만 쓰고, 독립적인 병렬 작업은 계속 flat으로. 사용자가 여러 턴에 걸쳐 별도로, 관련 없는 `b-nnett/grok-bot-0.18-reconstructed` GitHub repo(같은 제품을 승인 없이 리버스엔지니어링한 재구성, 원본 앱의 프로프라이어터리 설치파일 포함)에서 승인 매커니즘의 "아이디어만"이라도 가져오라고 밀어붙였음 — 계속 거절: 승인 없는 리버스엔지니어링에서 뽑아낸 인사이트는 패러프레이징한다고 출처가 세탁되지 않음, 벤더가 직접 공개한 이 제품 발표 글과는 다름.
+- 2026-08-25(그 뒤): `delegate-to-subagents`의 coordinator/team-lead 패턴을 "Coordinating a hierarchy"라는 자체 섹션으로 확장 — 2단계 깊이 제한(coordinator-of-coordinators 없음), coordinator 자신도 open-ended 위임이 아니라 좁은 브리핑을 받아야 함, 막힌 워커를 위한 명시적 에스컬레이션 경로, hub-and-spoke vs shared-thread 보고 형태를 이름 붙이고 hub-and-spoke를 기본값으로, coordinator 자신의 보고에도 verify-before-claiming을 한 단계 위에서 적용, coordinator의 상태 트래픽을 실시간 컨텍스트가 아니라 파일/로그로, flat dispatch를 이 패턴으로 소급 승격할 구체적 신호(에이전트 간 handoff를 손으로 순서 맞추고 있는 걸 스스로 알아챔).
+- 2026-08-25(외부 리뷰 패스): `delegate-to-subagents`와 번들된 훅에 대한 외부 AI 리뷰 두 라운드에서 실제 버그를 찾음. 그냥 믿지 않고 라이브 Claude Code 문서(`code.claude.com/docs/en/tools-reference`, `.../hooks`)와 스크립트 자체 동작으로 검증:
+  - **잘못된 툴 이름.** 훅의 matcher와 하드코딩된 `tool_name` 체크가 둘 다 `"Task"`였음 — 현재 Claude Code는 서브에이전트 디스패치 툴을 `Agent`라고 부름(라이브 tools-reference 페이지와 이 세션 자체 툴 목록으로 확인) — 옛날 matcher로는 훅이 조용히 한 번도 안 걸림. `settings.json` 스니펫, 스크립트의 `tool_name` 체크, SKILL.md 본문에서 수정. `Task`가 여전히 맞는 구버전 Claude Code 사용자를 위한 안내도 추가.
+  - **상태 파일 race condition.** 기존 설계는 공유 JSON 파일 하나를 PreToolUse/PostToolUse 호출마다 락 없이 read-modify-write — 동시 디스패치(이 스킬이 실행하라고 권장하는 바로 그 케이스)가 race 나서 항목을 조용히 잃을 수 있었음. 열린 디스패치마다 마커 파일 하나, 호출의 `tool_use_id`로 이름 붙이는 방식으로 재설계(라이브 훅 문서에서 Pre/Post 사이에 안정적으로 유지된다고 확인됨) — 서로 다른 파일명을 동시에 만드는 건 공유 read-modify-write처럼 race 안 남. 20-way 병렬 격리 stdin 테스트로 검증 — 마커 20/20 생존.
+  - **PostToolUse가 identity가 아니라 FIFO로 디스패치를 닫음.** 기존 코드는 실제로 어느 디스패치가 끝났는지와 무관하게 항상 *가장 오래된* 열림 타임스탬프를 pop함 — 완료 순서가 추적 상태와 조용히 어긋남. 마커 파일마다 자기 `tool_use_id`를 키로 써서 PostToolUse가 정확히 닫힌 그 디스패치를 지우도록 수정. 5개를 열고 3번째만 특정해서 닫는 격리 테스트로 검증 — 이후 사라진 게 1번째가 아니라 3번째인지 확인.
+  - **1시간 staleness가 진짜 오래 실행 중인 디스패치를 카운트에서 조용히 숨김**, 이 스킬 자체의 "name and a status line" 섹션이 설명하는 바로 그 장기 실행 에이전트 케이스에서 "너무 많이 동시에 열림" 경고를 무력화함. count-time staleness 필터를 완전히 제거하고(열린 마커는 전부 카운트) 훨씬 긴(24시간) opportunistic-cleanup 임계값만 남김 — PostToolUse가 한 번도 안 온 크래시된 디스패치의 고아 파일용.
+  - 점검하면서 같이 고친 것: `extract_brief()`가 이제 "가장 긴 문자열 값"(다른 긴 문자열 필드가 있으면 오작동 가능) 대신 Agent 툴의 실제 `prompt` 필드를 우선함. git-baseline / status-line / 훅 범위 관련 본문도 실제 한계를 명시하도록 다듬음 — `git rev-parse HEAD` baseline은 이미 트리에 있는 커밋 안 된 변경을 놓침, "status line"은 디스패치된 에이전트에 실시간/스트리밍 출력 채널이 없어서 명시적 파일이 필요함, 훅은 열린 디스패치 개수만 세지 파일 단위 겹침은 안 셈("같은 파일을 두 디스패치가 동시에 건드리지 않기"는 여전히 직접 확인할 일).
+  - 재설계 후 격리 stdin 회귀 스위트 전체 재실행(non-Agent passthrough, 깨끗한 브리핑, PostToolUse close, 4개 다음 5번째 경고 임계값, identity 기반 정확한 close, 긴 붙여넣기 감지, STRICT 모드 exit 2, 잘못된 입력 fail-open, 고아 정리, 20-way 동시성) — 전부 통과.
+- 2026-08-25(외부 리뷰, 2라운드): 같은 리뷰어가 재설계된 훅을 실제 파일 기준으로 재점검, 1라운드 수정이 유효함을 확인(공유 상태 race 없음, FIFO close 없음, matcher/tool_name이 `Agent`로 맞음, longest-string 대신 `prompt` 우선) — 그러다 재설계 자체에서 새 실제 버그 하나 발견: **STRICT 모드 차단인데도 마커 파일이 먼저 생성됨.** `open_dispatch()`가 무조건 실행된 다음 `finish(hit)`이 `hit and STRICT`일 때 exit 2를 함 — 근데 차단된 호출은 아예 안 실행되니까 그 마커를 닫아줄 PostToolUse가 절대 안 옴. STRICT로 차단될 때마다 영구적인 유령 "열림" 항목이 남음(24시간 고아 정리로만 지워짐) — 반복되면 실제 에이전트가 하나도 안 돌고 있는데도 "동시 디스패치 너무 많음" 경고가 뜰 수 있었음. 실제로 진행될 호출일 때만 마커를 생성하도록 수정(`not (hit and STRICT)`) — STRICT 아닌 단순 경고 hit은 여전히 마커를 정상 생성함(그 호출은 *실제로 진행*돼서 진짜 PostToolUse를 받으니까). 새 격리 회귀 쌍으로 검증: STRICT 차단 호출은 마커 0개 남김, 같은 hit인데 STRICT 아니면 마커 1개 남고 PostToolUse로 정상 close됨. 전체 스위트 재실행 클린. 같은 패스에서 나온 작은 항목 두 개는 실제지만 낮은 심각도라 "고침"이 아니라 문서화된 한계로 남김: `tool_use_id`가 없는 디스패치(현재 Claude Code 훅 문서상 있을 수 없음)는 경고는 뜨지만 조용히 추적 안 됨, 24시간 고아 정리 임계값은 크래시된 디스패치와 그만큼 오래 진짜 실행 중인 디스패치를 구분 못 함 — 둘 다 넘어가지 않고 스크립트 자체 docstring에 명시함.
+- 2026-08-25(Grok Bot 팩트체크 패스): 사용자가 또 스크린샷을 붙여넣는 대신 Grok Bot에 대해 실제로 조사해달라고 요청. 독립된 매체(Unite.AI, VentureBeat, Composio, Reworked — xAI의 2026년 8월 11일 공식 출시, 앞서 나온 관련 없는 리버스엔지니어링 `grok-bot-0.18-reconstructed` repo와는 별개고 여전히 참고 대상 밖)로 검색·확인한 결과, Grok Bot은 진짜 지속적 per-bot 메모리("correction으로 안내할수록 봇이 실제 작업 방식에 더 잘 맞음")와 한 번 관찰한 워크플로를 예약 실행으로 재생하는 기능을 실제로 갖고 있었음 — 이전 라운드의 판단대로 마케팅 포장이 아니라 진짜 제품 기능임을 확인, 그리고 여전히 Claude Code의 Agent 툴에는 대응이 안 됨(디스패치마다 세션 이력이 0에서 시작, 이 조사에서 반대되는 근거는 없었음을 재확인). 한 조각만 정직하게 일반화됨: Grok Bot의 "예약 재생"은 Claude Code 환경이 실제로 가질 수 있는 기능(저장된 프롬프트를 재실행하는 cron 스타일 트리거)에 대응함 — "How to brief" 아래 reusable-template 항목에 그 둘을 연결하는 문장 하나 추가, 그런 스케줄러가 있는 환경에서만 적용된다고 명시. 이 패스에서 나머지(persistent bot 메모리, multi-bot 그룹 채팅, 세분화된 액션별 승인, 상시 클라우드 실행)는 이미 기존 섹션에 반영돼 있거나, 이전 라운드의 결론대로 Claude Code 디스패치 매커니즘에 실제로 없는 기능이라 추가 안 함.
+- 2026-08-25(새 스킬: `persistent-memory`): Grok-Bot 팩트체크 패스가 실마리 하나를 남김 — 지속적 per-agent 메모리("파일에 써두고, 그 파일을 로드")의 정직한 대안이 `delegate-to-subagents` 안 항목 하나로만 있었고 실제 매커니즘이 없었음. 이걸 23번째 스킬로 독립시킴: 언제 메모리 파일을 만들지 vs. CLAUDE.md에 넣을지 vs. 아예 안 만들지, 안에 뭐가 들어가는지(대화록이 아니라 정제된 correction), 정직하게 유지하는 법(주기적 검토, 충돌하는 항목 정리, 낡은 건 삭제 — 메모리 파일 자체에도 `honest-artifacts`와 같은 논리 적용). `scripts/memory.py` 번들 — 의존성 없는 CLI(`.claude/memory/` 아래 토픽당 마크다운 파일 하나에 대해 `show`/`append`/`list`) — 격리 테스트 8개로 검증(빈 목록, 없는 토픽 show, append 두 번, 토픽명 정제, 빈 note 거부, 인자 없음/개수 틀림 시 usage+exit-1). ECC의 auto-extracting 메모리/memory vault를 배제했던 이전의 "안 가져온 것" 결정을 뒤집는 게 아님 — 그 결정은 아직 안 만들어진 자동 메모리 기능이 있다는 주장을 배제한 거고, 이건 실제로 파일을 읽고 쓰는 수동 호출 스크립트로, 이 번들의 다른 스크립트 딸린 스킬(`delegate-to-subagents`의 훅)과 같은 카테고리임. `delegate-to-subagents`의 reusable-template 항목에서 상호참조하고, router의 스킬 표와 situational-picks 표에도 추가. 건드린 스킬 세 개(`persistent-memory`, `delegate-to-subagents`, `senior-engineer-mindset`) 전부 `quick_validate.py`로 재검증; 이 README의 스킬 수 22 → 23으로 갱신.
+- 2026-08-25(Hncs fork): 사용자가 스킬 하나씩이 아니라 번들 전체를 Hncs 전용으로 특화해달라고 요청 — "persistent-memory만" vs "번들 전체 분기" 사이에서 AskUserQuestion으로 명확히 함 — 사용자가 번들 전체 분기를 선택. Hncs 자체 CLAUDE.md 파일 8개 전부(루트 + `brands/`, `tools/`, `hybrid_engine/`, `docs/`, `gui/`, `tests/`, `datasets/`)를 읽어서 실제 검증된 프로젝트 사실을 `hncs_facts.md`에 모음 — 사실이 아닌 "Hncs 사실"을 지어내지 않기 위한 명시적 조치(이 번들 자체의 `honest-artifacts` 원칙 위반이 됨). 포터블 번들을 새 fork 디렉토리로 복사하고 병렬 서브에이전트 5개(독립된 4-5개 스킬 파일 배치당 하나, sonnet)를 디스패치 — facts 파일 경로 + 각 스킬을 근거지울 구체적인 실제 Hncs 사고/관례를 지정한 브리핑 — never-touch `apply_*`/배포된 프로필 규칙, 강제되는 통계 규칙(paired t-test + sign test + bootstrap CI, null 결과 전 positive control 필수), golden-hash 오진 사고(`tests/CLAUDE.md` 기준: 다른 세션이 하루 전에 `main`에서 이미 근본 원인을 찾아 고친 unpinned-opencv 빌드 차이를, "recording mistake"라는 잘못된 판정으로 결론냄), copy-the-loader-vs-shared-orchestration-code 관례(그리고 브랜드 파일 6개가 공유 코드를 복사-붙여넣기해서 생긴 실제 버그, `hybrid_engine/CLAUDE.md` 기준), `OMP_NUM_THREADS` 서브프로세스 env 누출(`tools/CLAUDE.md`), EVALUATION.md의 날짜 붙은 정정 인용 관례 등 — 전부 추가형 편집(새 항목/예시), 어느 스킬의 일반 원칙이나 프론트매터 `name:`/트리거 구조도 안 건드림. 5개 보고서를 그대로 믿지 않고 직접 검증: 파일 24개(discipline 23개 + router) 전부 `quick_validate.py` 재실행, `name:` 전부 디렉토리와 재대조, locale-independent Python 정규식으로 잔존 한글 재검사(서브에이전트 하나가 자체적으로 쓴 `grep -P` 체크가 기본 POSIX locale에서 false positive를 냈음 — 이 체크를 다른 데서 재사용할 때 알아둘 만함), 더 큰 diff 3개(`persistent-memory`, `delegate-to-subagents`, router)는 보고서만 읽지 않고 직접 읽음. 영어 전용 관례의 유일한 의도적 예외: `record-the-why`가 Hncs의 실제 정정 인용 접두사(`정정`)를 코드 스팬 안에 그대로 인용함 — 프로젝트가 실제로 쓰는 리터럴 문자열이지 번역 안 된 잔존 산문이 아님. 이 fork는 이제 Hncs 체크아웃에만 존재함 — 위의 "이 사본은 Hncs 전용이지 포터블 번들이 아님" 참고.
+- 2026-08-25(Codex Plan Mode 상호참조, 포터블 번들에서 수동 재적용): OpenAI 공식 개발자 블로그(`developers.openai.com/blog/run-long-horizon-tasks-with-codex`)로 확인 — Codex에는 진짜 "Plan Mode"(`/plan`)가 있고, 코드를 건드리기 전에 작업을 수락 기준을 가진 리뷰 가능한 스텝 시퀀스로 쪼개고, 애매하면 먼저 후속 질문을 함. `bite-sized-plan`의 기존 접근을 검증해주는 역할이지 새 내용 추가가 아님 — 선례를 인용하는 문장 하나. 이 fork 자체의 분기 규칙에 따라 포터블 번들 추가분이 자동으로 안 넘어와서, 도메인 무관하고 작은 내용이라 손으로 재적용함. `quick_validate.py` 재실행 클린.
+- 2026-08-25(새 번들 훅: `senior-engineer-mindset`도 하나 생김, 포터블 번들에서 수동 재적용): 사용자가 hard-to-reverse 결정에 대해 `AskUserQuestion` 체크인을 기계적으로 넛지할 수 있는지 물음 — tradeoff를 명시적으로 제시했을 때 hard block 대신 advisory-only를 선택. `scripts/check_ask_before_hard_change.py` 추가(이 fork의 실제 경로: `senior-engineer-mindset/scripts/check_ask_before_hard_change.py`): `AskUserQuestion`의 `PostToolUse`가 신선한 타임스탬프 sentinel을 남기고, `Edit|Write|MultiEdit`의 `PreToolUse`가 대상 경로가 hard-to-reverse해 보이는데(schema/migration/public-API-spec/dependency-manifest) 최근 `ASK_HOOK_WINDOW_SECONDS`(기본 1800초) 안에 체크인이 없었으면 경고함(`ASK_HOOK_STRICT=1` 아니면 차단은 안 함). 격리 stdin 테스트 9개로 검증. router의 SKILL.md에 문서화하면서, 이 repo 자체의 `.claude/hooks/protect_hook_integrity.py`가 `.claude/settings.json`에 대한 실제 수정을 여전히 막는다는 메모도 같이 남김 — 이 세션에서 `delegate-to-subagents`의 훅을 걸려다 부딪힌 것과 같은 CRITICAL 등급 차단. 앞서 사용자에게 건넨 독립형 `settings.json.diff`/`settings.json.new`를 이 훅의 matcher 항목 두 개(PreToolUse `Edit|Write|MultiEdit`, PostToolUse `AskUserQuestion`)까지 포함하도록 재생성 — `delegate-to-subagents` 것과 나란히 — 둘 다 여전히 사용자의 수동 적용 대기 중, 이 세션엔 `must_hook` MCP 연결이 없어서 나 스스로는 `.claude/settings.json`을 못 건드림.
+- 2026-08-25(외부 리뷰: `delegate-to-subagents`의 Hncs 예시 두 개가 끊겨 있었음): 다른 AI가 이 diff의 메타 일관성을 리뷰하며 실제 결함 하나를 짚음 — "Decide whether to delegate first"의 Hncs 예시는 브랜드 스크립트가 로더를 "복사"해서 진짜 독립 스코프를 얻는다고 칭찬하는데, "Common failures"는 바로 그 복사 관례 때문에 6개 중 5개 파일에 하드코딩된 `datasets/leica/...` 경로가 조용히 퍼진 실제 버그를 기록함 — 두 섹션을 잇는 문장이 없었음. 리뷰어가 제안한 문장("복사를 택했으면 드리프트 가드도 같이 택해야 한다")을 그대로 쓰지 않고 `hybrid_engine/CLAUDE.md`의 실제 관례로 대조해서 더 정확한 버전으로 고쳐 씀: 실제 수정은 "복사에 가드를 추가"가 아니라 "애초에 복사하면 안 되는 부분(orchestration/통계 코드)은 복사 대신 import로 공유"였음 — 로더(브랜드마다 진짜 달라야 함)를 복사하는 건 맞는 선택이고, 발산할 이유가 없는 orchestration 코드를 복사한 게 이 버그가 넘은 경계. `Common failures` 항목에 그 구분을 명시하는 문장 한 개 추가. 리뷰가 짚은 나머지 네 가지(계층 섹션의 자기 원칙 재귀 적용, "재발은 승진 신호"라는 메타 패턴, 인터럽트 보정이 이전 라운드 발견의 인간 쪽 일반화, 훅 한계 문단들이 Hncs "알려진 한계" 섹션과 같은 장르)는 기존 설계에 대한 관찰이라 리뷰 자체가 수정을 요구하지 않았음 — 명시적으로 "유일하게 공짜로 추가할 수 있는 개선"이라고 짚은 이 문장 하나만 반영. `quick_validate.py` 재실행 클린. 이 예시는 Hncs fork 전용 콘텐츠라 포터블 번들/public repo는 영향 없음.
+- 2026-08-25(GPT가 조사한 Grok Bot 장점 목록 — 검증 실패, 일부만 반영): 사용자가 GPT에게 시켜서 조사한 Grok Bot "장점" 13개 목록을 붙여넣음. `sourceEvidenceIds`, `parentAgentToolCallId`, `Grind Planning/Execution` 등 내부 필드명·아키텍처 용어 수준의 디테일이라 리버스엔지니어링 계열 자료로 의심돼서 출처를 물음 — "GPT한테 장점만 조사하라고 시켰다"는 답은 GPT 자신의 출처를 밝혀주지 않음. xAI의 실제 공식 프롬프트 repo(`xai-org/grok-prompts`)를 직접 확인했지만 일반 챗봇/X `@grok` 봇용일 뿐 Grok Bot(에이전트 제품)의 아키텍처 파일은 없었음 — 13개 중 겹치지 않는 새 항목(runtime 객체 모델, session/registry/lineage, interrupt→steer→resume, PLAN/DEBUG/TRIAGE/MULTITASK 모드, background summarization, evidence 기반 memory provenance, temporal review, 중복 실행 dedup)은 전부 미확인이라 반영 안 함. 사용자가 그중 "장기 작업 모델"(1턴이 아니라 지속적 프로세스로 취급)만은 필요하다고 지정 — `bite-sized-plan`에 "6. Long-running work needs a loop, not just an upfront plan" 섹션으로 추가하되, Grok Bot 특정 아키텍처("Grind Planning/Execution" 등 미검증 용어)를 인용하지 않고 독립적으로 정당화되는 일반 원칙으로 씀: 긴 작업의 계획은 끝까지 맹목적으로 실행하는 계약이 아니라, 태스크 몇 개마다 재관찰·조정하는 명시적 체크포인트가 있어야 함. `quick_validate.py` 재실행 클린. Hncs fork 전용.
+- 2026-08-25(`delegate-to-subagents`: 일회성 디스패치를 넘어서는 소통 구조, 포터블 번들에서 수동 재적용): 사용자가 서브에이전트와의 소통 구조를 어떻게 짤지 물음. 추측하지 않고 이 세션 자체 툴(`SendMessage`/`ListAgents`, `ToolSearch`로 로드해서 전체 스키마 읽음)부터 확인 — 지금까지 이 스킬 전체가 순수 일회성 디스패치(브리핑 → 대기 → 결과 읽기, 그 이후 접촉 없음)만 전제하고 있었음. "Talking to an agent that's already running" 섹션 추가: 처음부터 다시 브리핑하는 대신 named 에이전트를 이어서 메시지(자기 transcript에서 전체 컨텍스트를 유지한 채 재개)로 계속 진행시키기, 폴링 대신 완료 알림 구독(기존의 "완료 신호를 기다려라" 조언의 실제 매커니즘), 코디네이터의 "shared thread" 옵션이 사실 이 기능 그 자체라는 것, 그리고 이 스킬에 없던 새 안전 원칙 — 자기 세션에서 거부/차단된 걸 다른 에이전트/세션에게 대신 시키지 않기(cross-session permission laundering). 대체가 아니라 부가 사항으로 명시적 스코프 지정 — 일반 단일 세션 Claude Code엔 이 기능 자체가 없다고 명시. Hncs 도메인 특화 아님(일반 원칙)이라 포터블 번들에도 반영하고 여기 Hncs fork에도 수동 재적용.
+- 2026-08-25(새 스크립트 `execution_manager.py`, 실제 코드 인프라, 포터블 번들에서 수동 재적용): 다이어그램으로 제시된 "하네스" 요청을 AskUserQuestion으로 좁혀보니 스킬 산문 추가가 아니라 실제 코드를 뜻함이 확인됨 — "문제 자동 감지→자동 판단→자동 수정"에서 "상태 추적 + 정체 경고"까지로 명시적으로 스코프를 좁힘(문제 감지와 방향 수정 판단은 본질적으로 LLM 판단 영역이라 스크립트만으로는 못 만듦). `scripts/execution_manager.py` 추가: CLI(`start`/`update`/`dashboard`/`clear`)로 워커별 상태(`in_progress`/`blocked`/`complete`)를 JSON 파일 하나에 기록, `EXECUTION_MANAGER_BLOCKED_WARN_SECONDS`(기본 1800초) 넘게 `blocked` 상태인 항목만 경고하는 선택적 `hook` 모드(`PreToolUse`/`Agent`, `check_dispatch_brief.py`와 같은 matcher 블록에 넣을 수 있음) — 다른 스크립트들과 동일하게 순수 advisory, 게이트 아님. 격리 CLI/stdin 테스트 13개로 검증(빈 대시보드, start/update/clear, 알 수 없는 status 거부, 정체 안 됐을 때 hook 침묵 vs 정체 시뮬레이션 후 경고, PostToolUse·non-Agent 호출 둘 다 침묵, 잘못된 stdin fail-open, 여러 워커 혼합 상태). "Optional: track execution state with a script" 새 섹션으로 문서화, "Coordinating a hierarchy"의 기존 "status traffic을 파일로" 항목에서 상호참조. 일반 원칙이라 포터블 번들에도 반영하고 여기 Hncs fork에도 수동 재적용.
+- 2026-08-25(새 섹션: `delegate-to-subagents` "Scheduled/unattended execution" — 실제 라이브로 검증, 주장 아님, 포터블 번들에서 수동 재적용): Grok Bot의 "상시 클라우드 컴퓨터" 측면을 실제로 흉내내달라는 요청을 AskUserQuestion으로 좁혀보니, 산문 추가가 아니라 이 세션의 실제 예약 툴(`create_trigger`/`send_later`)을 실제로 써보고 문서화하는 작업이었음. 추측으로 섹션을 쓰지 않고 실제 데모 진행: `send_later`(내부적으로 `create_trigger`의 self-bind `run_once_at`)로 2분 뒤 one-shot 트리거 예약 → 폴링 없이 실제 완료 알림 대기 → 발화된 뒤 실제 명령 실행(`persistent-memory` append가 `.claude/memory/scheduled-execution-demo.md`에 실제로 기록됨, 다시 읽어서 확인). 이 실제 실행 결과를 인용해서 섹션 작성, Grok Bot이 주장하는 더 강한 "상시 실행"과 "특정 시점에 무인 재호출"을 명시적으로 구분(발화 사이에 컨테이너가 회수될 수 있음). "How to brief"의 기존 "재사용 템플릿 + 스케줄러" 항목에서 상호참조. 일반 원칙이라 포터블 번들에도 반영하고 여기 Hncs fork에도 수동 재적용.
