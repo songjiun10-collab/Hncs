@@ -53,6 +53,13 @@ Each step inside a task is a single action:
 
 If a plan spans several independent subsystems, **split the plan.** Each plan should stand on its own with a working, testable result.
 
+## 6. Long-running work needs a loop, not just an upfront plan
+
+For work that spans many turns or sessions, the plan from steps 1-5 is a starting point, not a contract to execute blindly to the end. Build in an explicit checkpoint: after each task (or a small batch of them), re-observe what's actually true now — a step revealed something the plan didn't anticipate, a dependency changed, a measurement came back different than assumed — and adjust the *remaining* steps before continuing. The goal stays fixed; the plan under it doesn't have to.
+
+- This isn't scope creep or re-litigating the plan every step — it's a deliberate pause point, not continuous second-guessing.
+- Skip this for bounded work that finishes in one sitting. The loop earns its keep on structural, multi-session work, where what's true at task 1 can plausibly no longer be true by task 10.
+
 ## Warning signs
 
 | Thought | Reality |
