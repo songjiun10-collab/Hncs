@@ -56,6 +56,7 @@ Beyond a live dispatch or a continued conversation, some environments can fire a
 - **This isn't the same as "always running."** The trigger fires a fresh turn into a session — the underlying environment can still reclaim an idle container between firings. It gets you unattended re-invocation at a point in time, not a persistent background process running continuously in between.
 - Not universal — this is specific scheduling tooling, not something every Claude Code environment has; confirm yours actually has it before relying on it, the same caveat as "Talking to an agent that's already running" above.
 - **Test-run it once before trusting it unattended.** Fire it manually first and check the whole path: the right input actually gets picked up, the output lands where expected, and a failure is visible somewhere instead of silently swallowed. Don't let the first real run also be the first tested run.
+- **Some environments go further: named, saved workflows with pause/resume/stop.** xAI's Grok Build TUI (docs.x.ai/build/modes-and-commands, official) ships `/workflow <name> [args]` as a saved, resumable background job with explicit `pause`/`resume`/`stop` sub-commands and a live run dashboard (`/workflows`) — a different capability shape than the one-shot future-fire trigger above. This session's own trigger tools (`create_trigger`/`update_trigger`) only expose enable/disable for a trigger's *future* firings, not pause/resume of an *already-running* execution — check what your own environment actually exposes rather than assuming the stronger shape is universal.
 
 ## How to brief
 
@@ -163,5 +164,7 @@ Optionally wire it as a `PreToolUse` hook on the `Agent` tool so a stale-blocked
   }
 }
 ```
+
+**External validation:** xAI's Grok Build TUI (docs.x.ai/build/modes-and-commands, official) ships a first-class equivalent — `/tasks` lists background tasks, subagents, and scheduled tasks together, and `/workflows` opens a live run dashboard — a single-view worker/task status roster is a validated pattern here, not a one-off idea specific to this script.
 
 This can sit in the same `PreToolUse`/`Agent` matcher block as `check_dispatch_brief.py` above — Claude Code runs every hook command listed under a matcher, in order (see `settings.json.new`, already handed to the user, for exactly this shape). State lives in its own file (`.claude/hooks/.execution_manager_state.json` by default, override with `EXECUTION_MANAGER_STATE_FILE`), separate from `check_dispatch_brief.py`'s marker files, so the two don't interfere with each other. Verified with 13 isolated stdin/CLI cases (empty dashboard, start/update/clear, unknown-status rejection, hook mode silent when nothing's stale, hook mode warning once staleness is simulated, PostToolUse and non-Agent calls both silent, malformed stdin fails open, multiple workers with mixed states).
