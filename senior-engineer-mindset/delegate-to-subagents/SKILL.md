@@ -73,7 +73,7 @@ If you do reach for a coordinator, treat it as a real design decision, not just 
 
 ## Common failures
 
-- **"Independent" scope that secretly shares code.** A 2026-08 review of Hncs found 6 brand calibration files had copy-pasted their shared orchestration code byte-for-byte instead of it staying centralized — which had already caused a real bug (a hardcoded `datasets/leica/...` path left over in 5 of 6 files' error messages). Slicing work "one dispatch per brand" looked independent; the code underneath wasn't, and the duplication is what let the bug spread silently.
+- **"Independent" scope that secretly shares code.** A 2026-08 review of Hncs found 6 brand calibration files had copy-pasted their shared orchestration code byte-for-byte instead of it staying centralized — which had already caused a real bug (a hardcoded `datasets/leica/...` path left over in 5 of 6 files' error messages). Slicing work "one dispatch per brand" looked independent; the code underneath wasn't, and the duplication is what let the bug spread silently. This is the same "copy the loader" pattern from "Decide whether to delegate first" above, on its wrong side: copying is the right call only for the piece that's genuinely meant to diverge per scope (each brand's loader). Anything with zero reason to diverge — the orchestration/statistics code — stays centralized and imported, never copied; that's exactly the boundary this bug crossed.
 - Multiple agents edit the same file at once and clobber each other
 - Moving to the next step without verification just because a subagent said "done"
 - A delegated chunk too large for you to review the result — if you can't review it, it was sliced wrong to begin with
