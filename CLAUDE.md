@@ -22,8 +22,6 @@ or two, no preamble, no restating the request.
   pass reads as ignoring the ask.
 - **`참고` on a pasted URL/table/file means "incorporate this,"** not
   "acknowledge this."
-- Bias toward reversible work over pre-confirming it; irreversible things
-  still get confirmed.
 - **Make every claim checkable**: name the file, show the number, quote
   the command you actually ran. A claim you can't back is worse than
   saying you don't know.
