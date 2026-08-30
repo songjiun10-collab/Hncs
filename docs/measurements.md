@@ -1704,3 +1704,56 @@ Provia GFX50S II 통합, `fuji_provia_learned.py` 등)는 이 오염된
 (연구 단계) 급하지 않음. 나머지 브랜드는 2-4개 수준이라 이미 발표된
 승/패 판정을 뒤집을 정도는 아닐 가능성이 높지만 별도로 재확인
 예정.
+
+## clahe_clip - 브랜드 전체 shoulder_start 합동 재검증 (2026-08)
+
+X2D II에서 확인한 대로(위 "shoulder_start x clahe_clip 합동 재검증"
+절), raw+jpeg로 직접 캘리브레이션된 바디별 `apply_*` 함수 대부분이
+`clahe_clip=1.25`를 population-fit 기본값에서 그대로 차용했을 뿐 한
+번도 그리드서치 변수로 넣은 적이 없었다. 사용자 지시("브랜드 전체")로
+raw+jpeg 데이터가 로컬에 있는 나머지 9개 바디 전부를 같은 방법으로
+재검증했다(`tools/evaluate_all_brands_clahe_shoulder_grid.py`, 신규 -
+exposure_gamma/toe_lift/white_point는 각 바디 기존 확정값 고정,
+shoulder_start 7값 x clahe_clip 6값=42콤보, 200px 선택/400px LOO 확정).
+데이터는 `datasets/<brand>/contributed/*/`에서 읽음(`~/local-work`/
+`~/Documents/raw pair` 둘 다 이번 세션엔 로컬에 없었음 - 같은 파일이
+contributed 세트에 이미 있는 걸 확인하고 대체).
+
+| 바디 | n | 현재 shipped 대비 개선폭 | 부호검정 p | CI | 판정 |
+|---|---|---|---|---|---|
+| Hasselblad X1D-50c | 20 | -3.32% | 0.5034 | [-0.617,+0.011] | 보류 |
+| Sony a7V | 58* | +1.26% | 0.2370 | [+0.067,+0.345] | 보류(CI만 0 제외, 부호검정 안 유의 - 근거 약함) |
+| Sony a7R VI | 40 | +0.77% | 0.1539 | [-0.041,+0.300] | 보류 |
+| Leica SL3-P | 41 | +0.67% | 0.2110 | [-0.193,+0.294] | 보류 |
+| Leica Q3 43 | 44 | +0.00% | - | - | 이미 최적값(44/44 만장일치) |
+| Leica SL2 | 54 | +0.00% | - | - | 이미 최적값(54/54 만장일치) |
+| Leica M10 | 32 | **-4.48%** | 0.0078 | [-0.580,-0.142] | **현재값이 더 낫다 - 손대지 말 것** |
+| Fuji GFX100RF | 38 | **+6.96%** | 0.0139 | [+0.520,+1.366] | **채택** |
+| Fuji X-T30 III | 20 | +3.32% | 0.2632 | [-0.480,+1.076] | 보류(GFX100RF와 방향은 같으나 표본 작아 단독 불충분) |
+| Sigma BF | 82 | **+7.04%** | 0.0012 | [+0.670,+1.551] | **채택** |
+
+*Sony a7V는 manifest 75개 중 17개(`.arw`)가 "Unsupported file format or
+not RAW file"로 디코드 실패해서 58개만 사용 - 원인 미조사, 별도 확인
+필요.
+
+**채택 2건**:
+- **`brands/fuji.py`의 `apply_provia()`**: `clahe_clip` 1.25->3.0
+  (`shoulder_start`=0.82 불변). GFX100RF 38/38 폴드 만장일치.
+  X-T30 III(n=20)는 단독으로 유의하진 않지만 같은 방향(clip=3.0 계열이
+  14/20)이라 모순은 아님 - 표본이 더 큰 GFX100RF 값을 그대로 공유
+  함수에 반영(기존 shoulder_start=0.82 채택 때와 같은 방식).
+- **`brands/sigma_bf.py`의 `apply_sigma_bf_look`**: `_CLAHE_CLIP`
+  1.25->3.0 (`toe_lift`/`shoulder_start`/`white_point` 불변). 82/82
+  폴드 만장일치, 이 바디의 원래 원본 픽셀 검증(+0.53%, CI 하한 +0.007로
+  거의 0에 붙어있던 이 세션 최약체 근거)보다 훨씬 견고한 신호.
+
+**나머지는 손대지 않음**: X1D-50c/Sony 2종/Leica SL3-P는 CI가 0을
+포함해 보류. Leica Q3 43/SL2는 이미 정확히 최적값이었다(X2D II와 같은
+패턴 - "미검증 차용값"이 실은 최적값인 경우가 드물지 않다는 뜻). **Leica
+M10은 유일하게 역방향 신호** - 그리드서치가 오히려 현재값보다 유의하게
+나쁜 조합을 고른다(p=0.0078, CI가 0을 안 낀 채 완전히 음수) - 이 바디는
+그리드서치보다 원래 확정 과정(원본 픽셀 재확인 포함)이 더 신뢰도 높았던
+것으로 보임, 절대 이 재검증 결과로 덮어쓰면 안 됨.
+
+재현: `python3 -m tools.evaluate_all_brands_clahe_shoulder_grid`
+(~450쌍, 약 25분).

@@ -158,7 +158,7 @@ FUJI_PRESET_GOLDEN_HASHES = [
     ("brands.fuji", "apply_classic_negative",
      "7bc972bbbbd0476f43292c830a6e3dc1924fddef87277b091ac496fdd653bebb"),
     ("brands.fuji", "apply_provia",
-     "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
+     "d4181b7caa6b0fe8891fc8b6097fb9af85bf7853250fb60ddb6e39d96bd128ab"),
     ("brands.fuji", "apply_classic_chrome",
      "3d79e020eadfda21fa347297208f208a89f81e21fae73da3cdfb11f1932ed0c1"),
     ("brands.fuji", "apply_nostalgic_neg_v2",
