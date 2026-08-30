@@ -1217,6 +1217,37 @@ toe_lift=0.02, shoulder_start=0.58, white_point=0.95`로 갱신.
 오히려 큰 개선(+12.99%)이 나올 수도 있다 - 크기가 아니라 목적함수
 자체가 핵심이다. 재현: `python3 -m tools.evaluate_x2dii_de00_grid`.
 
+### shoulder_start x clahe_clip 합동 재검증 - 이미 최적값이었음 확인 (2026-08)
+
+위 그리드서치는 exposure_gamma/toe_lift/shoulder_start/white_point
+4개만 훑었다 - `clahe_clip`(=1.25)은 `apply_hncs()`(main)의 기본값을
+그대로 물려받은 채 한 번도 변수로 넣어본 적이 없었다(사용자 지적).
+`shoulder_start`와 `clahe_clip` 사이에 상호작용이 있는지 확인하려고
+`tools/evaluate_x2dii_clahe_shoulder_grid.py`(신규 - exposure_gamma=0.6/
+toe_lift=0.02/white_point=0.95는 고정, shoulder_start 7값 x clahe_clip
+6값=42콤보)로 같은 X2D II 70쌍에 합동 재그리드서치를 돌렸다.
+
+**데이터 소스 참고**: `evaluate_x2dii_de00_grid.py`가 쓰던
+`~/Documents/raw pair`(이후 `~/local-work`로 이동 기록됨)가 이 세션엔
+로컬에 없었지만, 같은 manifest(`dpreview_raw_jpeg_pairs_clean.csv`)의
+124개 파일이 전부 `datasets/hasselblad/contributed/*/raw|jpeg/`에 이미
+있는 걸 확인하고(124/124 매치) 그쪽에서 읽어 재현했다.
+
+**결과 - 승부가 안 됐다, 이미 최적값**:
+
+| | ΔE00 |
+|---|---|
+| 42콤보 LOO 그리드서치 vs apply_hncs(main) | 12.281 -> 10.542 (+14.16%, p<0.0001) |
+| 42콤보 LOO 그리드서치 vs **현재** apply_hncs_x2dii(ss=0.58, clip=1.25) | 10.484 -> 10.542 (**-0.56%, 승/패=0/12, p=0.0005, CI [-0.099,-0.024] 0 미포함**) |
+
+70폴드 중 **58개(83%)가 정확히 현재값(shoulder_start=0.58,
+clahe_clip=1.25)을 그대로 선택**했고, 나머지 12폴드가 이웃값(0.5/0.66)을
+골라 LOO 평균을 오히려 갉아먹었다 - 다수결로도 안정성으로도 현재값이
+이미 이긴다. **결론: clahe_clip=1.25/shoulder_start=0.58는 미검증
+차용값이 아니라 실제로 이 2D 그리드의 결합 최적점이었다** - 코드 변경
+없음(`apply_hncs_x2dii()` 그대로 유지). 재현: `python3 -m
+tools.evaluate_x2dii_clahe_shoulder_grid`.
+
 ### apply_hncs_x1d50c 신설 - Hasselblad X1D-50c 전용 (2026-08)
 
 로컬 raw+jpeg 라이브러리에 X1D-50c 페어 20장이 새로 추가돼서(Adobe 편집

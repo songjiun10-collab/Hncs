@@ -1327,6 +1327,40 @@ was there all along. The size of the number was never the point - the
 objective function was. Reproduce: `python3 -m
 tools.evaluate_x2dii_de00_grid`.
 
+### Joint shoulder_start x clahe_clip re-verification - already at the optimum (2026-08)
+
+The grid search above only swept exposure_gamma/toe_lift/shoulder_start/
+white_point - `clahe_clip` (=1.25) had simply been inherited from
+`apply_hncs()` (main)'s default and had never once been treated as a
+variable (user flagged this). To check for an interaction between
+`shoulder_start` and `clahe_clip`, a joint re-grid-search was run on the
+same X2D II 70 pairs (`tools/evaluate_x2dii_clahe_shoulder_grid.py`, new
+- exposure_gamma=0.6/toe_lift=0.02/white_point=0.95 held fixed,
+shoulder_start x 7 values x clahe_clip x 6 values = 42 combos).
+
+**Data source note**: `~/Documents/raw pair` (which `evaluate_x2dii_de00_grid.py`
+used, later recorded as moved to `~/local-work`) wasn't present locally
+this session, but all 124 files from the same manifest
+(`dpreview_raw_jpeg_pairs_clean.csv`) turned out to already exist under
+`datasets/hasselblad/contributed/*/raw|jpeg/` (124/124 matched), so the
+re-verification read from there instead.
+
+**Result - no contest, already the optimum**:
+
+| | ΔE00 |
+|---|---|
+| 42-combo LOO grid search vs apply_hncs(main) | 12.281 -> 10.542 (+14.16%, p<0.0001) |
+| 42-combo LOO grid search vs **current** apply_hncs_x2dii(ss=0.58, clip=1.25) | 10.484 -> 10.542 (**-0.56%, wins/losses=0/12, p=0.0005, CI [-0.099,-0.024] excludes 0**) |
+
+**58 of the 70 folds (83%) picked the current values (shoulder_start=0.58,
+clahe_clip=1.25) exactly**, and the remaining 12 folds picked a
+neighboring value (0.5/0.66) that dragged the LOO average down instead
+of up - the current values already win both by majority vote and by
+stability. **Conclusion: `clahe_clip=1.25`/`shoulder_start=0.58` weren't
+an unverified borrowed default after all - they were the actual joint
+optimum of this 2D grid.** No code change (`apply_hncs_x2dii()` left as
+is). Reproduce: `python3 -m tools.evaluate_x2dii_clahe_shoulder_grid`.
+
 ### apply_hncs_x1d50c added - Hasselblad X1D-50c specific (2026-08)
 
 20 new X1D-50c raw+jpeg pairs were added to the local library (verified
