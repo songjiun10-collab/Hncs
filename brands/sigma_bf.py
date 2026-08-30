@@ -38,6 +38,13 @@ Sigma BF 페어가 더 늘면 제일 먼저 재검증해야 할 후보다. 재�
 [+0.670,+1.551](0 미포함) - 위 원본 픽셀 검증(+0.53%, CI 하한 +0.007)
 보다 훨씬 견고한 신호라 반영. `toe_lift`/`shoulder_start`/`white_point`는
 불변.
+
+**갱신(2026-08, 원본 픽셀 재확인)**: CLAHE가 해상도에 민감하다는 별도
+발견(hncs_structural 재검증) 이후, 위 결정도 저해상도(400px LOO) 근거뿐이었다는
+우려로 원본 픽셀(max_dim=3000)에서 clip=1.25 vs 3.0을 직접 재대결시켰다
+(`tools/evaluate_clahe_clip_native_confirm.py`, n=51) - **+9.54%, 40승11패,
+부호검정 p=0.0001, 부트스트랩 95% CI [+1.203,+2.258]** - 저해상도 결과보다
+오히려 더 강하게 clip=3.0이 이긴다. 해상도 편향 우려는 기각, 채택 확정.
 """
 from core.engine import make_population_fit_look
 
