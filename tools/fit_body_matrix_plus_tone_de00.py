@@ -63,18 +63,34 @@ def collect_contributed_pairs(brand, model_filter=None):
 
 
 def read_as_shot_neutral(path):
-    out = subprocess.run(["exiftool", "-json", "-AsShotNeutral", path],
+    out = subprocess.run(["exiftool", "-json", "-AsShotNeutral", "-WB_RGGBLevelsAsShot", path],
                           capture_output=True, text=True, timeout=30)
     data = json.loads(out.stdout) if out.stdout.strip() else [{}]
-    raw_value = (data[0] if data else {}).get("AsShotNeutral")
-    if not raw_value:
-        return None
-    parts = str(raw_value).replace(",", " ").split()
-    try:
-        values = [float(p) for p in parts]
-    except ValueError:
-        return None
-    return np.array(values[:3], dtype=np.float64) if len(values) >= 3 else None
+    row = data[0] if data else {}
+    raw_value = row.get("AsShotNeutral")
+    if raw_value:
+        parts = str(raw_value).replace(",", " ").split()
+        try:
+            values = [float(p) for p in parts]
+        except ValueError:
+            return None
+        return np.array(values[:3], dtype=np.float64) if len(values) >= 3 else None
+
+    # Canon .cr3 등은 AsShotNeutral이 없고 "WB RGGB Levels As Shot"(R Gr Gb B 게인)만
+    # 있다 - AsShotNeutral과 역수 관계(게인이 클수록 그 채널을 더 증폭)라
+    # G=1 기준으로 정규화해서 같은 형태(나눗셈으로 화이트밸런스)로 변환.
+    rggb = row.get("WB_RGGBLevelsAsShot")
+    if rggb:
+        parts = str(rggb).replace(",", " ").split()
+        try:
+            r, gr, gb, b = [float(p) for p in parts[:4]]
+        except ValueError:
+            return None
+        g = (gr + gb) / 2.0
+        if g == 0:
+            return None
+        return np.array([g / r, 1.0, g / b], dtype=np.float64)
+    return None
 
 
 def decode_raw_native(raw_path, max_dim=MAX_DIM):
