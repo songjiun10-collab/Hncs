@@ -33,8 +33,15 @@ from core.curve import film_curve
 from tools.calibrate import collect_local_pairs
 
 CLUSTER_THRESHOLD_R_OVER_B = 0.9
-DOWNSAMPLE_MAX_DIM = 256  # 512->256, 표본이 4배로 늘어 디코드가 병목이라 낮춤
-GRID_DOWNSAMPLE_MAX_DIM = 100  # 160->100, 같은 이유
+# 512/160 원복 (2026-08) - 256/100으로 낮춘 첫 실행이 apply_hncs 우세(-10.91%)로
+# 뒤집혔는데, apply_hncs()의 CLAHE(tileGridSize=(8,8) 고정)가 해상도에 따라
+# 타일당 실제 픽셀 수가 달라져 저해상도에서 apply_hncs 쪽에 유리한 편향이
+# 생긴다는 걸 확인(25쌍 표본, 256px 평균 9.394 vs 512px 9.646, +2.6%
+# apply_hncs 유리) - 구조실험 쪽은 CLAHE가 없어 이 편향이 없음. 편향 크기
+# 자체는 전체 반전(-10.91%)을 다 설명 못 하지만, 깨끗한 숫자를 위해 원래
+# 해상도로 재확인. 3코어 병렬 디코드는 유지.
+DOWNSAMPLE_MAX_DIM = 512
+GRID_DOWNSAMPLE_MAX_DIM = 160
 
 SAT_MULT_GRID = np.linspace(0.80, 1.20, 16)
 HUE_SHIFT_GRID = np.linspace(-8.0, 8.0, 16)
