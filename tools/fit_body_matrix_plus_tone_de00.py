@@ -176,8 +176,9 @@ def _decode_one(r):
 
 
 def main():
-    brand = sys.argv[1]
-    model_filter = sys.argv[2] if len(sys.argv) > 2 else None
+    positional = [a for a in sys.argv[1:] if not a.startswith("--")]
+    brand = positional[0]
+    model_filter = positional[1] if len(positional) > 1 else None
     rows = collect_contributed_pairs(brand, model_filter)
     print(f"{brand} {model_filter or '(all)'}: manifest {len(rows)}개", flush=True)
 
