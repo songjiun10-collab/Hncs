@@ -321,3 +321,31 @@ structure - none of that changes just because the sample grew.
 
 Reproduce: `python3 -m tools.evaluate_hncs_structural_full_pool` (364
 pairs × 256 combos × 5-fold, ~15 minutes with 3-worker parallel decode).
+
+> **Correction (2026-08, user flagged "hey that's weird, verify it" ->
+> checked resolution)**: the result above was produced with decode
+> resolution lowered from 512/160 to 256/100 for speed.
+> `apply_hncs()` uses CLAHE (`tileGridSize=(8,8)`, fixed), and the actual
+> pixel count per tile changes with resolution - lower resolution biases
+> the result in `apply_hncs()`'s favor. The structural experiment (matrix
+> + chroma LUT + film curve, no CLAHE) has no such bias. Measured
+> directly on a 25-pair sample: `apply_hncs()`'s mean ΔE00 is 9.394 at
+> 256px vs. 9.646 at 512px (256px favors it by +2.6%) - this doesn't
+> account for the whole sign flip (-10.91%), but it's part of it.
+>
+> Clean numbers, re-verified at the original resolution (512/160):
+>
+> | Comparison | Improvement | Wins/losses | Sign-test p | Bootstrap 95% CI | Verdict |
+> |---|---|---|---|---|---|
+> | Hard cluster vs. `apply_hncs()` | **-7.42%** (10.485 -> 11.263) | 148/216 | 0.0004 | [-1.050,-0.526] | **apply_hncs wins** |
+> | Blend vs. `apply_hncs()` | **-7.97%** (10.485 -> 11.320) | 151/213 | 0.0014 | [-1.106,-0.583] | **apply_hncs wins** |
+> | Blend vs. hard cluster | -0.50% (11.263 -> 11.320) | 126/238 | <0.0001 | [-0.078,-0.036] | Hard cluster narrowly wins |
+>
+> The margin is narrower than the 256px numbers (-10.91%/-11.46% -
+> roughly 3.5 points of that was the resolution bias), but **the
+> direction and statistical significance (p<0.005, CI clearly away from
+> 0) hold** - "apply_hncs wins significantly at n=364" stands as the
+> conclusion. Treat this corrected (512/160) run as the final numbers and
+> the 256px ones as a biased draft. Reproduce: `python3 -m
+> tools.evaluate_hncs_structural_full_pool` (with DOWNSAMPLE_MAX_DIM=512,
+> GRID_DOWNSAMPLE_MAX_DIM=160, ~25 minutes with 3 workers).
