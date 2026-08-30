@@ -349,3 +349,45 @@ pairs × 256 combos × 5-fold, ~15 minutes with 3-worker parallel decode).
 > the 256px ones as a biased draft. Reproduce: `python3 -m
 > tools.evaluate_hncs_structural_full_pool` (with DOWNSAMPLE_MAX_DIM=512,
 > GRID_DOWNSAMPLE_MAX_DIM=160, ~25 minutes with 3 workers).
+
+## Revalidation 3 (2026-08, KMeans 4-cluster) - still holds even closer to the real structure
+
+The "Limitations" section kept flagging the 2-cluster hard cut (R/B
+threshold 0.9) as a reduction of the real HNCS structure ("at least 4
+illuminants - Tungsten/Low Tungsten/Flash/Flash-Daylight, matrix
+selected by WB"). On the user's instruction ("make it match the real
+Hasselblad structure"), the cluster count was raised to 4
+(`tools/evaluate_hncs_structural_4cluster.py`, new) - instead of a
+manual threshold, AsShotNeutral's (log(R/G), log(B/G)) was standardized
+and clustered data-drivenly with KMeans(k=4) (fit once over all pairs,
+not per-fold - the same out-of-sample caveat as the 2-cluster version
+carries over). "Matrix selected by WB" reads as hard assignment, so the
+blend variant was dropped this round. Resolution: 512/160 (per the
+correction above). Cluster split: 157/140/57/10.
+
+**Result**:
+
+| Comparison | Improvement | Wins/losses | Sign-test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| 2-cluster hard | -7.42% | 148/216 | 0.0004 | [-1.050,-0.526] | apply_hncs wins (solid) |
+| **4-cluster (KMeans)** | **-5.26%** | 163/201 | **0.0523** | [-0.823,-0.302] | apply_hncs wins (CI excludes 0, sign test just misses the conventional 0.05 threshold) |
+
+Going from 2 to 4 clusters narrowed the gap (-7.42% -> -5.26%) - moving
+closer to the real structure consistently closes the distance to
+`apply_hncs()`, but **the sign never flips**. The 4-cluster CI still
+clears 0 (lower bound -0.823) and only the sign test (p=0.0523) just
+misses the conventional 0.05 cutoff, making this a somewhat weaker case
+than the 2-cluster one - but the 163/201 win/loss split still leans the
+same way, so the direction hasn't changed.
+
+**Conclusion**: mirroring more of the real HNCS structure by adding more
+clusters still doesn't beat `apply_hncs()` - the gap shrinks, it doesn't
+close. A minority cluster (cluster_2, 10 pairs) is still present even at
+k=4, so fully closing it might take a larger sample still, but two
+independent re-verifications (2-cluster and 4-cluster) both landing on
+`apply_hncs()` winning is already a consistent enough signal.
+`apply_hncs()` is unchanged by this experiment too.
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural_4cluster` (364
+pairs × 256 combos × 5-fold × 4 clusters, ~27 minutes with 3-worker
+parallel decode).
