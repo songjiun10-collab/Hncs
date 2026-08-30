@@ -40,6 +40,25 @@ TONE_WHITE_POINT = 1.0
 TONE_CLAHE_CLIP = 3.0
 
 
+_FACE_CASCADE = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+
+
+def _is_portrait(jpg_path):
+    """매니페스트에 인물/풍경 태그가 없어서(사용자 지시 "인물 사진만
+    따로") OpenCV Haar cascade 얼굴 검출로 근사 분류 - 타깃 JPEG을
+    작게 리사이즈해서 빠르게 스캔."""
+    img = cv2.imread(jpg_path)
+    if img is None:
+        return False
+    h, w = img.shape[:2]
+    scale = 600 / max(h, w)
+    if scale < 1:
+        img = cv2.resize(img, (int(w * scale), int(h * scale)))
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    faces = _FACE_CASCADE.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(40, 40))
+    return len(faces) > 0
+
+
 def collect_contributed_pairs(brand, model_filter=None):
     base = os.path.join(BASE, "datasets", brand, "contributed")
     pairs = []
@@ -180,6 +199,10 @@ def main():
     brand = positional[0]
     model_filter = positional[1] if len(positional) > 1 else None
     rows = collect_contributed_pairs(brand, model_filter)
+    if "--portrait-only" in sys.argv:
+        before = len(rows)
+        rows = [r for r in rows if _is_portrait(r["jpeg_path"])]
+        print(f"인물 필터: {before} -> {len(rows)}", flush=True)
     print(f"{brand} {model_filter or '(all)'}: manifest {len(rows)}개", flush=True)
 
     t0 = time.time()
