@@ -2287,3 +2287,237 @@ Canon 캘리브레이션 도중(4-fold CV 진행 중) 중단. Canon/Sony/Nikon/S
 배선은 별도 결정. 재현:
 `~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.calibrate_profile_fuji`
 (약 2시간 40분).
+
+## 해셀블라드 재보정 시도 - 공식+기여 487쌍 전체 (2026-08, 게이트 미통과)
+
+이번 세션에 새로 확보된 기여 데이터(local-work-2026-08 165쌍 +
+xcd-lenses-2026-08 145쌍 + x1d-x2d100c-restore-2026-08 164쌍 = 474쌍)를
+공식 13쌍에 더해 총 487쌍으로 `hybrid_engine/recalibrate_full_contributed.py`
+(신설 - `recalibrate.py`의 `--cache-dir`가 `raw_calib_cache/` 평면 구조만
+받아서, `datasets/hasselblad/contributed/*/manifest.csv` 구조 여러 세트를
+합쳐 넣는 로더만 새로 짜고 게이트/통계 로직은 `recalibrate.py`의
+`decide_and_maybe_write()` 그대로 재사용)로 dry-run 재보정.
+
+| | ΔE00 |
+|---|---|
+| 기존 hasselblad.json (487쌍 풀 대상 측정) | 14.379 |
+| 487쌍으로 매트릭스+톤/색 재학습 (4-fold CV) | 14.365 |
+| 개선폭 | +0.1% (게이트 기준 5% 미달) |
+
+**게이트 미통과 - 프로필 갱신 안 함.**
+
+**주목할 점**: 기존 프로필은 원래 15쌍 벤치마크에서 ΔE 8.859(profile
+`_comment` 참고)인데, 이 487쌍 확장 풀에서는 14.379로 훨씬 나쁘다 -
+기존 프로필이 좁은 큐레이션된 벤치마크에는 잘 맞지만 다양한 실사진
+(여러 조명/장면/세대 뒤섞인 기여 데이터)엔 일반화가 덜 됐다는 뜻.
+근데 그 넓은 풀로 재학습해도 14.365로 사실상 그대로다 - **데이터
+양을 늘리는 것만으로는 이 문제가 안 풀린다.** 원인은 아직 특정 안 됨
+(다음 항목: 바디별 분해).
+
+**결론**: 측정만 함, `hasselblad.json` 안 건드림(dry-run, `--write` 안
+줌). 재현: `~/.hncs-hybrid-venv312/bin/python3 -m
+hybrid_engine.recalibrate_full_contributed` (487쌍, 약 16분).
+
+## 세대별 분해 - X2D II 100C만 이상치 (2026-08)
+
+`hybrid_engine/breakdown_by_generation.py`(신설, 새 매트릭스 학습 없이
+현재 배포된 hasselblad.json 그대로 페어별 ΔE00을 계산해서
+`tools.calibrate._generation_for()` 세대 라벨로 묶음)로 487쌍 풀을
+쪼개봤다:
+
+| 세대 | n | 평균 ΔE00 |
+|---|---|---|
+| X2D II 100C | 147 | 21.521 |
+| X1D II 50C | 38 | 13.568 |
+| X1D | 122 | 12.541 |
+| CFV 100C/907X | 29 | 11.796 |
+| Hasselblad X1D-50c | 20 | 10.240 |
+| X2D 100C | 117 | 9.579 |
+| 공식(raw_calib_cache) | 13 | 8.558 |
+
+X2D II 100C(가장 표본 큰 세대, 147/487=30%)만 나머지(9~14대)와 완전히
+다르다 - 위 487쌍 풀 재보정이 게이트를 통과 못 한 건 이 세대의 개선분이
+다른 세대와 상쇄됐기 때문일 가능성이 높다는 가설이 섬.
+
+**X2D II 100C 전용 재보정** (`hybrid_engine/recalibrate_x2dii100c.py`
+신설, 이후 임의 세대를 받는 `recalibrate_by_generation.py`로 일반화):
+147쌍만 떼서 4-fold CV 재보정 - **게이트 통과**: ΔE00 21.521 -> 20.272
+(+5.8%). dry-run만 실행, `--write` 안 함 - 이 결과를 그대로
+`assets/profiles/hasselblad.json`(전 세대 공유 프로필)에 쓰면 이미
+괜찮은 다른 5세대가 나빠질 위험이 있어서, 쓰기 전에 교차세대 검증이나
+바디별 분기(`brands/hasselblad_x2dii.py`처럼) 필요 - 아직 안 함.
+
+**ColorChecker 챠트로 직접 검증** (`hybrid_engine/verify_x2dii_chart.py`
+신설) - `kmichels-x2dii-2026-07` 챠트 세트가 로컬에서 사라진 걸 발견해서
+원 소유자의 구글 드라이브 백업에서 1쌍(B_31325) 복구 후 진짜
+분광측정 참조값(colour-science 내장 ColorChecker24) 대비 24패치 ΔE00
+직접 비교:
+
+| | 패치별 ΔE00 평균 |
+|---|---|
+| 매트릭스 없음(rawpy 기본 디코드) | 6.290 |
+| **현재 배포된 hasselblad.json 매트릭스 적용** | **13.643** |
+
+**현재 배포 매트릭스가 아무것도 안 하는 것보다 -116.9% 더 나쁘다.**
+X2D II 100C 이상치의 진짜 원인이 확인됐다 - 단순히 "재학습하면 5.8%
+개선되는" 수준이 아니라 **현재 매트릭스의 방향 자체가 이 바디에
+안 맞는다.**
+
+> **정정(2026-08-14, 매트릭스 적용 코드 재검토 중 발견)**: 위
+> `verify_x2dii_chart.py` 첫 실행은 `linear @ matrix.T`(전치)로
+> 매트릭스를 적용했는데, 실제 프로덕션 코드
+> (`hybrid_engine/core/raw_baseline.py`의 `apply_color_matrix`,
+> `hybrid_engine/pipeline/engine.py`가 그대로 호출)는 `features @
+> matrix`로 **전치 없이** 적용한다 - 3x3 매트릭스는 일반적으로 대칭이
+> 아니라서 전치 여부가 결과를 바꾼다. 버그 수정 후 재실행:
+>
+> | | 패치별 ΔE00 평균 |
+> |---|---|
+> | 매트릭스 없음(rawpy 기본 디코드) | 6.290 |
+> | 현재 배포된 hasselblad.json 매트릭스(정정) | 9.128 ~ 10.786 |
+> | **챠트 24패치 직접 최소자승 피팅한 새 매트릭스** | **2.318** |
+>
+> (`hybrid_engine/fit_matrix_from_chart.py` 신설 - 같은 24패치 샘플에
+> 세 조건을 전부 적용해서 파이프라인 순서 차이로 인한 오차를 없앤
+> 쪽의 수치가 더 신뢰도 높음, `verify_x2dii_chart.py`는 매트릭스 적용
+> 전/후 각각 따로 챠트를 재검출해서 약간 다른 24패치 위치를 쓸 수
+> 있어 참고용). 결론 자체(현재 배포 매트릭스가 rawpy 기본보다도
+> 나쁘다)는 안 바뀌지만 악화폭은 애초 보고한 -116.9%보다는 작다
+> (~-45%~-71%). **더 중요한 새 발견**: 챠트에서 직접 피팅한 매트릭스는
+> 2.318로 rawpy 기본(6.290)보다도 **훨씬 낫다** - raw+jpeg 페어 기반
+> 재보정(+5.8%, 위 게이트 통과분)보다 챠트 직접 피팅이 명백히 더
+> 나은 해법이라는 게 챠트 1장(24패치, 3x3 매트릭스 9개 미지수 피팅에
+> 이미 과결정이라 10장 다 필요 없다는 판단)만으로 확인됨.
+
+**결론**: 전부 측정만 함, `hasselblad.json` 안 건드림. 재현:
+`~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.breakdown_by_generation`,
+`... recalibrate_by_generation --generation "X2D II 100C"`,
+`... verify_x2dii_chart`, `... fit_matrix_from_chart`.
+
+## 깃허브 이슈 #4 / docs/measurements.md와 동기화 - 같은 문제가 이미 배포 파이프라인에서 해결돼 있었음 (2026-08)
+
+위 세 절(487쌍 재보정, 세대별 분해, 챠트 직접 피팅)을 진행하던 도중
+사용자가 "이미 특정 바디는 피팅 완료"라고 지적해서 깃허브 이슈 #4와
+`docs/measurements.md`/`datasets/hasselblad/contributed/README.md`를
+확인했다 - X2D II 100C가 세대 이상치라는 이 절의 핵심 발견과 정확히
+같은 문제가 이미 **다른 파이프라인**(`brands/hasselblad_x2dii.py`,
+`hasselblad.json`이 아니라 `apply_hncs()`의 별도 실험 변형)에서 훨씬
+엄밀하게 조사되고 배포까지 끝나 있었다:
+
+- kmichels 챠트 10장 최소자승 매트릭스(ΔE00 7.58→2.78, CV 검증)는 이미
+  이슈 #4에서 끝난 얘기 - 이 절의 `fit_matrix_from_chart.py`/
+  `verify_historical_chart_matrix.py`가 다시 낸 2.318/3.684 등은
+  전부 기존 결론 재확인일 뿐 새 발견이 아니었음
+- 그중 2장을 X1D 13쌍에 풀링 + Gray World→Gray Edge 스왑 조합이
+  `hasselblad.json` v1.3으로 이미 배포됨(+11.1%)
+- **X2D II 실사진(dpreview, 41→70쌍) 기준 세대별 그리드서치 → ΔE00
+  직접 목적함수로 정정 → `apply_hncs_x2dii()` 최종 채택**
+  (exposure_gamma=0.6, toe_lift=0.02, shoulder_start=0.58,
+  white_point=0.95, 원본 픽셀 ΔE00 기준 **+12.99%, 61승9패, p<0.0001**,
+  이미 커밋됨: `b4c2d91`~`7b065a9`) - 3x3 매트릭스는 실사진 41장 자체로
+  재피팅해도 기각(공간색 왜곡이 아니라 톤/노출이 원인)까지 이미 확인됨
+
+이 절의 hybrid_engine 작업(`hasselblad.json`, cross-camera 변환용
+프로필)은 `brands/hasselblad_x2dii.py`(단일 카메라 JPEG-룩 근사용
+`apply_hncs`)와 **다른 목적의 별개 아티팩트**라 완전히 중복은 아니지만,
+같은 질문("X2D II 100C가 왜 이상치인가", "매트릭스로 고쳐지는가")을
+훨씬 적은 데이터·약한 방법론으로 다시 풀고 있었던 건 맞다. 사용자
+지시("동기화 ㄱㄱ")에 따라 폐기하지 않고 hybrid_engine 자체 파이프라인
+기준으로 결론을 마저 내되, 위 배포된 해법이 이미 있다는 걸 명시하고
+넘어간다.
+
+## 데이터 무결성 버그 - local-work-2026-08/x1d-x2d100c-restore-2026-08 중복 (2026-08)
+
+위 동기화 과정에서 `verify_x2dii_tone_only.py`가 낸 "최악 5장" 목록에
+같은 파일명이 두 번씩 찍히는 걸 사용자가 지적("이상함요")해서 조사했다.
+
+**원인**: `datasets/hasselblad/contributed/local-work-2026-08/`(165쌍,
+manifest에 "local (owner personal library)"로 표기)와
+`x1d-x2d100c-restore-2026-08/`(164쌍, dpreview에서 재다운로드한 것으로
+이미 알려짐)가 **파일명 기준 109개 겹침** - dpreview 원본 파일명은
+사실상 랜덤 10자리라 우연일 수 없어서 겹치는 109개 전부 MD5로
+대조했더니 **109/109 바이트 단위로 완전히 동일**했다. 즉
+`local-work-2026-08`의 "개인 라이브러리" 표기 중 최소 109장은 실제로는
+`x1d-x2d100c-restore-2026-08`와 같은 dpreview 원본의 중복 수집 -
+`local-mixed-2026-07`이 "개인 라이브러리"로 적혀 있었지만 실은 dpreview
+전량이었던 것과 완전히 같은 패턴([[project-hasselblad-data-loss-recovery]]
+메모리 참고). 다른 세트(`xcd-lenses-2026-08`)와는 겹침 0건 확인.
+
+**영향 범위**: `tools.calibrate.collect_local_pairs()`를 쓰는 모든
+hybrid_engine 스크립트(이 문서의 487쌍 재보정, 세대별 분해, X2D II
+전용 재보정/검증 전부)가 중복 사진을 최대 2번씩 세고 있었다. X2D II
+100C는 local-work 73 + restore 74 = 147이 거의 완전히 겹쳐서 실제로는
+**~74장짜리 풀이 147로 부풀려진** 상태였다 - n이 부풀면 부트스트랩
+CI·부호검정의 독립표본 가정이 깨져 통계 자체가 무효해진다(`hybrid_engine/CLAUDE.md`
+"통계 - 비타협" 원칙 직결). **다행히 이미 배포된 `apply_hncs_x2dii()`는
+완전히 다른 데이터 소스(`/Users/songjiun/Documents/raw pair` +
+`datasets/hasselblad/dpreview_raw_jpeg_pairs_clean.csv`, `collect_local_pairs()`
+미사용)를 써서 이 버그와 무관함을 확인했다.
+
+**수정**: `tools/calibrate.py`의 `collect_local_pairs()`에 `filename_raw`
+기준 dedup 추가(정렬 순서상 먼저 나오는 세트가 우선 - `local-work-2026-08`
+< `x1d-x2d100c-restore-2026-08` 알파벳순이라 `local-work` 쪽이 유지됨).
+`tests.test_calibrate` 26개 전부 통과 확인. 부수적으로 이 김에
+`collect_local_pairs()`가 돌려주는 dict에 `scene_type` 필드도 추가하고
+(전엔 없었음) `breakdown_by_generation.py`/`recalibrate_x2dii100c.py`/
+`recalibrate_by_generation.py`/`verify_chart_matrix_on_photos.py`/
+`verify_x2dii_tone_only.py`에서 `scene_type == "chart"`(kmichels 챠트
+1장)를 "실사진" 풀에서 제외하도록 고쳤다 - 이것도 별개의 작은 혼입
+버그였다(챠트 1장이 껴서 147이 아니라 148로 잡히던 것).
+
+**dedup 후 재실행 - 결론은 안 바뀜, n만 정정됨**:
+
+| | dedup 전 | dedup 후 |
+|---|---|---|
+| 전체 풀(공식+기여) | 487쌍 | 378쌍 |
+| X2D II 100C | 147(챠트 혼입 시 148) | **74** |
+| X2D 100C | 117 | 82 |
+| X1D | 122 | 121 |
+| X1D II 50C | 38 | 38(변화 없음) |
+| CFV 100C/907X | 29 | 29(변화 없음) |
+| Hasselblad X1D-50c | 20 | 20(변화 없음) |
+
+세대별 ΔE00(기존 hasselblad.json 기준, dedup 후):
+
+| 세대 | n | 평균 ΔE00 |
+|---|---|---|
+| X2D II 100C | 74 | 21.560 |
+| X1D II 50C | 38 | 13.568 |
+| X1D | 121 | 12.535 |
+| CFV 100C/907X | 29 | 11.796 |
+| Hasselblad X1D-50c | 20 | 10.240 |
+| X2D 100C | 82 | 9.117 |
+| 공식(raw_calib_cache) | 13 | 8.558 |
+
+X2D II 100C가 여전히(그리고 압도적으로) 이상치라는 핵심 결론은 dedup
+전후 동일 - 중복 제거해도 평균은 21.521→21.560으로 거의 안 움직였다
+(중복이 평균을 왜곡하진 않았음, n의 신뢰도만 문제였음).
+
+**dedup된 74쌍으로 나머지 실험 재확인**:
+
+| 실험 | dedup 전 | dedup 후(74쌍) |
+|---|---|---|
+| 챠트 매트릭스를 실사진에 적용 | 21.521→21.429(+0.1%, 148쌍/챠트혼입) → 21.521→21.487(+0.2%, 147쌍) | 21.560→21.528 (**+0.1%**) |
+| 매트릭스 고정+톤/채도만 재학습(4-fold CV) | 21.521→20.735(+3.7%, 챠트혼입 148쌍) | 21.560→20.795 (**+3.5%**) |
+| 매트릭스+톤/채도 재학습(4-fold CV, `recalibrate_x2dii100c.py`) | 21.521→20.272(+5.8%, 게이트 통과) | 21.560→20.319 (**+5.8%, 게이트 통과 유지**) |
+
+세 실험 다 방향과 크기가 dedup 전후로 거의 안 바뀌었다 - **결론
+자체는 견고했다**(중복이 점추정을 왜곡하진 않음), 다만 n=147을
+n=74로 정정한 것 자체가 통계적 타당성 확보를 위해 필요했다.
+
+**최종 결론 (hybrid_engine 자체 파이프라인 기준)**: 챠트 매트릭스는
+실사진에 거의 무의미(+0.1~0.2%), 매트릭스+톤/채도 재학습이 게이트를
+통과(+5.8%, `recalibrate_x2dii100c.py --write`로 반영 가능한 상태) -
+하지만 위 "깃허브 이슈 #4 동기화" 절에서 확인했듯 **더 엄밀한
+방법론(ΔE00 직접 목적함수, dpreview 74쌍, LOO)으로 이미 같은 결론이
+났고 브랜드별 아티팩트(`apply_hncs_x2dii()`, +12.99%)로 배포까지
+끝났다**. hybrid_engine 자체의 `hasselblad.json`은 이번 세션에서
+`--write` 없이 dry-run만 유지 - 다른 5세대와 공유하는 프로필이라 쓰기
+전 교차세대 검증/바디별 분기가 필요하다는 이전 판단(위 "세대별 분해"
+절)도 그대로 유효.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m
+hybrid_engine.breakdown_by_generation`, `... recalibrate_x2dii100c`,
+`... verify_chart_matrix_on_photos`, `... verify_x2dii_tone_only`
+(dedup 반영판, `python3 -m unittest tests.test_calibrate`로 dedup
+로직 회귀 확인 가능).
