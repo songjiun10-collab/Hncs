@@ -128,6 +128,19 @@ def fit_color_matrix(sources, targets, ridge=1.0):
     return np.linalg.solve(X.T @ X + ridge * np.eye(k), X.T @ Y)
 
 
+def apply_chroma_lut(img_rgb_linear, sat_mult, hue_shift_deg):
+    clipped = np.clip(img_rgb_linear, 0.0, 1.0).astype(np.float32)
+    hsv = cv2.cvtColor(clipped, cv2.COLOR_RGB2HSV)
+    hsv[..., 0] = (hsv[..., 0] + hue_shift_deg) % 360.0
+    hsv[..., 1] = np.clip(hsv[..., 1] * sat_mult, 0.0, 1.0)
+    out = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+    return np.clip(out, 0.0, 1.0).astype(np.float64)
+
+
+SAT_MULT_GRID = np.linspace(0.7, 1.4, 15)
+HUE_SHIFT_GRID = np.linspace(-10.0, 10.0, 15)
+
+
 def apply_tone_stage(rgb_linear):
     """population-fit 톤커브(CLAHE + film_curve)를 pure-linear 입력에 적용 -
     apply_population_fit_look과 같은 논리를 raw linear RGB에 직접 적용
@@ -187,15 +200,35 @@ def main():
     # baseline: 매트릭스 없음(항등), 톤커브만
     baseline_des = np.array([mean_delta_e(apply_tone_stage(p['wb_rgb']), p['target']) for p in pairs])
 
+    use_chroma = "--chroma" in sys.argv
     folds = np.array_split(np.random.RandomState(0).permutation(n), N_FOLDS)
     loo_des = np.zeros(n)
     for fi, test_idx in enumerate(folds):
         train_idx = [i for i in range(n) if i not in set(test_idx.tolist())]
         train = [pairs[i] for i in train_idx]
         matrix = fit_color_matrix([p['wb_rgb'] for p in train], [p['target'] for p in train], ridge=1.0)
+
+        sat_mult, hue_shift = 1.0, 0.0
+        if use_chroma:
+            train_matrixed = [np.clip(p['wb_rgb'] @ matrix, 0.0, None) for p in train]
+            train_toned = [apply_tone_stage(m) for m in train_matrixed]
+            best_de, best_params = float("inf"), (1.0, 0.0)
+            for sm in SAT_MULT_GRID:
+                for hs in HUE_SHIFT_GRID:
+                    des = [mean_delta_e(apply_chroma_lut(t, sm, hs), p['target'])
+                           for t, p in zip(train_toned, train)]
+                    mde = float(np.mean(des))
+                    if mde < best_de:
+                        best_de, best_params = mde, (sm, hs)
+            sat_mult, hue_shift = best_params
+            print(f"    fold {fi+1} best chroma sat={sat_mult:.2f} hue={hue_shift:+.1f}", flush=True)
+
         for i in test_idx:
             matrixed = np.clip(pairs[i]['wb_rgb'] @ matrix, 0.0, None)
-            de = mean_delta_e(apply_tone_stage(matrixed), pairs[i]['target'])
+            toned = apply_tone_stage(matrixed)
+            if use_chroma:
+                toned = apply_chroma_lut(toned, sat_mult, hue_shift)
+            de = mean_delta_e(toned, pairs[i]['target'])
             loo_des[i] = de
         print(f"  fold {fi+1}/{N_FOLDS} 완료", flush=True)
 
