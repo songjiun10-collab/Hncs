@@ -1869,3 +1869,63 @@ compared to the wrong target, so **re-verification is needed**. Canon has
 no shipped `apply_*` yet (still research-stage) so it's not urgent. The
 other brands are only off by 2-4 pairs, likely not enough to flip any
 already-published win/loss verdict, but will be re-checked separately.
+
+## clahe_clip - joint shoulder_start re-verification across all brands (2026-08)
+
+As found for X2D II (see "Joint shoulder_start x clahe_clip
+re-verification" above), most raw+jpeg-calibrated body-specific
+`apply_*` functions had simply inherited `clahe_clip=1.25` from the
+population-fit default without ever treating it as a grid-search
+variable. On the user's instruction ("all brands"), the remaining 9
+bodies with local raw+jpeg data were re-verified the same way
+(`tools/evaluate_all_brands_clahe_shoulder_grid.py`, new -
+exposure_gamma/toe_lift/white_point held at each body's already-adopted
+values, shoulder_start x 7 values x clahe_clip x 6 values = 42 combos,
+200px selection / 400px LOO confirm). Data was read from
+`datasets/<brand>/contributed/*/` (neither `~/local-work` nor
+`~/Documents/raw pair` existed locally this session - the same files
+turned out to already be present under the contributed sets instead).
+
+| Body | n | Improvement vs. current shipped | Sign-test p | CI | Verdict |
+|---|---|---|---|---|---|
+| Hasselblad X1D-50c | 20 | -3.32% | 0.5034 | [-0.617,+0.011] | Hold |
+| Sony a7V | 58* | +1.26% | 0.2370 | [+0.067,+0.345] | Hold (CI excludes 0 alone, sign test not significant - weak) |
+| Sony a7R VI | 40 | +0.77% | 0.1539 | [-0.041,+0.300] | Hold |
+| Leica SL3-P | 41 | +0.67% | 0.2110 | [-0.193,+0.294] | Hold |
+| Leica Q3 43 | 44 | +0.00% | - | - | Already optimal (44/44 unanimous) |
+| Leica SL2 | 54 | +0.00% | - | - | Already optimal (54/54 unanimous) |
+| Leica M10 | 32 | **-4.48%** | 0.0078 | [-0.580,-0.142] | **Current is better - do not touch** |
+| Fuji GFX100RF | 38 | **+6.96%** | 0.0139 | [+0.520,+1.366] | **Adopted** |
+| Fuji X-T30 III | 20 | +3.32% | 0.2632 | [-0.480,+1.076] | Hold (same direction as GFX100RF, but too small alone) |
+| Sigma BF | 82 | **+7.04%** | 0.0012 | [+0.670,+1.551] | **Adopted** |
+
+*Sony a7V: 17 of 75 manifest `.arw` files failed to decode
+("Unsupported file format or not RAW file"), leaving 58 usable - cause
+uninvestigated, needs a separate check.
+
+**Two adoptions**:
+- **`apply_provia()` in `brands/fuji.py`**: `clahe_clip` 1.25 -> 3.0
+  (`shoulder_start`=0.82 unchanged). GFX100RF: 38/38 folds unanimous.
+  X-T30 III (n=20) isn't significant on its own but points the same
+  direction (14/20 land on the clip=3.0 family) - not a contradiction -
+  so the larger-sample GFX100RF value was carried into the shared
+  function, the same way `shoulder_start=0.82` was originally adopted.
+- **`apply_sigma_bf_look` in `brands/sigma_bf.py`**: `_CLAHE_CLIP`
+  1.25 -> 3.0 (`toe_lift`/`shoulder_start`/`white_point` unchanged).
+  82/82 folds unanimous - a far more robust signal than this body's
+  original full-pixel confirmation (+0.53%, CI lower bound +0.007, the
+  weakest evidence in that whole batch).
+
+**Everything else left untouched**: X1D-50c, both Sony bodies, and Leica
+SL3-P all have a CI that includes 0 - held. Leica Q3 43 and SL2 were
+already sitting exactly at the optimum (same pattern as X2D II - an
+"unverified borrowed default" turning out to already be optimal isn't
+rare). **Leica M10 is the one reverse signal** - the grid search actually
+picks a combo significantly worse than the current values (p=0.0078, CI
+entirely negative and excluding 0) - for this body the original adoption
+process (which included a native-pixel confirmation) was evidently more
+trustworthy than this grid search, and this result must never be used to
+overwrite it.
+
+Reproduce: `python3 -m tools.evaluate_all_brands_clahe_shoulder_grid`
+(~450 pairs, ~25 minutes).

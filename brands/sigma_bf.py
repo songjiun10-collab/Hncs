@@ -28,12 +28,25 @@ Sigma BF 페어가 더 늘면 제일 먼저 재검증해야 할 후보다. 재�
 `python3 -m tools.evaluate_new_body_de00_grid --label "Sigma BF"
 --manifest datasets/sigma/sigma_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --baseline brands.sigma.apply_sigma_look`.
+
+**갱신(2026-08, clahe_clip 재검증)**: `clahe_clip=1.25`는 population-fit
+기본값을 그대로 차용한 미검증값이었다 - `shoulder_start`와 합동으로
+2D 그리드서치(`tools/evaluate_all_brands_clahe_shoulder_grid.py`)를
+다시 돌려보니 82/82 폴드 만장일치로 `clahe_clip=3.0`(shoulder_start는
+0.82 그대로)이 나왔다. 현재 shipped 함수(clahe_clip=1.25) 대비
++7.04%, 승/패=56/26, 부호검정 p=0.0012, 부트스트랩 95% CI
+[+0.670,+1.551](0 미포함) - 위 원본 픽셀 검증(+0.53%, CI 하한 +0.007)
+보다 훨씬 견고한 신호라 반영. `toe_lift`/`shoulder_start`/`white_point`는
+불변.
 """
 from core.engine import make_population_fit_look
 
 _TOE_LIFT = 0.09
 _SHOULDER_START = 0.82
 _WHITE_POINT = 1.0
-_CLAHE_CLIP = 1.25  # population-fit 값 차용, 미검증
+_CLAHE_CLIP = 3.0  # 2026-08 shoulder_start x clahe_clip 합동 재검증
+# (tools/evaluate_all_brands_clahe_shoulder_grid.py, n=82, +7.04%,
+# p=0.0012, CI [+0.670,+1.551] 0 미포함, 82/82 만장일치)으로 1.25->3.0.
+# docs/measurements.md 참고.
 
 apply_sigma_bf_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)

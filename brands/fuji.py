@@ -448,8 +448,12 @@ def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
 
 # ==========================================
 # 11. Provia/Standard (기본 필름모드) - raw+jpeg 페어 실측 검증됨(2026-08, GFX100RF n=38/X-T30 III n=20)
+# clahe_clip=3.0은 2026-08 shoulder_start x clahe_clip 합동 재검증
+# (tools/evaluate_all_brands_clahe_shoulder_grid.py, GFX100RF n=38, +6.96%,
+# p=0.0139, CI [+0.520,+1.366] 0 미포함, 38/38 만장일치)으로 1.25에서
+# 갱신 - docs/measurements.md 참고.
 # ==========================================
-def apply_provia(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
+def apply_provia(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=3.0):
     img = ensure_uint8(img_bgr)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
