@@ -206,6 +206,35 @@ def baseline_data(p):
     return _BASELINE_CACHE[p["name"]]
 
 
+def _decode_one(p):
+    """멀티프로세싱 워커 - 페어 1개의 세 가지 표현(pair/grid/baseline)을
+    전부 디코드해서 반환. 디코드가 병목이라(사용자 지시 "코어 3개로") 폴드
+    루프 시작 전에 Pool(3)으로 전량 미리 계산 - 폴드마다 같은 페어를 다시
+    디코드하지 않도록(라운드마다 학습셋이 겹쳐서 중복 디코드가 원래도
+    있었음, 이 사전계산이 그 중복도 같이 없앤다)."""
+    wb_rgb = decode_and_white_balance(p["raw_path"])
+    target = load_image_linear(p["target_path"], wb_rgb.shape[:2])
+    grid_wb_rgb = decode_and_white_balance(p["raw_path"], max_dim=GRID_DOWNSAMPLE_MAX_DIM)
+    grid_target = load_image_linear(p["target_path"], grid_wb_rgb.shape[:2])
+    baseline = decode_raw_libraw(p["raw_path"])
+    baseline_target = load_image_linear(p["target_path"], baseline.shape[:2])
+    return p["name"], (wb_rgb, target), (grid_wb_rgb, grid_target), (baseline, baseline_target)
+
+
+def precompute_all_pairs(pairs, n_workers=3):
+    import multiprocessing
+    print(f"디코드 사전계산 중 - {len(pairs)}쌍 x 3표현, {n_workers}코어...", flush=True)
+    t0 = time.time()
+    with multiprocessing.Pool(n_workers) as pool:
+        for i, (name, pair_d, grid_d, baseline_d) in enumerate(pool.imap_unordered(_decode_one, pairs)):
+            _PAIR_CACHE[name] = pair_d
+            _GRID_CACHE[name] = grid_d
+            _BASELINE_CACHE[name] = baseline_d
+            if (i + 1) % 20 == 0:
+                print(f"  {i+1}/{len(pairs)} ({time.time()-t0:.0f}s경과)", flush=True)
+    print(f"디코드 사전계산 완료 ({time.time()-t0:.0f}s)", flush=True)
+
+
 def apply_hncs_delta_e(p):
     baseline, target = baseline_data(p)
     encoded = colour.cctf_encoding(np.clip(baseline, 0.0, 1.0), function="sRGB")
@@ -299,6 +328,8 @@ def run_kfold():
     print(f"페어 {len(pairs)}개, 클러스터 분포: {Counter(p['cluster'] for p in pairs)}", flush=True)
     print(f"세대 분포: {Counter(p['model'] for p in pairs)}", flush=True)
     print(f"chroma 그리드: {len(CHROMA_COMBOS)}콤보, {N_FOLDS}-fold CV", flush=True)
+
+    precompute_all_pairs(pairs, n_workers=3)
 
     folds = make_folds(pairs, N_FOLDS)
     per_fold_hard, per_fold_blend, per_fold_hncs = [], [], []
