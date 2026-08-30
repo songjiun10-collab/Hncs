@@ -263,3 +263,61 @@ applies.
 
 Reproduce: `python3 -m tools.evaluate_hncs_structural` (94 pairs × 1024
 combos × 5-fold, ~1 hour).
+
+## Revalidation 2 (2026-08, local pool of 364 pairs, 6 generations) - finally settled, direction reversed
+
+On the user's instruction ("the sample got bigger too, should be
+feasible now"), this was re-verified against the full local Hasselblad
+raw+jpeg pool gathered via `tools.calibrate.collect_local_pairs()`
+(post-dedup-fix) this session - almost 4x the previous 94 pairs (6
+generations: X1D 121, X2D 100C 82, X2D II 100C 74, X1D II 50C 38, CFV
+100C/907X 29, X1D-50c 20) (`tools/evaluate_hncs_structural_full_pool.py`,
+new - `/Users/songjiun/Documents/raw pair` wasn't present locally this
+session, so only the loader was swapped for one reading from
+`datasets/hasselblad/contributed/*/`; everything else is the same
+methodology. The chroma grid was reduced 1024 -> 256 to keep total
+compute roughly constant against the larger sample, and since decode was
+the bottleneck, all pairs were pre-decoded with a 3-worker
+multiprocessing pool before the fold loop ran). Cluster split: cluster_a
+354 vs. cluster_b 10.
+
+**Result: this time the CI clears 0 entirely - and the direction
+reversed.**
+
+| Comparison | Improvement | Wins/losses | Sign-test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| Hard cluster vs. `apply_hncs()` | **-10.91%** (10.004 -> 11.095) | 128/236 | <0.0001 | [-1.349,-0.849] | **apply_hncs wins** |
+| Blend vs. `apply_hncs()` | **-11.46%** (10.004 -> 11.150) | 127/237 | <0.0001 | [-1.404,-0.904] | **apply_hncs wins** |
+| Blend vs. hard cluster | -0.50% (11.095 -> 11.150) | 124/240 | <0.0001 | [-0.077,-0.033] | Hard cluster narrowly wins |
+
+13 pairs (+4.1%, CI [-15.8%,+22.9%]) -> 94 pairs (+3.81%, CI
+[-0.306,+1.075], direction stayed positive) -> **364 pairs (-10.91%, CI
+[-1.349,-0.849], direction flipped negative)**. The CI narrowing as the
+sample grew was expected; the sign flipping partway through that
+narrowing was not - **the "weak but positive" signal at 13/94 pairs
+wasn't a real effect, it was small-sample noise.** The likely
+explanation: as diversity grew to 6 generations, the per-cluster
+matrix/chroma LUT became easier to overfit to a specific generation/
+lighting combination rather than a trait shared across a generation
+(cluster_b still being only 10 pairs is part of this too - a matrix
+fit to a "handful" cluster doesn't generalize to the majority cluster).
+
+**Settled**: even mirroring HNCS's real "per-illuminant matrix + chroma
+LUT" structure (approximated here as a 2-cluster split on the
+AsShotNeutral R/B ratio) fails to beat `apply_hncs()`'s simple 3-stage
+approximation (global exposure / CLAHE / film curve) - it loses to it,
+significantly. This revalidation doesn't change `apply_hncs()` either
+(it was always the protected baseline here). This experiment lineage
+(`hybrid_engine/research/hncs_structural.py` +
+`tools/evaluate_hncs_structural*.py`) is effectively closed by this
+result - there's now enough margin (sign test p<0.0001, CI far from 0)
+that a still-larger sample flipping the sign back is not a live concern.
+
+**What still doesn't change** in the "Limitations" section above: the
+ground truth is still the camera JPEG (not real HNCS output), this is
+still a fresh fit unrelated to Phocus's actual matrix/LUT values, and
+the 2-cluster split is still a reduction of the real 4-or-more-illuminant
+structure - none of that changes just because the sample grew.
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural_full_pool` (364
+pairs × 256 combos × 5-fold, ~15 minutes with 3-worker parallel decode).
