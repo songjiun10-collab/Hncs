@@ -33,8 +33,8 @@ from core.curve import film_curve
 from tools.calibrate import collect_local_pairs
 
 CLUSTER_THRESHOLD_R_OVER_B = 0.9
-DOWNSAMPLE_MAX_DIM = 512
-GRID_DOWNSAMPLE_MAX_DIM = 160
+DOWNSAMPLE_MAX_DIM = 256  # 512->256, 표본이 4배로 늘어 디코드가 병목이라 낮춤
+GRID_DOWNSAMPLE_MAX_DIM = 100  # 160->100, 같은 이유
 
 SAT_MULT_GRID = np.linspace(0.80, 1.20, 16)
 HUE_SHIFT_GRID = np.linspace(-8.0, 8.0, 16)
