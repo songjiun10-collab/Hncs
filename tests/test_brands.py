@@ -26,6 +26,7 @@ BRAND_LOOKS = [
     ("brands.canon", "apply_canon_look"),
     ("brands.canon", "apply_canon_raw_look"),
     ("brands.sony", "apply_sony_look"),
+    ("brands.sony_raw", "apply_sony_raw_look"),
     ("brands.sony_a7v", "apply_sony_a7v_look"),
     ("brands.nikon", "apply_nikon_look"),
     ("brands.panasonic", "apply_panasonic_look"),
