@@ -1952,3 +1952,24 @@ X2D 100C(6.783)/CFV 100C/907X(5.783)는 이미 main이 잘 맞지만,
 
 재현: `python3 -m tools.evaluate_x1d_de00_grid` (121쌍, 순차 디코드
 기준 약 15~20분).
+
+## apply_hncs_x1dii50c 신설 - X1D II 50C 전용, 38/38 폴드 전원일치 +9.63% (2026-09)
+
+X1D 다음으로 2위로 나쁜(11.795) X1D II 50C도 사용자 지시("만들어")로
+같은 방법(`tools/evaluate_x1dii50c_de00_grid.py`, `evaluate_x1d_de00_grid.py`
+복사판) 적용 - `collect_local_pairs()`의 X1D II 50C 38쌍(dedup 반영,
+챠트 제외):
+
+**결과**: `apply_hncs()`(main) 12.286 -> LOO 최적화 11.102, **+9.63%**,
+승/패=34/4, 부호검정 p<0.0001, 부트스트랩 95% CI [+0.886, +1.482](0
+미포함) - **38/38 폴드 전원일치**로
+`exposure_gamma=0.7, toe_lift=0.02, shoulder_start=0.82, white_point=1.0`에
+수렴.
+
+**배포**: `brands/hasselblad_x1dii50c.py`에 `apply_hncs_x1dii50c()`
+신설. 이제 Hasselblad 6세대 중 4세대(X1D/X1D-50c/X1D II 50C/X2D II
+100C)가 전용 함수를 갖고, 나머지 2세대(X2D 100C/CFV 100C/907X)는
+전용 함수 없이 main을 그대로 쓰지만 그걸로 이미 충분히 낮음
+(6.783/5.783) - **6세대 전부 처리 완료**.
+
+재현: `python3 -m tools.evaluate_x1dii50c_de00_grid` (38쌍, 몇 분).
