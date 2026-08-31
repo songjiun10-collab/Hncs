@@ -31,6 +31,7 @@ docs/         Detailed documentation (this directory)
 | `brands/canon.py` | Canon color approximation (EOS R5/R6/R8/R3/R, 5-body population) - `apply_canon_look()` |
 | `brands/nikon.py` | Nikon color approximation (Z6/Z6 II/D780, 3-body population - the Z9/D850 galleries only had placeholder images with stripped EXIF, so they were excluded) - `apply_nikon_look()` |
 | `brands/sony.py` | Sony color approximation (A7/A7R/A7S/A7 III/A7 IV, 5-body population, 23 photos per body) - `apply_sony_look()` |
+| `brands/sony_raw.py` | Experimental - `apply_sony_raw_look` (ΔE00-direct grid search + LOO on 288 raw+jpeg pairs, 5/5 folds converge on toe=0.02/ss=0.82/wp=1.0/clip=2.0, native-pixel reconfirm +2.56% with CI excluding zero) |
 | `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V only, the first raw-based calibration from 58 raw+jpeg pairs, +0.53% over the direct-ΔE00 grid search) |
 | `brands/sony_a7rvi.py` | Experimental - `apply_sony_a7rvi_look` (Sony a7R VI only, 40 raw+jpeg pairs, +0.57% via a direct-ΔE00 grid search - weak evidence, CI lower bound near zero) |
 | `brands/sony_a7v_learned.py` | Experimental - `apply_sony_a7v_learned` (256-bin learned LUT, +11.10% over the parametric version) |

@@ -31,6 +31,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/canon.py` | Canon 색감 근사(EOS R5/R6/R8/R3/R 5바디 population) - `apply_canon_look()` |
 | `brands/nikon.py` | Nikon 색감 근사(Z6/Z6 II/D780 3바디 population - Z9/D850 갤러리는 EXIF 빠진 자리표시자 이미지뿐이라 제외) - `apply_nikon_look()` |
 | `brands/sony.py` | Sony 색감 근사(A7/A7R/A7S/A7 III/A7 IV 5바디 population, 바디당 23장) - `apply_sony_look()` |
+| `brands/sony_raw.py` | Experimental - `apply_sony_raw_look` (raw+jpeg 288쌍 ΔE00 직접 그리드서치+LOO, toe=0.02/ss=0.82/wp=1.0/clip=2.0에 5/5 폴드 만장일치 수렴, 원본 픽셀 재확인 +2.56%·CI 0 미포함) |
 | `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V 전용, raw+jpeg 58쌍 기반 첫 raw 캘리브레이션, ΔE00 직접 그리드서치로 +0.53% 개선) |
 | `brands/sony_a7rvi.py` | Experimental - `apply_sony_a7rvi_look` (Sony a7R VI 전용, raw+jpeg 40쌍, ΔE00 직접 그리드서치로 +0.57% 개선 - CI 하한이 0에 가까워 근거 약함) |
 | `brands/sony_a7v_learned.py` | Experimental - `apply_sony_a7v_learned` (256bin 학습 LUT, 파라메트릭 대비 +11.10% 개선) |
