@@ -2612,3 +2612,32 @@ X2D II 챠트 방향 버그 등과 같은 "오라클 신호는 과적합 노이�
 > 안 건드린다 - 재보정하려면 최소한 clean 표본을 더 모아야 한다.
 > 재현: `hybrid_engine/verify_l_channel_residual.py`의 페어별 출력
 > (Software EXIF 컬럼 추가됨).
+
+> **정정(2026-09-01, 코드 리뷰 지적 반영) - `_find_pairs()` 필터 누락은
+> 이미 tools/calibrate.py에 있던 걸 그냥 안 갖다 쓴 것이었다**: 코드
+> 리뷰에서 `tools/calibrate.py`가 이미 이 정확한 9쌍을
+> `_CONTAMINATED_OFFICIAL_PAIRS`로 걸러내고(`_resolve_pairs()`, 테스트
+> `test_contaminated_official_pairs_excluded`까지 있음) 있는데,
+> `hybrid_engine/calibrate_profile.py`의 `_find_pairs()`는 이 목록을
+> 한 번도 참조하지 않았다는 걸 지적받았다 - 직접 대조해서 확인, 정확히
+> 같은 9개 파일명이었다. 같은 "공식 13쌍" 소스를 다루는 두 파이프라인이
+> 서로 다른 무결성 기준을 쓰고 있었던 것.
+>
+> **수정**: `_find_pairs()`가 이제 `tools.calibrate._CONTAMINATED_OFFICIAL_PAIRS`를
+> 그대로 재사용해서 필터링한다(목록 중복 관리 안 함). 회귀 테스트
+> `tests/test_hybrid_engine.py::TestFindPairsExcludesContaminated` 추가
+> (`~/.hncs-hybrid-venv312/bin/python3 -m unittest tests.test_hybrid_engine`
+> 82/82 통과). 필터 적용 후 clean 4쌍으로 실제 재확인:
+>
+> ```
+> filtered = _find_pairs()  # -> 00378/02709/x1d-ii-xcd45p-01/02, 정확히 4개
+> _mean_loss(hasselblad.json, _load_calib_set())  # -> 9.885
+> ```
+>
+> 위 표의 clean 4쌍 수치(9.885)와 정확히 일치 - 별도 스크립트 없이도
+> 표준 파이프라인(`_load_calib_set()`)이 이제 clean 데이터만 본다.
+> **`hasselblad.json` 자체는 여전히 안 건드림**(Never 규칙) - 이 수정은
+> "앞으로 이 함수를 쓰는 모든 측정/재보정이 오염 없이 시작한다"는
+> 뜻이지, 지금 배포된 프로필을 재보정했다는 뜻이 아니다. 재보정하려면
+> 여전히 clean 표본(4장)을 늘리는 게 먼저이고, 그건 별도 승인 필요한
+> 작업으로 남겨둔다.
