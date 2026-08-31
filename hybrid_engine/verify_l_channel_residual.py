@@ -66,6 +66,14 @@ def main():
     baseline_de = np.array([_de00_from_lab(lab_preds[i], lab_targets[i]) for i in range(n)])
     print(f"\n기준 ΔE00(공식 13쌍, 현재 hasselblad.json) = {baseline_de.mean():.3f} "
           f"(EVALUATION.md에 기록된 8.558과 비교)")
+    print("\n페어별 ΔE00 + Software EXIF(편집 흔적 확인):")
+    import subprocess
+    for i, (raw_path, target_path) in enumerate(pairs):
+        sw = subprocess.run(["exiftool", "-Software", "-s", "-s", "-s", target_path],
+                             capture_output=True, text=True, timeout=15).stdout.strip()
+        edited = "EDITED" if sw else "clean"
+        print(f"  [{edited:7s}] {os.path.basename(raw_path):30s} ΔE00={baseline_de[i]:.3f}  "
+              f"Software={sw or '(없음)'}")
 
     # 1) L/C/H 성분 분해 (R_T 교차항 제외, 세 항만으로 정규화)
     l_frac, c_frac, h_frac = [], [], []
