@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -905,6 +906,34 @@ class TestMatrixFeaturesMode(unittest.TestCase):
         # 여러 페어가 전부 같은 선형 변환을 공유하니 최선 조합의
         # leave-one-out 오차는 낮아야 한다.
         self.assertLess(loo_loss, 1.0)
+
+
+class TestFindPairsExcludesContaminated(unittest.TestCase):
+    """정정(2026-09-01): calibrate_profile._find_pairs()가 raw_calib_cache의
+    공식 13쌍 중 tools.calibrate._CONTAMINATED_OFFICIAL_PAIRS(Adobe
+    Photoshop/Lightroom Software EXIF가 찍힌 9쌍)를 실제로 걸러내는지 -
+    raw_calib_cache/는 CI에 없으므로(tests/CLAUDE.md) glob/exists를
+    모킹한다. tools.calibrate._resolve_pairs()의 동명 테스트
+    (tests/test_calibrate.py)와 짝을 이룬다."""
+
+    @patch("os.path.exists", return_value=True)
+    @patch("glob.glob")
+    def test_contaminated_official_pairs_excluded(self, mock_glob, mock_exists):
+        from hybrid_engine.calibrate_profile import _find_pairs, CACHE_DIR
+        from tools.calibrate import _CONTAMINATED_OFFICIAL_PAIRS
+        import os as os_module
+
+        clean = ["00378.jpg.3FR", "02709.jpg.fff"]
+        contaminated = [name.replace(".jpg", ".jpg.3FR")
+                        for name in list(_CONTAMINATED_OFFICIAL_PAIRS)[:3]]
+        mock_glob.side_effect = lambda pattern: (
+            [os_module.path.join(CACHE_DIR, f) for f in clean + contaminated]
+            if pattern.endswith("*.3FR") else [])
+
+        pairs = _find_pairs()
+        names = {os_module.path.basename(raw).rsplit(".", 1)[0] for raw, _ in pairs}
+        self.assertTrue(names.isdisjoint(_CONTAMINATED_OFFICIAL_PAIRS))
+        self.assertEqual(names, {"00378.jpg", "02709.jpg"})
 
 
 if __name__ == "__main__":

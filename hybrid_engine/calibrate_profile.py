@@ -31,11 +31,30 @@ CALIB_MAX_DIM = 500  # 캘리브레이션 전용 축소 해상도 - 최종 profi
 
 
 def _find_pairs():
+    """**정정(2026-09-01)**: `tools.calibrate._resolve_pairs()`는 공식
+    13쌍 중 9쌍(B0000994/B0001395/x1d-II-sample-01·02·06·09/
+    x1d-xcd45-01·03·04)이 타깃 JPEG Software EXIF에 Adobe Photoshop/
+    Lightroom Classic이 찍힌 편집본임을 확인하고
+    `_CONTAMINATED_OFFICIAL_PAIRS`로 걸러낸 지 오래인데, 이 함수는 그
+    필터를 한 번도 참조한 적이 없었다 - hybrid_engine의 `hasselblad.json`
+    v1.1~v1.3 전체 캘리브레이션 역사가 그동안 69%가 사람 편집본인
+    "공식 13쌍"에 맞춰져 왔다는 뜻이다(발견 경위:
+    `hybrid_engine/EVALUATION.md` "공식 13쌍 잔차 L-채널 보정 시도" 절의
+    2026-09-01 추가 정정 참고, `hybrid_engine/verify_l_channel_residual.py`가
+    Software EXIF로 실증). 목록을 중복 관리하지 않고
+    `tools.calibrate._CONTAMINATED_OFFICIAL_PAIRS`를 그대로 재사용한다 -
+    두 파이프라인이 같은 "공식 13쌍" 소스를 갖다 쓰므로 기준도 하나여야
+    한다. **주의**: 이 필터는 `_find_pairs()`가 반환하는 페어 목록만
+    바꾼다 - `hasselblad.json`(Never 규칙 대상) 자체는 이 커밋으로
+    재보정되지 않는다, 별도의 명시적 승인이 필요하다."""
+    from tools.calibrate import _CONTAMINATED_OFFICIAL_PAIRS
     raw_paths = sorted(glob.glob(os.path.join(CACHE_DIR, "*.3FR")) +
                         glob.glob(os.path.join(CACHE_DIR, "*.fff")))
     pairs = []
     for raw_path in raw_paths:
         base = raw_path.rsplit(".", 1)[0]  # "....jpg.3FR" -> "....jpg"
+        if os.path.basename(base) in _CONTAMINATED_OFFICIAL_PAIRS:
+            continue
         target_path = base + ".target.jpg"
         if os.path.exists(target_path):
             pairs.append((raw_path, target_path))
