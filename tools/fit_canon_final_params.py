@@ -10,7 +10,20 @@ LOO로 일반화 성능은 검증됐으니(위 스크립트), 이건 "그 검증
 주장이 아니다.
 
   python3 -m tools.fit_canon_final_params
-"""
+
+**정정(2026-08-31) - 잘못된 입력 공간, 배포에 쓰지 말 것**: 위 매트릭스는
+`fit_body_matrix_plus_tone_de00.py`의 `_decode_one()`을 그대로 갖다 써서
+raw 네이티브 순수 선형(AsShotNeutral 수동 화이트밸런스, libraw 컬러매트릭스
+미적용) 공간에 피팅됐다. 그런데 실제 `apply_canon_look()`/
+`apply_canon_raw_look()`이 받는 입력은 `load_neutral_render()`가 만드는
+다른 공간(libraw `use_camera_wb=True`, `gamma=(2.222,4.5)`, 8비트
+sRGB 감마 BGR - libraw 자체 컬러매트릭스가 이미 적용된 값)이다. 이
+스크립트가 낸 매트릭스는 그 입력 공간과 안 맞아 배포에 쓸 수 없다 -
+실제 배포된 `apply_canon_raw_look()`은 `tools/fit_canon_deployable_pipeline.py`
+(같은 방법론, 입력 디코드만 `load_neutral_render()`로 교체)로 다시
+피팅한 값이다. 이 스크립트는 삭제하지 않고 "잘못된 시도"로 남겨둔다
+(프로젝트 관례 - 실패한 시도도 기록). 배포용 재현은
+`python3 -m tools.fit_canon_deployable_pipeline --loo`."""
 import os
 import sys
 
