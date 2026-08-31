@@ -2064,3 +2064,60 @@ Reproduce: `python3 -m tools.fit_population_body_de00_grid canon`,
 `... fit_body_matrix_plus_tone_de00 canon --chroma`,
 `... breakdown_by_exposure_iso canon`,
 `... confirm_leica_raw_look_extension`.
+
+## Hasselblad ISO/exposure/portrait breakdown - turns out to be a generation-effect illusion (2026-09)
+
+Same diagnostic as the Canon one above, applied to Hasselblad per the
+user's instruction ("break down by exposure, ISO, and portrait too, and
+run Hasselblad"). Hasselblad has no dedicated matrix-fitting pipeline, so
+no new parameters were fit - instead the **actual deployed function per
+generation** (`apply_hncs_x2dii()` for X2D II 100C only, `apply_hncs()`
+for everything else) was applied as-is across the full
+`datasets/hasselblad/contributed/` pool (368 pairs excluding chart
+frames, dedup applied, 367 decoded successfully), bucketed by ISO,
+exposure compensation (EV), and portrait detection (new
+`tools/breakdown_hasselblad_by_exposure_iso_portrait.py`).
+
+**Overall mean ΔE00 = 10.290** (actual deployed function per generation, in-sample diagnostic).
+
+**By generation** (worst to best):
+
+| Generation | n | Mean ΔE00 | Std dev |
+|---|---|---|---|
+| X1D | 121 | 13.410 | 6.876 |
+| X1D II 50C | 38 | 11.795 | 6.124 |
+| X2D II 100C | 74 | 10.421 | **2.265** |
+| Hasselblad X1D-50c | 20 | 9.654 | 5.826 |
+| X2D 100C | 82 | 6.783 | 3.524 |
+| CFV 100C/907X | 32 | 5.783 | 2.956 |
+
+**Unexpected finding**: `apply_hncs()` (main) was originally built from
+13 X1D raw+jpeg pairs, yet in this largest pool to date (368 pairs),
+**X1D is now the worst-performing generation** (13.410, also the highest
+variance). Generations added to the population later - CFV 100C/907X
+(5.783) and X2D 100C (6.783) - fit noticeably better than the source
+generation itself, a paradoxical situation where the main function now
+fits later-added generations better than the one it was originally
+derived from. `apply_hncs_x2dii()` (the dedicated variant) has a
+middling mean (10.421) but **the lowest standard deviation of any
+generation** (2.265) - evidence that dedicated per-generation
+calibration improves consistency/predictability more than it improves
+the raw mean.
+
+**No independent signal along ISO/exposure/portrait** - the buckets that
+looked worse (low ISO <=200: 10.784, unknown EV: 12.061) turn out to be
+a **generation-effect confound**: X1D-generation photos are simply
+overrepresented in those buckets. Portrait photos (80) actually do
+slightly better than non-portrait (287) - 9.715 vs. 10.450, no evidence
+portraits are harder. The worst 10 pairs are all X1D/X1D II
+50C/X1D-50c (zero from X2D II, X2D 100C, or CFV), reinforcing the same
+conclusion.
+
+**Conclusion**: there's no room to reduce Hasselblad's error along the
+ISO/exposure/portrait axes - the only real lever is generation (already
+known), and X1D is the newly-identified weak point within it. Neither
+`apply_hncs()` nor `apply_hncs_x2dii()` changes from this investigation
+(diagnostic only).
+
+Reproduce: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
+(368 pairs, ~9 minutes with 3-core parallel decode).

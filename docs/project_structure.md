@@ -135,6 +135,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/evaluate_hncs_structural_4cluster.py` | HNCS 구조실험을 2클러스터(R/B 임계값 하드컷) 대신 KMeans 4클러스터(실제 HNCS의 "최소 4개 조명" 구조에 더 가깝게)로 재검증 - `apply_hncs()` 우세 결론은 불변(-5.26%, p=0.0523) |
 | `tools/evaluate_hncs_structural_full_pool.py` | HNCS 구조실험(하드클러스터/블렌딩 vs `apply_hncs()`)을 94쌍이 아니라 로컬 전체 풀(364쌍, 6세대)로 재검증 - 13/94쌍의 "약한 양수" 신호가 소표본 노이즈였음이 드러나며 `apply_hncs()` 우세로 방향 확정(512/160px 해상도 정정판 기준 -7.42%/-7.97%, p<0.005) |
 | `tools/breakdown_by_exposure_iso.py` | 고정된 매트릭스+톤+채도 파이프라인(Canon)의 페어별 ΔE00을 ISO 구간과 노출보정(EV) 구간별로 묶어 오차가 특정 조건에 몰려있는지 진단 - 결과: 전 구간에 고르게 퍼져있어 파라미터로 깎을 수 있는 편향이 아니라 구조적 바닥임을 확인 |
+| `tools/breakdown_hasselblad_by_exposure_iso_portrait.py` | Hasselblad 세대별 실제 배포 함수(`apply_hncs_x2dii`/`apply_hncs`)를 그대로 적용해 ISO/노출(EV)/인물 여부로 페어별 ΔE00 분해(368쌍) - ISO/노출/인물 자체엔 신호 없고 세대 효과의 착시였음을 확인, X1D가 새롭게 최악 세대로 드러남 |
 | `tools/confirm_leica_raw_look_extension.py` | `apply_leica_raw_look()`의 SL2-S/CL 적용 범위 확장이 유효한지 원본 픽셀(max_dim=3000)로 직접 검증 - `--already10` 플래그로 "이미 10 미만"이라던 SL2/SL3-P/M10도 재확인(SL2는 원본 픽셀에서 10 미만 실패로 드러남) |
 | `tools/download_x1d_x2d100c_restore.py` | 유실된 `local-mixed-2026-07`(61쌍, 원인불명 디스크 소실)을 dpreview X1D/X2D 100C 샘플 갤러리(164쌍, 원본보다 늘어남)에서 재다운로드해 `x1d-x2d100c-restore-2026-08/`로 정리 |
 | `tools/download_xcd_lens_gallery.py` | dpreview 하셀블라드 XCD 렌즈 5개 샘플 갤러리(145쌍)를 실제로 다운로드해 `datasets/hasselblad/contributed/xcd-lenses-2026-08/`로 정리하는 원샷 스크립트 - JPG는 curl, RAW(.3fr)는 Cloudflare 우회를 위해 OpenCLI 실브라우저로 다운로드 |

@@ -1872,3 +1872,52 @@ Leica 전용 튜닝 5바디 중 **3/5만 10 미만**, 나머지(SL2/SL2-S)는 �
 `... fit_body_matrix_plus_tone_de00 canon --chroma`,
 `... breakdown_by_exposure_iso canon`,
 `... confirm_leica_raw_look_extension`.
+
+## Hasselblad ISO/노출/인물별 분해 - 세대 효과의 착시로 판명 (2026-09)
+
+사용자 지시("노출별,iso별로,인물사진별로 나누어서 하셀도 돌려") - Canon
+때와 같은 진단을 Hasselblad에도 적용. 단, Hasselblad는 전용 매트릭스
+피팅 파이프라인이 없어서 새 파라미터 없이 **세대별 실제 배포
+함수**(X2D II 100C만 `apply_hncs_x2dii()`, 나머지 전부
+`apply_hncs()`)를 그대로 적용해 `datasets/hasselblad/contributed/`
+전체(챠트 제외 368쌍, dedup 반영, 367쌍 디코드 성공)를 ISO/노출(EV)/
+인물 여부로 분해했다(`tools/breakdown_hasselblad_by_exposure_iso_portrait.py`
+신설).
+
+**전체 평균 ΔE00=10.290** (세대별 실제 배포 함수 기준, in-sample 진단).
+
+**세대별**(안 좋은 순):
+
+| 세대 | n | 평균 ΔE00 | 표준편차 |
+|---|---|---|---|
+| X1D | 121 | 13.410 | 6.876 |
+| X1D II 50C | 38 | 11.795 | 6.124 |
+| X2D II 100C | 74 | 10.421 | **2.265** |
+| Hasselblad X1D-50c | 20 | 9.654 | 5.826 |
+| X2D 100C | 82 | 6.783 | 3.524 |
+| CFV 100C/907X | 32 | 5.783 | 2.956 |
+
+**의외의 발견**: `apply_hncs()`(main)는 원래 X1D raw+jpeg 13쌍으로
+만들어진 함수인데, 지금 가장 큰 풀(368쌍)에서 **X1D가 세대 중
+제일 나쁘다**(13.410, 표준편차도 가장 큼). 나중에 population이
+늘어난 CFV 100C/907X(5.783)/X2D 100C(6.783)가 오히려 훨씬 잘 맞는다 -
+main 함수가 원 소스 세대보다 나중에 추가된 세대에 더 잘 맞는 역설적
+상황. `apply_hncs_x2dii()`(전용 튜닝)는 평균 자체는 중간(10.421)이지만
+**표준편차가 전 세대 중 가장 작다**(2.265) - 전용 캘리브레이션이
+평균보다 일관성(예측가능성)을 개선한다는 걸 보여주는 사례.
+
+**ISO/노출/인물별로는 뚜렷한 독립 신호가 없다** - 안 좋아 보이는
+버킷(저ISO<=200: 10.784, EV unknown: 12.061)은 실은 X1D 계열이
+그 버킷에 몰려있어서 생기는 **세대 효과의 착시(confound)**다. 인물
+사진(80장)은 오히려 비인물(287장)보다 근소하게 낫다(9.715 vs
+10.450) - 인물이라서 더 어렵다는 근거 없음. 최악 10장도 전부
+X1D/X1D II 50C/X1D-50c에 몰려있어(X2D II·X2D 100C·CFV는 0장) 같은
+결론을 뒷받침한다.
+
+**결론**: ISO/노출/인물 축으로 Hasselblad 오차를 줄일 여지는 없다 -
+진짜 레버는 세대(이미 알려진 축)뿐이고, 그중에서도 X1D가 새롭게
+확인된 약점이다. `apply_hncs()`/`apply_hncs_x2dii()` 둘 다 이 조사로
+바뀌지 않음(진단만).
+
+재현: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
+(368쌍, 3코어 병렬 디코드 기준 약 9분).
