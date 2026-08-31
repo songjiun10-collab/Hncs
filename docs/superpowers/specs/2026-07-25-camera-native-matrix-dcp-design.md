@@ -188,6 +188,13 @@ DNG 스펙상 ForwardMatrix는 카메라 중립점을 D50 백색점으로 정확
    illuminant 프로필만 만들 수 있고, 조명 간 보간(dual-illuminant)은
    불가능하다.
 3. **Lightroom 렌더링 미검증.** 위 2-2의 3번.
+
+   > **정정(2026-08-31)**: 위 미검증은 헤더 매직 넘버(표준 TIFF 42 대신
+   > Adobe 전용 `0x4352` 필요)와 `UniqueCameraModel`(EXIF 문자열이 아니라
+   > Adobe DNG Converter 내부 코드네임 필요) 두 원인으로 확정됐고,
+   > `core/dcp_export.py`에 반영·Chris Schmauch가 Lightroom 실로드로
+   > 검증함 - 로드 자체는 더 이상 미검증이 아니다. 상세:
+   > `core/dcp_export.py` 모듈 docstring.
 4. **패치 수 부족.** ColorChecker Classic 24패치(무채색 6 + 유채색 18)는
    본격 카메라 프로파일링 타깃(수백 패치)에 비해 매우 적다. 자유도 9개
    매트릭스에 240 패치 샘플(24×10)이라 과적합 위험 자체는 낮지만(기존
