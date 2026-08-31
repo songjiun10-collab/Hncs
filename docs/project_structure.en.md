@@ -39,6 +39,7 @@ docs/         Detailed documentation (this directory)
 | `brands/panasonic.py` | Panasonic (Lumix) color approximation (GH5/GH6/G9 MFT + S5/S1 full-frame, 5-body population, n=120) - `apply_panasonic_look()` |
 | `brands/olympus.py` | Olympus (now OM System) color approximation (OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F, 5-body population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma color approximation (Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill, 5-body population, n=83) - `apply_sigma_look()` |
+| `brands/sigma_raw.py` | Experimental - `apply_sigma_raw_look` (ΔE00-direct grid search + LOO on 83 raw+jpeg pairs, 5/5 folds converge on toe=0.02/ss=0.82/wp=1.0/clip=3.0, native-pixel reconfirm +5.82% with CI excluding zero) |
 | `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF only, 51 raw+jpeg pairs, +0.53% via a direct-ΔE00 grid search - the weakest-evidence adoption this session, CI lower bound +0.007) |
 | `brands/sigma_fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L only, 32 raw+jpeg pairs, +0.55% via a direct-ΔE00 grid search, CI[+0.038,+0.124]) |
 | `brands/sigma_bf_learned.py` | Experimental - `apply_sigma_bf_learned` (256-bin learned LUT, **+38.52% over the parametric version - the largest improvement of this whole session**) |
