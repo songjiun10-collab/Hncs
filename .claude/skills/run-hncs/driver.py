@@ -61,7 +61,9 @@ def shipped_looks():
         mod = "brands." + os.path.basename(f)[:-3]
         if mod.endswith("__init__"):
             continue
-        for n in ast.parse(open(f, encoding="utf-8").read()).body:
+        with open(f, encoding="utf-8") as handle:
+            source = handle.read()
+        for n in ast.parse(source).body:
             if (isinstance(n, ast.FunctionDef) and n.name.startswith("apply_")
                     and "video_frame" not in n.name):
                 out.append((mod, n.name))

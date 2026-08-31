@@ -1,9 +1,10 @@
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
 from core.lens_correction import find_camera, find_lens, correct_from_exif
-from tools.lens_correction import _parse_focal_length, _parse_aperture
+from tools.lens_correction import _parse_focal_length, _parse_aperture, resolve_lens_params
 
 
 def _test_image(shape=(64, 96, 3), seed=0):
@@ -72,6 +73,41 @@ class TestParseHelpers(unittest.TestCase):
 
     def test_parse_aperture_from_number(self):
         self.assertEqual(_parse_aperture(4), 4.0)
+
+
+class TestResolveLensParams(unittest.TestCase):
+    _EXIF = {
+        "Make": "FUJIFILM",
+        "Model": "X-T1",
+        "LensModel": "XF10-24mmF4 R OIS",
+        "FocalLength": "10.0 mm",
+        "FNumber": 8.0,
+    }
+
+    @patch("tools.lens_correction._read_exif", return_value=_EXIF)
+    def test_reads_complete_parameters_from_exif(self, _read_exif):
+        params = resolve_lens_params("input.RAF")
+        self.assertEqual(params, {
+            "make": "FUJIFILM",
+            "model": "X-T1",
+            "lens_model": "XF10-24mmF4 R OIS",
+            "focal_length": 10.0,
+            "aperture": 8.0,
+        })
+
+    @patch("tools.lens_correction._read_exif", return_value={})
+    def test_explicit_parameters_allow_missing_exif(self, _read_exif):
+        params = resolve_lens_params(
+            "input.RAF", make="FUJIFILM", model="X-T1",
+            lens="XF10-24mmF4 R OIS", focal_length=10, aperture=8,
+        )
+        self.assertEqual(params["focal_length"], 10.0)
+        self.assertEqual(params["aperture"], 8.0)
+
+    @patch("tools.lens_correction._read_exif", return_value={"Make": "FUJIFILM"})
+    def test_missing_metadata_raises_clear_error(self, _read_exif):
+        with self.assertRaisesRegex(ValueError, "FocalLength"):
+            resolve_lens_params("input.RAF")
 
 
 if __name__ == "__main__":

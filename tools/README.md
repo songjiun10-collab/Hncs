@@ -15,7 +15,18 @@ python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks
 python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
 python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode highlight_safe
 python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode matrix
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3 --auto-wb-mode white_patch
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3 --auto-wb-mode shades_of_gray
+python3 -m tools.raw_pipeline photo.CR3 photo.tiff --hdr-space HLG
+python3 -m tools.raw_pipeline photo.CR3 photo.exr --hdr-space PQ --hdr-peak-nits 4000
+python3 -m tools.raw_pipeline photo.RAF photo.tiff --log-space F-Log2 --lens-correct
 ```
+
+`--log-space` and `--hdr-space` (BT.2020 PQ/HLG, unverified - never checked against a real HDR10/HLG display) are mutually exclusive; `--lut` is `--log-space`-only.
+
+Two automatic estimation knobs, both off by default (camera WB / manual exposure are the defaults): `--auto-expose-mode` (`average`/`highlight_safe`/`matrix` - see below) and `--auto-wb-mode` (`white_patch`/`shades_of_gray`, Finlayson&Trezzi 2004 - measured ΔE00 14-16 vs the camera's actual white balance on the 13-pair Hasselblad calibration set, i.e. clearly different color, not recommended for real use, kept for lighting-unknown creative experiments).
+
+`--lens-correct` runs the same EXIF/lensfun geometric distortion correction as `lens_correction.py` below (shares its `resolve_lens_params()`), applied to the linear ProPhoto RGB image right after RAW decode, before auto-WB/exposure/Log/HDR/LUT - since it only repositions pixels it doesn't touch color, so every later stage sees the same corrected geometry. Off by default; when on, a lensfun match failure aborts the run (`--make`/`--model`/`--lens`/`--focal-length`/`--aperture`/`--lens-distance` override EXIF, same as `lens_correction.py`).
 
 ![RAW -> Log colorspace demo - sRGB decode vs V-Log encoding](../docs/images/raw_pipeline_demo.jpg)
 
@@ -40,6 +51,8 @@ python3 -m tools.lens_correction photo.jpg corrected.jpg --lens "XF10-24mmF4 R O
 ```
 
 If the camera or lens isn't in the database, or the matched lens profile has no distortion calibration data, the tool fails loudly (`camera_not_found` / `lens_not_found` / `no_distortion_data`) instead of silently passing the image through uncorrected - see `../core/lens_correction.py`'s `correct_from_exif()`. Vignetting and chromatic-aberration correction are out of scope for now (only `ModifyFlags.DISTORTION` is applied).
+
+`resolve_lens_params()` in this file (EXIF read + override merge, `--make`/`--model`/`--lens`/`--focal-length`/`--aperture`) is shared with `raw_pipeline.py`'s `--lens-correct` above, so both CLIs resolve missing/incorrect EXIF the same way.
 
 ## Photoshop / DaVinci Resolve preset export (.cube LUT)
 

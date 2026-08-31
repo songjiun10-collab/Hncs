@@ -45,6 +45,52 @@ def _parse_aperture(value):
     return float(str(value))
 
 
+def resolve_lens_params(path, *, make=None, model=None, lens=None,
+                        focal_length=None, aperture=None):
+    """EXIF와 명시적 override를 합쳐 lensfun 보정에 필요한 값을 반환.
+
+    두 CLI(`tools.lens_correction`, `tools.raw_pipeline`)가 같은 규칙으로
+    EXIF를 읽도록 공통화했다. 호출자는 ``--make`` 같은 명시적 인자를
+    넘겨 EXIF가 비어 있거나 부정확한 RAW도 처리할 수 있다.
+
+    정보가 모자라면 ``ValueError``를 낸다. 보정하지 않은 이미지를 성공한
+    것처럼 반환하지 않기 위해서이며, CLI가 이를 사용자 친화적인 오류로
+    표시한다.
+    """
+    exif = _read_exif(path)
+    resolved_make = make or exif.get("Make")
+    resolved_model = model or exif.get("Model")
+    resolved_lens = (lens or exif.get("LensModel") or exif.get("LensID")
+                     or exif.get("LensInfo"))
+
+    resolved_focal_length = focal_length
+    if resolved_focal_length is None:
+        if "FocalLength" not in exif:
+            raise ValueError("--focal-length가 없고 EXIF에 FocalLength도 없음")
+        resolved_focal_length = _parse_focal_length(exif["FocalLength"])
+
+    resolved_aperture = aperture
+    if resolved_aperture is None:
+        aperture_src = exif.get("FNumber", exif.get("ApertureValue"))
+        if aperture_src is None:
+            raise ValueError("--aperture가 없고 EXIF에 FNumber/ApertureValue도 없음")
+        resolved_aperture = _parse_aperture(aperture_src)
+
+    if not resolved_make or not resolved_model or not resolved_lens:
+        raise ValueError(
+            "카메라/렌즈 정보 부족 "
+            f"(make={resolved_make}, model={resolved_model}, lens={resolved_lens})"
+        )
+
+    return {
+        "make": resolved_make,
+        "model": resolved_model,
+        "lens_model": resolved_lens,
+        "focal_length": float(resolved_focal_length),
+        "aperture": float(resolved_aperture),
+    }
+
+
 def _load_image(path):
     ext = os.path.splitext(path)[1].lower()
     if ext in _RAW_EXTS:
@@ -69,35 +115,20 @@ def main():
     parser.add_argument("--distance", type=float, default=1000.0, help="촬영 거리 근사치(m), 기본 1000(무한대에 가깝게)")
     args = parser.parse_args()
 
-    exif = _read_exif(args.input)
-    make = args.make or exif.get("Make")
-    model = args.model or exif.get("Model")
-    lens_model = args.lens or exif.get("LensModel") or exif.get("LensID") or exif.get("LensInfo")
-    focal_length = args.focal_length
-    if focal_length is None:
-        if "FocalLength" not in exif:
-            print("에러: --focal-length가 없고 EXIF에 FocalLength도 없음", file=sys.stderr)
-            sys.exit(1)
-        focal_length = _parse_focal_length(exif["FocalLength"])
-    aperture = args.aperture
-    if aperture is None:
-        aperture_src = exif.get("FNumber", exif.get("ApertureValue"))
-        if aperture_src is None:
-            print("에러: --aperture가 없고 EXIF에 FNumber/ApertureValue도 없음", file=sys.stderr)
-            sys.exit(1)
-        aperture = _parse_aperture(aperture_src)
-
-    if not make or not model or not lens_model:
-        print(f"에러: 카메라/렌즈 정보 부족 (make={make}, model={model}, lens={lens_model})",
-              file=sys.stderr)
+    try:
+        params = resolve_lens_params(
+            args.input, make=args.make, model=args.model, lens=args.lens,
+            focal_length=args.focal_length, aperture=args.aperture,
+        )
+    except ValueError as exc:
+        print(f"에러: {exc}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"카메라: {make} {model}  렌즈: {lens_model}  "
-          f"초점거리: {focal_length}mm  조리개: f/{aperture}")
+    print(f"카메라: {params['make']} {params['model']}  렌즈: {params['lens_model']}  "
+          f"초점거리: {params['focal_length']}mm  조리개: f/{params['aperture']}")
 
     img = _load_image(args.input)
-    corrected, info = correct_from_exif(img, make, model, lens_model, focal_length, aperture,
-                                         distance=args.distance)
+    corrected, info = correct_from_exif(img, distance=args.distance, **params)
     if not info["ok"]:
         print(f"보정 실패: {info['reason']} ({info})", file=sys.stderr)
         sys.exit(1)

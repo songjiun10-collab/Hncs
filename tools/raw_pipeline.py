@@ -16,6 +16,7 @@ DaVinci Resolve/Nuke 등이 직접 읽음 - 클리핑 없이 Log/HDR 값을 그�
   python3 -m tools.raw_pipeline input.CR3 output.tiff --log-space S-Log3 --auto-wb-mode shades_of_gray
   python3 -m tools.raw_pipeline input.CR3 output.tiff --hdr-space HLG
   python3 -m tools.raw_pipeline input.CR3 output.exr --hdr-space PQ --hdr-peak-nits 4000
+  python3 -m tools.raw_pipeline input.RAF output.tiff --log-space F-Log2 --lens-correct
 
 --log-space와 --hdr-space는 상호배타(그레이딩용 Log 커브 vs BT.2020
 PQ/HLG HDR 인코딩 - core/log_pipeline.py의 to_hdr_space() docstring 참고,
@@ -34,6 +35,8 @@ from core.log_pipeline import (
     auto_exposure_highlight_safe, auto_exposure_matrix, estimate_wb_shades_of_gray,
     estimate_wb_white_patch, to_log_space, to_hdr_space, apply_cube_lut, to_16bit_bgr, write_exr,
 )
+from core.lens_correction import correct_from_exif
+from tools.lens_correction import resolve_lens_params
 
 _AUTO_EXPOSE_MODES = {
     "average": lambda linear, args: auto_exposure_average(linear),
@@ -48,6 +51,29 @@ _AUTO_WB_MODES = {
     "shades_of_gray": lambda linear, args: estimate_wb_shades_of_gray(
         linear, p=args.wb_minkowski_p),
 }
+
+
+def lens_correct_linear_image(input_path, linear_rgb, *, make=None, model=None,
+                              lens=None, focal_length=None, aperture=None,
+                              distance=1000.0):
+    """RAW EXIF/lensfun 프로파일로 선형 RGB 이미지의 왜곡을 보정한다.
+
+    색공간·노출·LUT 처리보다 앞 단계에서 실행한다. 왜곡 보정은 픽셀의
+    위치만 재배치하므로 선형 ProPhoto RGB에 적용해도 색값 자체는 바꾸지
+    않으며, 이후 모든 Log/HDR/LUT 경로가 동일한 기하 보정 결과를 사용한다.
+
+    EXIF 또는 명시적 override에 필요한 정보가 없거나 lensfun DB에 프로필이
+    없으면 ``RuntimeError``를 낸다. 요청한 보정을 조용히 생략하지 않도록
+    의도적으로 fail-closed 동작을 한다.
+    """
+    params = resolve_lens_params(
+        input_path, make=make, model=model, lens=lens,
+        focal_length=focal_length, aperture=aperture,
+    )
+    corrected, info = correct_from_exif(linear_rgb, distance=distance, **params)
+    if not info["ok"]:
+        raise RuntimeError(f"{info['reason']} ({info})")
+    return corrected, info
 
 
 def main():
@@ -102,6 +128,21 @@ def main():
     parser.add_argument("--exr-compression", default="zip",
                          help=".exr 출력 압축 방식 (기본 zip) - "
                               "none/rle/zips/zip/piz/pxr24/b44/b44a/dwaa/dwab")
+    parser.add_argument("--lens-correct", action="store_true",
+                        help="EXIF/lensfun DB로 왜곡을 보정. 기본은 끔 - "
+                             "기존 출력 기하를 바꾸지 않으며, 요청 시 매치 실패를 오류로 처리")
+    parser.add_argument("--make", default=None,
+                        help="렌즈 보정용 카메라 제조사 override (기본 EXIF)")
+    parser.add_argument("--model", default=None,
+                        help="렌즈 보정용 카메라 모델 override (기본 EXIF)")
+    parser.add_argument("--lens", default=None,
+                        help="렌즈 보정용 렌즈 모델 override (기본 EXIF LensModel/LensID/LensInfo)")
+    parser.add_argument("--focal-length", type=float, default=None,
+                        help="렌즈 보정용 초점거리 mm override (기본 EXIF)")
+    parser.add_argument("--aperture", type=float, default=None,
+                        help="렌즈 보정용 조리개값 override (기본 EXIF)")
+    parser.add_argument("--lens-distance", type=float, default=1000.0,
+                        help="렌즈 보정용 촬영 거리 근사치(m), 기본 1000(무한대에 가깝게)")
     args = parser.parse_args()
 
     ext = os.path.splitext(args.output)[1].lower()
@@ -118,6 +159,20 @@ def main():
 
     print(f"RAW 디코드 중... ({args.input})")
     linear = raw_to_prophoto_linear(args.input, use_camera_wb=not args.auto_wb_mode)
+
+    if args.lens_correct:
+        print("렌즈 왜곡 보정 중... (EXIF/lensfun)")
+        try:
+            linear, lens_info = lens_correct_linear_image(
+                args.input, linear, make=args.make, model=args.model,
+                lens=args.lens, focal_length=args.focal_length,
+                aperture=args.aperture, distance=args.lens_distance,
+            )
+        except (RuntimeError, ValueError) as exc:
+            print(f"렌즈 보정 실패: {exc}", file=sys.stderr)
+            sys.exit(1)
+        print(f"매치된 DB 프로파일: 카메라={lens_info['camera']}  "
+              f"렌즈={lens_info['lens']}")
 
     if args.auto_wb_mode:
         print(f"자동 화이트밸런스 추정 중... (auto_wb_mode={args.auto_wb_mode})")
