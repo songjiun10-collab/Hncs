@@ -35,7 +35,12 @@ Adobe DNG Converter로 실제 RAW를 변환해야 나오는 내부 코드네임�
 "표준 TIFF 구조"는 IFD 레이아웃 얘기지 매직 넘버까지 표준이라는 뜻이
 아니었다 - 오해의 소지가 있었지만 원 표현은 그대로 두고 여기 정정만
 추가한다. 상세:
-docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md."""
+docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md.
+
+**검증 완료(2026-08-31)**: 위 두 수정을 반영한 파일을 Chris Schmauch가
+Lightroom에서 실제 로드 확인 - 줄 14-17의 "미검증"은 이 두 원인
+한정으로는 해소됐다. 이 모듈이 만든 DCP가 Lightroom Profile Browser에
+뜨는 것 자체는 이제 실사용자로 검증됨."""
 import struct
 
 import numpy as np
