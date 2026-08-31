@@ -124,8 +124,17 @@ def run(label, model_filter):
 
 
 def main():
-    run("Leica SL2-S", "LEICA SL2-S")
-    run("Leica CL", "LEICA CL")
+    import sys as _sys
+    if "--already10" in _sys.argv:
+        # opus 에스컬레이션 권고 - 800px 서베이에서 "이미 10 미만"이라던 3바디를
+        # 원본 픽셀로 재확인(SL2-S가 400px 10.277 -> native 11.824로 밀린 것과
+        # 같은 해상도 편향이 있는지 확인, 30분 타임박스)
+        run("Leica SL2", "LEICA SL2")
+        run("Leica SL3-P", "LEICA SL3-P")
+        run("Leica M10", "LEICA M10")
+    else:
+        run("Leica SL2-S", "LEICA SL2-S")
+        run("Leica CL", "LEICA CL")
 
 
 if __name__ == "__main__":
