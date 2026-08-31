@@ -1921,3 +1921,34 @@ X1D/X1D II 50C/X1D-50c에 몰려있어(X2D II·X2D 100C·CFV는 0장) 같은
 
 재현: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
 (368쌍, 3코어 병렬 디코드 기준 약 9분).
+
+## apply_hncs_x1d 신설 - X1D 전용, 121/121 폴드 전원일치 +18.35% (2026-09)
+
+위 세대별 분해가 X1D를 최악 세대로 확인한 데 대해 사용자가 지시("애초에
+그러면 X1D만 사용하는 필터 하나 더 만들어") - X2D II/X1D-50c와 같은
+방법으로 X1D 전용 함수를 만든다. `tools/evaluate_x1d_de00_grid.py`(신설,
+`evaluate_x2dii_de00_grid.py`와 동일 방법론 - exposure_gamma 포함
+441콤보 ΔE00 직접 그리드서치, 저해상도 200px로 폴드별 콤보 선택 후
+**3000px(원본 픽셀)로 최종 완전 LOO 평가** - 별도 원본 픽셀 재확인
+단계가 필요 없음, 평가 자체가 이미 원본 픽셀)를
+`collect_local_pairs()`의 X1D 121쌍(dedup 반영, 챠트 제외)에 적용:
+
+**결과**: `apply_hncs()`(main) 14.013 -> LOO 최적화 11.442,
+**+18.35%**, 승/패=102/19, 부호검정 p<0.0001, 부트스트랩 95% CI
+[+2.164, +2.974](0 미포함) - **121/121 폴드 전원일치**로
+`exposure_gamma=0.6, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`에
+수렴. 이 세션 다른 어떤 바디 실험보다 표본이 크면서도 완전 만장일치인
+드문 경우 - X2D II(58/70)/X1D-50c(20/20, 표본 작음)보다 신뢰도가 높다.
+
+`clahe_clip`은 이 그리드에 없어 main 기본값(1.25) 그대로 - X2D II/
+X1D-50c와 같은 관례.
+
+**배포**: `brands/hasselblad_x1d.py`에 `apply_hncs_x1d()` 신설,
+`apply_hncs()`(main)는 안 건드림. 이제 Hasselblad 6세대 중
+X1D/X1D-50c/X2D II 3세대가 전용 함수를 갖는다. 나머지 3세대 중
+X2D 100C(6.783)/CFV 100C/907X(5.783)는 이미 main이 잘 맞지만,
+**X1D II 50C(11.795, 세대 중 2위로 나쁨)는 여전히 전용 함수 없이
+방치된 실제 갭**이다 - 다음 후보로 남겨둠.
+
+재현: `python3 -m tools.evaluate_x1d_de00_grid` (121쌍, 순차 디코드
+기준 약 15~20분).

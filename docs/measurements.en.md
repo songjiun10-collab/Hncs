@@ -2121,3 +2121,36 @@ known), and X1D is the newly-identified weak point within it. Neither
 
 Reproduce: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
 (368 pairs, ~9 minutes with 3-core parallel decode).
+
+## New apply_hncs_x1d - X1D-dedicated, 121/121 folds unanimous, +18.35% (2026-09)
+
+Following the per-generation breakdown identifying X1D as the worst
+generation, the user asked for a dedicated X1D function, same as X2D
+II/X1D-50c. New `tools/evaluate_x1d_de00_grid.py` (same methodology as
+`evaluate_x2dii_de00_grid.py` - 441-combo ΔE00-direct grid including
+exposure_gamma, low-res 200px combo selection per fold, then **a full
+LOO evaluation at 3000px (native pixel)** - no separate native-pixel
+re-check step needed, since the evaluation itself is already native
+pixel) applied to X1D's 121 pairs from `collect_local_pairs()` (dedup
+applied, chart excluded):
+
+**Result**: `apply_hncs()` (main) 14.013 -> LOO-optimized 11.442,
+**+18.35%**, wins/losses=102/19, sign-test p<0.0001, bootstrap 95% CI
+[+2.164, +2.974] (excludes zero) - **121/121 folds unanimous**,
+converging on `exposure_gamma=0.6, toe_lift=0.0, shoulder_start=0.82,
+white_point=1.0`. A rare case of both a larger sample than any other
+body experiment this session AND complete unanimity - more confidence
+than X2D II (58/70) or X1D-50c (20/20, but small sample).
+
+`clahe_clip` isn't in this grid, so it stays at main's default (1.25) -
+same convention as X2D II/X1D-50c.
+
+**Shipped**: new `apply_hncs_x1d()` in `brands/hasselblad_x1d.py`,
+`apply_hncs()` (main) untouched. Of Hasselblad's 6 generations, 3
+(X1D/X1D-50c/X2D II) now have a dedicated function. Of the remaining 3,
+X2D 100C (6.783) and CFV 100C/907X (5.783) already fit main well, but
+**X1D II 50C (11.795, second-worst generation) is still a real,
+unaddressed gap** - left as the next candidate.
+
+Reproduce: `python3 -m tools.evaluate_x1d_de00_grid` (121 pairs, ~15-20
+minutes with sequential decode).
