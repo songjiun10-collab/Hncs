@@ -34,7 +34,8 @@ def list_shipped_looks():
         module = "brands." + os.path.basename(path)[:-3]
         if module.endswith("__init__"):
             continue
-        tree = ast.parse(open(path, encoding="utf-8").read())
+        with open(path, encoding="utf-8") as f:
+            tree = ast.parse(f.read())
         for node in tree.body:
             if (isinstance(node, ast.FunctionDef) and node.name.startswith("apply_")
                     and "video_frame" not in node.name):
