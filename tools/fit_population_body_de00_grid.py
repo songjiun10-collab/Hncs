@@ -7,7 +7,18 @@ generic apply_*_look 대비 얼마나 좁혀지는지 확인한다. X2D II/X1D-5
 쪽엔 exposure_gamma가 없어서 4파라미터만 훑는다.
 
   python3 -m tools.fit_population_body_de00_grid <brand> [model_filter]
-"""
+
+**정정(2026-09-01)**: "기존" 대비값을 (toe=0.0, ss=0.5, wp=1.0, clip=1.25)로
+하드코딩했었는데, 이건 어느 브랜드의 실제 shipped 상수와도 일치하지
+않는 임의값이었다(예: `brands/sony.py`의 실제 값은 toe=9.1/255,
+ss=0.78, wp=228.6/255) - 그리드서치가 고르는 최적 콤보 자체는 이
+버그와 무관(항상 실측 ΔE00을 최소화하는 콤보를 고름)하지만, 출력에
+찍히는 "개선폭"/"판정"은 허수아비 대비였다. 이번 세션의 Canon 결과
+(23.109→22.041, +4.62%)는 그 최적 콤보 자체가 이후
+`fit_canon_deployable_pipeline.py`에서 재검증됐으므로 안전하지만,
+이 정정 이전에 다른 브랜드에 이 스크립트를 돌려 "판정: 개선/보류"
+문구만 보고 결론 낸 적이 있다면 재확인 필요. 이제 `brands.<brand>`의
+실제 `apply_<brand>_look()`을 직접 호출해서 비교한다."""
 import csv
 import itertools
 import math
@@ -18,6 +29,7 @@ import multiprocessing
 
 import colour
 import cv2
+import importlib
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -139,8 +151,14 @@ def main():
             print(f"  콤보 {ci}/{len(COMBOS)} ({time.time()-t1:.0f}s)", flush=True)
     print(f"그리드 완료 ({time.time()-t1:.0f}s)", flush=True)
 
+    # 실제 shipped apply_<brand>_look()을 직접 호출 - 이전에는 (0.0, 0.5,
+    # 1.0, 1.25)를 "기존"으로 하드코딩했었는데, 이건 어느 브랜드의 실제
+    # 상수와도 안 맞는 임의값이라(예: Sony 실제 _TOE_LIFT=9.1/255,
+    # _SHOULDER_START=0.78, _WHITE_POINT=228.6/255) "개선폭"이 진짜
+    # 배포된 함수 대비가 아니라 허수아비 대비였다 - 정정(2026-09-01).
+    shipped_look = getattr(importlib.import_module(f"brands.{brand}"), f"apply_{brand}_look")
     baseline_des = np.array([mean_delta_e(
-        bgr_u8_to_linear(apply_population_fit_look(p['neutral_confirm'], 0.0, 0.5, 1.0, 1.25)),
+        bgr_u8_to_linear(shipped_look(p['neutral_confirm'])),
         p['target_confirm']) for p in pairs])
 
     folds = np.array_split(np.random.RandomState(0).permutation(n), N_FOLDS)
@@ -168,7 +186,7 @@ def main():
     p_val = _sign_test_p(wins, losses)
 
     print(f"\n=== {brand} {model_filter or '(all)'} 결과 (n={n}) ===")
-    print(f"기존(toe=0,ss=0.5,wp=1.0,clip=1.25) ΔE00={mean_base:.3f}  LOO 최적화 ΔE00={mean_loo:.3f}  개선폭={improvement:+.2f}%")
+    print(f"기존(shipped apply_{brand}_look) ΔE00={mean_base:.3f}  LOO 최적화 ΔE00={mean_loo:.3f}  개선폭={improvement:+.2f}%")
     print(f"승/패={wins}/{losses}  부호검정 p={p_val:.4f}  부트스트랩 95% CI=[{ci_lo:+.3f},{ci_hi:+.3f}]")
     print("판정:", "보류(CI 0 포함)" if ci_lo <= 0 <= ci_hi else ("개선" if improvement > 0 else "악화"))
     top = sorted(chosen.items(), key=lambda kv: -kv[1])[:3]
