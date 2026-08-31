@@ -85,7 +85,13 @@ Leica/Ricoh GR과 비슷한 자릿수로 맞춤), chroma_mean=16.39. hue/채도�
 Nikon(8~12대)과 달라서 그 브랜드들과 직접 비교하면 안 됨** (자세한 이유는
 texture_signature.json의 methodology 필드 참고).
 """
+import colour
+import cv2
+import numpy as np
+
+from core.curve import film_curve
 from core.engine import make_population_fit_look
+from core.lut import ensure_uint8
 
 _TOE_LIFT = 15.0 / 255
 _WHITE_POINT = 239.1 / 255
@@ -93,3 +99,66 @@ _SHOULDER_START = 0.78  # 미검증 - 핫셀블라드 기본값 차용
 _CLAHE_CLIP = 1.25  # 미검증 - 핫셀블라드 기본값 차용
 
 apply_canon_look = make_population_fit_look(_TOE_LIFT, _SHOULDER_START, _WHITE_POINT, _CLAHE_CLIP)
+
+
+def apply_canon_raw_look(img_bgr):
+    """Experimental. `apply_canon_look()`(population-fit, raw+jpeg
+    페어 없음)과 달리 raw+jpeg 143쌍(로컬 라이브러리, local-work-2026-08 등)
+    으로 3x3 컬러매트릭스 + 톤커브 + 채도/색조 LUT을 ΔE00 직접 목적함수로
+    피팅한 첫 Canon 전용 함수 (2026-08, `/goal` "다른 브랜드 ΔE00<10"
+    조사 중 신설 - `tools/fit_body_matrix_plus_tone_de00.py`로 톤커브만은
+    +4.62%뿐임을 먼저 확인하고 매트릭스가 필요하다는 걸 검증한 뒤,
+    `tools/fit_canon_deployable_pipeline.py`로 `apply_canon_look()`이
+    실제로 받는 입력 공간(`tools.calibrate.load_neutral_render()`와
+    동일한 libraw use_camera_wb=True/gamma=(2.222,4.5) 8비트 디코드)
+    기준으로 최종 파라미터를 다시 피팅).
+
+    **결과 - `apply_canon_look()`(main) 대비 크게 개선하지만 ΔE00<10에는
+    한참 못 미침**: LOO 검증(5-fold, n=139) 톤커브만 22.041 -> 매트릭스+톤+
+    채도 16.205, **+26.48%**, 96승43패, 부호검정 p<0.0001, 부트스트랩
+    95% CI [+4.776, +6.878](0 미포함, 매우 견고). 원래 population-fit
+    기본값(23.109) 대비로는 총 +29.9%. **10 미만 달성은 실패** -
+    `docs/measurements.md` "/goal" 절 참고, ISO/노출/인물 사진 어느
+    조건으로 쪼개도 14~19대에서 안 내려가는 구조적 바닥이 있다는 게
+    확인됐다 - 이 함수는 "그 바닥 안에서 최선"이지 목표 달성이 아니다.
+
+    매트릭스/채도/색조는 전체 143쌍(폴드 분리 없이)으로 다시 피팅한
+    최종값(in-sample ΔE00=15.999, LOO 16.205와 거의 차이 없어 과적합
+    아님) - 매트릭스는 raw 색이 아니라 `load_neutral_render()`가 만드는
+    libraw 자체 컬러매트릭스 적용 후 8비트 sRGB 감마 공간을 입력으로
+    피팅됐으므로 **반드시 이 함수처럼 8비트 BGR 입력에 적용해야 한다**
+    (raw 순수 선형 입력에 적용하면 안 맞음 - 처음 이 실험을 raw 네이티브
+    선형 공간으로 피팅했다가 이 불일치를 발견하고 다시 피팅한 이력 있음).
+
+    재현: `python3 -m tools.fit_canon_deployable_pipeline --loo`
+    (~30분, 3코어 병렬 디코드)."""
+    img = ensure_uint8(img_bgr)
+    linear = colour.cctf_decoding(img[:, :, ::-1].astype(np.float64) / 255.0, function="sRGB")
+    matrix = np.array([
+        [0.6065074787901384, 0.013570278585858317, -0.3105392651953793],
+        [1.66373661320876, 2.0578143442632504, 1.8715682822151445],
+        [-0.34856902233936876, -0.013465343100502061, 0.376139678052862],
+    ])
+    matrixed = np.clip(linear @ matrix, 0.0, None)
+
+    srgb = colour.cctf_encoding(np.clip(matrixed, 0.0, 1.0), function="sRGB")
+    u8_bgr = (srgb * 255.0 + 0.5).astype(np.uint8)[:, :, ::-1]
+    lab = cv2.cvtColor(u8_bgr, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift=0.0, shoulder_start=0.74, white_point=1.0) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+    toned_bgr = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    toned_linear = colour.cctf_decoding(toned_bgr[:, :, ::-1].astype(np.float64) / 255.0, function="sRGB")
+
+    clipped = np.clip(toned_linear, 0.0, 1.0).astype(np.float32)
+    hsv = cv2.cvtColor(clipped, cv2.COLOR_RGB2HSV)
+    hsv[..., 0] = (hsv[..., 0] + (-4.29)) % 360.0
+    hsv[..., 1] = np.clip(hsv[..., 1] * 0.700, 0.0, 1.0)
+    chroma_rgb = np.clip(cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB), 0.0, 1.0)
+
+    final_srgb = colour.cctf_encoding(chroma_rgb, function="sRGB")
+    return (final_srgb * 255.0 + 0.5).astype(np.uint8)[:, :, ::-1]
