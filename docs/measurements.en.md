@@ -2154,3 +2154,27 @@ unaddressed gap** - left as the next candidate.
 
 Reproduce: `python3 -m tools.evaluate_x1d_de00_grid` (121 pairs, ~15-20
 minutes with sequential decode).
+
+## New apply_hncs_x1dii50c - X1D II 50C-dedicated, 38/38 folds unanimous (+9.63%) (2026-09)
+
+Following X1D, the user asked to also dedicate a function to X1D II 50C
+(second-worst, 11.795) using the same method
+(`tools/evaluate_x1dii50c_de00_grid.py`, a copy of
+`evaluate_x1d_de00_grid.py`) on X1D II 50C's 38 pairs from
+`collect_local_pairs()` (dedup applied, chart excluded):
+
+**Result**: `apply_hncs()` (main) 12.286 -> LOO-optimized 11.102,
+**+9.63%**, wins/losses=34/4, sign-test p<0.0001, bootstrap 95% CI
+[+0.886, +1.482] (excludes zero) - **38/38 folds unanimous**, converging
+on `exposure_gamma=0.7, toe_lift=0.02, shoulder_start=0.82,
+white_point=1.0`.
+
+**Shipped**: new `apply_hncs_x1dii50c()` in
+`brands/hasselblad_x1dii50c.py`. Of Hasselblad's 6 generations, 4
+(X1D/X1D-50c/X1D II 50C/X2D II 100C) now have a dedicated function; the
+remaining 2 (X2D 100C/CFV 100C/907X) still use main directly, which is
+already good enough for them (6.783/5.783) - **all 6 generations now
+addressed**.
+
+Reproduce: `python3 -m tools.evaluate_x1dii50c_de00_grid` (38 pairs, a
+few minutes).

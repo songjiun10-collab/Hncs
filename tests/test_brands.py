@@ -17,6 +17,7 @@ BRAND_LOOKS = [
     ("brands.hasselblad_day", "apply_hasselblad_day"),
     ("brands.hasselblad_night", "apply_hasselblad_night"),
     ("brands.hasselblad_x1d", "apply_hncs_x1d"),
+    ("brands.hasselblad_x1dii50c", "apply_hncs_x1dii50c"),
     ("brands.hasselblad_x1d50c", "apply_hncs_x1d50c"),
     ("brands.hasselblad_x2dii", "apply_hncs_x2dii"),
     ("brands.leica", "apply_leica_look"),

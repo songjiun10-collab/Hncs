@@ -20,6 +20,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/hasselblad_day.py` / `brands/hasselblad_night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (day/night 타깃이 apply_hncs 전체 population 타깃에 수렴 중이라 유지 근거 약해지는 중) |
 | `brands/hasselblad_x2dii.py` | Experimental - `apply_hncs_x2dii` (X2D II 100C 전용, exposure_gamma만 0.8->0.7 - 호출부가 모델 판별해서 골라 써야 함, 표본 41장이라 shoulder_start 등 나머지 파라미터는 안 건드림) |
 | `brands/hasselblad_x1d.py` | Experimental - `apply_hncs_x1d` (X1D 전용, raw+jpeg 121쌍 ΔE00 직접 그리드서치+완전 LOO, 121/121 폴드 전원일치 +18.35%·CI 0 미포함 - `exposure_gamma=0.6, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`. X1D가 세대별 분해에서 최악으로 확인된 데 대한 대응) |
+| `brands/hasselblad_x1dii50c.py` | Experimental - `apply_hncs_x1dii50c` (X1D II 50C 전용, raw+jpeg 38쌍 ΔE00 직접 그리드서치+완전 LOO, 38/38 폴드 전원일치 +9.63%·CI 0 미포함 - `exposure_gamma=0.7, toe_lift=0.02, shoulder_start=0.82, white_point=1.0`) |
 | `brands/hasselblad_x1d50c.py` | Experimental - `apply_hncs_x1d50c` (X1D-50c 전용, raw+jpeg 20쌍 기반, ΔE00 직접 그리드서치+LOO/원본 픽셀 재확인 모두 +6~7% - `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) |
 | `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 15종 (Astia, PRO Neg, Eterna, Acros, Classic Negative, Provia, Classic Chrome/v2, Nostalgic Neg v2/v3 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 population 실측 검증됨, Pro Neg Hi/Eterna Cinema는 동일장면 비교차트로 추가 검증·재보정(표본 n=1~3, 저신뢰), **Provia/Classic Chrome/Nostalgic Neg v2는 raw+jpeg 페어 기반 ΔE00 그리드서치로 검증**(Provia 3바디 통합 67쌍 +19.1%, Classic Chrome 39쌍 +5.6%, Nostalgic Neg v2 27쌍 +6.1% - 구 `apply_nostalgic_neg`는 실측 결과 raw보다도 못한 -2.1%로 판명, 코드는 보존하고 v2로 대체 권장). **2026-08 정정**: `tools/build_local_manifest.py` 페어 매칭 버그로 위 Classic Chrome/Nostalgic Neg v2의 GFX50S II 표본 절반 이상이 오염돼 있었던 게 드러나 데이터셋을 고쳐 재검증 - `apply_classic_chrome_v2`(42쌍 +22.5%)/`apply_nostalgic_neg_v3`(28쌍 +18.1%, 28/28 만장일치)를 신설, 구버전은 컨벤션대로 보존 |
 | `brands/fuji_provia_learned.py` | Experimental - `apply_provia_learned` (Provia 3바디 통합 256bin 학습 LUT, 파라메트릭 대비 +20.42% 개선) |
@@ -111,6 +112,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/evaluate_x2dii_de00_check.py` | `apply_hncs_x2dii()`의 ΔE00/RMSE를 shoulder_start 정정(0.82->0.5) 이후 확장된 X2D II 70쌍 전체로 재확인 |
 | `tools/evaluate_x2dii_de00_grid.py` | X2D II 70쌍 그리드서치를 ΔE00 자체를 목적함수로 재실행 - 기존 검증이 전부 b2/w995 percentile RMSE 기준이었던 것을 바로잡음 |
 | `tools/evaluate_x1d_de00_grid.py` | `evaluate_x2dii_de00_grid.py`와 동일 방법론(exposure_gamma 포함 441콤보 ΔE00 직접 그리드서치, 저해상도 선택/3000px 완전 LOO)을 X1D 121쌍(`collect_local_pairs()`)에 적용 - `apply_hncs_x1d()` 배포 근거 |
+| `tools/evaluate_x1dii50c_de00_grid.py` | 같은 방법론을 X1D II 50C 38쌍에 적용 - `apply_hncs_x1dii50c()` 배포 근거 |
 | `tools/evaluate_x2dii_reduce_de00.py` | `apply_hncs_x2dii()`의 ΔE00을 더 낮추는 세 후보(전용 학습 LUT/분리감마/채도-hue 보정)를 X2D II 41쌍에 LOO로 검증 |
 | `tools/evaluate_x2dii_combined.py` | `evaluate_x2dii_reduce_de00.py`에서 각각 유의미하게 이긴 세 후보를 조합했을 때 추가 개선폭 확인(콤보 A: 분리감마+채도/hue, 콤보 B: 학습LUT+채도/hue) |
 | `tools/evaluate_x2dii_combo_a_full.py` | 콤보 A(분리감마 고정 + 채도/hue LOO)의 ΔE00 외 RMSE·drop-one 민감도까지 전체 지표를 베이스라인과 비교 |
