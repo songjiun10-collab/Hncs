@@ -14,7 +14,28 @@ docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md).
 **미검증**: 이 모듈이 만든 파일의 구조 유효성(exiftool 파싱)과 수치
 라운드트립은 검증했지만, Lightroom/ACR이 실제로 로드해서 의도한 색을
 내는지는 이 프로젝트의 개발 환경에 Adobe 제품이 없어 확인하지 못했다.
-프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat다."""
+프로젝트의 다른 "미검증" 항목들과 같은 성격의 caveat다.
+
+**정정(2026-08-13)**: 실사용자 테스트에서 `hasselblad_x2dii_chart.dcp`가
+Lightroom에 안 뜬다는 보고 - exiftool로 파일 자체는 재검증해서 손상
+아님을 확인(`Validate: OK`), 원인은 여전히 미확정(설치 경로/Lightroom
+재시작 여부/"Camera Matching"은 원래 서드파티가 못 뜨는 카테고리라는
+점 등 후보 다수). 상세:
+docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md
+"알려진 한계" 3번.
+
+**정정(2026-08-31, 원인 확정)**: 위 미확정 보고, 3주에 걸친 후속 테스트
+끝에 원인 2개로 확정됨(Chris Schmauch가 dcpTool로 컴파일해서 실제 동작
+확인한 파일을 바이트 단위로 까서 검증) - (1) 이 모듈이 쓰던 헤더 매직
+넘버(표준 TIFF 42)가 틀렸다, DCP는 Adobe 전용 매직 `0x4352`가 필요하다
+(exiftool은 이 차이를 구조 검증에서 못 잡는다 - 매직을 모르는 파일도
+`Validate: OK`를 낸다), (2) `UniqueCameraModel`에 EXIF 문자열이 아니라
+Adobe DNG Converter로 실제 RAW를 변환해야 나오는 내부 코드네임이
+들어가야 한다. 둘 다 `write_dcp()`/`read_dcp()`에 반영함. 위 줄 4-6의
+"표준 TIFF 구조"는 IFD 레이아웃 얘기지 매직 넘버까지 표준이라는 뜻이
+아니었다 - 오해의 소지가 있었지만 원 표현은 그대로 두고 여기 정정만
+추가한다. 상세:
+docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md."""
 import struct
 
 import numpy as np
@@ -24,14 +45,23 @@ TAG_UNIQUE_CAMERA_MODEL = 50708
 TAG_COLOR_MATRIX_1 = 50721
 TAG_CALIBRATION_ILLUMINANT_1 = 50778
 TAG_PROFILE_NAME = 50936
+TAG_PROFILE_EMBED_POLICY = 50941
 TAG_FORWARD_MATRIX_1 = 50964
 
 # TIFF 필드 타입
 _TYPE_ASCII = 2
 _TYPE_SHORT = 3
+_TYPE_LONG = 4
 _TYPE_SRATIONAL = 10
 
-_TYPE_SIZES = {_TYPE_ASCII: 1, _TYPE_SHORT: 2, _TYPE_SRATIONAL: 8}
+_TYPE_SIZES = {_TYPE_ASCII: 1, _TYPE_SHORT: 2, _TYPE_LONG: 4, _TYPE_SRATIONAL: 8}
+
+# 표준 TIFF/DNG 매직 넘버(리틀엔디안 "II"+42) - RAW/DNG 이미지 파일용.
+_TIFF_MAGIC = 42
+# Adobe DCP(카메라 프로필) 전용 매직 넘버("IIRC", 바이트로 0x52 0x43 =
+# 리틀엔디안 uint16 0x4352). 표준 TIFF 매직이 아니다 - **정정(2026-08-31)**
+# 항목 참조.
+_DCP_MAGIC = 0x4352
 
 # SRATIONAL(분자/분모 정수쌍)의 고정 분모. 1e-6 해상도면 색매트릭스
 # 계수에 충분하고(계수 크기가 대략 -1~2 범위), int32 범위도 넉넉하다.
@@ -85,7 +115,27 @@ def write_dcp(path, camera_model, profile_name, color_matrix_1,
     forward_matrix_1: 선택. 카메라 네이티브 -> XYZ(D50). DNG 스펙상
         카메라 중립점을 D50 백색점으로 정확히 매핑하는 정규화 제약이
         있는데 그 구현을 Lightroom으로 검증할 수 없어서 기본값은
-        None(생략)이다 - 생략해도 유효한 프로필이다."""
+        None(생략)이다 - 생략해도 유효한 프로필이다.
+
+    **정정(2026-08-31)**: 실사용자(Chris Schmauch) 테스트에서 이 함수가
+    쓴 파일이 exiftool 구조 검증(`Validate: OK`)과 라운드트립을 전부
+    통과하는데도 Lightroom Profile Browser에 계속 안 떴다. 원인 두 가지
+    확인됨(dcpTool로 컴파일해서 실제로 동작 확인된 파일을 바이트 단위로
+    까서 검증):
+    1. **파일 헤더가 표준 TIFF 매직(42)이면 안 된다.** DCP는 RAW/DNG
+       이미지 파일과 달리 Adobe 전용 매직 `0x4352`("IIRC")를 요구한다 -
+       이 모듈 docstring이 "DCP는 TIFF 구조 파일"이라고 한 건 IFD
+       레이아웃 얘기고, 매직 넘버까지 표준이라는 뜻은 아니었다. exiftool은
+       이 매직을 모르는 파일은 태그를 하나도 못 읽으면서도 `Validate: OK`
+       는 내놓는다 - 그래서 구조 검증으로는 이 버그가 절대 안 잡혔다.
+    2. `camera_model`(`UniqueCameraModel`, 아래)에 EXIF `Make`/`Model`
+       문자열을 넣으면 Lightroom이 그 카메라의 RAW를 열어도 프로필을
+       매칭 대상으로 보여주지 않는다 - Adobe가 DCP 매칭에 실제로 쓰는
+       값은 Adobe DNG Converter로 실제 RAW를 변환해봐야 나오는 내부
+       코드네임이다(하셀블라드 X2D II 100C의 경우
+       `"Hasselblad 100-22-Coated6"`, EXIF `Model`인 `"X2D II 100C"`나
+       `Make`+`Model`인 `"Hasselblad X2D II 100C"`가 아니다).
+    상세: `docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md`."""
     entries = []  # (tag, type, count, payload)
 
     model_payload = _ascii_payload(camera_model)
@@ -101,6 +151,12 @@ def write_dcp(path, camera_model, profile_name, color_matrix_1,
 
     entries.append((TAG_COLOR_MATRIX_1, _TYPE_SRATIONAL, 9,
                     _srational_payload(color_matrix_1)))
+
+    # dcpTool로 컴파일해서 실제 동작 확인된 파일에 항상 들어있던 태그.
+    # 값 0 = "Allow Copying"(가장 permissive한 기본 정책) - dcpTool
+    # 기본값을 그대로 따른다, 별도로 고를 이유가 없다.
+    entries.append((TAG_PROFILE_EMBED_POLICY, _TYPE_LONG, 1,
+                    struct.pack("<I", 0)))
 
     if forward_matrix_1 is not None:
         entries.append((TAG_FORWARD_MATRIX_1, _TYPE_SRATIONAL, 9,
@@ -127,21 +183,28 @@ def write_dcp(path, camera_model, profile_name, color_matrix_1,
     ifd += struct.pack("<I", 0)  # 다음 IFD 없음
 
     with open(path, "wb") as f:
-        f.write(struct.pack("<2sHI", b"II", 42, 8))  # 리틀엔디안 TIFF 헤더
+        # 리틀엔디안 DCP 헤더 - "II" + 0x4352("IIRC"). 표준 TIFF 매직(42)이
+        # 아니다, 위 정정(2026-08-31) 참조.
+        f.write(struct.pack("<2sHI", b"II", _DCP_MAGIC, 8))
         f.write(ifd)
         f.write(trailing)
 
 
 def read_dcp(path):
     """write_dcp()가 쓴 파일을 되읽어 {태그 ID: 값} dict를 반환한다.
-    범용 TIFF 파서가 아니라 이 모듈이 쓰는 세 타입(ASCII/SHORT/
-    SRATIONAL)만 다루는 라운드트립 검증용 최소 파서다."""
+    범용 TIFF 파서가 아니라 이 모듈이 쓰는 네 타입(ASCII/SHORT/LONG/
+    SRATIONAL)만 다루는 라운드트립 검증용 최소 파서다.
+
+    매직 넘버는 `_DCP_MAGIC`(현재 write_dcp()가 쓰는 값)과 `_TIFF_MAGIC`
+    둘 다 허용한다 - 이미 커밋된 `hybrid_engine/assets/profiles/*.dcp`가
+    정정 전 코드(`_TIFF_MAGIC`)로 쓰여 있어서, 그 파일들을 계속 읽으려면
+    둘 다 받아야 한다(2026-08-31 정정 참조)."""
     with open(path, "rb") as f:
         data = f.read()
 
     byte_order, magic, first_ifd = struct.unpack_from("<2sHI", data, 0)
-    if byte_order != b"II" or magic != 42:
-        raise ValueError(f"리틀엔디안 TIFF 헤더가 아님: {byte_order!r}, magic={magic}")
+    if byte_order != b"II" or magic not in (_DCP_MAGIC, _TIFF_MAGIC):
+        raise ValueError(f"리틀엔디안 TIFF/DCP 헤더가 아님: {byte_order!r}, magic={magic}")
 
     (n_entries,) = struct.unpack_from("<H", data, first_ifd)
     tags = {}
@@ -161,6 +224,8 @@ def read_dcp(path):
             tags[tag] = payload.rstrip(b"\x00").decode("ascii")
         elif typ == _TYPE_SHORT:
             tags[tag] = struct.unpack_from("<H", payload, 0)[0]
+        elif typ == _TYPE_LONG:
+            tags[tag] = struct.unpack_from("<I", payload, 0)[0]
         else:
             ints = struct.unpack(f"<{2 * count}i", payload)
             tags[tag] = np.array([ints[2 * j] / ints[2 * j + 1]

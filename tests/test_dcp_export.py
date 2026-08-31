@@ -8,7 +8,8 @@ import numpy as np
 
 from core.dcp_export import (
     TAG_CALIBRATION_ILLUMINANT_1, TAG_COLOR_MATRIX_1, TAG_FORWARD_MATRIX_1,
-    TAG_PROFILE_NAME, TAG_UNIQUE_CAMERA_MODEL, read_dcp, write_dcp,
+    TAG_PROFILE_EMBED_POLICY, TAG_PROFILE_NAME, TAG_UNIQUE_CAMERA_MODEL,
+    read_dcp, write_dcp,
 )
 
 _MATRIX = np.array([
@@ -45,6 +46,17 @@ class TestWriteReadRoundTrip(unittest.TestCase):
             # SRATIONAL은 분모 1000000로 양자화되므로 그 반올림 오차 내에서 일치
             np.testing.assert_allclose(tags[TAG_COLOR_MATRIX_1],
                                         _MATRIX.reshape(9), atol=1e-6)
+
+    def test_profile_embed_policy_defaults_to_allow_copying(self):
+        # dcpTool로 컴파일해서 실제 Lightroom 동작 확인된 파일
+        # (HNCS_X2DII_Chart_Colorimetric_v4_Adobe_ID.dcp)에 항상 들어있던
+        # 태그 - 값 0 = "Allow Copying". 정정(2026-08-31) 참조.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "test.dcp")
+            write_dcp(path, camera_model="Test Camera 1", profile_name="Test Profile",
+                       color_matrix_1=_MATRIX, calibration_illuminant_1=21)
+            tags = read_dcp(path)
+            self.assertEqual(tags[TAG_PROFILE_EMBED_POLICY], 0)
 
     def test_forward_matrix_omitted_by_default(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -85,13 +97,20 @@ class TestTiffStructure(unittest.TestCase):
                    color_matrix_1=_MATRIX, calibration_illuminant_1=21)
         return path
 
-    def test_header_is_valid_little_endian_tiff(self):
+    def test_header_uses_dcp_magic_not_standard_tiff_magic(self):
+        # 정정(2026-08-31): 표준 TIFF 매직(42)으로 썼던 게 Lightroom이
+        # 프로필을 계속 못 읽던 원인 중 하나였다 - dcpTool로 컴파일해서
+        # 실제 동작 확인된 파일의 헤더가 0x4352("IIRC")임을 직접 까서
+        # 확인했다. exiftool 구조 검증은 이 차이를 못 잡는다(매직을 모르는
+        # 파일도 `Validate: OK`를 낸다) - 그래서 이 테스트는 raw 바이트를
+        # 직접 본다.
         with tempfile.TemporaryDirectory() as tmp:
             with open(self._write_sample(tmp), "rb") as f:
                 header = f.read(8)
         byte_order, magic, first_ifd = struct.unpack("<2sHI", header)
         self.assertEqual(byte_order, b"II")
-        self.assertEqual(magic, 42)
+        self.assertEqual(magic, 0x4352)
+        self.assertNotEqual(magic, 42)
         self.assertEqual(first_ifd, 8)
 
     def test_ifd_entries_sorted_by_tag(self):
@@ -110,7 +129,7 @@ class TestTiffStructure(unittest.TestCase):
             with open(self._write_sample(tmp), "rb") as f:
                 data = f.read()
         (n_entries,) = struct.unpack_from("<H", data, 8)
-        type_sizes = {2: 1, 3: 2, 10: 8}
+        type_sizes = {2: 1, 3: 2, 4: 4, 10: 8}
         for i in range(n_entries):
             off = 8 + 2 + 12 * i
             _tag, typ, count = struct.unpack_from("<HHI", data, off)
