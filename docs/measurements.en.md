@@ -1929,3 +1929,138 @@ overwrite it.
 
 Reproduce: `python3 -m tools.evaluate_all_brands_clahe_shoulder_grid`
 (~450 pairs, ~25 minutes).
+
+## /goal "other brands' average ΔE00 -> under 10" - missed, ruled a structural limit (2026-08)
+
+This covers the user's `/goal` target: "average ΔE00 across all brands
+other than Hasselblad, under 10." **Bottom line up front: missed - and,
+after an opus escalation (below), judged structurally unreachable with
+current techniques.** Everything tried, and the reasoning, is recorded
+here.
+
+**1) Current-state survey** (`tools/measure_all_brand_baselines.py`,
+800px, each body's current shipped function as-is):
+
+| Group | ΔE00 |
+|---|---|
+| Canon (generic) | 23.012 |
+| Sony a7R VI (dedicated) | 17.318 |
+| Sony a7V (dedicated) | 16.652 |
+| Sigma (generic) | 16.250 |
+| Sigma BF (dedicated) | 15.990 |
+| Sony (generic) | 14.378 |
+| Fuji GFX100RF (dedicated) | 13.917 |
+| Fuji (generic) | 13.074 |
+| Leica Q3 43 (dedicated) | 11.144 |
+| Leica (generic) | 10.398 |
+| Leica SL2 (dedicated) | 9.731 |
+| Leica SL3-P (dedicated) | 8.975 |
+| Leica M10 (dedicated) | 8.509 |
+
+10 of 13 groups are at or above 10. Olympus/Panasonic/Pentax/PhaseOne/
+Ricoh GR have zero local raw+jpeg calibration data - their ΔE00 can't
+even be measured.
+
+**2) A 4-parameter tone-curve grid alone falls far short** - on Canon
+(the worst group, with no prior dedicated tuning at all), a ΔE00-direct
+grid search + LOO (`tools/fit_population_body_de00_grid.py`, toe_lift x
+shoulder_start x white_point x clahe_clip, 252 combos): 23.109 -> 22.041,
+**only +4.62%** (the statistics are solid, p<0.0001, but the size isn't
+enough).
+
+**3) Adding a color matrix helps, but nowhere near enough**: fit a fresh
+3x3 color matrix by least squares on raw native-white-balanced linear RGB
+(same method as the `hncs_structural` work), then apply the tone curve
+on top (`tools/fit_body_matrix_plus_tone_de00.py`): Canon 19.964
+(tone-only) -> 17.478 (matrix+tone), **+12.45%** (p=0.0006) - adding a
+saturation/hue LUT on top of that (`--chroma`) only gets to 17.242, a
+further +1.3 points - matrix+tone+chroma combined **plateaus in the
+17.2 range**.
+
+**Running the identical experiment on "Leica (generic, 244 pairs - 77%
+of which are actually the already-dedicated-tuned SL3-P/SL2/Q3-43/M10)"
+gives the opposite result**: the matrix actively hurts (12.558 ->
+13.684, **-8.97%**, p<0.0001, CI entirely negative) - the same pattern
+already found in the Hasselblad `hncs_structural` revalidation ("fitting
+a global matrix on pooled, diverse data can actively hurt") repeats here.
+
+**4) Slicing by ISO/exposure/portrait doesn't close the gap either**
+(`tools/breakdown_by_exposure_iso.py`, Canon's fixed matrix+tone+chroma
+pipeline): ISO buckets (low/mid/high/very-high) run 14.6-19.0, exposure-
+compensation buckets (under/neutral/over) run 14.4-19.7 - **no bucket
+comes anywhere near 10**. Portraits alone (OpenCV Haar-cascade face
+detection on the target JPEGs, 27 of 143 photos) give matrix+tone+chroma
+16.626 (the improvement itself has a CI including 0, held) - also
+nowhere near 10. **The error isn't concentrated in any particular
+condition - it's spread evenly, which means it's a structural floor,
+not a "bias" any parameter can shave off.**
+
+**5) Confirmed again that low-resolution grid search runs optimistic**:
+Leica generic's tone-only grid search (400px) reported 9.966 -> 9.634 -
+**already under 10**, and looked promising. But re-checking SL2-S (43
+pairs) alone - whose same 400px grid gave 10.587 -> 10.277 - at native
+pixel resolution (max_dim=3000) instead: it slipped to **11.935 ->
+11.824** (the same phenomenon as the X2D II CLAHE resolution-bias
+section above - CLAHE's fixed `tileGridSize=(8,8)` is biased in its own
+favor at low resolution). **Every low-resolution (200-400px) grid-search
+result from this session should be assumed to carry an optimistic bias
+and should not be cited without a native-pixel re-confirmation.**
+
+**6) Opus escalation - final verdict**: per this project's convention of
+escalating `/goal` ambiguity/difficulty to the strongest model tier
+rather than stalling, the full evidence trail was handed to opus for a
+call. Verdict: **structurally unreachable**.
+- This project's single most carefully tuned artifact
+  (`apply_hncs_x2dii()` - a 441-combo grid + LOO + 70 pairs + native-
+  pixel confirmation) still sits around ~11.7 at native pixel resolution
+  - it doesn't clear the 10 bar either. Expecting brand-new brands to
+  beat that on average is unrealistic.
+- The required drop is **-27.5%** on the 13-group average, while the
+  best technique found this session (matrix+tone+chroma) only manages
+  **+12.45%** on Canon (the group with the most headroom) and goes
+  negative on Leica - there is no available technique that produces
+  -27.5% on average.
+- Whatever residual survives matrix (color) + tone (brightness/contrast)
+  + saturation/hue is almost certainly demosaic/sharpening/noise-
+  reduction mismatch, missing lens correction, and scene-adaptive JPEG
+  processing (DRO/ALO and the like) - territory a static, global
+  function class cannot reach by construction. The only lever this
+  project has ever found that works there (per-generation/per-body
+  branching, conditional parameters) took Hasselblad alone several
+  sessions and hundreds of pairs.
+- Collecting data for Olympus/Panasonic/Pentax/PhaseOne/Ricoh GR would
+  be **counterproductive** - every "first measurement" baseline in this
+  project has started at 13-23, so adding five more groups near that
+  range would only pull the average up, not down.
+
+**What was executed on opus's recommendation**: re-checked SL2/SL3-P/M10
+(the three groups the survey called "already under 10") at native pixel
+resolution (`tools/confirm_leica_raw_look_extension.py --already10`,
+time-boxed to ~30 min - all 143 pairs actually finished in about 10):
+
+| Body | n | apply_leica_look (main) | apply_leica_raw_look (dedicated) | Verdict |
+|---|---|---|---|---|
+| SL3-P | 41 | 9.821 | **9.590** | still under 10 |
+| M10 | 32 | 9.562 | **9.415** | still under 10 |
+| SL2 | 55 | 10.714 | **10.511** | **misses** (the survey's 800px 9.731 was optimistic bias) |
+
+Only 2 of the 3 (SL3-P/M10) are genuinely under 10 at native pixel
+resolution - SL2 just misses (10.5). Counting SL2-S (11.824, "independent
+re-confirmation" above) too, only **3 of the 5** dedicated-tuned Leica
+bodies are actually under 10 - the rest (SL2/SL2-S) are close, not there.
+SL2-S stays adopted (it had already been adopted in an earlier session
+and remains statistically solid - see `brands/leica_raw.py`'s docstring,
+though it should be noted this does not put it under 10). CL was rejected
+for lack of evidence.
+
+**Conclusion**: the miss isn't from insufficient effort - it's a genuine
+methodological ceiling. The recommendation back to the user is to
+re-target (e.g. "each dedicated function beats its own generic baseline
+by >=5% at native pixel resolution," or "close the gap toward
+Hasselblad's ~11.7 floor") or to authorize a multi-session, per-body/
+per-scene conditional-branching project.
+
+Reproduce: `python3 -m tools.fit_population_body_de00_grid canon`,
+`... fit_body_matrix_plus_tone_de00 canon --chroma`,
+`... breakdown_by_exposure_iso canon`,
+`... confirm_leica_raw_look_extension`.
