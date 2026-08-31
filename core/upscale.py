@@ -154,7 +154,7 @@ def build_pytorch_model(scale):
     `strict=True`가 통과해야 체크포인트와 아키텍처가 정확히 일치한다는
     뜻 - 실패하면 벤더링한 구조가 잘못됐다는 신호."""
     weights_path = download_weights(scale)
-    checkpoint = torch.load(weights_path, map_location="cpu")
+    checkpoint = torch.load(weights_path, map_location="cpu", weights_only=True)
     state_dict = checkpoint.get("params_ema", checkpoint.get("params", checkpoint))
     model = _RRDBNet(scale=scale)
     model.load_state_dict(state_dict, strict=True)
