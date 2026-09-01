@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""PreToolUse hook (matcher: Bash), HIGH severity. Before a `git commit` or
+`git push`, checks the current branch isn't a default-branch name
+(main/master) or a detached HEAD - catches "accidentally committing to
+main" (or a detached HEAD nobody will find again) before it happens,
+rather than after.
+
+Same statement-boundary + heredoc-stripping approach as
+`protect_push_safety.py`/`protect_never_touch.py` to avoid the same class
+of false positive (a commit message that merely *mentions* "git commit"
+as prose).
+
+Override: trailing `# HNCS-OVERRIDE: protect_branch: <reason>` comment -
+sometimes committing to main directly really is intended (e.g. a genuine
+hotfix workflow, or a repo where main IS the working branch).
+
+**추가 (2026-08-19, 2-Agent Consensus)**: override 체크 다음, 기존
+high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
+- 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
+`consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
+아예 안 하면) 기존 동작과 완전히 동일.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #4 - 실측 결함
+수정)**: `eval "git commit -m test"`는 `git`이 큰따옴표 바로 뒤라
+`_STMT_START`가 요구하는 문 시작 위치가 아니어서 완전히 안 걸렸다 -
+`_hook_common.unwrap_eval()`로 고침."""
+import json
+import re
+import subprocess
+import sys
+
+from _hook_common import (allow, allow_with_consensus, allow_with_override,
+                           bash_override, consensus_verdict, high_tier_decision,
+                           require_decision_or_deny, unwrap_eval)
+
+HOOK_NAME = "protect_branch"
+SEVERITY = "HIGH"
+
+_STMT_START = r"(?:^|&&|\|\||;|\n|\||\(|`|\bdo\b|\bthen\b|\belse\b)\s*"
+_HEREDOC_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
+_COMMIT_OR_PUSH_RE = re.compile(_STMT_START + r"git\s+(commit|push)\b")
+
+_DEFAULT_BRANCH_NAMES = {"main", "master"}
+
+
+def read_input():
+    return json.load(sys.stdin)
+
+
+def current_branch():
+    try:
+        out = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                              capture_output=True, text=True, timeout=10)
+        return out.stdout.strip() if out.returncode == 0 else None
+    except Exception:
+        return None
+
+
+def branch_risk_reason(branch):
+    """Returns a reason string if `branch` looks like an unintended commit
+    target, else None. `git rev-parse --abbrev-ref HEAD` prints literal
+    \"HEAD\" when detached."""
+    if branch == "HEAD":
+        return ("HEAD is detached - not on any branch. A commit here is "
+                "easy to lose (unreachable once you switch branches, until "
+                "it's garbage-collected).")
+    if branch in _DEFAULT_BRANCH_NAMES:
+        return (f"Current branch is '{branch}' (a default-branch name). "
+                "If a feature/working branch was intended, this is "
+                "probably a wrong-branch mistake, not a deliberate choice.")
+    return None
+
+
+def main():
+    data = read_input()
+    if data.get("tool_name") != "Bash":
+        allow()
+        return
+    command = str((data.get("tool_input") or {}).get("command", ""))
+    stripped = unwrap_eval(_HEREDOC_RE.sub("", command))
+    if not _COMMIT_OR_PUSH_RE.search(stripped):
+        allow()
+        return
+
+    branch = current_branch()
+    if branch is None:
+        allow()  # not a git repo, or git unavailable - nothing to check
+        return
+
+    reason = branch_risk_reason(branch)
+    if reason is None:
+        allow()
+        return
+
+    decision = require_decision_or_deny(HOOK_NAME, SEVERITY, branch, reason)
+    if decision is None:
+        return
+
+    override_reason = bash_override(HOOK_NAME, command)
+    if override_reason:
+        allow_with_override(HOOK_NAME, SEVERITY, HOOK_NAME, branch, override_reason,
+                             decision=decision)
+        return
+
+    verdict = consensus_verdict(HOOK_NAME, branch)
+    if verdict in ("agree_safe", "agree_risky"):
+        allow_with_consensus(HOOK_NAME, SEVERITY, HOOK_NAME, branch, verdict, decision=decision)
+        return
+
+    high_tier_decision(
+        HOOK_NAME, SEVERITY,
+        f"{reason} To override: add a trailing `# HNCS-OVERRIDE: "
+        f"{HOOK_NAME}: <reason>` comment to the command.",
+        data, target=branch, decision=decision,
+    )
+
+
+if __name__ == "__main__":
+    main()
