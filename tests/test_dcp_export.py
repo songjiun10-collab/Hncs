@@ -211,7 +211,16 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     리포트 JSON엔 균등가중 필드(`chart_matrix_in_sample`/`dcp_color_matrix_1`,
     n=10 - B_31334 유실로 지금은 재현 불가)/유채색-4x 필드(`_weighted`)/
     IRLS 필드(`_irls`) 셋 다 있다 - 실제 배포된 `.dcp`는 `_irls` 기준이라
-    이 테스트도 `_irls`를 본다."""
+    이 테스트도 `_irls`를 본다.
+
+    **추가 정정(2026-09-01, 같은 날)**: 패치별 잔차를 뜯어보니 patch
+    17(cyan)만 9장 전부에서 평균 ΔE00=7.166(표준편차 0.977)로 다른 패치
+    (다음 최악 3.695)보다 압도적으로 나빴다. cyan의 IRLS 초기가중치를
+    4.0에서 2.0으로 낮춰 재수렴시킨 매트릭스(`tools/refit_dcp_irls_cyan_init.py`)로
+    배포 - 9장 LOO 기준 -0.52%(2.6078->2.5942, 부트스트랩 CI 없음, 단조성으로
+    신호 판정). 실제 배포된 `.dcp`는 이제 `_irls_cyan_init` 기준이라 이
+    테스트도 `_irls_cyan_init`을 본다. `_irls`(무채색-4x 단독, -8.8%)와
+    원래 균등가중 필드는 기록용으로 보존."""
 
     @classmethod
     def setUpClass(cls):
@@ -221,7 +230,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
             cls.report = json.load(f)
         cls.tags = read_dcp(_SHIPPED_DCP)
         cls.cm1 = cls.tags[TAG_COLOR_MATRIX_1].reshape(3, 3)
-        cls.chart_m = np.array(cls.report["chart_matrix_in_sample_irls"], dtype=np.float64)
+        cls.chart_m = np.array(cls.report["chart_matrix_in_sample_irls_cyan_init"], dtype=np.float64)
 
     def test_color_matrix_1_is_inverse_transpose_not_plain_inverse(self):
         expected = np.linalg.inv(self.chart_m).T
@@ -233,7 +242,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     def test_report_dcp_color_matrix_field_matches_the_file(self):
         np.testing.assert_allclose(
             self.cm1,
-            np.array(self.report["dcp_color_matrix_1_irls"], dtype=np.float64),
+            np.array(self.report["dcp_color_matrix_1_irls_cyan_init"], dtype=np.float64),
             atol=1e-6)
 
     def test_calibration_illuminant_is_d50_matching_the_fit_reference_space(self):
