@@ -11,5 +11,156 @@
       "files.pythonhosted.org",
       "registry.npmjs.org"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_hook_integrity.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_decision_record_bypass.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_never_touch.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_generated_files.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_experiment_integrity.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_claim_evidence.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_reviewer_prejudging.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_rubber_stamp_approval.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_agent_model_naming.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__github__update_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_ready_without_review.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_hook_integrity.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_decision_record_bypass.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_push_safety.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_never_touch.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_destructive.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_branch.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/protect_test_coverage.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/record_whole_branch_review.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/record_agent_approval.py",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/record_consensus_judgment.py",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/deliver_caution.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
   }
 }
