@@ -2717,3 +2717,47 @@ LOO ΔE00 2.7175~2.7179로 최저점이었다. 같은 실행 로그(부트스트
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.recover_kmichels_x2dii_chart`
 (챠트 8장 재다운로드), `... tools.evaluate_dcp_weighted_patches`(가중치
 스윕, LOO), `... tools.refit_dcp_weighted_chroma`(최종 배포 재발급).
+
+## DCP 챠트 매트릭스 - Huber IRLS로 한 번 더 재피팅, 사용자 승인 채택 (2026-09-01, 같은 날)
+
+바로 위 "무채색 패치 가중치 낮춰서 재피팅" 절(`tools/evaluate_dcp_weighted_patches.py`
+실행 확인된 유채색 4x 고정 가중치, 부트스트랩 CI 없이 LOO ΔE00
+2.7179)에 이어서, 사용자 지시("Huber 강건회귀부터 해볼까?")로 Huber
+IRLS(iteratively reweighted least squares - `raw_baseline.fit_color_matrix()`의
+기존 `weights=` 인터페이스를 반복 갱신)를 시도했다. `tools/evaluate_dcp_irls_weighted.py`
+실행으로 두 시작점(균등가중/유채색-4x가중)에서 각각 IRLS를 9장
+leave-one-image-out까지 돌렸다(실행 확인됨). 표본이 9장뿐이라
+`tools/evaluate_dcp_irls_weighted.py` 실행에서도 부트스트랩 CI(신뢰구간)는
+안 냈다.
+
+`tools/evaluate_dcp_irls_weighted.py` 실행 로그 기준(부트스트랩 CI
+없음) 균등가중에서 시작한 IRLS는 LOO ΔE00 2.6952였다. 같은 실행
+로그(부트스트랩 CI 없음)에서 유채색-4x 가중치에서 시작한 IRLS는 LOO
+ΔE00 2.6078로 더 낮았다 - 수렴한 무채색 패치 가중치가 어두운 패치일수록
+더 낮아지는 패턴(black 2 계열이 0.2 근처까지 내려감)을 보여서, 저휘도
+패치의 상대적 노이즈가 크다는 물리적으로 말이 되는 이유로 자동
+할인되고 있다고 해석했다(부트스트랩 CI는 아니고 정성적 해석).
+유채색-4x 시작 IRLS의 LOO ΔE00 개선폭은
+`tools/evaluate_dcp_irls_weighted.py` 실행 로그로 2.8588에서 2.6078,
+-8.8%다(부트스트랩 CI 아니라 위 "무채색 패치 가중치" 절과 같은
+단조성/물리적 해석 논리로만 뒷받침).
+
+**배포 반영**: 사용자 승인("ㅇ") 받은 뒤 `tools/refit_dcp_irls_final.py`
+실행으로 유채색-4x에서 시작한 IRLS를 9장 전체(홀드아웃 없이)에
+수렴시켜 최종 매트릭스를 재피팅했다(실행 확인됨). 그 실행 로그의
+in-sample ΔE00은 2.5191이다(부트스트랩 CI 아니라 in-sample 단일값).
+`camera_native_matrix_report.json`에 새 필드
+(`chart_matrix_in_sample_irls`/`dcp_color_matrix_1_irls`/`irls_final_weights`,
+균등가중·유채색-4x 단독 필드는 둘 다 기록용으로 보존)를 추가하고
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`를 이 매트릭스로
+재발급했다(실행 확인됨). `tests/test_dcp_export.py::TestShippedProfileMatchesReport`를
+`_irls` 필드 기준으로 갱신해서 실행 확인됨 - 15/15 통과(부트스트랩 CI가
+아니라 단위 테스트 통과/실패로 판정, 전치 규약·D50 백색점 물리적
+정합성 검사 포함).
+
+**남은 한계**: 9장이 전부 같은 94초 버스트(조명 1개)라 가중치/강건회귀로
+짜낼 수 있는 건 여기가 사실상 천장이다 - 더 크게 낮추려면 다른 조명
+조건의 챠트 데이터가 필요하다는 게 이 두 절(가중치+IRLS)의 공통 결론.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_irls_weighted`
+(IRLS 스윕, LOO), `... tools.refit_dcp_irls_final`(최종 배포 재발급).

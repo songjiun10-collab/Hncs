@@ -203,11 +203,15 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
 
     **정정(2026-09-01)**: 사용자 승인으로 매트릭스를 무채색 6패치 가중치
     낮춘(유채색 4x) 최소자승으로 재피팅해서 배포(`tools/refit_dcp_weighted_chroma.py`,
-    9장 LOO 기준 -4.9% 확인 - `hybrid_engine/EVALUATION.md` 참고). 리포트
-    JSON엔 원래 균등가중 필드(`chart_matrix_in_sample`/`dcp_color_matrix_1`,
-    n=10 - B_31334 유실로 지금은 재현 불가, 기록용 보존)와 새 가중 필드
-    (`chart_matrix_in_sample_weighted`/`dcp_color_matrix_1_weighted`, n=9)가
-    둘 다 있다 - 실제 배포된 `.dcp`는 후자 기준이라 이 테스트도 후자를 본다."""
+    9장 LOO 기준 -4.9% 확인 - `hybrid_engine/EVALUATION.md` 참고).
+
+    **추가 정정(2026-09-01, 같은 날)**: 그 위에 Huber IRLS(무채색-4x에서
+    시작, `tools/refit_dcp_irls_final.py`)로 한 번 더 재피팅해서 배포 -
+    9장 LOO 기준 -8.8%(2.8588->2.6078, `_weighted` 단독 -4.9%보다 더 낮음).
+    리포트 JSON엔 균등가중 필드(`chart_matrix_in_sample`/`dcp_color_matrix_1`,
+    n=10 - B_31334 유실로 지금은 재현 불가)/유채색-4x 필드(`_weighted`)/
+    IRLS 필드(`_irls`) 셋 다 있다 - 실제 배포된 `.dcp`는 `_irls` 기준이라
+    이 테스트도 `_irls`를 본다."""
 
     @classmethod
     def setUpClass(cls):
@@ -217,7 +221,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
             cls.report = json.load(f)
         cls.tags = read_dcp(_SHIPPED_DCP)
         cls.cm1 = cls.tags[TAG_COLOR_MATRIX_1].reshape(3, 3)
-        cls.chart_m = np.array(cls.report["chart_matrix_in_sample_weighted"], dtype=np.float64)
+        cls.chart_m = np.array(cls.report["chart_matrix_in_sample_irls"], dtype=np.float64)
 
     def test_color_matrix_1_is_inverse_transpose_not_plain_inverse(self):
         expected = np.linalg.inv(self.chart_m).T
@@ -229,7 +233,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     def test_report_dcp_color_matrix_field_matches_the_file(self):
         np.testing.assert_allclose(
             self.cm1,
-            np.array(self.report["dcp_color_matrix_1_weighted"], dtype=np.float64),
+            np.array(self.report["dcp_color_matrix_1_irls"], dtype=np.float64),
             atol=1e-6)
 
     def test_calibration_illuminant_is_d50_matching_the_fit_reference_space(self):
