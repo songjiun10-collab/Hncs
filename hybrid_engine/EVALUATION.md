@@ -2817,3 +2817,59 @@ in-sample ΔE00은 2.4961이다(부트스트랩 CI 아니라 in-sample 단일값
 없이 이보다 더 크게 낮추긴 어렵다는 결론은 유지된다.
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_dcp_irls_cyan_init`.
+
+## DCP HueSatMap(hue-only 축소판) 실험 - 배포 아님, 실기기 미검증 (2026-09-01)
+
+바로 위 절(`tools/refit_dcp_irls_cyan_init.py` 실행 확인됨)이 patch
+17(cyan) 잔차를 a*(녹-적) 축 치우침으로 진단한 뒤, 사용자 지시("3번
+파일 복사해서 격리해서 진행")로 3x3 선형 매트릭스로 못 잡는 이 방향을
+DNG `ProfileHueSatMapData1`(hue별 비선형 보정)으로 잡을 수 있는지
+실험했다. `core/dcp_export.py`(Never-list)는 손대지 않고
+`tools/dcp_export_huesatmap_experimental.py`에 격리 사본을 만들어
+HueSatMap 3개 태그(`ProfileHueSatMapDims`=50937/`ProfileHueSatMapData1`=50938/
+`ProfileHueSatMapEncoding`=51107)와 FLOAT 타입만 추가했다(실행
+확인됨, 라운드트립 단위 테스트
+`tests/test_dcp_export_huesatmap_experimental.py` 3/3 통과, 부트스트랩
+CI 아니라 단위 테스트 통과/실패로 판정).
+
+**1차 시도(Lab 평면 근사, `tools/evaluate_dcp_huesatmap.py`)**: a*/b*
+평면에서 원점 기준 회전으로 hue shift를 근사했다. 첫 실행에서
+매트릭스를 전체 9장(held-out 포함)으로 피팅한 채 재사용하는 데이터
+누수가 있었던 걸 발견해서(부트스트랩 CI 문제가 아니라 코드 버그 - 매
+폴드 매트릭스도 다시 피팅하도록 고침), 고친 뒤 재실행한 진짜 LOO
+결과는(실행 확인됨, 부트스트랩 CI 없음) 매트릭스만 LOO ΔE00
+2.5942 대비 hue map 적용 시 2.4951(N=8division, sigma=30, -3.82%,
+같은 실행 확인된 결과)이었다. 그런데 division 수를 4에서 16으로
+늘려가며 스윕한 결과(실행 확인됨, 부트스트랩 CI 없음) -2.66%에서
+-6.91%로 계속 커져서(같은 실행 확인된 스윕), 크로마 패치 18개뿐인
+표본에 자유도를 늘리는 과적합 패턴으로 판단하고 이 근사는 기각했다.
+
+**2차 시도(진짜 DNG 좌표계, `tools/evaluate_dcp_huesatmap_srgb.py`)**:
+Adobe 내부 선형 참조공간(encoding=0)은 스펙 문서 없이 정확한 재현이
+어려워서, 대신 `ProfileHueSatMapEncoding=1`(sRGB)이 명시하는 표준
+sRGB(D65, IEC 61966-2-1 감마) HSV 좌표계에서 정확히 같은 계산을 다시
+했다(hue만 회전, S/V 불변, 매 폴드 매트릭스도 새로 피팅하는 진짜
+LOO). 이 실행 결과(실행 확인됨, 부트스트랩 CI 없음) N=8division/sigma=30에서
+LOO ΔE00 2.5942에서 2.4651로(-4.98%, 같은 실행 결과) 내려갔고, 9폴드
+전부 개선 방향으로 부호가 안 뒤집혔다(같은 실행 로그). division을
+8에서 24로 늘려가며 재확인한 스윕(실행 확인됨, 부트스트랩 CI 없음)은
+sigma=30에서 -4.98%에서 -5.04%로(같은 실행 확인된 스윕) 포화했다 -
+Lab 버전과 달리 자유도를 늘려도 계속 커지지 않는 패턴이라, 과적합이
+아니라 실제 구조적 신호일 가능성이 높다고 판단했다.
+
+**실험 산출물(배포 아님)**: `tools/build_dcp_huesatmap_experimental.py`로
+N=8/sigma=30 테이블을 전체 9장(홀드아웃 없이) 학습해서
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart_huesatmap_experimental.dcp`
+를 새로 냈다(실행 확인됨) - **배포된 `hasselblad_x2dii_chart.dcp`는
+그대로다, 이 파일명은 별도**. `exiftool -validate`로 구조 검증
+통과했다(실행 확인됨, `Validate: OK`, `Profile Hue Sat Map Encoding:
+sRGB`로 정상 인식 - 부트스트랩 CI 아니라 exiftool 실행 결과).
+
+**남은 한계**: `core/dcp_export.py`가 매직 넘버/UniqueCameraModel
+버그를 실기기 테스트 전까진 몰랐던 전례와 같은 리스크가 이 신규 태그
+3개에도 그대로 있다 - exiftool 구조 검증만으로는 Lightroom이 실제로
+이 값대로 렌더링하는지 확인이 안 된다(부트스트랩 CI로도 못 잡는
+종류의 리스크). 배포 여부는 실기기 검증 이후로 보류.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_huesatmap_srgb`
+(sRGB HSV LOO), `... tools.build_dcp_huesatmap_experimental`(실험용 .dcp 출력).
