@@ -30,7 +30,9 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
 | `brands/ricoh_gr.py` | Ricoh GR 색감 근사 - `apply_ricoh_gr_look()` |
-| `brands/canon.py` | Canon 색감 근사(EOS R5/R6/R8/R3/R 5바디 population) - `apply_canon_look()` |
+| `brands/canon.py` | Canon 색감 근사(EOS R5/R6/R8/R3/R 5바디 population) - `apply_canon_look()`. `apply_canon_raw_look`도 이 파일에 있음(Experimental, raw+jpeg 143쌍(R6 Mark III 99+R1 44) 매트릭스+톤+채도 ΔE00 직접 피팅, LOO +26.48%·CI 0 미포함, ΔE00<10 목표는 구조적 바닥 확인돼 실패) |
+| `brands/canon_r6iii_raw.py` | Experimental - `apply_canon_r6iii_raw_look` (Canon EOS R6 Mark III 전용, `apply_canon_raw_look()`의 바디별 분해, raw+jpeg 95쌍, 풀링 대비 LOO +1.96%·CI[+0.195,+0.487] 0 미포함 - 작지만 실재) |
+| `brands/canon_r1_raw.py` | Experimental - `apply_canon_r1_raw_look` (Canon EOS R1 전용, 같은 바디별 분해, raw+jpeg 44쌍, 풀링 대비 LOO +8.49%·CI[+0.542,+1.806] 0 미포함) |
 | `brands/nikon.py` | Nikon 색감 근사(Z6/Z6 II/D780 3바디 population - Z9/D850 갤러리는 EXIF 빠진 자리표시자 이미지뿐이라 제외) - `apply_nikon_look()` |
 | `brands/sony.py` | Sony 색감 근사(A7/A7R/A7S/A7 III/A7 IV 5바디 population, 바디당 23장) - `apply_sony_look()` |
 | `brands/sony_raw.py` | Experimental - `apply_sony_raw_look` (raw+jpeg 288쌍 ΔE00 직접 그리드서치+LOO, toe=0.02/ss=0.82/wp=1.0/clip=2.0에 5/5 폴드 만장일치 수렴, 원본 픽셀 재확인 +2.56%·CI 0 미포함) |
@@ -132,6 +134,10 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/fit_body_matrix_plus_tone_de00.py` | raw 네이티브 화이트밸런스 선형 RGB에 3x3 컬러매트릭스를 최소자승으로 새로 피팅(hncs_structural과 같은 방법) + population-fit 톤커브, `--chroma`(채도/색조 LUT)/`--portrait-only`(Haar cascade 얼굴검출) 옵션, ΔE00 직접 LOO 검증 |
 | `tools/fit_canon_final_params.py` | `fit_body_matrix_plus_tone_de00.py --chroma`의 매트릭스+톤+채도를 전체 표본으로 재피팅해 배포용 상수 확정 시도(초판) - **정정**: raw 네이티브 순수 선형 입력 기준으로 피팅해서 `apply_canon_look()`이 실제 받는 입력공간(`load_neutral_render()`)과 안 맞음, 배포에 못 씀. `fit_canon_deployable_pipeline.py`로 대체 - 스크립트는 삭제하지 않고 정정 주석만 추가(실패한 시도 기록) |
 | `tools/fit_canon_deployable_pipeline.py` | Canon raw+jpeg 139쌍으로 `apply_canon_look()`이 실제 받는 입력공간(`load_neutral_render()`) 기준 매트릭스+톤+채도를 재피팅 - `apply_canon_raw_look()` 배포용 파라미터 산출(LOO +26.48%, p<0.0001) |
+| `tools/breakdown_sony_by_camera_body.py` | 전용 함수 없는 Sony 3바디(ILCE-7CR/9M3/1M2)에 `apply_sony_raw_look()`을 그대로 적용해 바디별 ΔE00 분해 - a1 II(ILCE-1M2)가 나머지 대비 유의미하게 나쁜 걸 발견(부트스트랩 CI [+2.351,+4.701], 0 미포함) |
+| `tools/evaluate_sony_a1ii_vs_raw_look.py` | `fit_population_body_de00_grid.py sony ILCE-1M2`가 고른 후보를 **진짜 baseline인 `apply_sony_raw_look()`**과 직접 재대결 - 그 그리드 스크립트는 구버전 `apply_sony_look()`과 비교해서 개선폭이 허수였음을 확인, 진짜 baseline 대비로는 두 후보 다 판정 보류(CI 0 포함) - 전용 함수 기각 근거 |
+| `tools/breakdown_canon_by_camera_body.py` | Canon 두 바디(R6 Mark III/R1)에 `apply_canon_raw_look()`을 그대로 적용해 바디별 ΔE00 분해 - R1(13.914) vs R6 III(16.969) 유의미한 격차 확인(부트스트랩 CI [-4.733,-1.317], 0 미포함) |
+| `tools/fit_canon_body_split_pipeline.py` | `fit_canon_deployable_pipeline.py`를 바디 필터 되도록 복사(모델 인자 추가) - 바디별 매트릭스+톤+채도 5-fold LOO를 풀링 `apply_canon_raw_look()`과 직접 대결시켜 `canon_r6iii_raw.py`/`canon_r1_raw.py` 배포 근거 산출(각각 +1.96%/+8.49%, 둘 다 CI 0 미포함) |
 | `tools/evaluate_all_brands_clahe_shoulder_grid.py` | raw+jpeg가 있는 나머지 바디(X1D-50c/Sony a7V·a7RVI/Leica SL3-P·Q3 43·SL2·M10/Fuji GFX100RF·X-T30 III/Sigma BF) 전부의 clahe_clip/shoulder_start 합동 그리드서치 - 실제 shipped 함수를 직접 import해서 대비(GFX100RF/Sigma BF clahe_clip 1.25→3.0 채택 근거) |
 | `tools/evaluate_expanded_clahe_shoulder_refit.py` | `evaluate_all_brands_clahe_shoulder_grid.py`가 못 보던 확장 데이터(별도 플랫 CSV가 아니라 `datasets/<brand>/contributed/*/manifest.csv` 전부, dedup)로 GFX100RF/Sony a7V/Leica SL3-P clahe_clip/shoulder_start 재검증 - GFX100RF는 89/89 만장일치로 기존값 재확인 |
 | `tools/evaluate_clahe_clip_native_confirm.py` | GFX100RF/Sigma BF의 clahe_clip 1.25→3.0 채택(200px 선택/400px LOO)을 원본 픽셀(max_dim=3000)로 직접 재대결해 저해상도 그리드서치 결과가 CLAHE 해상도 편향인지 확인 - 둘 다 방향/유의성 유지 |

@@ -27,6 +27,8 @@ BRAND_LOOKS = [
     ("brands.ricoh_gr", "apply_ricoh_gr_look"),
     ("brands.canon", "apply_canon_look"),
     ("brands.canon", "apply_canon_raw_look"),
+    ("brands.canon_r6iii_raw", "apply_canon_r6iii_raw_look"),
+    ("brands.canon_r1_raw", "apply_canon_r1_raw_look"),
     ("brands.sony", "apply_sony_look"),
     ("brands.sony_raw", "apply_sony_raw_look"),
     ("brands.sony_a7v", "apply_sony_a7v_look"),
