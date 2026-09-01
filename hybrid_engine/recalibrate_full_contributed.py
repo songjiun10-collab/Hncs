@@ -32,7 +32,8 @@ from tools.calibrate import collect_local_pairs
 def _load_all():
     pairs = [(r, j) for r, j in _official_find_pairs()]
     n_official = len(pairs)
-    pairs += [(p["raw_path"], p["jpeg_path"]) for p in collect_local_pairs()]
+    pairs += [(p["raw_path"], p["jpeg_path"]) for p in collect_local_pairs()
+              if p["scene_type"] != "chart"]
     n_contributed = len(pairs) - n_official
     print(f"공식 {n_official}쌍 + 기여 {n_contributed}쌍 = 총 {len(pairs)}쌍")
 
