@@ -316,5 +316,22 @@
     1.0,
     1.0
   ],
-  "_comment_irls_cyan_init": "2026-09-01: chart_matrix_in_sample_irls_cyan_init/dcp_color_matrix_1_irls_cyan_init는 patch 17(cyan) 잔차가 9장 전부에서 평균 ΔE00=7.166(표준편차 0.977)로 다른 패치보다 압도적으로 나빴던 걸 발견하고, cyan의 IRLS 초기가중치만 4.0에서 2.0으로 낮춰 재수렴시킨 결과 - tools/evaluate_dcp_irls_weighted.py 와 같은 _irls_fit()으로 9장 LOO 확인(부트스트랩 CI 없음, 단조성으로 신호 판정) -0.52%(2.6078->2.5942, U자형 최적점 확인됨) 후 사용자 승인으로 채택. 24개 패치 전부 이런 식으로 튜닝하면 n=9 표본 과적합이라 cyan 하나(물리적 근거 있는 이상값)에서 멈춤. _irls(무채색-4x 단독, -8.8%)와 원래 필드들은 기록용으로 보존."
+  "_comment_irls_cyan_init": "2026-09-01: chart_matrix_in_sample_irls_cyan_init/dcp_color_matrix_1_irls_cyan_init는 patch 17(cyan) 잔차가 9장 전부에서 평균 ΔE00=7.166(표준편차 0.977)로 다른 패치보다 압도적으로 나빴던 걸 발견하고, cyan의 IRLS 초기가중치만 4.0에서 2.0으로 낮춰 재수렴시킨 결과 - tools/evaluate_dcp_irls_weighted.py 와 같은 _irls_fit()으로 9장 LOO 확인(부트스트랩 CI 없음, 단조성으로 신호 판정) -0.52%(2.6078->2.5942, U자형 최적점 확인됨) 후 사용자 승인으로 채택. 24개 패치 전부 이런 식으로 튜닝하면 n=9 표본 과적합이라 cyan 하나(물리적 근거 있는 이상값)에서 멈춤. _irls(무채색-4x 단독, -8.8%)와 원래 필드들은 기록용으로 보존.",
+  "huesatmap_experimental_dims": [
+    8,
+    1,
+    1
+  ],
+  "huesatmap_experimental_hue_shift_table_deg": [
+    1.2431832403237748,
+    0.172657766008038,
+    -1.2603843358239986,
+    -0.8329277714618202,
+    -0.8806712351173585,
+    1.3693016420613353,
+    1.600770282387,
+    0.3950041038505373
+  ],
+  "huesatmap_experimental_encoding": 1,
+  "_comment_huesatmap_experimental": "2026-09-01: 실험용 - 배포된 hasselblad_x2dii_chart.dcp/chart_matrix_in_sample_irls_cyan_init와 무관. tools/evaluate_dcp_huesatmap_srgb.py 9장 LOO(부트스트랩 CI 없음, N=8~24 스윕에서 -4.98%~-5.04%로 포화 확인, 단조성으로 신호 판정) 기준 -4.98%(N=8,sigma=30). hasselblad_x2dii_chart_huesatmap_experimental.dcp로만 출력했고 배포된 .dcp는 그대로다 - 실기기(Lightroom) 미검증."
 }
