@@ -199,7 +199,15 @@ class TestRowVsColumnVectorConvention(unittest.TestCase):
 class TestShippedProfileMatchesReport(unittest.TestCase):
     """커밋된 `.dcp`가 커밋된 리포트 JSON에서 올바른 변환으로 생성됐는지
     검사한다. RAW 디코드 없이 이미 커밋된 두 파일만 읽으므로 일반 스위트에서
-    돌아간다. 누군가 전치를 빼고 프로필을 재생성하면 여기서 깨진다."""
+    돌아간다. 누군가 전치를 빼고 프로필을 재생성하면 여기서 깨진다.
+
+    **정정(2026-09-01)**: 사용자 승인으로 매트릭스를 무채색 6패치 가중치
+    낮춘(유채색 4x) 최소자승으로 재피팅해서 배포(`tools/refit_dcp_weighted_chroma.py`,
+    9장 LOO 기준 -4.9% 확인 - `hybrid_engine/EVALUATION.md` 참고). 리포트
+    JSON엔 원래 균등가중 필드(`chart_matrix_in_sample`/`dcp_color_matrix_1`,
+    n=10 - B_31334 유실로 지금은 재현 불가, 기록용 보존)와 새 가중 필드
+    (`chart_matrix_in_sample_weighted`/`dcp_color_matrix_1_weighted`, n=9)가
+    둘 다 있다 - 실제 배포된 `.dcp`는 후자 기준이라 이 테스트도 후자를 본다."""
 
     @classmethod
     def setUpClass(cls):
@@ -209,7 +217,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
             cls.report = json.load(f)
         cls.tags = read_dcp(_SHIPPED_DCP)
         cls.cm1 = cls.tags[TAG_COLOR_MATRIX_1].reshape(3, 3)
-        cls.chart_m = np.array(cls.report["chart_matrix_in_sample"], dtype=np.float64)
+        cls.chart_m = np.array(cls.report["chart_matrix_in_sample_weighted"], dtype=np.float64)
 
     def test_color_matrix_1_is_inverse_transpose_not_plain_inverse(self):
         expected = np.linalg.inv(self.chart_m).T
@@ -221,7 +229,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     def test_report_dcp_color_matrix_field_matches_the_file(self):
         np.testing.assert_allclose(
             self.cm1,
-            np.array(self.report["dcp_color_matrix_1"], dtype=np.float64),
+            np.array(self.report["dcp_color_matrix_1_weighted"], dtype=np.float64),
             atol=1e-6)
 
     def test_calibration_illuminant_is_d50_matching_the_fit_reference_space(self):

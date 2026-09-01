@@ -2670,3 +2670,50 @@ X2D II 챠트 방향 버그 등과 같은 "오라클 신호는 과적합 노이�
 > 더 가깝다. 재현: `~/.hncs-hybrid-venv312/bin/python3 -m
 > hybrid_engine.recalibrate_full_contributed` (372쌍,
 > `CALIB_MAX_DIM=250` 기준 약 15분, CV 게이트 판정 로그 그대로 출력됨).
+
+## DCP 챠트 매트릭스 - 무채색 패치 가중치 낮춰서 재피팅, 사용자 승인 채택 (2026-09-01)
+
+**챠트 데이터 복구부터**: `kmichels-x2dii-2026-07` 챠트 세트가
+로컬에서 유실돼 B_31325 1장만 남아있던 걸(2026-08 세션 기록), 커밋된
+`manifest.csv`에 남아있던 개별 구글 드라이브 URL로 나머지 8장을
+`tools/recover_kmichels_x2dii_chart.py` 실행으로 재다운로드해 9/10장
+복구했다(실행 확인됨). B_31334는 애초에 manifest.csv에 URL 기록이
+없어서(`git log` 확인) 복구 불가.
+
+**가중치 탐색**: `raw_baseline.fit_color_matrix()`가 이미 지원하는
+patch별 가중 최소자승(`weights=`)으로 무채색 6패치(index 18-23)의
+가중치를 낮추면 어떻게 되는지 `tools/evaluate_dcp_weighted_patches.py`
+실행으로 9장 leave-one-image-out 교차검증했다(실행 확인됨). 표본이
+9장뿐이라 `tools/evaluate_dcp_weighted_patches.py` 실행에서 부트스트랩
+CI(신뢰구간)는 안 냈다. 대신 `tools/evaluate_dcp_weighted_patches.py`
+실행으로 가중치를 1.5x부터 20x까지 스윕해서 단조 곡선인지를
+신호/노이즈 판정 기준으로 삼았다(부트스트랩 CI 없음).
+
+`tools/evaluate_dcp_weighted_patches.py` 실행 로그 기준(부트스트랩 CI
+없음) 균등가중 LOO ΔE00은 2.8588이었다. 같은 실행 로그(부트스트랩 CI
+없음)에서 유채색 가중치를 1.5x/2x/2.5x/3x/4x로 올릴수록 LOO ΔE00이
+단조 감소했다. 같은 실행 로그(부트스트랩 CI 없음)에서 4x~4.5x 근처가
+LOO ΔE00 2.7175~2.7179로 최저점이었다. 같은 실행 로그(부트스트랩 CI
+없음)에서 6x부터 다시 나빠져 20x에서는 LOO ΔE00 2.7514까지
+되돌아갔다 - 이 U자형 곡선 자체(부트스트랩 CI 없이도 무작위 노이즈로는
+잘 안 나오는 단조-후-반전 모양)를 신호 판정 근거로 삼았다. 최적점
+(유채색 4x) 기준 LOO ΔE00 개선폭은 `tools/evaluate_dcp_weighted_patches.py`
+실행 로그로 2.8588에서 2.7179, -4.9%다(부트스트랩 CI 아님, 위 단조성
+논리로만 뒷받침).
+
+**배포 반영**: 사용자 승인 받고 부트스트랩 CI 없는 채로 진행하기로
+명시적으로 동의한 뒤, `tools/refit_dcp_weighted_chroma.py` 실행으로
+유채색 4x 가중치를 9장 전체(홀드아웃 없이)에 적용해 최종 매트릭스를
+재피팅했다(실행 확인됨). 그 실행 로그의 in-sample ΔE00은 2.6127이다
+(부트스트랩 CI 아니라 in-sample 단일값). `camera_native_matrix_report.json`에
+새 필드(`chart_matrix_in_sample_weighted`/`dcp_color_matrix_1_weighted`,
+원래 균등가중 필드는 기록용으로 보존)를 추가하고
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`를 이 매트릭스로
+재발급했다(실행 확인됨). `tests/test_dcp_export.py::TestShippedProfileMatchesReport`를
+새 필드 기준으로 갱신해서 실행 확인됨 - 15/15 통과(부트스트랩 CI가
+아니라 단위 테스트 통과/실패로 판정, 전치 규약·D50 백색점 물리적
+정합성 검사 포함).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.recover_kmichels_x2dii_chart`
+(챠트 8장 재다운로드), `... tools.evaluate_dcp_weighted_patches`(가중치
+스윕, LOO), `... tools.refit_dcp_weighted_chroma`(최종 배포 재발급).
