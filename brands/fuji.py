@@ -459,6 +459,17 @@ def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
 # 재검증) 이후 원본 픽셀(max_dim=3000)로도 clip=1.25 vs 3.0 직접
 # 재대결 - +4.30%, 60승29패, p=0.0013, CI [+0.381,+0.926] 0 미포함,
 # clip=3.0 우세 확정(tools/evaluate_clahe_clip_native_confirm.py).
+# 바디별 분해 재확인(2026-09-02, Canon/Sony 조사와 같은 질문):
+# tools/breakdown_fuji_provia_by_camera_body.py로 GFX100RF(89)/X-T30
+# III(20)/GFX50S II(10) 세 바디에 지금 함수를 그대로 돌려봄. GFX100RF
+# 평균 ΔE00=13.910은 위 이력대로 이미 자기 89쌍으로 셀프튜닝된 상태라
+# 더 짜낼 여지가 없고, X-T30 III(9.513)는 오히려 유의미하게 더
+# 좋음(부트스트랩 CI [-6.230,-2.514] vs GFX100RF, 0 미포함 - Canon/Sony
+# 조사와 반대로 "나쁜 쪽"이 이미 최적화된 다수표본이라 손댈 게 없는
+# 경우). GFX50S II(13.258)는 Provia 모드 표본이 10장뿐이라(그 바디의
+# 나머지 171쌍은 Classic Chrome 등 다른 필름모드) GFX100RF 대비 CI
+# [-1.885,+0.553]로 판정 보류 - 표본 확장 없인 더 못 본다. 전용 함수
+# 신설 근거 없음, 여기서 종결.
 # ==========================================
 def apply_provia(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=3.0):
     img = ensure_uint8(img_bgr)
