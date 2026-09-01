@@ -27,7 +27,7 @@ from hybrid_engine.utils.io import decode_raw, load_image_linear
 from hybrid_engine.utils.evaluate import mean_delta_e
 
 CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "raw_calib_cache")
-CALIB_MAX_DIM = 500  # 캘리브레이션 전용 축소 해상도 - 최종 profile은 해상도 무관
+CALIB_MAX_DIM = 250  # 캘리브레이션 전용 축소 해상도 - 최종 profile은 해상도 무관. 사용자 지시(2026-09-01)로 500->250 - 372쌍 재보정이 500px에서 50분+ 걸려 죽인 뒤 낮춤
 
 
 def _find_pairs():
