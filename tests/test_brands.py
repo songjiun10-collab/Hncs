@@ -38,6 +38,7 @@ BRAND_LOOKS = [
     ("brands.olympus", "apply_olympus_look"),
     ("brands.sigma", "apply_sigma_look"),
     ("brands.sigma_raw", "apply_sigma_raw_look"),
+    ("brands.sigma_raw_matrix", "apply_sigma_raw_matrix_look"),
 ]
 
 # fuji.py는 필름 시뮬레이션 프리셋이 여러 개라 따로 나열. apply_acros/

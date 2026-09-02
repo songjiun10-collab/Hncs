@@ -45,6 +45,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/olympus.py` | Olympus(현 OM System) 색감 근사(OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F 5바디 population, n=122) - `apply_olympus_look()` |
 | `brands/sigma.py` | Sigma 색감 근사(Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill 5바디 population, n=83) - `apply_sigma_look()` |
 | `brands/sigma_raw.py` | Experimental - `apply_sigma_raw_look` (raw+jpeg 83쌍 ΔE00 직접 그리드서치+LOO, toe=0.02/ss=0.82/wp=1.0/clip=3.0에 5/5 폴드 만장일치 수렴, 원본 픽셀 재확인 +5.82%·CI 0 미포함) |
+| `brands/sigma_raw_matrix.py` | Experimental - `apply_sigma_raw_matrix_look` (`apply_sigma_raw_look`에 매트릭스+채도/색조 LUT 추가, 같은 83쌍, 톤커브는 그대로 - LOO +9.16%·CI[+0.760,+1.888] 0 미포함) |
 | `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF 전용, raw+jpeg 51쌍, ΔE00 직접 그리드서치로 +0.53% 개선 - 이 세션에서 가장 근거 약한 채택, CI 하한 +0.007) |
 | `brands/sigma_fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L 전용, raw+jpeg 32쌍, ΔE00 직접 그리드서치로 +0.55% 개선, CI[+0.038,+0.124]) |
 | `brands/sigma_bf_learned.py` | Experimental - `apply_sigma_bf_learned` (256bin 학습 LUT, 파라메트릭 대비 **+38.52% 개선 - 이 세션 전체에서 가장 큰 개선폭**) |
