@@ -14,7 +14,8 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.icc_export import write_icc_matrix_trc_profile
+from core.icc_export import write_icc_matrix_trc_profile, write_icc_devicelink_look_from_lut
+from core.lut_export import bake_lut_from_function
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SHIPPED_ICC = os.path.join(_REPO_ROOT, "hybrid_engine", "assets", "profiles",
@@ -162,6 +163,70 @@ class TestIccExportViaSystemLcms(unittest.TestCase):
         self.assertEqual(len(nums), 3, proc.stdout)
         xyz = np.array(nums) / nums[1]  # Y=1 정규화
         np.testing.assert_allclose(xyz, [0.9642, 1.0, 0.8249], atol=0.02)
+
+
+class TestIccDeviceLinkLook(unittest.TestCase):
+    """DeviceLink(lut8Type/'mft1') - 캡처원이 .cube를 아예 지원 안 해서
+    (2026-09-02 조사) 만든 대안. bake_lut_from_function()의 R-최우선
+    격자 관례를 lut8Type의 B-최우선 요구에 맞게 뒤집는 부분이 핵심
+    회귀 지점이라 별도로 검증한다."""
+
+    def setUp(self):
+        self.tmpdir = tempfile.mkdtemp()
+        self.path = os.path.join(self.tmpdir, "test_link.icc")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_header_and_tags(self):
+        lut = bake_lut_from_function(lambda bgr: bgr, size=5)  # identity
+        write_icc_devicelink_look_from_lut(self.path, "test link", lut)
+        parsed = _parse_icc_tags(self.path)
+        self.assertEqual(parsed["device_class"], b"link")
+        self.assertEqual(parsed["colorspace"], b"RGB ")
+        self.assertEqual(parsed["pcs"], b"RGB ")
+        for sig in (b"desc", b"cprt", b"A2B0"):
+            self.assertIn(sig, parsed["tags"])
+        offset, size = parsed["tags"][b"A2B0"]
+        self.assertEqual(parsed["data"][offset:offset + 4], b"mft1")
+
+    def test_identity_lut_round_trips_via_system_lcms(self):
+        if shutil.which("transicc") is None:
+            self.skipTest("transicc(littlecms CLI) 없음")
+        lut = bake_lut_from_function(lambda bgr: bgr, size=9)
+        write_icc_devicelink_look_from_lut(self.path, "identity", lut)
+        proc = subprocess.run(["transicc", "-l", self.path, "-e"],
+                               input="123 45 200\n", capture_output=True, text=True, timeout=10)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        import re
+        nums = [int(x) for x in re.findall(r"[RGB]=(-?\d+)", proc.stdout)]
+        self.assertEqual(nums, [123, 45, 200])
+
+    def test_channel_swap_lut_round_trips_via_system_lcms(self):
+        """R<->B를 바꾸는 함수를 구워서, lut8Type이 요구하는 B-최우선
+        순서로 실제로 뒤집었는지 완전히 독립적인 lcms2 구현으로 확인 -
+        `bake_lut_from_function()`의 R-최우선 격자를 그대로 flatten
+        했다면(전치 버그) 이 테스트가 값이 다르게 나와서 잡는다."""
+        if shutil.which("transicc") is None:
+            self.skipTest("transicc(littlecms CLI) 없음")
+
+        def swap_rb(bgr):
+            out = bgr.copy()
+            out[..., 0], out[..., 2] = bgr[..., 2].copy(), bgr[..., 0].copy()
+            return out
+
+        lut = bake_lut_from_function(swap_rb, size=17)
+        write_icc_devicelink_look_from_lut(self.path, "swap rb", lut)
+        proc = subprocess.run(["transicc", "-l", self.path, "-e"],
+                               input="200 50 10\n", capture_output=True, text=True, timeout=10)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        import re
+        nums = [int(x) for x in re.findall(r"[RGB]=(-?\d+)", proc.stdout)]
+        self.assertEqual(nums, [10, 50, 200])
+
+    def test_rejects_non_cubic_lut(self):
+        with self.assertRaises(ValueError):
+            write_icc_devicelink_look_from_lut(self.path, "bad", np.zeros((5, 5, 3, 3)))
 
 
 if __name__ == "__main__":
