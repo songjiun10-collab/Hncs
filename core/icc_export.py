@@ -86,6 +86,116 @@ import struct
 
 import numpy as np
 
+# --- DeviceLink(lut8Type, 'mft1') - brands/*.py apply_*() 룩을 캡처원
+# 네이티브 형식으로 -----------------------------------------------------
+#
+# 캡처원은 .cube LUT을 아예 지원 안 한다(공식 임포트 없음, 2026-09-02
+# 조사) - 커뮤니티 우회는 LUT을 ICC DeviceLink 프로필로 변환해서 넣는
+# 것. matrix/TRC(위)와 달리 DeviceLink는 임의의 룩(HSV 채도/색조 시프트
+# 등 3x3 매트릭스로 표현 안 되는 비선형 변환 포함)을 통째로 담을 수
+# 있다 - `core/lut_export.py`의 .cube와 정확히 같은 성질(CLAHE 같은
+# 공간적응형 변환은 점별 매핑이 아니라서 구조적으로 못 담는 것도
+# 동일 - 그 파일 docstring 참고).
+#
+# lut8Type('mft1') 바이트 구조는 ICC 공식 스펙 PDF가 텍스트 추출이
+# 깨져서 실제 참조 구현체(littlecms, `Type_LUT8_Read`/`Write8bitTables`,
+# github.com/mm2/Little-CMS의 src/cmstypes.c)를 직접 읽어서 확인했다:
+# 1바이트 InputChannels, 1바이트 OutputChannels, 1바이트 CLUTpoints(모든
+# 차원 공통 격자 크기), 1바이트 패딩(0), 9개 s15Fixed16Number(3x3
+# 매트릭스, InputChannels==3일 때만 적용), 그 다음 InputChannels개의
+# 256엔트리 8비트 입력테이블, CLUT 데이터(OutputChannels *
+# CLUTpoints^InputChannels 바이트, **마지막 입력채널이 가장 빨리
+# 바뀜** - .cube의 R-최우선과 반대 순서, R<->B 스왑 함수를 구워서
+# transicc(완전히 독립적인 lcms2 구현)로 라운드트립 검증함), 마지막으로
+# OutputChannels개의 256엔트리 8비트 출력테이블.
+_TYPE_MFT1 = b"mft1"
+
+
+def write_icc_devicelink_look_from_lut(path, description, lut_rgb_01, copyright_text="Public Domain"):
+    """`core.lut_export.bake_lut_from_function()`이 만드는 (size,size,size,3)
+    RGB [0,1] float LUT(.cube와 같은 굽기 함수 재사용 - CLAHE 같은
+    적응형 연산을 격자점 하나씩 따로 호출하면 무의미해지는 문제를
+    `bake_lut_from_function()`이 이미 정사각형에 가까운 합성 이미지로
+    펴서 처리해뒀음, 직접 다시 만들지 않음)를 캡처원 DeviceLink
+    ICC(lut8Type/'mft1')로 그대로 굽는다.
+
+    한계: CLAHE 등 공간적응형 변환은 점별 매핑으로 못 담는다 -
+    `core/lut_export.py` 모듈 docstring의 같은 한계 참고(이 함수는 그
+    한계를 새로 만드는 게 아니라 이미 구운 LUT을 다른 파일 포맷으로
+    옮길 뿐). 캡처원 실기기 미검증(exiftool/littlecms 구조 검증만)."""
+    size = lut_rgb_01.shape[0]
+    if lut_rgb_01.shape != (size, size, size, 3):
+        raise ValueError(f"lut_rgb_01은 (size,size,size,3)이어야 함, got {lut_rgb_01.shape}")
+
+    # bake_lut_from_function()의 배열은 lut[b_idx, g_idx, r_idx]로
+    # 인덱싱돼 있다(build_identity_grid() docstring, .cube의 "R이 가장
+    # 빨리 바뀜" 관례에 맞춘 것) - lut8Type은 반대로 "마지막 입력채널
+    # (B)이 가장 빨리 바뀜"을 요구하므로(swap-RB 라운드트립 테스트로
+    # 실측 확인) R/B 축을 바꿔서 lut2[r_idx, g_idx, b_idx]로 만든 뒤
+    # C-order로 펴야 한다.
+    reordered = np.transpose(lut_rgb_01, (2, 1, 0, 3))
+    mapped_u8 = np.clip(reordered * 255.0 + 0.5, 0, 255).astype(np.uint8)
+    clut_bytes = mapped_u8.reshape(-1, 3).tobytes()
+
+    identity_curve_256 = bytes(range(256))
+    payload = (
+        _TYPE_MFT1 + b"\x00" * 4
+        + struct.pack("BBBB", 3, 3, size, 0)
+        + _s15fixed16(1.0) + _s15fixed16(0.0) + _s15fixed16(0.0)
+        + _s15fixed16(0.0) + _s15fixed16(1.0) + _s15fixed16(0.0)
+        + _s15fixed16(0.0) + _s15fixed16(0.0) + _s15fixed16(1.0)
+        + identity_curve_256 * 3  # 입력테이블 3채널(항등)
+        + clut_bytes
+        + identity_curve_256 * 3  # 출력테이블 3채널(항등)
+    )
+
+    tags = [
+        (_TAG_DESC, _mluc_type_payload(description)),
+        (_TAG_CPRT, _mluc_type_payload(copyright_text)),
+        (b"A2B0", payload),
+    ]
+
+    header_size = 128
+    tag_table_size = 4 + 12 * len(tags)
+    data_start = header_size + tag_table_size
+    tag_table = struct.pack(">I", len(tags))
+    tag_data = b""
+    for sig, tag_payload in tags:
+        if len(tag_payload) % 4:
+            tag_payload = tag_payload + b"\x00" * (4 - len(tag_payload) % 4)
+        offset = data_start + len(tag_data)
+        tag_table += sig + struct.pack(">II", offset, len(tag_payload))
+        tag_data += tag_payload
+
+    profile_size = data_start + len(tag_data)
+    now = datetime.datetime.now()
+    header = struct.pack(">I", profile_size)
+    header += b"\x00" * 4
+    header += bytes([4, 0x30, 0, 0])
+    header += b"link"
+    header += _COLORSPACE_RGB
+    header += _COLORSPACE_RGB  # DeviceLink는 PCS 자리에 출력 색공간 시그니처
+    header += struct.pack(">HHHHHH", now.year, now.month, now.day,
+                           now.hour, now.minute, now.second)
+    header += _ACSP_MAGIC
+    header += _PLATFORM_APPLE
+    header += struct.pack(">I", 0)
+    header += b"\x00" * 4
+    header += b"\x00" * 4
+    header += b"\x00" * 8
+    header += struct.pack(">I", 1)
+    header += (_s15fixed16(_PCS_ILLUMINANT_D50[0]) + _s15fixed16(_PCS_ILLUMINANT_D50[1])
+               + _s15fixed16(_PCS_ILLUMINANT_D50[2]))
+    header += b"\x00" * 4
+    header += b"\x00" * 16
+    header += b"\x00" * 28
+    assert len(header) == header_size, len(header)
+
+    with open(path, "wb") as f:
+        f.write(header)
+        f.write(tag_table)
+        f.write(tag_data)
+
 _ACSP_MAGIC = b"acsp"
 _DEVICE_CLASS_INPUT = b"scnr"  # 카메라/스캐너(입력 장치) 프로필
 _COLORSPACE_RGB = b"RGB "
