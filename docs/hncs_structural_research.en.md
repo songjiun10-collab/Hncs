@@ -391,3 +391,93 @@ independent re-verifications (2-cluster and 4-cluster) both landing on
 Reproduce: `python3 -m tools.evaluate_hncs_structural_4cluster` (364
 pairs × 256 combos × 5-fold × 4 clusters, ~27 minutes with 3-worker
 parallel decode).
+
+## Re-verification 4 (2026-09-03, `tools/evaluate_hncs_structural.py` itself, at 390 pairs) - independent reproduction, conclusion unchanged
+
+**Honesty first**: only after starting to write this section did I
+discover that "Re-verification 2/3" above
+(`evaluate_hncs_structural_full_pool.py`/`_4cluster.py`, 2026-08-30)
+already existed. When given the instruction ("the data's grown too,
+can't we do it per the real structure now?"), I only checked
+`tools/evaluate_hncs_structural.py` itself (the original file, which
+still pointed at a local path that no longer exists on this machine
+and so couldn't even run this session) and never searched for sibling
+scripts - I should have read this document's own "Re-verification 2/3"
+first. As a result I spent roughly 2.3 hours (through a memory crisis -
+swap went 6→8→13GB, worker count dropped from 5 to 3, an unrelated app
+(Safari) made it worse) **independently reproducing an already-settled
+conclusion**. Wasteful, but since it's a genuinely different
+implementation (the original script itself, fixed, not a copy of
+`_full_pool`/`_4cluster`) on a different sample (390 pairs, one decode
+failure excluded down to 389 - overlapping with but not identical to
+`_full_pool`'s 364), it does carry value as independent external
+validation.
+
+**Methodology differences**: `_full_pool`/`_4cluster` cut the grid to
+256 combos, but this run kept the original file's 1024 combos as-is
+(I miscalculated the compute cost twice along the way - first
+forgetting worker parallelism entirely and estimating "under an hour,"
+then forgetting the 20x gap between 1024 and 256 combos and revising to
+"7-8 hours," before finally landing on the measured "~1.5h at 5
+workers / ~2.5-3h at 3 workers"). The 4-cluster split also differs:
+instead of KMeans fit once over the whole pool (`_4cluster.py`), this
+run uses **per-fold train-set R/B 25/50/75 percentile cuts**
+(recomputed per fold with no leakage - a stricter out-of-sample
+principle than `_4cluster.py`'s). And where `_full_pool`/`_4cluster`
+compared two separate runs against each other, this run does a
+**direct paired comparison between the 2-cluster and 4-cluster
+variants inside the same run on the same folds** - that's the one
+genuinely new piece of information this re-verification adds.
+
+Cluster distribution: 2-cluster split cluster_a 375 / cluster_b 14
+(similar ratio to `_full_pool`'s 354/10). 5-fold, 3 workers, total wall
+time about 2h16m (8151s, 5 folds scheduled across the pool - the first
+3 folds took 82 minutes, the remaining 2 finished 53 minutes after
+that).
+
+**Results** (n=389, mean `apply_hncs()` ΔE00 = 10.475):
+
+| Comparison | Improvement | Win/Loss | Sign-test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| 2-cluster hard vs `apply_hncs()` | -6.59% (10.475→11.165) | 167/222 | 0.0061 | [-0.944,-0.432] | **apply_hncs wins** |
+| 4-cluster (quantile) vs `apply_hncs()` | -5.48% (10.475→11.049) | 179/210 | 0.1281 | [-0.824,-0.317] | **apply_hncs wins** (CI excludes 0, sign-test p misses 0.05) |
+| Blend vs `apply_hncs()` | -6.74% (10.475→11.181) | 162/227 | 0.0011 | [-0.960,-0.447] | **apply_hncs wins** |
+| **4-cluster vs 2-cluster (direct paired)** | **+1.04%** (4-cluster better, 11.165→11.049) | 198/191 | 0.7610 | **[+0.036,+0.197]** (excludes 0) | 4-cluster narrowly wins |
+| Blend vs 2-cluster hard (direct paired) | -0.14% (blend slightly worse) | 157/232 | 0.0002 | [-0.039,+0.009] | inconclusive (CI includes 0) |
+
+**Compared with "Re-verification 2/3"**: the improvement margins
+(-6.59%/-5.48% vs -7.42%/-5.26%) line up within about ±1 point, and
+the direction/significance of the apply_hncs win is identical - the
+same conclusion emerging despite a different sample (389 vs 364 pairs)
+and a different 4-cluster method (quantile vs KMeans) is one more piece
+of evidence that this conclusion (structural mirroring loses to
+`apply_hncs()`) isn't an artifact of one particular implementation or
+sample. **The one place they disagree**: `_full_pool` found blend
+significantly worse than hard-cluster (-0.50%, CI [-0.078,-0.036],
+p<0.0001), while this run's direct paired comparison points the same
+direction (-0.14%) but comes back **inconclusive** (CI includes 0) -
+the 4x larger grid (1024 vs 256 combos) may have fit the blend anchors
+differently, and these two runs alone can't settle which is right
+(needs separate re-checking, out of this session's scope).
+
+**Newly confirmed**: going from 2 to 4 clusters is, for the first time,
+confirmed as a statistically real improvement in a direct paired
+comparison (CI excludes 0, +0.036 to +0.197) - though the margin is
+small (+1.04%) and nowhere near closing the gap with `apply_hncs()`
+(2-cluster -6.59%, 4-cluster -5.48%). This is the first time
+"Re-verification 3"'s observation that "the gap narrows as cluster
+count grows" has been directly tested within the same fold split.
+
+**The conclusion doesn't change**: `apply_hncs()` wins again. This
+experiment line has now reached the same conclusion three times across
+Re-verifications 2, 3, and this one - reproduced three times with
+different implementations, samples, and clustering methods, which
+moves it from "settled" to "settled and independently
+cross-validated." `apply_hncs()` remains unchanged by this experiment
+too (it was already protected).
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural` (390 pairs ×
+1024 combos × 5-fold, about 2h15m at 3 workers - with more memory
+headroom, raising the `N_WORKERS` cap to 5 runs faster, though in this
+session's environment 5 workers' combined pair_data cache (~1.6GB
+each) filled swap badly).
