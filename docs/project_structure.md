@@ -158,4 +158,5 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/split_local_pool.py` | 여러 브랜드 raw+jpeg가 뒤섞인 로컬 폴더(`~/local-work` 등)를 EXIF Make 기준으로 브랜드별 `datasets/<브랜드>/contributed/<세트>/`로 나눠 담는 CLI - `tools.build_local_manifest`의 전역 최적 1:1 매칭을 전체 풀에 한 번에 적용한 뒤 Make로 그룹핑 |
 | `tools/regenerate_x2dii_dcp.py` | 커밋된 `camera_native_matrix_report.json`에서 매트릭스/조명값을 읽어 `hasselblad_x2dii_chart.dcp`를 `write_dcp()`의 현재(매직넘버/UniqueCameraModel 수정된) 버전으로 재발급 |
 | `tools/regenerate_x2dii_icc.py` | 같은 리포트 JSON의 매트릭스로 Capture One용 `hasselblad_x2dii_chart.icc`를 `core.icc_export.write_icc_matrix_trc_profile()`로 재발급, 실측 무채색 native RGB로 D50 근처 나오는지 출력해서 방향 재확인 |
+| `tools/fit_brand_native_matrix_for_icc.py` | 챠트 실측 없는 브랜드(Sony/Sigma/Leica)용 ICC - `decode_raw_native()`(WB/매트릭스 우회, ICC가 요구하는 진짜 native 공간) 기준으로 3x3 매트릭스를 새로 피팅(카메라 JPEG 근사 타깃, `brands/*_raw_matrix.py`와는 다른 입력공간이라 재사용 불가했음) + 5-fold LOO + `<brand>_generic_jpeg_approx.icc` 자동 발급. 무보정 대비 Sony +39.19%/Sigma +42.33%/Leica +45.04% |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
