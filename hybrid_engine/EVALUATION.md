@@ -2999,6 +2999,19 @@ CI 하한이 0에 가깝고 RMSE가 거의 안 줄어서 같은 신뢰도로 볼
 합쳐넣지 않았다 - 다음에 이 검증을 다시 할 때는 그 스크립트에
 `--ci`/`--rmse` 옵션으로 추가하는 게 낫다(TODO, 코드는 아직 없음).
 
+**해결됨(2026-09-03, 코드 변경 없음 - 이미 된 걸 뒤늦게 확인 및
+기록)**: `--ci`/`--rmse` 옵션 플래그는 안 만들었지만, ΔE00/RMSE/
+부트스트랩 CI 셋 다 옵션 없이 항상 계산하도록 `9d5027b`(이 TODO
+문단보다 나중 커밋)에서 이미 `validate_chart_pipeline_on_external_camera.py`
+main()에 합쳐져 있었다(부트스트랩 95% CI, paired diff, n무관하게
+항상 20000회 리샘플 - main() 코드 확인, 재실행은 안 함). opt-in
+플래그 대신 always-on으로 간 건 바로 위 문단 "두 지표를 항상 같이
+낸다"는 이 프로젝트 원칙과 더 맞는다고 판단해서다. `_mean_de`/
+`_rmse_xyz` 순수함수는 `tests/test_validate_chart_pipeline_on_external_camera_tool.py`에서
+단위테스트됨(부트스트랩 CI 로직 자체는 다른 `evaluate_*.py`들의
+`summarize()`처럼 main() 인라인이라 별도 테스트 없음, 이 저장소
+관행과 동일).
+
 **편집 오염 확인(2026-09-02, 같은 날, 사용자 지적 - 하셀블라드
 9/13쌍 오염 발견 전례를 그대로 적용)**: 이 세 카메라 JPEG 15장 전부
 `exiftool -Software -CreatorTool -ProcessingSoftware -HistorySoftwareAgent
