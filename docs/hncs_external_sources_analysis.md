@@ -94,6 +94,38 @@ Tungsten/Flash 2개에만 존재하고(Low-Tungsten/Flash-Daylight는 "너무
 맞는 스코프였다는 뜻(프리셋은 색과학 레이어가 아니라 그 위에 얹는
 후처리 레이어).
 
+### 1-4. Hasselblad 엔지니어링 팀의 공식 답변으로 1-1이 확인됨
+
+**출처**: `what-hncs-actually-is` (블로그, 2026-09 무렵, 사용자 제공
+링크) - 저자가 이전 글들과 달리 이번엔 Hasselblad 엔지니어링 팀에
+직접 문의해서 받은 2026년 8월자 공식 답변을 인용한다:
+
+> "Both Phocus and Phocus Mobile apply HNCS when processing RAW
+> images. HNCS takes effect during the intermediate stages of image
+> processing and is strongly linked to white balance parameters."
+
+이건 이 문서 1절 전체에서 유일하게 **리버스 엔지니어링이 아니라
+Hasselblad가 직접 확인한 1차 소스**다 - "출처와 신뢰도" 절이 계속
+강조해온 "공식 확인 아님"이라는 단서가 이 한 가지 사실(HNCS는
+렌더타임 단계고 WB에 강하게 연동됨)에 한해서는 더 이상 유효하지
+않다는 뜻. 공식 답변이 추가로 확인해준 건: HNCS는 "중간 단계"에서
+작동하고, 비네팅 보정과 톤커브는 **HNCS와 무관하게 별도로** 작동하며
+adjustments 레이어보다 앞선 내부 렌더링 엔진 단계에 위치한다(1-1의
+"렌더타임 파이프라인" 주장과 일치, 새로 확인된 건 파이프라인 순서 -
+HNCS가 adjustments 레이어보다 먼저).
+
+저자는 이 공식 답변을 계기로 **자신의 이전 주장(기본 Mac import에는
+HNCS가 안 걸린다)이 틀렸다는 걸 스스로 정정**했다 - 실제로는 걸려
+있고, 눈에 보이는 차이는 렌즈 비네팅 보정 하나뿐이었다고 밝힌다.
+
+**우리 프로젝트와의 관계**: 이 프로젝트의 `apply_hncs()`는 애초에
+렌더타임 파이프라인 가정(1-1) 위에서 설계됐으므로 직접적인 코드
+영향은 없다 - 다만 "HNCS가 WB 파라미터에 강하게 연동된다"는 문장이
+이제 리버스 엔지니어링 추론이 아니라 Hasselblad 공식 확인이라는 점을
+이 문서의 신뢰도 등급에 반영해둔다. 4개 조명/블렌딩 같은 구체적
+숫자(1-2절)는 여전히 포럼 스레드발 추론이라 이 등급 상향은 적용되지
+않는다.
+
 ## 2. Phocus vs Capture One vs Lightroom 실측 비교
 
 **출처**: `phocus-capture-one-lightroom-raw-color-test` (블로그, 데이터
@@ -293,6 +325,9 @@ raw_calib_cache 13쌍에 촬영 광원(색온도) 라벨이 없어 조명별로 
 ## 7. 참고 문서 목록
 
 **직접 인용/심층 분석**:
+- Konrad Michels, "What HNCS Actually Is", blog.tonalphoto.com,
+  2026-09 무렵 - Hasselblad 엔지니어링 팀의 2026-08 공식 답변 인용
+  (1-4절)
 - Konrad Michels, "How HNCS Actually Works: Hasselblad's Color Science
   Explained", blog.tonalphoto.com, 2026-07-18
 - Konrad Michels, "Phocus, Capture One, or Lightroom for Hasselblad?

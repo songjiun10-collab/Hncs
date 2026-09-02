@@ -127,7 +127,7 @@ class TestSummarizePrintsVerdict(unittest.TestCase):
 
     def test_decisive_verdict_when_all_folds_agree(self):
         out = self._run([10.0, 12.0, 9.0, 11.0], [8.0, 9.0, 7.0, 8.0], "test-label")
-        self.assertIn("판정: 구조실험 우세", out)
+        self.assertIn("판정: test-label 우세", out)
 
 
 if __name__ == "__main__":
