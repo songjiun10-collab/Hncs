@@ -26,6 +26,7 @@ docs/         Detailed documentation (this directory)
 | `brands/fuji_provia_learned.py` | Experimental - `apply_provia_learned` (256-bin learned LUT combined across all 3 Provia bodies, +20.42% over the parametric version) |
 | `brands/leica.py` | Leica color approximation - `apply_leica_look()` (population-fit, v1) |
 | `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10/SL2-S only, from 215 raw+jpeg pairs, all 5 bodies converge on the same values (toe=0/shoulder=0.82/wp=1.0) and improve via a direct-ΔE00 grid search) |
+| `brands/leica_raw_matrix.py` | Experimental - `apply_leica_raw_matrix_look` (adds a matrix + chroma/hue LUT on top of `apply_leica_raw_look`, raw+jpeg 244 pairs, tone curve unchanged - LOO +8.13%, CI [+0.632,+0.936] excludes zero, ΔE00 9.634→8.850) |
 | `brands/leica_raw_learned.py` | Experimental - `apply_leica_raw_learned` (256-bin learned LUT combined across all 5 bodies, +12.56% over the parametric version - built after the empirical tone-curve study found the parametric shape itself didn't fit well) |
 | `brands/phaseone.py` | Phase One (Capture One's default rendering) color approximation - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax color approximation - `apply_pentax_look()` |

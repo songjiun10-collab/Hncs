@@ -26,6 +26,7 @@ docs/         상세 문서 (이 디렉토리)
 | `brands/fuji_provia_learned.py` | Experimental - `apply_provia_learned` (Provia 3바디 통합 256bin 학습 LUT, 파라메트릭 대비 +20.42% 개선) |
 | `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
 | `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10/SL2-S 전용, raw+jpeg 215쌍 기반, ΔE00 직접 그리드서치로 5바디 모두 같은 값(toe=0/shoulder=0.82/wp=1.0)에 수렴·개선) |
+| `brands/leica_raw_matrix.py` | Experimental - `apply_leica_raw_matrix_look` (`apply_leica_raw_look`에 매트릭스+채도/색조 LUT 추가, raw+jpeg 244쌍, 톤커브는 그대로 - LOO +8.13%·CI[+0.632,+0.936] 0 미포함, ΔE00 9.634→8.850) |
 | `brands/leica_raw_learned.py` | Experimental - `apply_leica_raw_learned` (5바디 통합 256bin 학습 LUT, 파라메트릭 대비 +12.56% 개선 - 실측 톤커브 조사에서 파라메트릭 모양 자체가 안 맞는 걸 발견하고 만든 데이터 기반 버전) |
 | `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
 | `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
