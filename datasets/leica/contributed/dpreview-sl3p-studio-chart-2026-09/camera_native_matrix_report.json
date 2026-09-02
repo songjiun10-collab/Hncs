@@ -1,0 +1,71 @@
+{
+  "brand": "leica",
+  "camera": "Leica SL3-P",
+  "n_images": 26,
+  "images": [
+    "L1000008-leica_sl3p.DNG",
+    "L1000010-leica_sl3p.DNG",
+    "L1000011-leica_sl3p.DNG",
+    "L1000012-leica_sl3p.DNG",
+    "L1000013-leica_sl3p.DNG",
+    "L1000014-leica_sl3p.DNG",
+    "L1000015-leica_sl3p.DNG",
+    "L1000016-leica_sl3p.DNG",
+    "L1000017-leica_sl3p.DNG",
+    "L1000018-leica_sl3p.DNG",
+    "L1000020-leica_sl3p.DNG",
+    "L1000021-leica_sl3p.DNG",
+    "L1000022-leica_sl3p.DNG",
+    "L1000047-leica_sl3p.DNG",
+    "L1000048-leica_sl3p.DNG",
+    "L1000049-leica_sl3p.DNG",
+    "L1000050-leica_sl3p.DNG",
+    "L1000051-leica_sl3p.DNG",
+    "L1000052-leica_sl3p.DNG",
+    "L1000053-leica_sl3p.DNG",
+    "L1000054-leica_sl3p.DNG",
+    "L1000055-leica_sl3p.DNG",
+    "L1000056-leica_sl3p.DNG",
+    "L1000057-leica_sl3p.DNG",
+    "L1000058-leica_sl3p.DNG",
+    "L1000059-leica_sl3p.DNG"
+  ],
+  "source": "dpreview Leica SL3-P review, Studio test scene widget (https://www.dpreview.com/reviews/leica-sl3-p-review/, widget id 669377)",
+  "chroma_patch_weight": 3.0,
+  "chart_matrix_in_sample": [
+    [
+      2.1431257130282613,
+      0.9645303611585284,
+      0.5978034563899843
+    ],
+    [
+      0.7845345070482818,
+      1.921737350632797,
+      -0.1741660304672044
+    ],
+    [
+      -0.06346055021501978,
+      -0.8488292440517469,
+      2.1875770469481965
+    ]
+  ],
+  "chart_matrix_in_sample_delta_e_mean": 12.233907114137454,
+  "dcp_color_matrix_1": [
+    [
+      0.6033305421386146,
+      -0.2536383479107394,
+      -0.08091507414602887
+    ],
+    [
+      -0.389330524793363,
+      0.7030020372932485,
+      0.2614863596971736
+    ],
+    [
+      -0.1958702373828789,
+      0.12528242407834064,
+      0.5000570625909612
+    ]
+  ],
+  "_comment": "2026-09-02: 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승 - tools/fit_leica_sl3p_studio_chart.py 5-fold CV 기준 균등가중 13.0221에서 3x로 12.7314까지(부트스트랩 CI 없음, n=26). IRLS는 오히려 살짝 나빠서(12.8650) 안 씀. 실기기 UniqueCameraModel(Adobe DNG Converter가 실제로 쓰는 내부 코드네임)은 미확인 - 'Leica SL3-P'는 EXIF Model 문자열이고 하셀블라드 X2D II 사례처럼 실제로는 다른 코드네임일 수 있다."
+}
