@@ -68,7 +68,19 @@ Characteristics 파이프라인이 정확히 어느 단계에 이 매트릭스�
 **Never-list 밖**: `hybrid_engine/CLAUDE.md`의 보호 대상은
 `assets/profiles/*.json`/`*.dcp`로 확장자가 고정돼 있어 `.icc`는
 현재 훅(`protect_never_touch.py`)이 안 잡는다 - 그래도 같은
-"배포된 계산 아티팩트" 취급으로 사용자 승인 없이 덮어쓰지 않는다."""
+"배포된 계산 아티팩트" 취급으로 사용자 승인 없이 덮어쓰지 않는다.
+
+**챠트 실측 없는 브랜드용 확장(2026-09-02, 사용자 지시 "소니같은거도
+다 매트릭스 만들어")**: `srgb_linear_to_xyz_d50_matrix()`가
+Sony/Sigma/Leica처럼 진짜 컬러체커 실측이 없는 브랜드를 위해 추가됐다.
+이 브랜드들의 raw+jpeg 매트릭스(`tools/fit_brand_native_matrix_for_icc.py`,
+native -> 카메라 JPEG 근사)를 `native_matrix @
+srgb_linear_to_xyz_d50_matrix()`로 합성하면 ICC가 요구하는 native ->
+XYZ(D50) 형태가 된다 - 다만 **여전히 진짜 컬러체커 실측이 아니라 "그
+브랜드 카메라가 내는 JPEG을 흉내" 수준**이다(하셀블라드만 진짜 챠트
+데이터 보유). `sony_generic_jpeg_approx.icc`/`sigma_generic_jpeg_approx.icc`/
+`leica_generic_jpeg_approx.icc` 파일명의 "jpeg_approx"가 이 구분을
+명시한다."""
 import datetime
 import struct
 
@@ -139,6 +151,22 @@ def _mluc_type_payload(text, lang=b"en", country=b"US"):
     record_offset = 16 + 12  # mluc 헤더(16) + 레코드 테이블(12) 이후
     header += lang + country + struct.pack(">II", len(utf16), record_offset)
     return header + utf16
+
+
+def srgb_linear_to_xyz_d50_matrix():
+    """표준 sRGB(D65) 선형 RGB -> XYZ(D50) Bradford 적응 매트릭스(행벡터
+    규약, `colour-science`로 계산) - 챠트 실측이 없는 브랜드의 raw+jpeg
+    매트릭스(native -> sRGB_linear, 카메라 JPEG 근사)를 ICC가 요구하는
+    native -> XYZ(D50)로 합성할 때 쓴다: `combined = native_to_srgb_matrix
+    @ srgb_linear_to_xyz_d50_matrix()`. **주의**: 이렇게 합성한 프로필은
+    하셀블라드 챠트 프로필과 달리 진짜 컬러체커 실측이 아니라 "카메라
+    JPEG 근사"다 - `tools/fit_brand_native_matrix_for_icc.py` 참고."""
+    import colour
+    D50 = colour.CCS_ILLUMINANTS["CIE 1931 2 Degree Standard Observer"]["D50"]
+    srgb = colour.RGB_COLOURSPACES["sRGB"]
+    basis = np.eye(3)
+    return colour.RGB_to_XYZ(basis, srgb, D50, chromatic_adaptation_transform="Bradford",
+                              apply_cctf_decoding=False)
 
 
 def write_icc_matrix_trc_profile(path, native_to_xyz_d50_matrix, description,
