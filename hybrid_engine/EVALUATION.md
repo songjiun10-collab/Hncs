@@ -3012,3 +3012,46 @@ Photoshop 서명이 아니다(실행 확인됨). Canon은 Software 태그 자체
 이 카메라 기종(1Ds Mark III)이 원래 그 태그를 안 쓰는 것으로 판단.
 하셀블라드 9/13쌍과 달리 이 15장은 편집 오염 없는 것으로 확인됨(실행
 확인됨).
+
+## Nikon D40 n=117로 재검증 - n=5의 약한 결과는 표본 노이즈였음 (2026-09-02, 같은 날)
+
+위 절이 "Nikon만 CI 하한이 0에 가깝고 RMSE가 거의 안 줄어서 신뢰도가
+낮다"고 정정했던 직후, 사용자 지시("니콘 더 페어 찾아")로 York의
+별도 illuminant 데이터셋(yorkucvil.github.io/projects/public_html/illuminant/,
+raw_2_raw와 다른 데이터셋 - Nikon D40이 "extra camera with smaller
+number of images"로 별도 등록돼 있음)에서 Nikon D40 전용 RAW/JPG
+zip(각각 633MB/83.9MB, Sync.com)을 받았다 - 실외 다양한 장면 117개에
+X-Rite ColorChecker 24패치가 실제로 들려있는 진짜 촬영본(실행 확인됨,
+exiftool Software 태그가 카메라 펌웨어 "Ver.1.11"로 15장 때와 동일한
+방식 확인, 편집 오염 없음).
+
+`decode_raw_native()`+`detect_and_sample()`를 117장 전부에 돌린
+결과(실행 확인됨) **117/117 검출 성공, 실패 0**이었다. 5-fold
+교차검증(부트스트랩 CI, n=117, 20000회 리샘플, 이 실행 확인된 결과)
+기준 무보정 ΔE00 평균 28.328에서 매트릭스 적용 16.826으로 **+40.60%
+개선**했고, paired diff 부트스트랩 95% CI는 플러스10 점 374에서
+플러스12 점 606으로(이 실행 확인된 결과, 부트스트랩 CI) 아주 좁고
+0에서 멀리 떨어져 있다 - **117승 0패**(이 실행 확인된 결과, 만장일치).
+RMSE(XYZ, 부트스트랩 CI는 안 냄 - 단순 평균)도 무보정
+0.1742에서 매트릭스 적용 0.1592로 플러스8 점 64퍼센트(이 실행 확인된
+결과) 줄어서 - n=5 때(플러스1 점 16퍼센트, 거의 안 줄었던 것)와 달리
+이번엔 RMSE도 확실히 개선 방향이다.
+
+**정정**: 바로 위 절의 "Nikon은 가장 약한 사례" 결론은 n=5라는 표본
+크기 자체의 한계였다 - 117개로 늘리자 승패가 4/1(IN_E 한 번 짐)에서
+117/0(만장일치)으로, CI 하한이 0 근처(플러스1 점 969)에서 확실히
+0에서 먼(플러스10 점 374)으로, RMSE 개선폭이 사실상 0(플러스1 점
+16퍼센트)에서 확실한 개선(플러스8 점 64퍼센트)으로 전부 뒤집혔다.
+Sony/Canon도 표본을 늘리면 비슷하게 더 견고해질 가능성이 높지만
+(추정, 아직 확인 안 함), 최소한 Nikon은 이제 Sony/Canon과 같은
+신뢰도로 봐도 된다 - 3개 브랜드 전부 이 파이프라인의 일반화를
+뒷받침한다.
+
+재현: `tools/validate_chart_pipeline_on_external_camera.py`를 CI/RMSE/
+k=min(n,5)-fold CV까지 항상 계산하도록 확장했다(이 절 작업 중 바로
+반영, 임시 `run_nikon_n117.py`류 스크립트는 폐기) - n=117 재현은
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.validate_chart_pipeline_on_external_camera
+<NikonD40 RAW 폴더 경로>`(실행 확인됨, 위 수치와 동일하게 재현됨).
+데이터는
+https://yorkucvil.github.io/projects/public_html/illuminant/illuminant.html
+의 Nikon D40 RAW/JPEG 링크(Sync.com)에서 받는다.
