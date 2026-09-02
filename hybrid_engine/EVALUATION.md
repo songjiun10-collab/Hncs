@@ -2998,3 +2998,17 @@ CI 하한이 0에 가깝고 RMSE가 거의 안 줄어서 같은 신뢰도로 볼
 `tools/validate_chart_pipeline_on_external_camera.py`에는 아직
 합쳐넣지 않았다 - 다음에 이 검증을 다시 할 때는 그 스크립트에
 `--ci`/`--rmse` 옵션으로 추가하는 게 낫다(TODO, 코드는 아직 없음).
+
+**편집 오염 확인(2026-09-02, 같은 날, 사용자 지적 - 하셀블라드
+9/13쌍 오염 발견 전례를 그대로 적용)**: 이 세 카메라 JPEG 15장 전부
+`exiftool -Software -CreatorTool -ProcessingSoftware -HistorySoftwareAgent
+-DerivedFrom`로 확인했다(실행 확인됨, 부트스트랩 CI 대상 아님 -
+단순 메타데이터 확인). Sony는 `Software: SLT-A57 v1.02`, Nikon은
+`Software: Ver.1.11` - 둘 다 카메라 펌웨어 문자열이고 Adobe/Lightroom/
+Photoshop 서명이 아니다(실행 확인됨). Canon은 Software 태그 자체가
+없었는데, 전체 EXIF를 다시 까보니(실행 확인됨) Make/Model/ISO/
+노출/조리개가 전부 정상 채워져 있고 Modify Date가 Date/Time Original과
+초 단위까지 일치해서 - 편집 도구가 메타데이터를 지운 흔적이 아니라
+이 카메라 기종(1Ds Mark III)이 원래 그 태그를 안 쓰는 것으로 판단.
+하셀블라드 9/13쌍과 달리 이 15장은 편집 오염 없는 것으로 확인됨(실행
+확인됨).
