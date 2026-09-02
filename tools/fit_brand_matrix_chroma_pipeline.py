@@ -39,16 +39,26 @@ N_FOLDS = 5
 SAT_MULT_GRID = np.linspace(0.7, 1.4, 15)
 HUE_SHIFT_GRID = np.linspace(-10.0, 10.0, 15)
 
-# 브랜드별: (baseline_module, baseline_func, tone_toe, tone_shoulder, tone_white, tone_clahe_clip)
-# 톤커브 값은 각 브랜드 파일의 이미 검증된 상수를 그대로 가져옴 - 재탐색 안 함.
+# 브랜드별: (baseline_module, baseline_func, tone_toe, tone_shoulder, tone_white,
+# tone_clahe_clip, film_mode_filter). 톤커브 값은 각 브랜드 파일의 이미 검증된
+# 상수를 그대로 가져옴 - 재탐색 안 함. film_mode_filter는 Fuji처럼 필름모드별로
+# 다른 JPEG 렌더링이 나오는 브랜드용(EXIF FilmMode 직접 읽음) - 없으면 None.
 BRAND_CONFIG = {
-    "sony": ("brands.sony_raw", "apply_sony_raw_look", 0.02, 0.82, 1.0, 2.0),
-    "sigma": ("brands.sigma_raw", "apply_sigma_raw_look", 0.02, 0.82, 1.0, 3.0),
-    "leica": ("brands.leica_raw", "apply_leica_raw_look", 0.0, 0.82, 1.0, 1.25),
+    "sony": ("brands.sony_raw", "apply_sony_raw_look", 0.02, 0.82, 1.0, 2.0, None),
+    "sigma": ("brands.sigma_raw", "apply_sigma_raw_look", 0.02, 0.82, 1.0, 3.0, None),
+    "leica": ("brands.leica_raw", "apply_leica_raw_look", 0.0, 0.82, 1.0, 1.25, None),
+    "fuji": ("brands.fuji", "apply_provia", 0.0, 0.82, 1.0, 3.0, "F0/Standard (Provia)"),
 }
 
 
-def collect_contributed_pairs(brand, model_filter=None):
+def _exif_film_mode(jpg_path):
+    import subprocess
+    out = subprocess.run(["exiftool", "-s3", "-FilmMode", jpg_path],
+                          capture_output=True, text=True, timeout=10)
+    return out.stdout.strip()
+
+
+def collect_contributed_pairs(brand, model_filter=None, film_mode_filter=None):
     base = os.path.join(BASE, "datasets", brand, "contributed")
     pairs = []
     seen = set()
@@ -64,6 +74,8 @@ def collect_contributed_pairs(brand, model_filter=None):
             raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
             jpg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
             if not (os.path.exists(raw_path) and os.path.exists(jpg_path)):
+                continue
+            if film_mode_filter and _exif_film_mode(jpg_path) != film_mode_filter:
                 continue
             seen.add(row["filename_raw"])
             pairs.append(dict(name=row["filename_raw"], raw_path=raw_path, jpeg_path=jpg_path))
@@ -157,12 +169,12 @@ def _sign_test_p(wins, losses):
 def main():
     brand = sys.argv[1]
     do_loo = "--loo" in sys.argv
-    baseline_module, baseline_func_name, toe, shoulder, white, clip = BRAND_CONFIG[brand]
+    baseline_module, baseline_func_name, toe, shoulder, white, clip, film_mode_filter = BRAND_CONFIG[brand]
     import importlib
     baseline_func = getattr(importlib.import_module(baseline_module), baseline_func_name)
     apply_tone_stage = make_apply_tone_stage(toe, shoulder, white, clip)
 
-    rows = collect_contributed_pairs(brand)
+    rows = collect_contributed_pairs(brand, film_mode_filter=film_mode_filter)
     print(f"{brand}: manifest {len(rows)}개", flush=True)
     t0 = time.time()
     pairs = []
