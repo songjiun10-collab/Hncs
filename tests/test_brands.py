@@ -22,6 +22,7 @@ BRAND_LOOKS = [
     ("brands.hasselblad_x2dii", "apply_hncs_x2dii"),
     ("brands.leica", "apply_leica_look"),
     ("brands.leica_raw", "apply_leica_raw_look"),
+    ("brands.leica_raw_matrix", "apply_leica_raw_matrix_look"),
     ("brands.phaseone", "apply_phaseone_look"),
     ("brands.pentax", "apply_pentax_look"),
     ("brands.ricoh_gr", "apply_ricoh_gr_look"),
