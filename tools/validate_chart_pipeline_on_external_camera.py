@@ -27,10 +27,10 @@ ARW+JPG+MAT. 이 스크립트는 `.mat`은 안 쓰고 ARW를 직접
 4개로 매트릭스 피팅해서 held-out 조명에 적용 - 하셀블라드 챠트
 작업과 같은 논리를 조명 축으로 확장한 것.
 
-  python3 -m tools.validate_chart_pipeline_on_external_camera <데이터_디렉토리>
+  python3 -m tools.validate_chart_pipeline_on_external_camera <데이터_디렉토리> [확장자]
   예: python3 -m tools.validate_chart_pipeline_on_external_camera \
       /path/to/Colorchart_1/SonyA57
-"""
+  확장자 생략 시 ARW/CR2/NEF/RAF/ORF/RW2/3FR/DNG 순으로 찾아서 첫 매치 사용."""
 import glob
 import os
 import sys
@@ -47,13 +47,22 @@ def _mean_de(samples_xyz, reference):
     return float(np.mean(chart_baseline.patch_delta_e_xyz_d50(samples_xyz, reference)))
 
 
+_RAW_EXTS = ("ARW", "CR2", "NEF", "RAF", "ORF", "RW2", "3FR", "DNG")
+
+
 def main():
     data_dir = sys.argv[1]
+    ext = sys.argv[2] if len(sys.argv) > 2 else None
     reference = chart_baseline.reference_patches_xyz_d50()
 
-    raw_paths = sorted(glob.glob(os.path.join(data_dir, "*.ARW")))
+    exts_to_try = [ext] if ext else list(_RAW_EXTS)
+    raw_paths = []
+    for e in exts_to_try:
+        raw_paths = sorted(glob.glob(os.path.join(data_dir, f"*.{e}")))
+        if raw_paths:
+            break
     if not raw_paths:
-        print(f"{data_dir}에 .ARW 없음")
+        print(f"{data_dir}에 지원 RAW 확장자({', '.join(exts_to_try)}) 없음")
         return
     per_image = {}
     for raw_path in raw_paths:
