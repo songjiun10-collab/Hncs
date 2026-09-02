@@ -41,10 +41,24 @@ BRAND_DESCRIPTIONS = {
     "sony": "HNCS Sony Generic (JPEG-approx, not colorimetric)",
     "sigma": "HNCS Sigma Generic (JPEG-approx, not colorimetric)",
     "leica": "HNCS Leica Generic (JPEG-approx, not colorimetric)",
+    "fuji": "HNCS Fuji Generic Provia (JPEG-approx, not colorimetric)",
+}
+
+# Fuji처럼 필름모드별로 다른 JPEG가 나오는 브랜드용 EXIF FilmMode 필터.
+FILM_MODE_FILTER = {
+    "fuji": "F0/Standard (Provia)",
 }
 
 
+def _exif_film_mode(jpg_path):
+    import subprocess
+    out = subprocess.run(["exiftool", "-s3", "-FilmMode", jpg_path],
+                          capture_output=True, text=True, timeout=10)
+    return out.stdout.strip()
+
+
 def collect_contributed_pairs(brand):
+    film_mode_filter = FILM_MODE_FILTER.get(brand)
     base = os.path.join(BASE, "datasets", brand, "contributed")
     pairs = []
     seen = set()
@@ -58,6 +72,8 @@ def collect_contributed_pairs(brand):
             raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
             jpg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
             if not (os.path.exists(raw_path) and os.path.exists(jpg_path)):
+                continue
+            if film_mode_filter and _exif_film_mode(jpg_path) != film_mode_filter:
                 continue
             seen.add(row["filename_raw"])
             pairs.append(dict(name=row["filename_raw"], raw_path=raw_path, jpeg_path=jpg_path))
