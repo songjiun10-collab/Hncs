@@ -2873,3 +2873,48 @@ sRGB`로 정상 인식 - 부트스트랩 CI 아니라 exiftool 실행 결과).
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_huesatmap_srgb`
 (sRGB HSV LOO), `... tools.build_dcp_huesatmap_experimental`(실험용 .dcp 출력).
+
+## 챠트 파이프라인 방법론 검증 - 완전히 다른 카메라(Sony A57, 2012년식)로 재확인 (2026-09-02)
+
+사용자가 직접 준 리드(vision.middlebury.edu/color/data 등 여러 링크)를
+조사하다 York University의 raw_2_raw 데이터셋
+(yorkucvil.github.io/projects/public_html/raw_2_raw/)에서 진짜 RAW +
+진짜 X-Rite ColorChecker 24패치 + 5개 실제 조명 조건을 발견했다 -
+`chart_baseline.detect_and_sample()`(cv2.mcc MCC24)+
+`raw_baseline.fit_color_matrix()`가 하셀블라드 전용으로 우연히 맞는
+게 아니라 진짜 일반화되는지 확인할 기회였다(부트스트랩 CI는 조명
+5개뿐이라 애초에 낼 수 없음, 단조성/방향성으로만 판정). **중요**:
+Sony A57은 2012년식 바디라 지금 배포하는 현행 Sony 바디와 센서 세대가
+완전히 다르다 - 이건 배포 프로필 개선이 아니라 파이프라인 자체의
+방법론 검증이다.
+
+`tools/validate_chart_pipeline_on_external_camera.py`로
+`Colorchart_1/SonyA57/`(York raw_2_raw 캘리브레이션 세트, Sync.com
+링크에서 261MB `Colorchart_1.zip` 전체를 받아 SonyA57 폴더만 추출)의
+ARW 5장(FL_CL/FL_WL/IN_E/IN_F/LE, 5개 실조명)을
+`decode_raw_native()`로 직접 디코드하고 `detect_and_sample()`로
+검출했다(실행 확인됨) - **5/5장 전부 검출 성공**(부트스트랩 CI는
+아니고 실행 확인된 검출 성공률 자체가 근거), 완전히 다른 카메라/
+RAW 포맷/조명에서도 cv2.mcc 검출이 그대로 통했다.
+
+무보정(매트릭스 없음, 실행 확인됨, 부트스트랩 CI는 n=5라 애초에
+불가능) 조명별 평균 ΔE00은 28.425(범위 22.020~34.086, 같은 실행
+확인된 결과)였다. leave-one-illuminant-out(조명 5개 중 하나씩
+held-out, 나머지 4개로 매트릭스 피팅)으로 재확인한 매트릭스 적용
+LOO ΔE00은 15.894(범위 13.737~18.459, 이 실행 확인된 결과, 부트스트랩
+CI 없음)였다. 무보정 대비 **+44.08% 개선**(부트스트랩 CI 없음 - n=5라
+불가능, 5개 조명 전부에서 방향이 일관되게 개선돼서 단조성으로 신호
+판정, 같은 실행 로그)이다. 완전히 다른 카메라·다른 RAW 포맷·실측
+5개 조명 전부에서(부트스트랩 CI는 아니고 실행 확인된 5/5 검출 성공
+자체가 근거) 검출+피팅이 정상 동작하고 매트릭스가 실제로 오차를
+줄인다는 걸 보여줘, 이 프로젝트의 챠트 기반 컬러매트릭스 방법론이
+하셀블라드 전용 우연이 아니라는 근거가 된다.
+
+**남는 한계**: 데이터 출처(Sync.com 임시 공유 링크)가 영구적이지
+않을 수 있어 재현성이 이 문서의 URL 기록에 의존한다 - 원본 파일
+자체는 이 저장소에 커밋하지 않았다(94MB, `tests/CLAUDE.md`의
+"CI에 이미지 데이터 없음" 컨벤션과 같은 이유).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.validate_chart_pipeline_on_external_camera <SonyA57 폴더 경로>`
+(데이터는 https://ln.sync.com/dl/293c43970/2cxkt2rz-yrfznp2q-955p9spt-u5nej6pi
+에서 `Colorchart_1.zip` 받아 `Colorchart_1/SonyA57/`만 추출).
