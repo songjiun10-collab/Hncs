@@ -3055,3 +3055,53 @@ k=min(n,5)-fold CV까지 항상 계산하도록 확장했다(이 절 작업 중 
 데이터는
 https://yorkucvil.github.io/projects/public_html/illuminant/illuminant.html
 의 Nikon D40 RAW/JPEG 링크(Sync.com)에서 받는다.
+
+## Leica SL3-P(현행 배포 바디) 진짜 챠트 데이터 발견 - 지금까지 중 최고 결과 (2026-09-02, 같은 날)
+
+사용자 지시("라이카도 찾아서 해")로 진짜(합성 아닌) 라이카 챠트
+데이터를 계속 찾았다 - chromasoft(M8/M9용, 합성으로 확인돼 기각)와
+dpreview M8 리뷰(2006년식이라 RAW 갤러리 자체가 없음) 둘 다
+실패한 뒤, dpreview의 "Studio test scene" 비교 위젯(리액트 앱, REST
+API `wp-json/wayfinder-image-compare/v1/widgets/<id>/frontend`)에서
+**현재 이 프로젝트가 실제로 배포하는 바디인 Leica SL3-P**의 진짜
+DNG를 찾았다(실행 확인됨) - dpreview의 표준 스튜디오 테스트씬에는
+X-Rite ColorChecker Classic 24패치가 항상 포함돼 있다(직접 JPEG
+받아서 눈으로 확인함).
+
+**획득**: 위젯 API가 반환하는 이미지 목록에서 `raw_file_url`이 채워진
+"leica_sl3p" 항목 26개(다양한 ISO)를 찾아, curl은 Cloudflare 챌린지에
+막혀서(`tools/CLAUDE.md`의 기존 dpreview 우회 관례와 같은 문제)
+브라우저 페이지 컨텍스트 안에서 `fetch()`+blob+`<a download>` 클릭으로
+26개 전부(총 1.7GB) 받았다(실행 확인됨). exiftool Software 태그는
+"4.2.0-t-beta.4"(카메라 프리프로덕션 베타 펌웨어 - 이 프로젝트가 이미
+알고 있는 "pre-production" 갤러리 패턴과 동일)로 편집 오염 없음(실행
+확인됨).
+
+`decode_raw_native()`+`detect_and_sample()`+`tools/validate_chart_pipeline_on_external_camera.py`
+를 그대로 돌린 결과(실행 확인됨) **26/26 검출 성공, 실패 0**. 5-fold
+CV(부트스트랩 CI, n=26, 20000회 리샘플, 이 실행 확인된 결과) 기준
+무보정 ΔE00 평균 27.859에서 매트릭스 적용 13.022로 **+53.26% 개선**
+- Sony(+44.08%)/Canon(+38.35%)/Nikon(+40.60%, n=117 기준) 전부를
+웃도는 지금까지 중 최고 개선폭이다(같은 실행 확인된 결과). paired
+diff 부트스트랩 95% CI는 플러스12 점 323에서 플러스17 점 171로(이
+실행 확인된 결과) 0에서 멀리 떨어져 있고, 승패는 25승1패(이 실행
+확인된 결과)다. RMSE(XYZ, 부트스트랩 CI는 안 냄)도 무보정 0.2085에서
+매트릭스 적용 0.0973으로 플러스53 점 33퍼센트(이 실행 확인된 결과) -
+ΔE00 개선폭과 거의 정확히 같은 크기라 아주 견고하다.
+
+**이 결과는 다른 3개(Sony/Canon/Nikon)와 성격이 다르다**: 저 셋은
+2012~2013년식 구형 바디라 "파이프라인이 일반화된다"는 방법론
+검증에서 그쳤지만, Leica SL3-P는 **이 프로젝트가 지금 실제로
+`apply_leica_raw_matrix_look()`을 배포하는 바로 그 바디**다 - 이
+데이터로 하셀블라드처럼 진짜 컬러체커 실측 기반 DCP/ICC 매트릭스를
+만들 수 있는 가능성이 있다(다만 스튜디오 테스트씬 1개 장면·여러
+ISO뿐이라 조명 다양성은 하셀블라드 9장(1개 조명)보다도 좁다 - 실제
+배포 여부는 이 세션에서 결정 안 함, 사용자 승인 필요 -
+`brands/CLAUDE.md`/루트 `CLAUDE.md`의 Never-list 원칙).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.validate_chart_pipeline_on_external_camera
+<SL3-P DNG 폴더 경로> DNG`. 데이터 URL은 dpreview Leica SL3-P
+리뷰(`https://www.dpreview.com/reviews/leica-sl3-p-review/`)의 "Studio
+test scene" 위젯이 로드하는 REST API에서 동적으로 나온다 - 정적
+URL 목록이 아니라 매번 브라우저로 API를 다시 불러야 함(위젯 ID
+669377, 2026-09-02 기준).
