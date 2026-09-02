@@ -9,7 +9,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.validate_chart_pipeline_on_external_camera import _mean_de
+from tools.validate_chart_pipeline_on_external_camera import _mean_de, _rmse_xyz
 
 
 class TestMeanDe(unittest.TestCase):
@@ -23,6 +23,19 @@ class TestMeanDe(unittest.TestCase):
         ref = chart_baseline.reference_patches_xyz_d50()
         shifted = ref * 1.5
         self.assertGreater(_mean_de(shifted, ref), 0.0)
+
+
+class TestRmseXyz(unittest.TestCase):
+    def test_identical_samples_give_zero(self):
+        from hybrid_engine.core import chart_baseline
+        ref = chart_baseline.reference_patches_xyz_d50()
+        self.assertAlmostEqual(_rmse_xyz(ref, ref), 0.0, places=6)
+
+    def test_known_offset_gives_exact_rmse(self):
+        ref = np.zeros((4, 3))
+        samples = np.full((4, 3), 2.0)
+        # 모든 성분이 2만큼 어긋나 있으므로 RMSE는 정확히 2
+        self.assertAlmostEqual(_rmse_xyz(samples, ref), 2.0, places=6)
 
 
 if __name__ == "__main__":
