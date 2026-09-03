@@ -20,6 +20,9 @@ class TestAnalyzeX2diiScriptsImport(unittest.TestCase):
     def test_full_interpolation_end_to_end_imports(self):
         importlib.import_module("tools.analyze_x2dii_full_interpolation_end_to_end")
 
+    def test_illuminant_referenced_interpolation_imports(self):
+        importlib.import_module("tools.analyze_x2dii_illuminant_referenced_interpolation")
+
 
 if __name__ == "__main__":
     unittest.main()

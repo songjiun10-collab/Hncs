@@ -3603,6 +3603,43 @@ combined 단일매트릭스보다 나을 게 없다(위 group2 단독 CI는 유�
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_full_interpolation_end_to_end`.
 
+**실험4 후속(2026-09-04, 같은 날) - D50 편향 근본 수정, 완전히
+회복됨**: 사용자가 "D50 편향부터 고치고 재판단"을 선택했다. DNG
+스펙(odelama.com "Developing a RAW photo file by hand" 문서, WebFetch로
+확인) 재확인 결과 `ColorMatrix1`/`ColorMatrix2`는 원래 XYZ(D50)이
+아니라 **각자의 캘리브레이션 조명 자체의 색도**로 매핑해야 하고,
+D50 정합(색순응)은 그 다음 별도 단계 - 이 프로젝트가 두 매트릭스를
+전부 `chart_baseline.reference_patches_xyz_d50()`(D50 고정)로 fit한
+게 근본 원인이었다.
+
+`chart_baseline.reference_patches_xyz(illuminant_xy)`(신규, D50 하드코딩
+대신 임의 목표 백색점으로 색순응하는 `reference_patches_xyz_d50()`의
+일반화, `tests/test_chart_baseline.py`의 `TestReferencePatchesXyz`
+2건으로 커버)를 추가하고, matrix_1은 D65 색도, matrix_2는 Standard
+Illuminant A 색도로 다시 fit했다. **자기중립색 self-consistency
+완전히 회복**(이번 대화에서 직접 실행 확인): group1 자기 중립색 ->
+g=0.9916(수정 전 0.8562), group2 자기 중립색 -> g=0.0176(수정 전
+0.7754), 중간 R/G -> g=0.4603 - 전부 기대 방향대로 정확히 움직였다.
+
+`tools/analyze_x2dii_illuminant_referenced_interpolation.py`로 25장
+전체를 (보간 후 추정촬영조명->D50 색순응까지 포함한) 완전한 파이프라인으로
+재평가했다(`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/illuminant_referenced_interpolation_report.json`에
+저장): **global(burst-fair)=15.8325 vs real-interpolation(일루미넌트
+기준)=8.4275, paired diff 평균=7.4049, 부트스트랩 95% CI=[+5.5509,+9.2794](0을
+확실히 안 걸침), 승/패=25/0(만장일치)**. group2(텅스텐성)는
+real-interp=4.986 vs global=18.998로 압도적으로 좋아졌다 - 수정 전
+(D50 기준 매트릭스로 실제 보간했을 때 19.878, combined보다도 나빴던
+그 결과)과 정반대. group1도 5.741 vs 13.152로 크게 개선.
+
+**결론**: D50 편향이 진짜 근본 원인이었고, 올바르게 고치니
+dual-illuminant가 원래 주장하던 대로 - 딱 텅스텐 조명에서 가장 크게
+이기는 방식으로 - 작동한다. 이 결과는 기존 배포된 `.dcp`(여전히
+D50 기준으로 fit된 구버전 매트릭스)의 실제 성능이 아니라, **아직
+배포하지 않은 수정판 매트릭스**로 낸 것이다 - `.dcp`는 Never-list
+파일이라 이 결과만으로 자동 재배포하지 않았다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_illuminant_referenced_interpolation`.
+
 ## dpreview 스튜디오씬 챠트 - 6개 브랜드 컬러체커 검증 총괄 (2026-09-04)
 
 `tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증

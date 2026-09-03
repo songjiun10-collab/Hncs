@@ -1,0 +1,23 @@
+{
+  "global_burst_fair_mean": 15.832453211597024,
+  "real_interpolation_illuminant_referenced_mean": 8.427546328280359,
+  "paired_diff_mean": 7.404906883316666,
+  "bootstrap_ci95": [
+    5.550903013712454,
+    9.279368839886569
+  ],
+  "wins": 25,
+  "losses": 0,
+  "n": 25,
+  "ci_straddles_zero": false,
+  "group1_real_interp_mean": 5.740721576180889,
+  "group1_global_mean": 13.15192330535267,
+  "group1_mean_g": 0.9864408098524168,
+  "group2_real_interp_mean": 4.985809494126187,
+  "group2_global_mean": 18.997918278383306,
+  "group2_mean_g": 0.017785300133844724,
+  "self_consistency_check": {
+    "note": "matrix_1/matrix_2를 각자 조명 색도(D65/StdA)로 fit한 뒤 자기 그룹 평균 중립색을 넣었을 때의 g - 1(group1)/0(group2)에 가까울수록 정상. 수정 전(D50 기준 fit)은 각각 0.86/0.78이었다."
+  },
+  "note": "core/dcp_interpolate.py 자체는 안 건드림 - matrix_1/matrix_2를 D50 대신 각자의 캘리브레이션 조명 색도(chart_baseline.reference_patches_xyz())로 다시 fit하고, 보간 후 추정 촬영조명->D50 색순응을 추가한 최초의 end-to-end 검증. .dcp 파일은 이 스크립트가 건드리지 않음(Never-list)."
+}

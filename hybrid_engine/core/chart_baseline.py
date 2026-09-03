@@ -84,6 +84,35 @@ def reference_patches_xyz_d50():
     )
 
 
+def reference_patches_xyz(illuminant_xy):
+    """reference_patches_xyz_d50()의 일반화 - D50 대신 임의의 목표
+    백색점(xy)으로 색순응한 XYZ를 반환. (24, 3) ndarray, PATCH_NAMES
+    순서.
+
+    DNG dual-illuminant `ColorMatrix1`/`ColorMatrix2`는 정의상 XYZ(D50)이
+    아니라 **각자의 캘리브레이션 조명 자체의 색도**로 매핑해야 한다
+    (DNG 스펙: "converts XYZ values to reference camera native color
+    space values, under the calibration illuminant" - D50 정합은 이후
+    별도의 white balance/색순응 단계에서 일어난다). `core/dcp_interpolate.py`의
+    고정점 반복이 `camera_neutral`의 CCT를 스스로 복원하려면 매트릭스가
+    이 조명별 참조값으로 fit돼 있어야 한다 - 전부 D50으로 정규화해서
+    fit하면(기존 `reference_patches_xyz_d50()`을 dual-illuminant 매트릭스
+    fit에 그대로 쓰면) 어느 매트릭스든 자기 중립색을 넣었을 때 D50
+    자체의 CCT(~5003K)로 수렴해버려서 CCT 추정이 입력과 무관하게
+    illuminant1 쪽으로 쏠리는 구조적 편향이 생긴다
+    (`hybrid_engine/EVALUATION.md` "RawTherapee 교차검증" 절 참고)."""
+    cc = colour.CCS_COLOURCHECKERS["ColorChecker24 - After November 2014"]
+    xyY = np.array([cc.data[name] for name in PATCH_NAMES])
+    XYZ = colour.xyY_to_XYZ(xyY)
+    return colour.chromatic_adaptation(
+        XYZ,
+        colour.xy_to_XYZ(cc.illuminant),
+        colour.xy_to_XYZ(illuminant_xy),
+        method="Von Kries",
+        transform="Bradford",
+    )
+
+
 def patch_delta_e_xyz_d50(samples_xyz, reference_xyz=None, method="CIE 2000"):
     """XYZ(D50) 공간의 (N, 3) 샘플과 참조값 사이 패치별 ΔE00.
     reference 생략 시 reference_patches_xyz_d50()를 쓴다.
