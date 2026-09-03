@@ -24,6 +24,9 @@ _SHIPPED_DCP = os.path.join(_REPO_ROOT, "hybrid_engine", "assets", "profiles",
 _REPORT_JSON = os.path.join(_REPO_ROOT, "datasets", "hasselblad", "contributed",
                             "kmichels-x2dii-2026-07",
                             "camera_native_matrix_report.json")
+_COMBINED_REPORT_JSON = os.path.join(_REPO_ROOT, "datasets", "hasselblad", "contributed",
+                                     "dpreview-x2dii100c-studio-chart-2026-09",
+                                     "combined_chart_matrix_report.json")
 
 # XYZ of D50 (CIE 1931 2도 관측자), colour.xy_to_XYZ(D50_xy)와 동일한 값.
 # colour-science import 없이 쓰려고 상수로 박아둔다(이 테스트는 RAW 디코드도
@@ -218,19 +221,50 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     (다음 최악 3.695)보다 압도적으로 나빴다. cyan의 IRLS 초기가중치를
     4.0에서 2.0으로 낮춰 재수렴시킨 매트릭스(`tools/refit_dcp_irls_cyan_init.py`)로
     배포 - 9장 LOO 기준 -0.52%(2.6078->2.5942, 부트스트랩 CI 없음, 단조성으로
-    신호 판정). 실제 배포된 `.dcp`는 이제 `_irls_cyan_init` 기준이라 이
-    테스트도 `_irls_cyan_init`을 본다. `_irls`(무채색-4x 단독, -8.8%)와
-    원래 균등가중 필드는 기록용으로 보존."""
+    신호 판정). `_irls`(무채색-4x 단독, -8.8%)와 원래 균등가중 필드는
+    `kmichels-x2dii-2026-07/camera_native_matrix_report.json`에 기록용으로
+    보존.
+
+    **정정(2026-09-03)**: 사용자가 dpreview 스튜디오씬 X2D II 100C 챠트
+    데이터(Daylight/Lowlight, 16장)가 kmichels 번스트(9장, 단일 조명)와
+    진짜 다른 조명 조건이라는 걸 확인시킨 뒤("우리꺼하고 다른줄 알고
+    시킴") 승인한 재보정("이제 하셀은 보정 ㄱㄱ dcp") - 두 데이터셋을
+    합쳐(n=25) 기존에 이미 승인된 `_weighted` 단계(무채색 6패치 대비
+    유채색 18패치 4x 가중 최소자승, ridge=0.0)와 같은 방법론으로 다시
+    피팅했다(`tools/refit_x2dii_chart_combined.py`). **IRLS/cyan
+    재조정 단계는 이번엔 재적용하지 않았다** - 그 두 단계는 n=9
+    kmichels 단독 데이터의 특정 잔차 패턴에 맞춰 손튜닝된 것이라(원본
+    리포트 자체가 "n=9 표본 과적합" 위험을 명시) 25장으로 늘어난 합친
+    데이터에 그대로 전이된다는 보장이 없어서였다.
+
+    **왜 교체가 정당한가(핵심 수치)**: kmichels 단독 LOO CV는 2.72
+    ΔE00로 매우 좋아 보였지만, 이건 "10장을 94초 만에 찍은 같은 조명
+    번스트"라 사실상 거의 동일한 이미지끼리 검증한 것 - 실제 다른
+    조명(dpreview)에 그 구버전 매트릭스를 **out-of-sample로** 적용해보니
+    19.155 ΔE00(무보정 32.733 대비 겨우 -41%)로 훨씬 약했다(이 실행
+    확인된 결과, `/tmp/old_x2dii_chart.dcp`로 git 이력의 구버전 DCP를
+    복원해서 dpreview 16장에 직접 적용해 측정). 반면 새 합친 매트릭스는
+    같은 종류의 다조명 데이터에 대해 5-fold CV로 12.69 ΔE00(무보정
+    31.497 대비 -59.7%, 부트스트랩 95% CI(20000회)=[+16.68,+20.81],
+    25/0)를 낸다 - kmichels 단독 번스트의 낮은 CV는 단일조명 과적합의
+    착시였고, 진짜 다조명 일반화 성능은 새 매트릭스가 명확히 우세하다.
+
+    이제 실제 배포된 `.dcp`는 `datasets/hasselblad/contributed/
+    dpreview-x2dii100c-studio-chart-2026-09/combined_chart_matrix_report.json`의
+    `dcp_color_matrix_1`(균등가중 아님 - 유채색 4x 가중, 파일 내
+    `chroma_patch_weight` 필드로 명시) 기준이라 이 테스트도 그 리포트를
+    본다. 옛 kmichels 단독 리포트(`_irls_cyan_init` 등)는 기록용으로
+    그대로 남아있다."""
 
     @classmethod
     def setUpClass(cls):
-        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_REPORT_JSON)):
+        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_COMBINED_REPORT_JSON)):
             raise unittest.SkipTest("커밋된 .dcp/리포트 JSON이 없음")
-        with open(_REPORT_JSON, encoding="utf-8") as f:
+        with open(_COMBINED_REPORT_JSON, encoding="utf-8") as f:
             cls.report = json.load(f)
         cls.tags = read_dcp(_SHIPPED_DCP)
         cls.cm1 = cls.tags[TAG_COLOR_MATRIX_1].reshape(3, 3)
-        cls.chart_m = np.array(cls.report["chart_matrix_in_sample_irls_cyan_init"], dtype=np.float64)
+        cls.chart_m = np.array(cls.report["chart_matrix_in_sample"], dtype=np.float64)
 
     def test_color_matrix_1_is_inverse_transpose_not_plain_inverse(self):
         expected = np.linalg.inv(self.chart_m).T
@@ -242,7 +276,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     def test_report_dcp_color_matrix_field_matches_the_file(self):
         np.testing.assert_allclose(
             self.cm1,
-            np.array(self.report["dcp_color_matrix_1_irls_cyan_init"], dtype=np.float64),
+            np.array(self.report["dcp_color_matrix_1"], dtype=np.float64),
             atol=1e-6)
 
     def test_calibration_illuminant_is_d50_matching_the_fit_reference_space(self):
@@ -260,10 +294,13 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
                             dtype=np.float64)
         predicted = self.cm1 @ _XYZ_D50
         predicted = predicted / predicted[1]   # 실측값과 같이 G=1 정규화
-        # 관대한 허용치(5%) - 차트 피팅 매트릭스가 무채색 패치를 정확히
-        # 재현할 의무는 없다(24패치 전체 최소자승이므로). 전치 오류가 만드는
-        # 4~5배짜리 어긋남과는 자릿수가 다르다.
-        np.testing.assert_allclose(predicted, measured, rtol=0.05)
+        # 허용치 15%(2026-09-03, kmichels 단독일 땐 5%였음) - measured가
+        # 이제 조명이 다른 두 데이터셋(kmichels 단일조명 + dpreview
+        # Daylight/Lowlight) 평균이라 그 자체가 더 넓게 퍼진 값이고,
+        # 매트릭스도 24패치 다조명 최소자승이라 어느 한쪽 조명의 중립점을
+        # 정확히 재현할 의무가 없다. 그래도 전치 오류가 만드는 4~5배짜리
+        # 어긋남(400~500%)과는 여전히 자릿수가 다르다.
+        np.testing.assert_allclose(predicted, measured, rtol=0.15)
 
     def test_plain_inverse_would_fail_the_physical_invariant(self):
         # 위 테스트가 진짜로 버그를 잡는지 확인 - 버그 버전 매트릭스는
