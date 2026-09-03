@@ -79,10 +79,13 @@ import numpy as np
 # DNG 스펙 태그 ID
 TAG_UNIQUE_CAMERA_MODEL = 50708
 TAG_COLOR_MATRIX_1 = 50721
+TAG_COLOR_MATRIX_2 = 50722
 TAG_CALIBRATION_ILLUMINANT_1 = 50778
+TAG_CALIBRATION_ILLUMINANT_2 = 50779
 TAG_PROFILE_NAME = 50936
 TAG_PROFILE_EMBED_POLICY = 50941
 TAG_FORWARD_MATRIX_1 = 50964
+TAG_FORWARD_MATRIX_2 = 50965
 
 # TIFF 필드 타입
 _TYPE_ASCII = 2
@@ -121,7 +124,9 @@ def _ascii_payload(text):
 
 
 def write_dcp(path, camera_model, profile_name, color_matrix_1,
-              calibration_illuminant_1, forward_matrix_1=None):
+              calibration_illuminant_1, forward_matrix_1=None,
+              color_matrix_2=None, calibration_illuminant_2=None,
+              forward_matrix_2=None):
     """DCP 카메라 프로필을 path에 쓴다.
 
     camera_model: UniqueCameraModel - "이 프로필은 어느 카메라용인가".
@@ -152,6 +157,18 @@ def write_dcp(path, camera_model, profile_name, color_matrix_1,
         카메라 중립점을 D50 백색점으로 정확히 매핑하는 정규화 제약이
         있는데 그 구현을 Lightroom으로 검증할 수 없어서 기본값은
         None(생략)이다 - 생략해도 유효한 프로필이다.
+    color_matrix_2, calibration_illuminant_2, forward_matrix_2: 선택,
+        dual-illuminant 프로필용(2026-09-03, X2D II 100C combined 챠트
+        데이터가 실제로 서로 다른 두 조명을 담고 있다는 게 확인된 뒤
+        추가 - `hybrid_engine/EVALUATION.md` "DNG dual-illuminant
+        ColorMatrix2" 절 참고). `color_matrix_2`를 주면
+        `calibration_illuminant_2`도 필수다(Adobe가 두 매트릭스를
+        보간하려면 둘 다 있어야 의미가 있다 - 켤레 없는 매트릭스만
+        있으면 그 태그를 그냥 무시한다). 나머지는 `_1` 버전과 동일한
+        규약(열벡터, XYZ(D50)->네이티브) - Lightroom/ACR이 촬영 조명을
+        추정해서 두 매트릭스 사이를 자체 알고리즘으로 보간한다(정확한
+        보간 공식은 Adobe DNG SDK 내부 구현이라 이 프로젝트가 재현한
+        것이 아니다 - 실기기 검증 전까지는 근사).
 
     **정정(2026-08-31)**: 실사용자(Chris Schmauch) 테스트에서 이 함수가
     쓴 파일이 exiftool 구조 검증(`Validate: OK`)과 라운드트립을 전부
@@ -197,6 +214,17 @@ def write_dcp(path, camera_model, profile_name, color_matrix_1,
     if forward_matrix_1 is not None:
         entries.append((TAG_FORWARD_MATRIX_1, _TYPE_SRATIONAL, 9,
                         _srational_payload(forward_matrix_1)))
+
+    if color_matrix_2 is not None:
+        if calibration_illuminant_2 is None:
+            raise ValueError("color_matrix_2를 주려면 calibration_illuminant_2도 필요함")
+        entries.append((TAG_CALIBRATION_ILLUMINANT_2, _TYPE_SHORT, 1,
+                        struct.pack("<H", int(calibration_illuminant_2))))
+        entries.append((TAG_COLOR_MATRIX_2, _TYPE_SRATIONAL, 9,
+                        _srational_payload(color_matrix_2)))
+        if forward_matrix_2 is not None:
+            entries.append((TAG_FORWARD_MATRIX_2, _TYPE_SRATIONAL, 9,
+                            _srational_payload(forward_matrix_2)))
 
     # TIFF 스펙: IFD 엔트리는 태그 오름차순이어야 한다.
     entries.sort(key=lambda e: e[0])

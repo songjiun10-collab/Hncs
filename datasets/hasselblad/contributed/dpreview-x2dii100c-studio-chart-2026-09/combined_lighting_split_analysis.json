@@ -1,0 +1,48 @@
+{
+  "assign_by_name": {
+    "15f85e040bcc4699b617fe7631e0ecfc.3fr": 1,
+    "1c35d03dbdc443dc96e47bf3ee10c817.3fr": 1,
+    "35ff05982f3240bbbae9ef388e078b80.3fr": 0,
+    "3adaadfffee94520af873e66b14d9759.3fr": 0,
+    "46d3c5eaae634db1ba1a3c493f1af2d9.3fr": 0,
+    "580df9c78aa94bd396574456f6eae0d7.3fr": 0,
+    "5a0e96b3c7534572b4062302a33cec13.3fr": 1,
+    "5a6a3cf45cc14d609bf6979d97d4ec56.3fr": 0,
+    "7fbb1471e0cf4b22858cd9a161fb83a8.3fr": 0,
+    "8f915834eeb14c058164bc409346b781.3fr": 0,
+    "B_31325.3FR": 0,
+    "B_31326.3FR": 0,
+    "B_31327.3FR": 0,
+    "B_31328.3FR": 0,
+    "B_31329.3FR": 0,
+    "B_31330.3FR": 0,
+    "B_31331.3FR": 0,
+    "B_31332.3FR": 0,
+    "B_31333.3FR": 0,
+    "b3878b0a5d644b68950aa4695ca3cdbb.3fr": 0,
+    "b70e2170025c415e9aab10f5e3e302ab.3fr": 0,
+    "bb258292dfd943fc9995b917611330fb.3fr": 1,
+    "bd2ffdbfd1e441bc9a93c115117e5054.3fr": 1,
+    "c8e0ec65ab8841a5be01c7cb651638ec.3fr": 1,
+    "f3da42aac2944357bd87685f9ae2ec1e.3fr": 1
+  },
+  "cluster_centers_r_over_g": [
+    0.37196453806180513,
+    0.6451373068317159
+  ],
+  "all_combined_cv": {
+    "n": 25,
+    "k": 5,
+    "cv_mean": 12.68650251295632
+  },
+  "group0_cv": {
+    "n": 18,
+    "k": 5,
+    "cv_mean": 9.648488672966751
+  },
+  "group1_cv": {
+    "n": 7,
+    "k": 5,
+    "cv_mean": 5.003937523586567
+  }
+}
