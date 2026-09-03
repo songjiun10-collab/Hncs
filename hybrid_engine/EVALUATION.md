@@ -3478,3 +3478,31 @@ Light A`, 실행 확인). `tests/test_dcp_export.py::TestShippedProfileMatchesRe
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tests.test_dcp_interpolate`(단위 테스트),
 `... tools.validate_x2dii_dual_illuminant_real_algorithm`(위 두 비교 재생성).
+
+**사용자 결정(2026-09-03, 같은 날) - "유지"**: 위 정정을 AskUserQuestion으로
+보고한 뒤(유지 vs combined 단일매트릭스로 되돌림 - 후자가 "안전"
+옵션이었음) 사용자가 "유지"를 선택했다. 위에 이미 CI와 함께 적은
+두 근거(평균 방향성 + kmichels 홀드아웃 단독 유의성)가 25장 전체
+CI의 불확실성보다 우선한다고 판단한 것. `hasselblad_x2dii_chart.dcp`는
+이 결정에 따라 dual-illuminant 매트릭스로 그대로 둔다 - 추가 변경
+없음.
+
+## dpreview 스튜디오씬 챠트 - 6개 브랜드 컬러체커 검증 총괄 (2026-09-04)
+
+`tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증
+전용) 하나로 6개 브랜드를 같은 방법론(무채색 6패치 대비 유채색 18패치
+3x 가중 최소자승, k=min(n,5)-fold CV, 부트스트랩 95% CI 20000회)으로
+돌렸다. 6개 전부 CI 하한이 0을 확실히 넘고 승/패가 만장일치였다:
+
+- Sony a7R VI: n=22, ΔE00 30.53→11.54(+62.20%), CI=[+16.73,+21.15], 승/패=22/0 (`datasets/sony/contributed/dpreview-a7rvi-studio-chart-2026-09/chart_validation_report.json`)
+- Hasselblad X2D II 100C: n=16, ΔE00 32.73→12.63(+61.41%), CI=[+16.78,+23.36], 승/패=16/0 (`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/chart_validation_report.json`, 단일매트릭스 검증용 - 실배포 dual-illuminant와 별개)
+- Sigma fp L: n=20, ΔE00 30.69→11.90(+61.21%), CI=[+16.08,+21.41], 승/패=20/0 (`datasets/sigma/contributed/dpreview-fpl-studio-chart-2026-09/chart_validation_report.json`)
+- Sony a7 V: n=24, ΔE00 32.10→12.58(+60.82%), CI=[+17.22,+21.86], 승/패=24/0 (`datasets/sony/contributed/dpreview-a7v-studio-chart-2026-09/chart_validation_report.json`)
+- Ricoh GR IV: n=23(1실패), ΔE00 28.80→13.14(+54.39%), CI=[+12.46,+18.68], 승/패=23/0 (`datasets/ricoh_gr/contributed/dpreview-griv-studio-chart-2026-09/chart_validation_report.json`)
+- Fujifilm X-E5: n=20, ΔE00 30.93→14.73(+52.39%), CI=[+13.76,+18.66], 승/패=20/0 (`datasets/fuji/contributed/dpreview-xe5-studio-chart-2026-09/chart_validation_report.json`)
+
+**주의할 점**:
+- Leica SL3-P는 위 목록에 없다 - 다른 파이프라인(`tools/fit_leica_sl3p_studio_chart.py`, 실제 DCP까지 발급)이 n=26, in-sample ΔE00=12.23을 냈는데 부트스트랩 CI가 계산되지 않은 값이다(`datasets/leica/contributed/dpreview-sl3p-studio-chart-2026-09/camera_native_matrix_report.json` `_comment` 필드에 "부트스트랩 CI 없음" 명시) - 위 6개와 통계적으로 직접 비교 불가.
+- Panasonic S1II는 코드 주석(`tools/validate_dpreview_chart_brand.py` 74행 부근)에 챠트검출 assertion 2/20건 언급만 있고 실제 report 파일이 없다 - 미완료.
+
+이 검증들은 전부 DCP/ICC를 발급하지 않는다(스크립트 docstring에 명시) - `apply_*` 배포에 영향 없음, Never-list 파일 변경 없음.
