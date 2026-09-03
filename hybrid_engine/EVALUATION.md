@@ -3640,6 +3640,34 @@ D50 기준으로 fit된 구버전 매트릭스)의 실제 성능이 아니라, *
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_illuminant_referenced_interpolation`.
 
+**배포(2026-09-04, 같은 날) - v2 재배포 + RawTherapee 재검증에서 나온
+미해결 캐비어트**: 사용자 승인("D50 편향부터 고치고 재판단" ->
+"재배포 (권장)")으로 `tools/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py`가
+`hasselblad_x2dii_chart.dcp`를 v2 매트릭스로 재발급했다(exiftool
+Validate=OK, CalibrationIlluminant1=D65/2=Standard Light A 확인).
+`tests/test_dcp_export.py`의 `TestShippedProfileMatchesReport`도
+v2 리포트와 올바른 물리적 불변식(matrix_1은 D50이 아니라 D65 백색점,
+matrix_2는 Standard Illuminant A 백색점)으로 갱신했다.
+
+배포 직후 `rawtherapee-cli`로 다시 재검증했다 - kmichels(`km.3FR`)와
+실제 dpreview group2 이미지(`1c35d03d...3fr`, 챠트 실측 R/G=0.646로
+확실한 tungsten성) 둘 다 `DCPIlluminant=0`(자동보간) 렌더가
+`DCPIlluminant=1`(illuminant1/D65 강제)과 **픽셀 단위로 완전히
+동일**했다(mean abs diff=0.0, 이번 대화에서 직접 렌더+비교 확인).
+group2는 자기 조명 자체가 `CalibrationIlluminant2`(Standard Light A)와
+거의 일치하므로 RT가 illuminant2로 스냅해야 이치에 맞고, 수학적
+self-consistency(자기 중립색 넣었을 때 g=0.0176, 위에서 확인)도 그
+방향을 가리키는데, 실제 RT 렌더는 정반대(illuminant1)로 스냅됐다 -
+**미해결**. 원인 후보: RT는 챠트 실측 중립색이 아니라 파일의
+`AsShotNeutral` EXIF 태그로 판단하는데, 이 dpreview 데이터셋은 이미
+"AsShotNeutral이 같은 그룹 내 여러 장에서 거의 고정값으로 반복돼
+실제 촬영 조명을 반영 못 할 수 있다"는 캐비어트가 이전 절에 잡혀
+있다 - 그 왜곡이 이 결과의 원인일 가능성이 높지만 확정하지 않았다.
+**이 배포 결정 자체는 챠트 실측 기준 25장 통계 검증(CI=[+5.55,+9.28],
+이 프로젝트가 신뢰하는 근거)에 기반한 것이라 이 RT 관찰로 뒤집히지
+않았다** - 다만 실기기(Lightroom/ACR)에서 `AsShotNeutral` 기반 보간이
+챠트 검증만큼 깨끗하게 나올지는 여전히 미검증으로 남는다.
+
 ## dpreview 스튜디오씬 챠트 - 6개 브랜드 컬러체커 검증 총괄 (2026-09-04)
 
 `tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증
