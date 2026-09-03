@@ -1,0 +1,19 @@
+{
+  "global_burst_fair_mean": 15.832453211597024,
+  "real_interpolation_full25_mean": 13.733615271165126,
+  "old_method_incluster_cv_mean": 9.126073230763119,
+  "paired_diff_mean": 2.098837940431896,
+  "bootstrap_ci95": [
+    0.8584949111422827,
+    3.4023026424095657
+  ],
+  "wins": 19,
+  "losses": 6,
+  "n": 25,
+  "ci_straddles_zero": false,
+  "group1_real_interp_mean": 7.041960270977537,
+  "group1_incluster_cv_mean": 5.812332063151507,
+  "group2_real_interp_mean": 19.87849425781742,
+  "group2_incluster_cv_mean": 5.003937523586567,
+  "note": "group1/group2도 interpolate_dng_matrix()를 실제로 통과시킨 최초의 25장 전체 end-to-end 검증 - 이전 버전들은 group1/group2에 in-cluster CV를 써서 보간 함수를 안 거쳤다(EVALUATION.md D50 편향 절 참고)."
+}
