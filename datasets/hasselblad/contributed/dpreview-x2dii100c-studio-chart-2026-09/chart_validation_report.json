@@ -1,0 +1,38 @@
+{
+  "brand": "hasselblad",
+  "camera": "Hasselblad X2D II 100C",
+  "n_images": 16,
+  "n_failed_detect": 1,
+  "images": [
+    "15f85e040bcc4699b617fe7631e0ecfc.3fr",
+    "1c35d03dbdc443dc96e47bf3ee10c817.3fr",
+    "35ff05982f3240bbbae9ef388e078b80.3fr",
+    "3adaadfffee94520af873e66b14d9759.3fr",
+    "46d3c5eaae634db1ba1a3c493f1af2d9.3fr",
+    "580df9c78aa94bd396574456f6eae0d7.3fr",
+    "5a0e96b3c7534572b4062302a33cec13.3fr",
+    "5a6a3cf45cc14d609bf6979d97d4ec56.3fr",
+    "7fbb1471e0cf4b22858cd9a161fb83a8.3fr",
+    "8f915834eeb14c058164bc409346b781.3fr",
+    "b3878b0a5d644b68950aa4695ca3cdbb.3fr",
+    "b70e2170025c415e9aab10f5e3e302ab.3fr",
+    "bb258292dfd943fc9995b917611330fb.3fr",
+    "bd2ffdbfd1e441bc9a93c115117e5054.3fr",
+    "c8e0ec65ab8841a5be01c7cb651638ec.3fr",
+    "f3da42aac2944357bd87685f9ae2ec1e.3fr"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 32.73320489265839,
+  "delta_e00_cv_mean": 12.631978892070993,
+  "delta_e00_improvement_pct": 61.409281695773785,
+  "delta_e00_bootstrap_ci95": [
+    16.77551470637671,
+    23.362795696830947
+  ],
+  "wins": 16,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.23298338857871104,
+  "rmse_xyz_cv_mean": 0.09690638341189503,
+  "rmse_xyz_improvement_pct": 58.40631213965016
+}
