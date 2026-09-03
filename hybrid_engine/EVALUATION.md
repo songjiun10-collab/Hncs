@@ -3332,3 +3332,112 @@ RAW는 `datasets/sigma/contributed/dpreview-fpl-studio-chart-2026-09/raw/`에
 다름), 원인 미조사(다음 후보 조사 대상: R6III 챠트 프레임의 조명
 불균일, ISO 범위, 또는 Canon 색과학 자체가 이 단순 3x3 매트릭스로
 덜 설명되는 것일 수 있음).
+
+## X2D II 100C DCP - 단일매트릭스가 못 잡는 다조명 문제, dual-illuminant로 재교체 (2026-09-03)
+
+**동기**: 사용자가 "이부분의 2.83 더 줄여봐"(후속 실측 21의 kmichels
+단독 LOO 2.83)로 시작한 요청. 그 수치는 이미 이 문서에서(위 "무채색
+패치 가중치 낮춰서 재피팅"/"Huber IRLS로 한 번 더 재피팅"/"patch
+17(cyan) 초기가중치 재조정" 세 절, 각각 부트스트랩 CI 없이 단조성/
+표준편차 기반으로 판정된 실행 확인된 결과) 2.8588→2.7179→2.6078→2.5942로
+줄어있었고, 그 뒤 "DCP HueSatMap" 절(같은 성격, 미배포·실기기 미검증)
+에서 2.4651까지 더 내려갔었다 - 전부 "kmichels 9장, 같은 94초 버스트,
+조명 1개"라는 좁은 범위 안에서의 개선이었다. 그런데 배포된 매트릭스는
+이미 그 뒤(같은 날 앞선 절) dpreview 다조명 데이터(16장)를 합친 combined
+버전(5-fold CV 12.69)으로 교체돼 있었다 - "2.83을 더 줄인다"는 요청을
+지금 배포본 기준으로 적용하려면 combined 데이터에서 같은 방법론(패치별
+잔차 분석 -> 구조적 이상치 타겟 조정)이 통하는지부터 확인해야 했다.
+
+**진단**: `tools/analyze_x2dii_combined_patch_residuals.py`(25장
+5-fold CV 패치별 잔차, 실행 확인, CI 없음 - 패치별 단순 평균/표준편차
+집계)로 뜯어보니 cyan 같은 단일 이상치가 없고 대신 **무채색이
+최악**(white 9.5: 18.1, neutral 8: 17.4, neutral 6.5: 16.3, 전부
+std/mean~0.5로 노이즈 아니고 구조적) - reweighting/IRLS로는 못 푸는
+유형(실제로 지난 절의 IRLS 시도가 null result였던 것과 일치).
+`tools/analyze_x2dii_combined_lighting_split.py`(실행 확인, CI
+없음 - n=9/9/7 그룹 CV 단순 비교)로 이미지별 실측 네이티브 중립색
+(무채색 6패치 R/G)을 보니 3그룹으로 뚜렷이 갈렸다: dpreview
+저R/G≈0.33(daylight성, n=9), dpreview 고R/G≈0.64(tungsten성, n=7),
+kmichels≈0.41(그 사이, n=9). 비슷한 R/G끼리 묶어도(kmichels+
+dpreview저R/G, n=18) CV 9.65로 개별 단독(5.81/2.72)보다 나빴다(CI
+없음, 단순 그룹 CV 비교) - R/G가 연속적으로 흩어져 있어서 대충
+묶는 것만으로는 안 통한다는 뜻.
+
+**방법**: DNG의 dual-illuminant 메커니즘(`ColorMatrix1`+`ColorMatrix2`+
+`CalibrationIlluminant1/2`)으로 풀었다. `core/dcp_export.py`에
+`TAG_COLOR_MATRIX_2`/`TAG_CALIBRATION_ILLUMINANT_2`/`TAG_FORWARD_MATRIX_2`
+태그와 `write_dcp()`의 `color_matrix_2`/`calibration_illuminant_2`/
+`forward_matrix_2` 파라미터를 추가했다(`tests/test_dcp_export.py`에
+라운드트립 테스트 3개 추가, 실행 확인). `tools/refit_x2dii_dual_illuminant.py`
+(실행 확인)로 dpreview의 두 극단 클러스터에 각각 매트릭스를 피팅했다
+(같은 무채색 6패치 대비 유채색 18패치 4x 가중 최소자승, ridge=0.0):
+daylight성(n=9, illuminant1=21/D65 근사),
+tungsten성(n=7, illuminant2=17/Standard Light A 근사). **kmichels(세
+번째 조명, n=9)는 두 매트릭스 어디에도 안 넣고 순수 홀드아웃으로
+남겼다** - "본 적 없는 세 번째 조명도 두 매트릭스 보간으로 맞힐 수
+있는가"를 검증하려면 데이터 누수 없이 완전히 분리해야 하기 때문.
+
+정확한 CCT 측정값이 없어서(EXIF에 없음) `CalibrationIlluminant1/2`는
+관측된 R/G 극성에 맞는 표준 EXIF LightSource enum으로 근사했다 -
+실제 촬영 조명의 정밀한 색온도가 아니라 방향성 근사임을 명시해둔다.
+
+**보간 검증(중요한 주의사항)**: Adobe DNG SDK의 실제 두 매트릭스
+보간 알고리즘은 문서화된 스펙은 있지만 이 프로젝트가 재현한 게
+아니다(기존 파일들의 "실기기 미검증" 패턴과 동일 성격). 검증에는
+이 프로젝트가 만든 **단순 근사**(측정 native R/G를 두 기준 클러스터의
+평균 R/G 사이에서 선형 보간해 가중치를 만들고, 그 가중치로 두 매트릭스를
+선형 블렌드)만 썼다 - Lightroom이 실제로 이렇게 보간하는지는 확인
+안 됨.
+
+**결과 - 재료 숫자(전부 CI 없음, 판정은 아래 두 paired-diff CI로 함)**
+(`tools/refit_x2dii_dual_illuminant.py` 실행 확인,
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/dual_illuminant_report.json`
+에 저장):
+
+- group1(daylight성) 단독 5-fold CV(n=9, CI 없음): ΔE00 5.81
+- group2(tungsten성) 단독 5-fold CV(n=7, CI 없음): ΔE00 5.00
+- kmichels 홀드아웃, matrix1만 적용(n=9, CI 없음): ΔE00 17.19
+- kmichels 홀드아웃, matrix2만 적용(n=9, CI 없음): ΔE00 26.51
+- kmichels 홀드아웃, R/G 선형보간 적용(n=9, CI 없음): ΔE00 13.86
+- (공정 대조군) dpreview만 학습한 global 단일매트릭스 -> kmichels
+  홀드아웃(n=9, CI 없음): ΔE00 16.05
+
+홀드아웃 기준 dual-illuminant(13.86)가 공정 대조군(dpreview만 학습한
+global, 16.05)보다 좋다 - paired diff 평균 2.195, **부트스트랩 95%
+CI=[+1.99,+2.39]**(20000회, 0을 안 걸침), wins 9/losses 0(n=9,
+`/tmp/x2dii_fair_bootstrap.py` 실행 결과).
+
+**25장 전체 공정 비교**(global/dual 둘 다 이미지별로 완전히
+out-of-sample - global은 25장 5-fold CV, dual은 group1/group2 각자
+5-fold CV + kmichels는 위 보간 홀드아웃, 실행 확인된
+`tools/refit_x2dii_dual_illuminant.py`의 `full25_fair_comparison`
+필드): 개선폭 **+33.14%**(기존 배포 12.69 -> dual-illuminant 8.48),
+**부트스트랩 95% CI(20000회)=[+0.81,+7.46]**(0을 안 걸침), wins
+16/losses 9(n=25). CI 하한이 양수라 배포 게이트 통과 -
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`를 이
+dual-illuminant 매트릭스로 재발급했다(exiftool `Validate: OK`,
+`Calibration Illuminant 1: D65`, `Calibration Illuminant 2: Standard
+Light A`, 실행 확인). `tests/test_dcp_export.py::TestShippedProfileMatchesReport`를
+`dual_illuminant_report.json` 기준으로 갱신, 매트릭스별 D50->실측
+중립색 물리적 정합성 검사 포함 20/20 통과(실행 확인). 전체 스위트
+676개(신규 +5) 기준 기존 7 failures/21 errors 그대로 - 새 회귀
+없음(`python3 -m unittest discover -s tests` 실행 확인).
+
+**남은 한계**:
+- **보간은 Adobe 알고리즘 재현이 아니다**(위 "보간 검증" 참고) - 위
+  CI 딸린 개선폭들은 "두 매트릭스 + 이 프로젝트의 근사 보간"이 검증한
+  결과지, 실제 Lightroom/ACR이 이 `.dcp`를 로드했을 때 정확히 같은
+  성능을 낸다는 보장이 아니다 - 실기기 미검증 상태라는 뜻이지, 위에서
+  부트스트랩으로 이미 확인한 통계적 유의성 자체를 부정하는 건 아니다.
+- **CalibrationIlluminant enum은 방향성 근사**(정확한 CCT 미측정).
+- **wins/losses가 25장 기준 16/9로 9장 기준(9/0)보다 덜 압도적** -
+  group1/group2 자체의 5-fold CV(5.81/5.00)가 이미지 단위로는 기존
+  combined 방식의 일부 이미지보다 나쁜 경우가 9번 있었다는 뜻(각
+  클러스터가 n=9/n=7로 작아서 클러스터 내부 CV 자체의 분산이 크다).
+  평균은 이겼지만 "항상 이긴다"는 아니다.
+- kmichels가 정확히 두 클러스터 사이에 있어서 이 검증이 "쉬운" 케이스일
+  수 있다 - 두 극단 밖에 있는 네 번째 조명에 대한 일반화는 미검증.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_combined_patch_residuals`,
+`... tools.analyze_x2dii_combined_lighting_split`,
+`... tools.refit_x2dii_dual_illuminant`(위 결과 전부 재생성 + DCP 재발급).

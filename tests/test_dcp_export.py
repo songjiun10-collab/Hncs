@@ -7,9 +7,10 @@ import unittest
 import numpy as np
 
 from core.dcp_export import (
-    TAG_CALIBRATION_ILLUMINANT_1, TAG_COLOR_MATRIX_1, TAG_FORWARD_MATRIX_1,
-    TAG_PROFILE_EMBED_POLICY, TAG_PROFILE_NAME, TAG_UNIQUE_CAMERA_MODEL,
-    read_dcp, write_dcp,
+    TAG_CALIBRATION_ILLUMINANT_1, TAG_CALIBRATION_ILLUMINANT_2,
+    TAG_COLOR_MATRIX_1, TAG_COLOR_MATRIX_2, TAG_FORWARD_MATRIX_1,
+    TAG_FORWARD_MATRIX_2, TAG_PROFILE_EMBED_POLICY, TAG_PROFILE_NAME,
+    TAG_UNIQUE_CAMERA_MODEL, read_dcp, write_dcp,
 )
 
 _MATRIX = np.array([
@@ -21,12 +22,9 @@ _MATRIX = np.array([
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SHIPPED_DCP = os.path.join(_REPO_ROOT, "hybrid_engine", "assets", "profiles",
                             "hasselblad_x2dii_chart.dcp")
-_REPORT_JSON = os.path.join(_REPO_ROOT, "datasets", "hasselblad", "contributed",
-                            "kmichels-x2dii-2026-07",
-                            "camera_native_matrix_report.json")
-_COMBINED_REPORT_JSON = os.path.join(_REPO_ROOT, "datasets", "hasselblad", "contributed",
-                                     "dpreview-x2dii100c-studio-chart-2026-09",
-                                     "combined_chart_matrix_report.json")
+_DUAL_ILLUMINANT_REPORT_JSON = os.path.join(
+    _REPO_ROOT, "datasets", "hasselblad", "contributed",
+    "dpreview-x2dii100c-studio-chart-2026-09", "dual_illuminant_report.json")
 
 # XYZ of D50 (CIE 1931 2도 관측자), colour.xy_to_XYZ(D50_xy)와 동일한 값.
 # colour-science import 없이 쓰려고 상수로 박아둔다(이 테스트는 RAW 디코드도
@@ -79,6 +77,43 @@ class TestWriteReadRoundTrip(unittest.TestCase):
             tags = read_dcp(path)
             np.testing.assert_allclose(tags[TAG_FORWARD_MATRIX_1],
                                         forward.reshape(9), atol=1e-6)
+
+    def test_color_matrix_2_omitted_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "test.dcp")
+            write_dcp(path, camera_model="Test Camera 1", profile_name="Test Profile",
+                       color_matrix_1=_MATRIX, calibration_illuminant_1=21)
+            tags = read_dcp(path)
+            self.assertNotIn(TAG_COLOR_MATRIX_2, tags)
+            self.assertNotIn(TAG_CALIBRATION_ILLUMINANT_2, tags)
+
+    def test_color_matrix_2_requires_calibration_illuminant_2(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "test.dcp")
+            with self.assertRaises(ValueError):
+                write_dcp(path, camera_model="C", profile_name="P",
+                           color_matrix_1=_MATRIX, calibration_illuminant_1=21,
+                           color_matrix_2=_MATRIX * 0.5)
+
+    def test_color_matrix_2_round_trips_with_its_own_illuminant(self):
+        matrix_2 = _MATRIX * 0.7
+        forward_2 = _MATRIX * 0.3
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "test.dcp")
+            write_dcp(path, camera_model="C", profile_name="P",
+                       color_matrix_1=_MATRIX, calibration_illuminant_1=21,
+                       color_matrix_2=matrix_2, calibration_illuminant_2=17,
+                       forward_matrix_2=forward_2)
+            tags = read_dcp(path)
+        self.assertEqual(tags[TAG_CALIBRATION_ILLUMINANT_2], 17)
+        np.testing.assert_allclose(tags[TAG_COLOR_MATRIX_2],
+                                    matrix_2.reshape(9), atol=1e-6)
+        np.testing.assert_allclose(tags[TAG_FORWARD_MATRIX_2],
+                                    forward_2.reshape(9), atol=1e-6)
+        # Matrix1 쪽도 그대로 정상 - 둘이 서로 안 섞인다
+        np.testing.assert_allclose(tags[TAG_COLOR_MATRIX_1],
+                                    _MATRIX.reshape(9), atol=1e-6)
+        self.assertEqual(tags[TAG_CALIBRATION_ILLUMINANT_1], 21)
 
     def test_negative_values_survive_round_trip(self):
         # SRATIONAL은 부호 있는 타입 - 음수 계수(색매트릭스에 흔함)가
@@ -252,62 +287,103 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     이제 실제 배포된 `.dcp`는 `datasets/hasselblad/contributed/
     dpreview-x2dii100c-studio-chart-2026-09/combined_chart_matrix_report.json`의
     `dcp_color_matrix_1`(균등가중 아님 - 유채색 4x 가중, 파일 내
-    `chroma_patch_weight` 필드로 명시) 기준이라 이 테스트도 그 리포트를
-    본다. 옛 kmichels 단독 리포트(`_irls_cyan_init` 등)는 기록용으로
-    그대로 남아있다."""
+    `chroma_patch_weight` 필드로 명시) 기준이었다. 옛 kmichels 단독
+    리포트(`_irls_cyan_init` 등)는 기록용으로 그대로 남아있다.
+
+    **정정(2026-09-03, 같은 날) - dual-illuminant로 재교체**: 위 combined
+    매트릭스(25장 한 개 3x3, 5-fold CV 12.69)를 이미지별 실측 네이티브
+    중립색(무채색 6패치)으로 뜯어보니 R/G가 0.32~0.65로 3그룹(dpreview
+    daylight성 R/G≈0.33 n=9, dpreview tungsten성 R/G≈0.64 n=7, kmichels
+    R/G≈0.41 n=9)으로 뚜렷이 갈렸다 - 매트릭스 하나로 여러 조명의
+    화이트밸런스를 동시에 못 맞추는 게 12.69의 주원인이었다
+    (`tools/analyze_x2dii_combined_lighting_split.py` 실행 확인,
+    무채색 패치 잔차가 유채색보다 훨씬 컸다:
+    `tools/analyze_x2dii_combined_patch_residuals.py`). 사용자 승인
+    받아 DNG의 dual-illuminant 메커니즘(`ColorMatrix1`+`ColorMatrix2`+
+    `CalibrationIlluminant1/2`, `core/dcp_export.py`에 이번에 추가)으로
+    풀었다(`tools/refit_x2dii_dual_illuminant.py`).
+
+    daylight성/tungsten성 두 dpreview 그룹으로 각각 `ColorMatrix1`
+    (illuminant=21/D65 근사)/`ColorMatrix2`(illuminant=17/Standard
+    Light A 근사)을 피팅하고, kmichels(세 번째 조명, 두 매트릭스
+    어디에도 미포함)는 순수 홀드아웃으로 남겨 R/G 선형보간(이 프로젝트가
+    만든 근사 - Adobe DNG SDK의 실제 보간 알고리즘 재현이 아님, 실기기
+    미검증)을 적용해 일반화 성능을 검증했다. 25장 전체를 셋 다
+    out-of-sample로 공정 비교한 결과(`dual_illuminant_report.json`의
+    `full25_fair_comparison`, 부트스트랩 95% CI 20000회):
+    global 12.69 -> dual-illuminant 8.48, **+33.14%**,
+    95% CI=[+0.81,+7.46](0을 안 걸침), wins 16/losses 9(n=25).
+    이 테스트도 이제 `dual_illuminant_report.json`을 본다."""
 
     @classmethod
     def setUpClass(cls):
-        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_COMBINED_REPORT_JSON)):
+        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_DUAL_ILLUMINANT_REPORT_JSON)):
             raise unittest.SkipTest("커밋된 .dcp/리포트 JSON이 없음")
-        with open(_COMBINED_REPORT_JSON, encoding="utf-8") as f:
+        with open(_DUAL_ILLUMINANT_REPORT_JSON, encoding="utf-8") as f:
             cls.report = json.load(f)
         cls.tags = read_dcp(_SHIPPED_DCP)
         cls.cm1 = cls.tags[TAG_COLOR_MATRIX_1].reshape(3, 3)
-        cls.chart_m = np.array(cls.report["chart_matrix_in_sample"], dtype=np.float64)
+        cls.cm2 = cls.tags[TAG_COLOR_MATRIX_2].reshape(3, 3)
+        cls.chart_m1 = np.array(cls.report["color_matrix_1"], dtype=np.float64)
+        cls.chart_m2 = np.array(cls.report["color_matrix_2"], dtype=np.float64)
 
     def test_color_matrix_1_is_inverse_transpose_not_plain_inverse(self):
-        expected = np.linalg.inv(self.chart_m).T
+        expected = np.linalg.inv(self.chart_m1).T
         np.testing.assert_allclose(self.cm1, expected, atol=1e-6)
         # 전치 없는 역행렬이었다면(원래 버그) 통과하지 않아야 한다
-        self.assertFalse(np.allclose(self.cm1, np.linalg.inv(self.chart_m),
+        self.assertFalse(np.allclose(self.cm1, np.linalg.inv(self.chart_m1),
                                       atol=1e-6))
 
-    def test_report_dcp_color_matrix_field_matches_the_file(self):
+    def test_color_matrix_2_is_inverse_transpose_not_plain_inverse(self):
+        expected = np.linalg.inv(self.chart_m2).T
+        np.testing.assert_allclose(self.cm2, expected, atol=1e-6)
+        self.assertFalse(np.allclose(self.cm2, np.linalg.inv(self.chart_m2),
+                                      atol=1e-6))
+
+    def test_report_dcp_color_matrix_fields_match_the_file(self):
         np.testing.assert_allclose(
             self.cm1,
             np.array(self.report["dcp_color_matrix_1"], dtype=np.float64),
             atol=1e-6)
+        np.testing.assert_allclose(
+            self.cm2,
+            np.array(self.report["dcp_color_matrix_2"], dtype=np.float64),
+            atol=1e-6)
 
-    def test_calibration_illuminant_is_d50_matching_the_fit_reference_space(self):
-        # 참조값이 XYZ(D50)으로 색순응된 뒤 피팅되므로 매트릭스는 구성상
-        # D50 기준이다. 23 = D50.
-        self.assertEqual(self.tags[TAG_CALIBRATION_ILLUMINANT_1], 23)
-        self.assertEqual(self.report["calibration_illuminant"]["chosen_enum"], 23)
+    def test_calibration_illuminants_match_the_two_lighting_clusters(self):
+        # illuminant1=D65(21) 근사(daylight성 저R/G 클러스터),
+        # illuminant2=Standard Light A(17) 근사(tungsten성 고R/G 클러스터).
+        self.assertEqual(self.tags[TAG_CALIBRATION_ILLUMINANT_1], 21)
+        self.assertEqual(self.tags[TAG_CALIBRATION_ILLUMINANT_2], 17)
+        self.assertEqual(self.report["group1_daylight_like"]["calibration_illuminant"], 21)
+        self.assertEqual(self.report["group2_tungsten_like"]["calibration_illuminant"], 17)
 
-    def test_color_matrix_1_maps_d50_white_to_the_measured_native_neutral(self):
-        """물리적 정합성: `ColorMatrix1`은 XYZ(D50) -> 카메라 네이티브이므로
-        D50 백색점을 넣으면 차트 무채색 패치에서 실측한 네이티브 중립색과
-        비례해야 한다. 전치를 빠뜨리면 R이 4~5배 어긋나면서 여기서 깨진다 -
-        구조 검증이나 라운드트립으로는 절대 잡히지 않던 부분."""
-        measured = np.array(self.report["measured_native_neutral_g_normalized"],
-                            dtype=np.float64)
+    def test_color_matrix_1_maps_d50_white_to_group1_measured_native_neutral(self):
+        """물리적 정합성: `ColorMatrixN`은 XYZ(D50) -> 카메라 네이티브이므로
+        D50 백색점을 넣으면 그 그룹에서 실측한 네이티브 중립색과 비례해야
+        한다. 전치를 빠뜨리면 크게 어긋나면서 여기서 깨진다."""
+        measured = np.array(
+            self.report["group1_daylight_like"]["measured_native_neutral_g_normalized"],
+            dtype=np.float64)
         predicted = self.cm1 @ _XYZ_D50
-        predicted = predicted / predicted[1]   # 실측값과 같이 G=1 정규화
-        # 허용치 15%(2026-09-03, kmichels 단독일 땐 5%였음) - measured가
-        # 이제 조명이 다른 두 데이터셋(kmichels 단일조명 + dpreview
-        # Daylight/Lowlight) 평균이라 그 자체가 더 넓게 퍼진 값이고,
-        # 매트릭스도 24패치 다조명 최소자승이라 어느 한쪽 조명의 중립점을
-        # 정확히 재현할 의무가 없다. 그래도 전치 오류가 만드는 4~5배짜리
-        # 어긋남(400~500%)과는 여전히 자릿수가 다르다.
+        predicted = predicted / predicted[1]
+        np.testing.assert_allclose(predicted, measured, rtol=0.15)
+
+    def test_color_matrix_2_maps_d50_white_to_group2_measured_native_neutral(self):
+        measured = np.array(
+            self.report["group2_tungsten_like"]["measured_native_neutral_g_normalized"],
+            dtype=np.float64)
+        predicted = self.cm2 @ _XYZ_D50
+        predicted = predicted / predicted[1]
         np.testing.assert_allclose(predicted, measured, rtol=0.15)
 
     def test_plain_inverse_would_fail_the_physical_invariant(self):
-        # 위 테스트가 진짜로 버그를 잡는지 확인 - 버그 버전 매트릭스는
+        # 위 테스트들이 진짜로 버그를 잡는지 확인 - 버그 버전 매트릭스는
         # 같은 검사를 통과하지 못해야 한다.
-        measured = np.array(self.report["measured_native_neutral_g_normalized"],
-                            dtype=np.float64)
-        buggy = np.linalg.inv(self.chart_m) @ _XYZ_D50
+        measured = np.array(
+            self.report["group1_daylight_like"]["measured_native_neutral_g_normalized"],
+            dtype=np.float64)
+        buggy = np.linalg.inv(self.chart_m1) @ _XYZ_D50
         buggy = buggy / buggy[1]
         with self.assertRaises(AssertionError):
             np.testing.assert_allclose(buggy, measured, rtol=0.05)
