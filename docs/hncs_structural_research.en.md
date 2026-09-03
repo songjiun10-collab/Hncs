@@ -481,3 +481,41 @@ Reproduce: `python3 -m tools.evaluate_hncs_structural` (390 pairs ×
 headroom, raising the `N_WORKERS` cap to 5 runs faster, though in this
 session's environment 5 workers' combined pair_data cache (~1.6GB
 each) filled swap badly).
+
+## Resolving Re-verification 4's "one discrepancy" - grid size isn't the cause (2026-09-03)
+
+Re-verification 4 above left one question open: `_full_pool` found
+blend vs hard-cluster significantly favoring hard-cluster, while this
+run's direct paired comparison was inconclusive - grid size (1024 vs
+256 combos) and sample count (389 vs 364) differed simultaneously, so
+the cause couldn't be isolated. `tools/evaluate_hncs_structural_gridsize_ablation.py`
+answers this - it's 100% identical code to `evaluate_hncs_structural.py`
+for the loader/fold split (`load_pairs()`/`make_folds(seed=0)`,
+verified via `test_matches_original_script_fold_split`), with only
+`CHROMA_COMBOS` dropped from 1024 to 256 (matching `_full_pool`) to
+isolate that single variable (the unrelated 4-cluster branch was
+dropped too, to cut compute). 3 workers, 2107s (~35 minutes) (run-verified).
+
+**Result (n=389, 256 combos)**:
+
+| Comparison | Improvement | Wins/Losses | Sign test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| 2-cluster hard vs `apply_hncs()` | -6.57% (10.475→11.163) | 167/222 | 0.0061 | [-0.942,-0.430] | apply_hncs wins |
+| Blend vs `apply_hncs()` | -6.71% (10.475→11.178) | 162/227 | 0.0011 | [-0.957,-0.444] | apply_hncs wins |
+| **Blend vs 2-cluster hard (direct paired)** | **-0.13%** | **157/232** | **0.0002** | **[-0.038,+0.009]** | **Inconclusive (CI includes 0)** |
+
+Essentially identical to the 1024-combo numbers to two decimal places
+(-6.59%/-6.74%/-0.14%, wins/losses 167/222 · 162/227 · 157/232 -
+**the win/loss counts are exactly the same regardless of grid size**,
+run-verified). **Dropping the grid 4x (1024 to 256) barely changes
+anything.** The hypothesis - that the 4x grid difference shifted the
+blend anchor fit enough to flip the conclusion - is **rejected**
+(run-verified): `fit_chroma_lut_grid()` converges to essentially the
+same optimum (sat_mult, hue_shift) at both grid sizes. The remaining
+candidate causes are the sample-count difference (389 vs 364 pairs) or
+some other undiscovered methodology gap (out of this session's scope -
+the next step, if revisited, would be re-running this script on
+`_full_pool`'s exact 364-pair subset to isolate sample count alone).
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural_gridsize_ablation`
+(389 pairs × 256 combos × 5-fold, about 35 minutes at 3 workers).
