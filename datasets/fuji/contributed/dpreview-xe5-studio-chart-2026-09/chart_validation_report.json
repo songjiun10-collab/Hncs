@@ -1,0 +1,42 @@
+{
+  "brand": "fuji",
+  "camera": "Fujifilm X-E5",
+  "n_images": 20,
+  "n_failed_detect": 0,
+  "images": [
+    "09028962e5024f4193b2229e2abbb1b0.raf",
+    "0948fed3df224a34ac16d9c8a5e92fce.raf",
+    "099871424ed34a8c9473ae4f6e45b529.raf",
+    "1ad6a88fa90c412f9c4c786cf256f5a6.raf",
+    "4636c044332a4357b4d40878255a301b.raf",
+    "635f8d33379a449d857804c8cc6de29b.raf",
+    "83d873182adc40d68aec924e27122f48.raf",
+    "a287847ced2d45eeb666211f7e9cdf18.raf",
+    "ad621bc77ddc4e27ac8689a1f54d6e70.raf",
+    "b799645e36894591aa9a6ceaf0261706.raf",
+    "ba570d02b91745b0a154884cb866b8b4.raf",
+    "c7f9f64a11b14d5e9c2b45bfacd3d1eb.raf",
+    "ddd3f8c45b6f48a88eefc4b8a82d989b.raf",
+    "dfd1339d3c4948b2a134e6b3b1b648c9.raf",
+    "e1e4069c78854217a847a1d79b668f8e.raf",
+    "e722214b07e54e1b9fa1dae6a17d2cec.raf",
+    "e95fae10bb8f498fab4b954cf50e428d.raf",
+    "f001df93a3fc4901903ebaace14fae20.raf",
+    "f9995dc63df74ba7b7073dfaca241d11.raf",
+    "fbe83ca1543341eb963a5d09220a660b.raf"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 30.932826717004605,
+  "delta_e00_cv_mean": 14.72709153907142,
+  "delta_e00_improvement_pct": 52.39008812933497,
+  "delta_e00_bootstrap_ci95": [
+    13.762083563809265,
+    18.66309601025194
+  ],
+  "wins": 20,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.24167892105358937,
+  "rmse_xyz_cv_mean": 0.10539538099627781,
+  "rmse_xyz_improvement_pct": 56.39032955923051
+}
