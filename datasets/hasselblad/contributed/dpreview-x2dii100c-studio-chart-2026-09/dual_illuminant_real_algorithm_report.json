@@ -1,0 +1,27 @@
+{
+  "kmichels_holdout_n9": {
+    "global_fair_baseline_mean": 16.05095473256316,
+    "dual_illuminant_real_algorithm_mean": 15.645919948400936,
+    "paired_diff_mean": 0.4050347841622227,
+    "bootstrap_ci95": [
+      0.3211149294025836,
+      0.48541718358568486
+    ],
+    "wins": 9,
+    "losses": 0
+  },
+  "full25": {
+    "global_5fold_cv_mean": 12.68650251295632,
+    "dual_illuminant_real_algorithm_mean": 9.126073230763119,
+    "paired_diff_mean": 3.5604292821932013,
+    "bootstrap_ci95": [
+      -0.1533665274406567,
+      7.114212809970968
+    ],
+    "wins": 16,
+    "losses": 9,
+    "improvement_pct": 28.064703243128264,
+    "ci_straddles_zero": true
+  },
+  "note": "이전 배포 판정(EVALUATION.md 'X2D II 100C DCP - 단일매트릭스가 못 잡는 다조명 문제' 절)은 R/G 선형보간 근사로 낸 수치(25장 CI=[+0.81,+7.46])였다. 이 리포트는 실제 DNG 알고리즘(core/dcp_interpolate.py)으로 재검증한 값."
+}

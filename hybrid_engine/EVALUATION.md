@@ -3441,3 +3441,40 @@ Light A`, 실행 확인). `tests/test_dcp_export.py::TestShippedProfileMatchesRe
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_combined_patch_residuals`,
 `... tools.analyze_x2dii_combined_lighting_split`,
 `... tools.refit_x2dii_dual_illuminant`(위 결과 전부 재생성 + DCP 재발급).
+
+**정정(2026-09-03, 같은 날) - 진짜 DNG 보간 알고리즘으로 재검증하니
+25장 기준 CI가 0을 걸침**: 위 절의 검증(9장 [+1.99,+2.39], 25장
+[+0.81,+7.46])은 전부 이 프로젝트가 급조한 R/G 선형보간 근사로 낸
+수치였다. 사용자가 "만들어내"(실제 알고리즘을 만들라)로 지시한 뒤
+`core/dcp_interpolate.py`에 DNG 스펙이 문서화한 실제 알고리즘을
+구현했다(고정점 반복 - `CM(g)=g*CM1+(1-g)*CM2`를 저장된 형태 그대로
+성분별 선형보간하고, 그 역행렬로 중립색을 XYZ로 변환해 McCamy(1992)
+근사로 CCT를 추정, mired 공간에서 g를 갱신, 수렴까지 반복.
+`tests/test_dcp_interpolate.py` 실행 확인 10/10 통과 - 두 기준 조명
+자신의 표준 백색점을 넣으면 g가 각각 0.9/0.1 경계를 넘겨 자기 조명
+쪽으로 수렴하는지, 반환된 매트릭스가 실제 고정점인지 등을 검사).
+
+`tools/validate_x2dii_dual_illuminant_real_algorithm.py` 실행 결과
+(`dual_illuminant_real_algorithm_report.json`에 저장): kmichels 9장
+홀드아웃은 16.05에서 15.65로(부트스트랩 95% CI=[+0.32,+0.49], 0을 안
+걸침, wins 9/losses 0, 리포트의 `kmichels_holdout_n9` 필드) - 개선폭이
+위 섹션의 R/G 근사 결과보다 훨씬 작다. **25장 전체는 12.69에서
+9.13로(+28.06%, 부트스트랩 95% CI=[-0.15,+7.11], 0을 걸침, 리포트의
+`full25` 필드) - `hybrid_engine/CLAUDE.md`의 "CI가 0을 걸치면 미결정,
+평균이 아무리 좋아도 승자 선언 금지" 규칙상 이건 통계적으로 유의한
+승리가 아니다.**
+
+**결론(정성적 해석, 위 CI 딸린 두 결과 기준)**: 25장 전체 CI가 0을
+걸치므로 R/G 선형보간 근사가 진짜 DNG 알고리즘보다 나은 방법이라고
+볼 근거는 없다 - kmichels 9장 홀드아웃 하나에서만 우연히 더 낮은
+ΔE00이 나왔을 가능성이 높다. 25장 전체 기준으로 통계적 유의성이
+사라졌으므로, **배포된 dual-illuminant DCP가 기존 combined
+단일매트릭스(12.69, 위 섹션의 5-fold CV)보다 확실히 낫다고 결론
+내릴 근거는 지금 없다** - 평균은 여전히 더 낮지만(9.13 < 12.69) CI가
+0을 걸쳐서 우연일 가능성을 배제 못 한다. `.dcp` 파일 자체는 이
+정정으로 건드리지 않았다(검증 방법론 재확인일 뿐) - 계속 배포 상태로
+둘지, combined 단일매트릭스로 되돌릴지는 사용자에게 별도 확인이
+필요한 결정이다(Never-list 파일).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tests.test_dcp_interpolate`(단위 테스트),
+`... tools.validate_x2dii_dual_illuminant_real_algorithm`(위 두 비교 재생성).
