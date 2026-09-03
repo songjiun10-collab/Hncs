@@ -3487,6 +3487,75 @@ CI의 불확실성보다 우선한다고 판단한 것. `hasselblad_x2dii_chart.
 이 결정에 따라 dual-illuminant 매트릭스로 그대로 둔다 - 추가 변경
 없음.
 
+## X2D II 100C dual-illuminant - 재검증 3건: burst-fair 수정, 오라클 격차, RT 교차검증에서 발견한 D50기준 구조적 편향 (2026-09-04)
+
+위 "정정" 절이 25장 전체 CI=[-0.15,+7.11]로 판정 보류라고 밝힌 뒤,
+`실험 할거 추천` 요청에 응해 4개 실험을 진행했다(사용자 "ㄱㄱ 다해"로
+전부 승인).
+
+**실험 1 - burst-fair 리키지 수정**: `tools/analyze_x2dii_loss_breakdown.py`로
+25장 비교의 손실 9건을 살펴보니 **전부 kmichels**였다(승리 16건은
+전부 dpreview 챠트 이미지). 원인: kmichels 9장은 같은 94초 버스트라
+5-fold CV에서 매 폴드마다 8/9장이 학습셋에 남는다 - "global(단일매트릭스)"
+쪽에만 부당하게 유리한 리키지. `tools/analyze_x2dii_burst_fair_comparison.py`로
+kmichels 9장의 global 점수만 dpreview 25장 단독학습(kmichels 리키지
+0) 매트릭스로 교체하고(group1/2 16장은 서로 다른 ISO/노출이라 리키지가
+덜 심각해 그대로 둠) 재계산: global(burst-fair)=15.8325, dual=9.1261,
+**paired diff 평균=6.7064, 부트스트랩 95% CI=[+4.5527,+8.8526](0을 안
+걸침), wins=25/losses=0, 개선폭=+42.36%**
+(`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/burst_fair_comparison_report.json`).
+리키지를 고치니 dual-illuminant의 우위가 오히려 위 정정보다 훨씬
+더 확실해졌다.
+
+**실험 2 - kmichels 전용 매트릭스와의 격차(오라클 상한)**:
+`tools/analyze_x2dii_kmichels_own_matrix_gap.py`로 kmichels 9장에
+직접 fit한 매트릭스의 5-fold CV를 재보니 **2.7245**(in-sample
+2.6127)로, dual-illuminant 보간의 kmichels 홀드아웃 결과(15.6459,
+`dual_illuminant_real_algorithm_report.json`의 `kmichels_holdout_n9.dual_illuminant_real_algorithm_mean`)보다
+**12.92 더 낮다**. 즉 kmichels 자체 조명으로 전용 캘리브레이션했다면
+지금 배포된 그 어떤 방법(단일매트릭스든 dual-illuminant든)보다 압도적으로
+좋았을 것 - 지금 이 카메라의 데이터셋에 kmichels 같은 실제 촬영
+조명 다양성이 훨씬 더 필요하다는 정량적 근거.
+
+**실험 3 - RawTherapee 교차검증에서 발견한 구조적 편향**: 배포된
+`.dcp`를 `rawtherapee-cli`(`DCPIlluminant=0/1/2` pp3)로 실제 렌더링해
+`core/dcp_interpolate.py`와 비교했다. `DCPIlluminant=0`(자동보간)이
+kmichels 테스트 이미지에서 `=1`(illuminant1 강제)과 픽셀 단위로
+동일하게 나왔다 - RawPedia 문서(https://rawpedia.rawtherapee.com/Color_Management)
+확인 결과 RT는 촬영 WB가 두 기준 조명 "사이"에 있을 때만 보간하고
+아니면 더 가까운 쪽으로 스냅한다는 설계라 이 자체는 버그가 아니었다.
+
+하지만 이 검증 과정에서 더 근본적인 문제를 찾았다: `core/dcp_interpolate.py`로
+group2(텅스텐성) 클러스터 **자기 자신의** 측정 중립색을 넣어도
+g=0.7754가 나왔다(기대값은 0에 가까워야 함 - g=1이 illuminant1,
+g=0이 illuminant2). 원인 추적 결과, 이 프로젝트의 `ColorMatrix1`/`ColorMatrix2`가
+전부 `chart_baseline.reference_patches_xyz_d50()`로 **D50 기준
+정규화**돼 있어서, 매트릭스가 뭐든 자기 중립색을 넣으면 McCamy CCT가
+D50 자체의 CCT(5001.8K, 이번 대화에서 직접 계산 확인)로 돌아온다.
+mired(5001.8K)=199.9는 mired(D65,illuminant1)=153.8보다 mired(StdA,illuminant2)=350.1에서
+훨씬 멀다 - 즉 **입력이 무엇이든 g가 구조적으로 illuminant1 쪽으로
+쏠린다**(D50 흰점 자체를 넣었을 때 기대 g=0.7649, 이번 대화에서 직접
+계산 확인). `CalibrationIlluminant1=21(D65)`/`2=17(StdA)` 태그가
+실제 매트릭스 구성(둘 다 D50 기준)과 안 맞는다는 뜻 - 이건 이
+프로젝트의 파이썬 재현 문제가 아니라 **`.dcp` 파일 자체의 구조적
+결함**이고, RT가 kmichels에서 보간 없이 illuminant1로 스냅한 관찰과도
+방향이 일치한다.
+
+**종합 판단**: 실험 1이 25장 전체 CI 문제를 강하게 해소했지만(리키지
+수정 후 CI=[+4.55,+8.85]), 실험 3이 그 우위의 메커니즘(진짜 DNG
+CCT 보간)이 이 `.dcp` 구성에서는 신뢰할 수 없다는 걸 보여줬다 -
+dual-illuminant가 이기는 이유가 "정확한 조명 판별"이 아니라 "그냥
+거의 항상 illuminant1(daylight성 매트릭스)에 가깝게 스냅해서"일
+가능성이 높다(group1이 16장 중 9장으로 다수). 이 경우 dual-illuminant는
+사실상 "daylight성 매트릭스 하나 + 일부 사례에서만 부분 보정"에
+가깝고, 라벨이 주장하는 "진짜 두 조명 보간"은 아니다. `.dcp`는
+Never-list 파일이라 추가 변경 없이 그대로 둔다 - 재배포/원복 여부는
+사용자 결정 필요.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_loss_breakdown`,
+`... tools.analyze_x2dii_burst_fair_comparison`,
+`... tools.analyze_x2dii_kmichels_own_matrix_gap`.
+
 ## dpreview 스튜디오씬 챠트 - 6개 브랜드 컬러체커 검증 총괄 (2026-09-04)
 
 `tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증
