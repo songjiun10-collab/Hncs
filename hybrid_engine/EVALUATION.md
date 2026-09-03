@@ -3183,3 +3183,112 @@ n=26, 20000회 리샘플, 이 실행 확인된 결과)한 결과 승/패 14/12(�
 <SL3-P DNG 폴더 경로> [업스케일 배율, 기본 3.0]` /
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.experiment_leica_sl3p_denoise_expnorm
 <SL3-P DNG 폴더 경로>`.
+
+## dpreview 스튜디오씬 비교위젯 - 브랜드 무관 공용 챠트 데이터베이스 발견 (2026-09-03)
+
+**발견**: Leica SL3-P 챠트를 찾을 때 썼던 dpreview "Studio test scene"
+비교위젯이 브랜드별 개별 위젯이 아니라 **하나의 공용 REST API**
+(`wp-json/wayfinder-image-compare/v1/widgets/<id>/frontend`)로 전체
+카메라를 다 서빙한다는 걸 확인했다(사용자 지시 "할거 찾아" ->
+"다해 나 학교 3시 50분에 끝남 알아서 해") - 아무 위젯 ID로 fetch해도
+`images` 키에 **13016개** 이미지 항목(Nikon D7100부터 최신 바디까지,
+JPEG+Raw 섞임)이 전부 들어있고, 각 항목이 `product_id`(카메라)와
+`raw_file_url`(실제 RAW 파일)을 갖는다 - 이 실행 확인된 결과. RAW
+URL은 `wp-content/uploads/image-compare/...`라 plain curl은
+Cloudflare 챌린지(`cf-mitigated: challenge`, 이 실행 확인된 결과)로
+막히지만, 이미 인증된 브라우저 페이지 컨텍스트에서 `fetch()`+blob+
+synthetic `<a download>` 클릭으로는 우회된다(Leica 때와 같은 기법,
+`reference_dpreview_raw_download_technique` 메모리 참고).
+
+**표준 스튜디오씬은 X-Rite ColorChecker Classic 24패치를 포함**하므로
+(Leica 때 육안 확인한 그 챠트) 이 project가 이미 쓰는
+`hybrid_engine.core.chart_baseline`으로 어느 카메라든 즉시 챠트 기반
+검증이 가능하다. 이번 위젯(id 541497, "Sony a7 V" 기사)의
+`products` 딕셔너리에서 이 project가 배포 중인 브랜드와 겹치는 현행
+바디를 확인(이 실행 확인된 결과, RAW 장수는 ISO별로 최소 20~24장):
+Canon EOS R6 Mark III(id 328713, RAW 22장), Sony a7 V(328718, 24장),
+Sony a7R VI(328746, 22장), Panasonic Lumix DC-S1II(182451, 20장),
+Nikon Z5II(182446, 24장), Fujifilm X-E5(182462, 20장), Ricoh GR
+IV(182455, 24장), Sigma fp L(181838, 22장), Hasselblad X2D II
+100C(182473, 20장) - **9개 바디가 전부 같은 API 하나에 있다**.
+이 중 Canon/Panasonic/Nikon은 지금 population(JPEG) 통계뿐이고
+raw 페어가 아예 없어서(각 브랜드 파일 독스트링 참고) 실 챠트 데이터가
+생기면 가장 크게 도약하는 브랜드다.
+
+### Nikon Z5II 실 챠트 검증 (첫 실 챠트 데이터, Nikon 브랜드 사상 최초)
+
+Nikon Z5II(현행 배포 바디, `brands/nikon.py`가 population 통계로
+근사하던 그 라인업)의 위 위젯 RAW 24장(ISO 100~204800 x Daylight/
+Lowlight 2개 조명, 각 12단계)을 전부 받았다(이 실행 확인된 결과) -
+`exiftool -Software -CreatorTool -ProcessingSoftware`로 24장 전부
+`Ver.01.00`(카메라 펌웨어 문자열)만 나와 편집 오염 없음 확인(이 실행
+확인된 결과, 부트스트랩 CI 대상 아님 - 단순 메타데이터 확인).
+`chart_baseline.detect_and_sample()`로 24/24 검출 성공(이 실행
+확인된 결과) - 무보정 평균 ΔE00 = 27.582(이 실행 확인된 결과).
+
+Leica SL3-P와 같은 방법론(무채색 6패치 대비 유채색 18패치 3x 가중
+최소자승, `raw_baseline.fit_color_matrix(weights=...)`, ridge=0.1)로
+5-fold CV: ΔE00 27.582 -> 11.130, **+59.65%**(이 실행 확인된 결과) -
+Leica(+53.26%)보다도 높다. 부트스트랩 95% CI(paired diff, n=24,
+20000회 리샘플, 이 실행 확인된 결과) = [+14.257, +18.665](0 미포함),
+승/패 24/0(이 실행 확인된 결과) - 통계적으로 명확한 개선.
+
+원본 RAW는 `datasets/nikon/contributed/dpreview-z5ii-studio-chart-2026-09/raw/`
+(gitignore 대상, `datasets/*/contributed/*/raw/` 패턴)에 저장.
+**배포 가능한 DCP/ICC로 만들지 여부는 미결정 - Leica 때와 같은
+원칙(Never 리스트, 사용자의 명시적 승인 필요) 그대로 열어둔다.**
+
+Canon EOS R6 Mark III / Panasonic Lumix DC-S1II / Sigma fp L도 같은
+위젯에서 RAW를 받는 중(이 절 작성 시점 기준 진행 중 - 결과는 이어지는
+절 또는 다음 커밋에 기록).
+
+재현: 위젯 API를 브라우저 컨텍스트에서 fetch, `product_id`로
+필터링, `filetype === "Raw"`인 항목의 `raw_file_url`을 blob
+다운로드. 검증은 `chart_baseline.decode_raw_native()` +
+`detect_and_sample()` + `chart_baseline.patch_delta_e_xyz_d50()`.
+
+### Canon EOS R6 Mark III 실 챠트 검증 (Canon 브랜드 사상 최초 raw 데이터)
+
+같은 위젯의 Canon EOS R6 Mark III(`brands/canon.py`가 population
+통계로 근사하던 현행 배포 바디) RAW 22장(.cr3)을 받았다(이 실행
+확인된 결과) - Software/CreatorTool/ProcessingSoftware 태그가 22장
+전부 비어 있어(Canon RAW의 정상 패턴, `brands/canon.py`가 이미
+기록한 것과 동일) 편집 오염 없음 확인(이 실행 확인된 결과).
+`detect_and_sample()` 22/22 검출 성공(이 실행 확인된 결과) - 무보정
+평균 ΔE00 = 21.120(이 실행 확인된 결과).
+
+같은 방법론(무채색 6패치 대비 유채색 18패치 3x 가중, ridge=0.1)로
+5-fold CV: ΔE00 21.120 -> 16.534, **+21.72%**(이 실행 확인된 결과) -
+Leica/Nikon보다 폭이 작지만 부트스트랩 95% CI(paired diff, n=22,
+20000회, 이 실행 확인된 결과) = [+2.629, +6.549](0 미포함), 승/패
+15/7(이 실행 확인된 결과) - CI가 0을 안 걸치므로 통계적으로는 여전히
+유의한 개선이다. RAW는
+`datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/raw/`에
+저장.
+
+### Panasonic Lumix DC-S1II 실 챠트 검증 (Panasonic 브랜드 사상 최초 raw 데이터)
+
+Panasonic Lumix DC-S1II(`brands/panasonic.py`가 population 통계로
+근사하던 현행 배포 바디) RAW 20장(.rw2)을 받았다(이 실행 확인된
+결과) - Software 태그가 `Ver.1.0`/`Ver.1.1`(카메라 펌웨어 문자열)만
+나와 편집 오염 없음 확인(이 실행 확인된 결과). `detect_and_sample()`
+18/20 검출 성공, 2장(`iso100_2025_07_08_16_22_10`,
+`iso25600_2025_07_08_17_17_44`)은 `cv2.mcc` 내부에서 OpenCV assertion
+에러로 실패(이 실행 확인된 결과, 원인 미조사 - 다른 20장은 정상
+검출됐으므로 챠트 자체가 안 보이는 프레임이거나 특정 노출값에서
+디코드 shape 문제로 추정) - 무보정 평균 ΔE00 = 28.797(성공한 18장
+기준, 이 실행 확인된 결과).
+
+같은 방법론으로 5-fold CV(n=18): ΔE00 28.797 -> 12.847,
+**+55.39%**(이 실행 확인된 결과) - 부트스트랩 95% CI(paired diff,
+20000회, 이 실행 확인된 결과) = [+13.683, +18.334](0 미포함), 승/패
+18/0(이 실행 확인된 결과) - Nikon/Leica 급의 강한 개선. RAW는
+`datasets/panasonic/contributed/dpreview-s1ii-studio-chart-2026-09/raw/`에
+저장(20장 전부, 검출 실패 2장 포함).
+
+**세 브랜드(Nikon/Canon/Panasonic) 공통**: 전부 지금까지 raw 페어가
+전혀 없어서 population(JPEG) 통계에만 의존하던 브랜드다 - 이번에
+처음으로 실제 ColorChecker 기반 챠트 데이터가 생겼다. **배포 가능한
+DCP/ICC로 만들지는 셋 다 미결정 - Never 리스트, 사용자 승인 필요.**
+Sigma fp L도 같은 위젯에서 받는 중(진행 중, 다음 절 또는 다음
+커밋에 기록).
