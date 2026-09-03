@@ -23,6 +23,9 @@ class TestAnalyzeX2diiScriptsImport(unittest.TestCase):
     def test_illuminant_referenced_interpolation_imports(self):
         importlib.import_module("tools.analyze_x2dii_illuminant_referenced_interpolation")
 
+    def test_refit_v2_illuminant_referenced_imports(self):
+        importlib.import_module("tools.refit_x2dii_dual_illuminant_v2_illuminant_referenced")
+
 
 if __name__ == "__main__":
     unittest.main()
