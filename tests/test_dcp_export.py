@@ -22,14 +22,21 @@ _MATRIX = np.array([
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _SHIPPED_DCP = os.path.join(_REPO_ROOT, "hybrid_engine", "assets", "profiles",
                             "hasselblad_x2dii_chart.dcp")
-_DUAL_ILLUMINANT_REPORT_JSON = os.path.join(
+_DUAL_ILLUMINANT_REPORT_JSON_V1 = os.path.join(
     _REPO_ROOT, "datasets", "hasselblad", "contributed",
     "dpreview-x2dii100c-studio-chart-2026-09", "dual_illuminant_report.json")
+_DUAL_ILLUMINANT_REPORT_JSON_V2 = os.path.join(
+    _REPO_ROOT, "datasets", "hasselblad", "contributed",
+    "dpreview-x2dii100c-studio-chart-2026-09",
+    "dual_illuminant_report_v2_illuminant_referenced.json")
 
-# XYZ of D50 (CIE 1931 2도 관측자), colour.xy_to_XYZ(D50_xy)와 동일한 값.
-# colour-science import 없이 쓰려고 상수로 박아둔다(이 테스트는 RAW 디코드도
-# colour도 필요 없는 순수 파일 읽기 테스트여야 하므로).
+# XYZ of D50/D65/Standard Illuminant A (CIE 1931 2도 관측자),
+# colour.xy_to_XYZ(...)와 동일한 값. colour-science import 없이 쓰려고
+# 상수로 박아둔다(이 테스트는 RAW 디코드도 colour도 필요 없는 순수 파일
+# 읽기 테스트여야 하므로).
 _XYZ_D50 = np.array([0.9642956764295677, 1.0, 0.8251046025104605])
+_XYZ_D65 = np.array([0.9504559270516716, 1.0, 1.0890577507598784])
+_XYZ_STD_A = np.array([1.098490612345073, 1.0, 0.35579825745490257])
 
 
 class TestWriteReadRoundTrip(unittest.TestCase):
@@ -313,13 +320,34 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     `full25_fair_comparison`, 부트스트랩 95% CI 20000회):
     global 12.69 -> dual-illuminant 8.48, **+33.14%**,
     95% CI=[+0.81,+7.46](0을 안 걸침), wins 16/losses 9(n=25).
-    이 테스트도 이제 `dual_illuminant_report.json`을 본다."""
+
+    **v2로 교체(2026-09-04, 같은 날) - D50 편향 근본 수정**: 위 v1
+    매트릭스는 `ColorMatrix1`/`ColorMatrix2` 둘 다 XYZ(D50) 기준으로
+    fit했는데, DNG 스펙 확인 결과 이건 틀렸다 - 두 매트릭스는 D50이
+    아니라 **각자의 캘리브레이션 조명 자체의 색도**로 매핑해야 하고
+    D50 정합은 실제 DNG 리더가 보간 이후 별도로 하는 색순응 단계다.
+    이 편향 때문에 v1은 `core/dcp_interpolate.py`의 실제 보간을
+    거치면 group2(텅스텐성)에서 combined 단일매트릭스(18.998)보다도
+    나쁜 19.878을 냈다(`hybrid_engine/EVALUATION.md` "실험4" 절).
+    `tools/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py`가
+    `chart_baseline.reference_patches_xyz(illuminant_xy)`(신규)로
+    matrix_1은 D65, matrix_2는 Standard Illuminant A 색도로 다시
+    fit했다 - self-consistency 완전히 회복(group1 자기중립색 g=0.9916,
+    group2 자기중립색 g=0.0176), 25장 전체 held-out end-to-end
+    (`dual_illuminant_report_v2_illuminant_referenced.json`의
+    `full25_held_out_end_to_end`, 부트스트랩 95% CI 20000회):
+    global(burst-fair) 15.83 -> real-interpolation 8.43, 95%
+    CI=[+5.55,+9.28](0을 확실히 안 걸침), wins 25/losses 0(만장일치,
+    n=25). 사용자 승인("D50 편향부터 고치고 재판단" -> "재배포
+    (권장)")으로 배포. 이 테스트는 이제 v2 리포트
+    (`dual_illuminant_report_v2_illuminant_referenced.json`)를 본다 -
+    v1 리포트는 기록으로 그대로 남아있다."""
 
     @classmethod
     def setUpClass(cls):
-        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_DUAL_ILLUMINANT_REPORT_JSON)):
+        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_DUAL_ILLUMINANT_REPORT_JSON_V2)):
             raise unittest.SkipTest("커밋된 .dcp/리포트 JSON이 없음")
-        with open(_DUAL_ILLUMINANT_REPORT_JSON, encoding="utf-8") as f:
+        with open(_DUAL_ILLUMINANT_REPORT_JSON_V2, encoding="utf-8") as f:
             cls.report = json.load(f)
         cls.tags = read_dcp(_SHIPPED_DCP)
         cls.cm1 = cls.tags[TAG_COLOR_MATRIX_1].reshape(3, 3)
@@ -358,22 +386,27 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
         self.assertEqual(self.report["group1_daylight_like"]["calibration_illuminant"], 21)
         self.assertEqual(self.report["group2_tungsten_like"]["calibration_illuminant"], 17)
 
-    def test_color_matrix_1_maps_d50_white_to_group1_measured_native_neutral(self):
-        """물리적 정합성: `ColorMatrixN`은 XYZ(D50) -> 카메라 네이티브이므로
-        D50 백색점을 넣으면 그 그룹에서 실측한 네이티브 중립색과 비례해야
-        한다. 전치를 빠뜨리면 크게 어긋나면서 여기서 깨진다."""
+    def test_color_matrix_1_maps_own_illuminant_white_to_group1_measured_native_neutral(self):
+        """물리적 정합성(v2): `ColorMatrixN`은 XYZ(D50)이 아니라 **자기
+        캘리브레이션 조명 자체의 색도** -> 카메라 네이티브다(DNG 스펙,
+        `hybrid_engine/EVALUATION.md` "D50 편향 근본 수정" 절). matrix_1은
+        D65 기준이므로 XYZ(D65) 백색점을 넣어야 group1 실측 중립색과
+        비례한다 - v1 시절의 XYZ(D50) 검사(`_XYZ_D50`)는 이제 이 매트릭스
+        구성과 안 맞아서 여기서 깨진다."""
         measured = np.array(
             self.report["group1_daylight_like"]["measured_native_neutral_g_normalized"],
             dtype=np.float64)
-        predicted = self.cm1 @ _XYZ_D50
+        predicted = self.cm1 @ _XYZ_D65
         predicted = predicted / predicted[1]
         np.testing.assert_allclose(predicted, measured, rtol=0.15)
 
-    def test_color_matrix_2_maps_d50_white_to_group2_measured_native_neutral(self):
+    def test_color_matrix_2_maps_own_illuminant_white_to_group2_measured_native_neutral(self):
+        """matrix_2는 Standard Illuminant A 기준이므로 XYZ(A) 백색점을
+        넣어야 group2 실측 중립색과 비례한다."""
         measured = np.array(
             self.report["group2_tungsten_like"]["measured_native_neutral_g_normalized"],
             dtype=np.float64)
-        predicted = self.cm2 @ _XYZ_D50
+        predicted = self.cm2 @ _XYZ_STD_A
         predicted = predicted / predicted[1]
         np.testing.assert_allclose(predicted, measured, rtol=0.15)
 
