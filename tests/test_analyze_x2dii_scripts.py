@@ -17,6 +17,9 @@ class TestAnalyzeX2diiScriptsImport(unittest.TestCase):
     def test_kmichels_own_matrix_gap_imports(self):
         importlib.import_module("tools.analyze_x2dii_kmichels_own_matrix_gap")
 
+    def test_full_interpolation_end_to_end_imports(self):
+        importlib.import_module("tools.analyze_x2dii_full_interpolation_end_to_end")
+
 
 if __name__ == "__main__":
     unittest.main()

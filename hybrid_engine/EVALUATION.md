@@ -3556,6 +3556,53 @@ Never-list 파일이라 추가 변경 없이 그대로 둔다 - 재배포/원복
 `... tools.analyze_x2dii_burst_fair_comparison`,
 `... tools.analyze_x2dii_kmichels_own_matrix_gap`.
 
+**실험 4(2026-09-04, 같은 날) - 25장 전체를 진짜 보간에 통과시킨 첫
+end-to-end 검증, 배포 재판단**: 사용자가 위 실험 3의 D50 편향 발견을
+"반영"해서 재배포 여부를 다시 판단하라고 지시했다. 재검토 중 더
+근본적인 결함을 하나 더 찾았다 - **지금까지의 모든 25장 dual-illuminant
+검증**(`tools/refit_x2dii_dual_illuminant.py`, `tools/validate_x2dii_dual_illuminant_real_algorithm.py`,
+위 실험 1의 `tools/analyze_x2dii_burst_fair_comparison.py` 포함)이
+group1/group2 16장의 "dual" 점수를 **그 이미지가 자기 클러스터에
+속한다는 걸 이미 아는 것처럼** 클러스터 내부 5-fold CV로만 냈다 -
+`core/dcp_interpolate.py`의 실제 보간 함수를 group1/group2에 대해서는
+단 한 번도 거치지 않았다(kmichels 9장만 진짜 보간을 거침). 실험 3의
+편향이 사실이면 group2(텅스텐성) 이미지를 실제로 보간에 통과시켰을
+때 지금까지 보고된 "group2 CV=5.00"보다 훨씬 나쁘게 나와야 한다.
+
+`tools/analyze_x2dii_full_interpolation_end_to_end.py`로 25장 전체를
+**처음으로** `interpolate_dng_matrix()`에 실제로 통과시켜 재평가했다
+(`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/full_interpolation_end_to_end_report.json`에
+저장): group2(텅스텐성) 7장의 진짜 보간 ΔE00=19.878이 같은 7장의
+combined 단일매트릭스 ΔE00=18.998보다 높다(나쁘다) - 이 group2 단독
+비교의 부트스트랩 95% CI(paired diff=global-real, n=7)=[-1.4904,+0.0591]로
+**0을 걸쳐서 n=7 단독으로는 통계적으로 유의하지 않지만**, 방향은
+7장 중 6장이 손실(real-interp가 나쁨)로 일관됐다 - dual-illuminant가
+원래 더 잘하려고 만든 바로 그 시나리오(텅스텐 조명)에서 이미 배포된
+단일매트릭스만큼도 못한다는 정황이 강하다(진짜 유의성은 아래 25장
+전체 집계 CI가 근거). group1(daylight성)은 진짜 보간=7.042 vs
+in-cluster CV(컨닝)=5.812로 상대적으로 덜 나빠졌다(편향이 daylight
+쪽으로 쏠리니 daylight 이미지는 그나마 덜 다침).
+
+25장 전체 재계산(`full_interpolation_end_to_end_report.json` 필드
+`global_burst_fair_mean`/`real_interpolation_full25_mean`/`bootstrap_ci95`):
+global(burst-fair)=15.8325 vs real-interpolation(전체)=13.7336,
+**paired diff 평균=2.0988, 부트스트랩 95% CI=[+0.8585,+3.4023](0은
+안 걸침), 승/패=19/6** - 여전히 통계적으로는 이기지만, 승리 마진이
+실험 1의 CI=[+4.55,+8.85]·승/패 25/0보다 훨씬 좁아졌고 손실이
+0건에서 6건으로 늘었다.
+
+**결론**: dual-illuminant DCP의 "전체 25장에서 통계적으로 이긴다"는
+결과 자체는 진짜 보간을 거쳐도 아직 살아있지만(25장 집계 CI가 0을
+안 걸침), **그 승리가 daylight 쪽 이미지들이 나머지를 상쇄해서 나온
+평균이지, 모든 조명 조건에서 고르게 이긴 게 아니다** - 정확히
+텅스텐/warm 조명(dual-illuminant가 존재하는 이유)에서는 이미 배포된
+combined 단일매트릭스보다 나을 게 없다(위 group2 단독 CI는 유의하지
+않지만 방향이 6/7로 일관됨). `.dcp`는 Never-list 파일이라 이 발견만으로
+자동으로 되돌리지 않았다 - 사용자에게 재배포/원복 여부를 다시 확인해야
+하는 상황이다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_full_interpolation_end_to_end`.
+
 ## dpreview 스튜디오씬 챠트 - 6개 브랜드 컬러체커 검증 총괄 (2026-09-04)
 
 `tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증
