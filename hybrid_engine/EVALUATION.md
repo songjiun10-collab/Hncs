@@ -3848,3 +3848,59 @@ group2 raw 재확보는 보류(kmichels 대체로 조사 완결에는 지장 없
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_rt_illuminant_order_snap`,
 `... -m tools.analyze_x2dii_rt_render_swap_test`(rawtherapee-cli 5.13, 렌더 6장 약 3분).
+
+### 배포 - v3 재발급(2026-09-04, 같은 날): 슬롯 순서만 Adobe 관례로 스왑
+
+사용자 승인("새로 발급 ㄱㄱ", 위 근본원인 보고 직후)으로
+`tools/reissue_x2dii_dcp_v3_adobe_illuminant_order.py`가
+`hasselblad_x2dii_chart.dcp`를 재발급했다. **승인 범위는 태그 순서
+스왑이지 재캘리브레이션이 아니다** - 매트릭스 값은 v2 것을 한 자리도
+바꾸지 않고 슬롯만 교차 배치했다(슬롯1 ← v2 슬롯2/StdA, 슬롯2 ← v2
+슬롯1/D65). `CalibrationIlluminant1=17(Standard Light A, 2856K)`,
+`2=21(D65, 6504K)`로 이제 온도 오름차순이다(`exiftool -validate` →
+`Validate: OK`, 이 실행에서 직접 확인).
+
+**왜 재fit이 아닌가**: `core/dcp_interpolate.py` 보간은 슬롯 스왑에
+수학적으로 불변이다. 발급 스크립트의 사전 게이트(`verify_swap_invariance()`)
+출력에서 group1은 g가 0.991557 → 0.008443, group2는 0.017577 →
+0.982423으로 뒤집히지만 **최종 보간 매트릭스는 동일**하다(max|Δ|는
+group1 0.000e+00, group2 8.882e-16). 따라서 v2의 25장 held-out
+end-to-end 검증(CI=[+5.5509,+9.2794], 25/0)이 그대로 승계된다 -
+애초에 dpreview 25장 raw는 Cloudflare 차단으로 재디코드 자체가 불가다.
+전체 수치는 `datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/dual_illuminant_report_v3_adobe_illuminant_order.json`.
+
+**수용 검사 - RawTherapee 실렌더**: `tools/verify_x2dii_dcp_v3_rawtherapee.py`
+실행 stdout에서 전사, 리포트
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/v3_rawtherapee_acceptance_report.json`.
+kmichels `B_31325.3FR`에 WB를 각각 강제하고 `DCPIlluminant=0`(자동)이
+어느 슬롯 강제 렌더에 가까운지 mean abs diff(16-bit)로 측정:
+
+| 강제 WB | 자동 vs 슬롯1(StdA) | 자동 vs 슬롯2(D65) | 선택 | 판정 |
+|---|---|---|---|---|
+| 2856K(텅스텐) | **266.91** | 849.10 | 슬롯1 | OK |
+| 6504K(데이라이트) | 940.44 | **168.15** | 슬롯2 | OK |
+
+**WB에 따라 선택 매트릭스가 바뀐다** - v2에서는 두 WB 모두 D65로
+스냅됐으니(위 근본원인 절) RawTherapee에서 dual-illuminant가 실제로
+살아난 것이 실측으로 확인됐다.
+
+**테스트**: `tests/test_dcp_export.py`의 `TestShippedProfileMatchesReport`를
+v3 리포트/슬롯 의미에 맞춰 갱신하고, 매트릭스가 v2와 교차로 동일한지
+검사하는 `test_matrices_are_unchanged_from_v2`(DCP SRATIONAL 양자화
+오차 ~5e-7만 허용)를 추가했다. 검사하면서 **기존 물리 불변식 테스트의
+허용오차가 너무 헐렁했다는 것도 발견**했다: v2까지 쓰던 `rtol=0.15`는
+슬롯이 뒤바뀐 매트릭스도 통과시켜(직접 측정한 상대오차 - 뒤바뀐 짝
+0.1155/0.1227 vs 올바른 짝 0.0148/0.0142) 순서를 전혀 못 잡았다.
+`rtol=0.05`로 조여서 3배 여유를 두고 판별하도록 고쳤고, v2 백업본으로
+실제로 깨지는 것까지 확인했다. 전체 스위트는 828건 중 7건 실패
+(`TestFujiPresetGoldenHashes` 6건 + `TestHasselbladCoreGoldenHashes`의
+`apply_hasselblad_night` 1건, `/tmp/suite_v3.log`) - HEAD를 체크아웃한
+별도 worktree에서도 동일하게 실패하는 기존 실패로 이 변경과 무관하다.
+
+**남는 한계**: Adobe DNG SDK는 역순도 스스로 스왑하므로 ACR/Lightroom
+결과는 v2와 v3가 같아야 한다 - 레퍼런스 코드(`dng_color_spec.cpp`
+183-208행) 기준 추론이고 실기 검증은 여전히 안 됐다. 이번 v3가 고친
+것은 RawTherapee(및 같은 방식으로 이식한 리더들)에서의 동작이다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.reissue_x2dii_dcp_v3_adobe_illuminant_order`,
+`... -m tools.verify_x2dii_dcp_v3_rawtherapee`.
