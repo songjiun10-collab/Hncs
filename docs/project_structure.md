@@ -185,7 +185,11 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/analyze_x2dii_kmichels_own_matrix_gap.py` | kmichels 전용 매트릭스가 있었다면 얼마나 좋을지("오라클" 상한)를 검증 - dual-illuminant holdout 결과와의 격차 정량화 |
 | `tools/analyze_x2dii_full_interpolation_end_to_end.py` | 기존 dual-illuminant 검증들이 실제 `interpolate_dng_matrix()`를 거치지 않고 in-cluster CV로만 냈던 결함을 검증으로 확인 - 25장 전부를 실제 보간 함수로 평가한 첫 end-to-end 검증, 매트릭스가 D50 기준이라 g가 illuminant1 쪽으로 쏠리는 구조적 편향 발견 |
 | `tools/analyze_x2dii_illuminant_referenced_interpolation.py` | 위 D50 편향의 근본 수정(매트릭스를 D50이 아니라 각자의 캘리브레이션 조명 색도로 fit)판을 검증 - group1/group2 자기 중립색 self-consistency 회복 확인(g=0.9916/0.0176, 기대값 1/0 근처) |
-| `tools/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py` | 위 수정을 실제 배포 반영(v2, 2026-09-04, 현재 배포판) - 25장 전체 실제 보간 검증 CI=[+5.5509,+9.2794], 승/패=25/0, 사용자 승인("재배포 (권장)") |
+| `tools/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py` | 위 수정을 실제 배포 반영(v2, 2026-09-04) - 25장 전체 실제 보간 검증 CI=[+5.5509,+9.2794], 승/패=25/0, 사용자 승인("재배포 (권장)"). 배포된 매트릭스 값 자체는 지금도 이것이고, 아래 v3는 슬롯 순서만 바꾼 재발급이다 |
+| `tools/analyze_x2dii_rt_illuminant_order_snap.py` | v2가 RawTherapee에서 텅스텐 촬영도 항상 illuminant1(D65)로 스냅되던 미해결 현상의 근본원인 재도출 - RT `dcp.cc`의 Robertson CCT 테이블/고정점 반복/**비스왑** mix 공식을 축자 포팅해, 태그가 온도 내림차순이면 6504K 이하 모든 촬영이 첫 분기에 걸린다는 것을 수식으로 확정(스왑하면 g=0.0153으로 우리 계산 0.0176과 일치) |
+| `tools/analyze_x2dii_rt_render_swap_test.py` | 위 근본원인의 실렌더 증거 - 배포본/슬롯스왑본 x `DCPIlluminant=0/1/2` 6렌더로, 자동보간이 D65 강제와 mean\|Δ\|=0.0000(완전 동일)이고 태그 순서만 바꾸면 849.10만큼 달라지는 것을 실측 |
+| `tools/reissue_x2dii_dcp_v3_adobe_illuminant_order.py` | v3 재발급(2026-09-04, **현재 배포판**) - 매트릭스 값은 v2 그대로 두고 `CalibrationIlluminant` 슬롯만 Adobe 관례(1=StdA/17, 2=D65/21)로 스왑. 발급 전 게이트로 `core/dcp_interpolate.py` 보간이 스왑에 불변임을 확인(최종 매트릭스 max\|Δ\|=8.9e-16)해 v2의 25장 검증을 승계. 사용자 승인("새로 발급 ㄱㄱ") |
+| `tools/verify_x2dii_dcp_v3_rawtherapee.py` | v3 수용 검사 - WB를 2856K/6504K로 강제해 자동보간이 각각 슬롯1(StdA)/슬롯2(D65)를 고르는지 실렌더로 확인(266.91 vs 849.10, 940.44 vs 168.15). WB에 따라 선택이 바뀌므로 RT에서 dual-illuminant가 실제로 살아났음을 실증 |
 | `tools/validate_x2dii_dual_illuminant_real_algorithm.py` | 배포 당시 썼던 단순화 보간(선형보간 근사) 대신 실제 DNG 스펙 보간 알고리즘(`core/dcp_interpolate.py`, 고정점 반복+mired 선형보간+McCamy CCT)으로 재검증 - 원래 판정 유지 확인 |
 | `tools/recover_kmichels_x2dii_chart.py` | kmichels-x2dii-2026-07 챠트 세트가 로컬에서 유실된 것을 manifest.csv의 구글드라이브 URL로 검증 후 8장 복원(1장은 URL 자체가 manifest에 없어 복구 불가) |
 | `tools/validate_chart_pipeline_on_external_camera.py` | 챠트 기반 파이프라인이 하셀블라드 전용 우연이 아닌지 완전히 다른 카메라(Sony A57/Canon 1Ds III/Nikon D40, York University raw_2_raw/illuminant 데이터셋)로 방법론만 검증 - 배포 매트릭스에는 미반영, 카메라가 2012~2013년식이라 세대 자체가 다름 |
