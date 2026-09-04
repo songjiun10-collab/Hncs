@@ -3702,6 +3702,43 @@ gate가 없었음 - 브라우저 `fetch()`로 200 직접 응답 확인) + Downlo
   아예 없다 - "phase"/"iq3"/"iq4"/"xf " 키워드로 전수 검색해도 매칭 0건
   (Leica SL만 걸림). dpreview가 Phase One 스튜디오씬 자체를 촬영한 적이
   없는 것으로 보임 - 이 DB로는 Phase One 검증 불가능, 다른 소스 필요.
+
+## dpreview 스튜디오씬 챠트 - Leica 9바디 컬러체커 검증 (2026-09-04)
+
+같은 공용 위젯 DB에 Leica는 12개 바디가 있다(전부 DNG raw) - 모노크롬
+센서 2대(M Monochrom Typ246, M11 Monochrom - 컬러 필터가 없어 컬러매트릭스
+피팅 자체가 성립 안 함, 제외)와 SL3-P(별도 파이프라인으로 이미 완료,
+위 "주의할 점" 참고)를 뺀 나머지 9바디를 동일 방법론
+(`tools/validate_dpreview_chart_brand.py`)으로 돌렸다:
+
+- Leica T (Typ 701): n=16, ΔE00 29.770→11.464(+61.49%), CI=[+13.872,+22.719], 승/패=16/0 (`datasets/leica/contributed/dpreview-t701-studio-chart-2026-09/chart_validation_report.json`)
+- Leica X (Typ 113): n=15, ΔE00 26.712→11.944(+55.28%), CI=[+10.932,+18.672], 승/패=15/0 (`datasets/leica/contributed/dpreview-x113-studio-chart-2026-09/chart_validation_report.json`)
+- Leica Q (Typ 116): n=20, ΔE00 27.172→11.710(+56.90%), CI=[+12.845,+18.148], 승/패=20/0 (`datasets/leica/contributed/dpreview-q116-studio-chart-2026-09/chart_validation_report.json`)
+- Leica SL (Typ 601): n=21(1실패), ΔE00 26.025→11.913(+54.22%), CI=[+11.743,+16.517], 승/패=21/0 (`datasets/leica/contributed/dpreview-sl601-studio-chart-2026-09/chart_validation_report.json`)
+- Leica M10: n=20, ΔE00 28.812→12.851(+55.40%), CI=[+12.888,+19.063], 승/패=20/0 (`datasets/leica/contributed/dpreview-m10-studio-chart-2026-09/chart_validation_report.json`)
+- Leica Q2: n=21(1실패), ΔE00 26.982→12.002(+55.52%), CI=[+12.392,+17.611], 승/패=21/0 (`datasets/leica/contributed/dpreview-q2-studio-chart-2026-09/chart_validation_report.json`)
+- Leica M11-P: n=22, ΔE00 34.208→11.683(+65.85%), CI=[+19.419,+25.625], 승/패=22/0 (`datasets/leica/contributed/dpreview-m11p-studio-chart-2026-09/chart_validation_report.json`)
+- Leica D-Lux 8: n=18, ΔE00 32.910→15.526(+52.82%), CI=[+14.541,+20.337], 승/패=18/0 (`datasets/leica/contributed/dpreview-dlux8-studio-chart-2026-09/chart_validation_report.json`)
+- Leica Q3 43: n=24, ΔE00 29.392→12.794(+56.47%), CI=[+13.840,+19.252], 승/패=23/1 (`datasets/leica/contributed/dpreview-q343-studio-chart-2026-09/chart_validation_report.json`)
+
+9바디 전부 CI가 0을 안 걸치는 결정적 결과, 8/9는 만장일치 승. 이걸로
+dpreview 위젯 DB의 Leica 커버리지는 모노크롬 2대를 빼면 전부 소진했다.
+
+**RAW 다운로드 방식이 이번에 바뀜(기록해둠)**: 기존
+`reference_dpreview_raw_download_technique` 메모의 "`<a>` 클릭 + 지연 +
+사이즈로 매칭" 방식이 두 가지로 깨졌다 - (1) 같은 스튜디오씬 RAW는
+용량이 거의 동일해서(같은 바디는 파일 사이즈가 몇 바이트 차이로 수렴)
+사이즈 매칭이 충돌 다발, (2) 이 세션의 브라우저 pane이 숨겨진 탭
+취급을 받아 `setTimeout` 기반 지연이 심하게 스로틀됨(15장 받는데
+분 단위로 걸림), `Promise.all`로 동시에 여러 개 트리거하면 크롬이
+"자동 다운로드 남발" 방지로 대부분 조용히 드롭. 해결책:
+페이지 컨텍스트에서 `fetch()` → `crypto.subtle.digest('SHA-256', buf)`로
+콘텐츠 해시 계산 → `Blob`+`URL.createObjectURL`으로 다운로드 트리거를
+**순차**(await 체인, `Promise.all` 금지, `setTimeout` 지연 없음)로
+실행 - 각 파일이 실제 fetch+해시 계산 시간만큼 자연스럽게 텀이
+생겨서 스로틀링과 자동다운로드 차단을 둘 다 피하고, Python 쪽에서
+`hashlib.sha256(파일).hexdigest()`로 정확히 매칭(`sha256_of()`,
+`match_by_hash.py`). 사이즈 충돌 걱정이 완전히 사라짐.
 - Leica SL3-P는 위 목록에 없다 - 다른 파이프라인(`tools/fit_leica_sl3p_studio_chart.py`, 실제 DCP까지 발급)이 n=26, in-sample ΔE00=12.23을 냈는데 부트스트랩 CI가 계산되지 않은 값이다(`datasets/leica/contributed/dpreview-sl3p-studio-chart-2026-09/camera_native_matrix_report.json` `_comment` 필드에 "부트스트랩 CI 없음" 명시) - 위 7개와 통계적으로 직접 비교 불가.
 - Panasonic S1II는 코드 주석(`tools/validate_dpreview_chart_brand.py` 74행 부근)에 챠트검출 assertion 2/20건 언급이 있었는데(원인 미조사, cv2.mcc가 특정 프레임에서 None 대신 예외를 던지는 걸로 추정), 실제로 재실행해보니 정확히 2/20건(`panasonic_s1ii_iso100_2025_07_08_16_22_10.rw2`, `panasonic_s1ii_iso25600_2025_07_08_17_17_44.rw2`)이 검출 실패했다 - 나머지 18장으로 위 표에 정상 반영됨.
 
