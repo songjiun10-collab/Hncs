@@ -57,7 +57,7 @@ import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
                            is_subagent_call, require_decision_or_deny,
-                           sentinel_override, strip_prose_heredocs)
+                           sentinel_override, strip_prose_heredocs, unwrap_eval)
 
 HOOK_NAME = "protect_never_touch"
 SEVERITY = "CRITICAL"
@@ -156,7 +156,7 @@ def bash_write_target(command):
     """Returns the matched protected-path string if `command` looks like it
     writes to a protected path, else None. Coarser than the Edit/Write path
     below (file-level, not function-level - see module docstring)."""
-    command = strip_prose_heredocs(command)
+    command = unwrap_eval(strip_prose_heredocs(command))
     for rx in (_REDIRECT_TARGET_RE, _SED_INPLACE_TARGET_RE, _TEE_TARGET_RE,
                _CP_MV_DEST_RE, _PY_WRITE_OPEN_RE):
         m = rx.search(command)

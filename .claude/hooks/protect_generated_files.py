@@ -110,14 +110,21 @@ def touched_lut_array(file_path, old_string):
         return "__unknown__"
     if not ranges:
         return None
-    idx = text.find(old_string)
-    if idx == -1:
-        return None
-    start_line = line_of_offset(text, idx)
-    end_line = line_of_offset(text, idx + len(old_string))
-    for name, s, e in ranges:
-        if start_line <= e and end_line >= s:
-            return name
+    # replace_all=true인 Edit은 old_string이 여러 번 등장한다 - 첫 매치가
+    # LUT 배열 밖(안전)이어도 이후 매치가 실제 배열 안일 수 있다. 모든
+    # 발생 위치를 검사해야 fail-open으로 후속 수정이 새어 나가지 않는다
+    # (protect_never_touch.py의 touched_function()과 동일한 방식).
+    search_from = 0
+    while True:
+        idx = text.find(old_string, search_from)
+        if idx == -1:
+            break
+        start_line = line_of_offset(text, idx)
+        end_line = line_of_offset(text, idx + len(old_string))
+        for name, s, e in ranges:
+            if start_line <= e and end_line >= s:
+                return name
+        search_from = idx + max(len(old_string), 1)
     return None
 
 
