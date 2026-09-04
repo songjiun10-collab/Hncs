@@ -3906,3 +3906,71 @@ v3 리포트/슬롯 의미에 맞춰 갱신하고, 매트릭스가 v2와 교차�
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.reissue_x2dii_dcp_v3_adobe_illuminant_order`,
 `... -m tools.verify_x2dii_dcp_v3_rawtherapee`.
+
+## X2D II Capture One(ICC): 조명별 프로필 2장 발급 (2026-09-04)
+
+**발단**: 배포 `.dcp`는 2026-09-03 combined 25장, 09-04 dual-illuminant
+v2/v3로 두 번 재보정됐는데 `.icc`는 2026-09-02(`3bff252`) 이후 그대로였다 -
+**Capture One 사용자만 구버전 매트릭스**(kmichels 단독 n=9)를 쓰고 있었다.
+
+**먼저 시도했다가 게이트에 막힌 것(기각 기록)**: 범용 ICC를 combined
+25장 D50 매트릭스로 교체하려 했다(`tools/regenerate_x2dii_icc_v2_combined.py`,
+실행하면 지금도 게이트에서 중단된다). 발급 전 게이트로 무채색 6패치의
+CIELAB a*b* 크로마를 걸었는데(`combined_chart_matrix_report.json`의
+`measured_native_neutral_per_patch`) 그 실행 출력에서 평균이 기존 9.9393 vs
+신규 9.9871로 **개선이 아니라서 스크립트가 발급을 중단했다**. 지표를
+의심해 같은 데이터로 양성 대조를 돌린 결과(각 매트릭스를 자기 피팅
+데이터의 평균 무채색에 적용): kmichels 매트릭스 **1.3279**(정상),
+combined 매트릭스 **9.8444**. 지표는 멀쩡하고 combined 단일 매트릭스가
+실제로 무채색 축에서 깨진다. 원인은 25장이 이봉 조명 혼합이라는 것 -
+주광 R/G≈0.33(n=9), 텅스텐 R/G≈0.65(n=7), kmichels R/G≈0.41(n=9)의 평균
+R/G=0.4485는 **실재하지 않는 촬영 조건**이고 단일 매트릭스가 그 허구의
+평균에 맞춰진다. `.dcp`가 dual-illuminant로 간 이유와 정확히 같은
+현상이다. **범용 ICC는 교체하지 않고 그대로 뒀다.**
+
+**채택한 것 - 조명별 ICC 2장**(`tools/build_x2dii_capture_one_illuminant_icc.py`,
+리포트 `datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/capture_one_illuminant_icc_report.json`):
+ICC v4 matrix/TRC는 슬롯이 하나뿐이고 PCS 백색점이 D50 고정이라
+dual-illuminant를 한 파일에 못 담는다. 대신 조명마다 파일을 하나씩 내고
+사용자가 촬영 조명에 맞는 Base Characteristic을 고르게 한다. v2 리포트의
+`color_matrix_1`(D65 기준)/`color_matrix_2`(StdA 기준)를 각자의 조명에서
+D50으로 Bradford 색순응시켜 ICC가 요구하는 native->XYZ(D50)로 변환했다.
+
+게이트(자기 조명 그룹의 실측 무채색에 적용한 CIELAB a*b* 크로마) -
+아래 값은 `tools/build_x2dii_capture_one_illuminant_icc.py` 실행 stdout에서
+전사했고 같은 값이 `capture_one_illuminant_icc_report.json`에 저장된다:
+
+| 조명 | n | 현행 범용 ICC | 조명별 신규 |
+|---|---|---|---|
+| daylight(D65) | 9 | 40.4516 | **1.3256** |
+| tungsten(StdA) | 7 | 48.7708 | **1.2373** |
+
+현행 범용 ICC는 **자기 번스트에서만 1.3279**이고 실제 dpreview 두 조명에서는
+40.4516/48.7708로 무너진다 - 단일조명 과적합이 Capture One 경로에 그대로
+살아있었다는 직접 증거다. 신규 2장은 자기 조명에서 1.3256/1.2373으로
+들어온다.
+
+**독립 검증**: 발급된 두 ICC를 시스템 lcms2 2.19 CLI(`/opt/homebrew/bin/transicc`,
+`transicc -i <profile>.icc -o "*XYZ" -t1`)에 각 조명의 실측 무채색을 넣어
+확인했다 - daylight [0.9719, 1.0, 0.8264], tungsten [0.9572, 1.0, 0.8230]
+(Y 정규화)로 D50 기준 [0.9643, 1.0, 0.8251] 대비 최대 편차 0.0076/0.0071.
+파이썬 계산값과 소수점까지 일치했다(모듈 코드가 아닌 독립 구현으로 재확인).
+
+**판정의 범위 - 종합 색차로는 승패를 부르지 않는다**(승계하는 통계적
+근거는 v2의 부트스트랩 95% CI=[+5.5509,+9.2794], 25/0,
+`dual_illuminant_report_v2_illuminant_referenced.json`의
+`full25_held_out_end_to_end`): 24패치 전체 실측 샘플이 커밋돼 있지 않아
+(무채색 6패치 + 그룹 평균 무채색만) 구/신 프로필의 전체 ΔE00 재비교는
+RAW 없이 불가능하고, dpreview RAW는 현재 Cloudflare 차단으로 재확보
+불가다. 따라서 이 절의 게이트는 **무채색 축에 한정된 검증**이며 종합
+ΔE00 우열은 미검증으로 남긴다. 채택 근거는 (a) 발급 전에 미리 고정한
+게이트에서의 차이(40.4516 -> 1.3256, 48.7708 -> 1.2373, 위 스크립트 실행
+출력), (b) 같은 실행의 양성 대조로 확인한 지표 타당성(자기 데이터에서
+kmichels 1.3279 vs combined 9.8444), (c) `transicc` 독립 구현 재확인
+셋이다. 실기 Capture One에서의 동작은 미검증이다.
+
+**사용자 승인**: 2026-09-04 "캡처원용도 다 만들어". 배포된
+`hasselblad_x2dii_chart.icc`/`.dcp`/`hasselblad.json`은 건드리지 않았고
+새 파일 2개만 추가했다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.build_x2dii_capture_one_illuminant_icc`.
