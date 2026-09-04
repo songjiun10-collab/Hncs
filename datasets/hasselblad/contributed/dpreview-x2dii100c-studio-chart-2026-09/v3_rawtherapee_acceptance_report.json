@@ -1,0 +1,25 @@
+{
+  "dcp": "/Users/songjiun/Hncs/hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp",
+  "raw": "/Users/songjiun/Hncs/datasets/hasselblad/contributed/kmichels-x2dii-2026-07/raw/B_31325.3FR",
+  "cases": [
+    {
+      "wb_label": "tungsten",
+      "wb_temp_k": 2856,
+      "auto_vs_slot1_stda": 266.9094,
+      "auto_vs_slot2_d65": 849.1049,
+      "closer_to_slot": 1,
+      "expected_slot": 1,
+      "pass": true
+    },
+    {
+      "wb_label": "daylight",
+      "wb_temp_k": 6504,
+      "auto_vs_slot1_stda": 940.4396,
+      "auto_vs_slot2_d65": 168.1477,
+      "closer_to_slot": 2,
+      "expected_slot": 2,
+      "pass": true
+    }
+  ],
+  "all_pass": true
+}

@@ -29,6 +29,10 @@ _DUAL_ILLUMINANT_REPORT_JSON_V2 = os.path.join(
     _REPO_ROOT, "datasets", "hasselblad", "contributed",
     "dpreview-x2dii100c-studio-chart-2026-09",
     "dual_illuminant_report_v2_illuminant_referenced.json")
+_DUAL_ILLUMINANT_REPORT_JSON_V3 = os.path.join(
+    _REPO_ROOT, "datasets", "hasselblad", "contributed",
+    "dpreview-x2dii100c-studio-chart-2026-09",
+    "dual_illuminant_report_v3_adobe_illuminant_order.json")
 
 # XYZ of D50/D65/Standard Illuminant A (CIE 1931 2도 관측자),
 # colour.xy_to_XYZ(...)와 동일한 값. colour-science import 없이 쓰려고
@@ -341,13 +345,32 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     n=25). 사용자 승인("D50 편향부터 고치고 재판단" -> "재배포
     (권장)")으로 배포. 이 테스트는 이제 v2 리포트
     (`dual_illuminant_report_v2_illuminant_referenced.json`)를 본다 -
-    v1 리포트는 기록으로 그대로 남아있다."""
+    v1 리포트는 기록으로 그대로 남아있다.
+
+    **정정(2026-09-04, 같은 날) - v3, 슬롯 순서만 Adobe 관례로 스왑**:
+    v2는 `CalibrationIlluminant1=21(D65, 6504K)`/`2=17(StdA, 2856K)`로
+    온도 내림차순이었는데, RawTherapee `rtengine/dcp.cc`의 매트릭스
+    보간 경로(`findXyztoCamera` 1690-1697행, `makeXyzCam` 1820-1827행)가
+    `temperature_1 < temperature_2` 정렬을 검증 없이 전제해서 6504K
+    이하 모든 촬영이 `wbtemp <= temperature_1` 분기에 걸려 무조건
+    ColorMatrix1(D65)로 스냅됐다 - RT에서 dual-illuminant가 사실상
+    죽어있었다(`hybrid_engine/EVALUATION.md` "RawTherapee illuminant1
+    스냅 근본원인 확정" 절). `tools/reissue_x2dii_dcp_v3_adobe_illuminant_order.py`가
+    **매트릭스 값은 한 자리도 안 바꾸고** 슬롯만 교차 배치해 재발급했다
+    (1=StdA/17 <- v2의 슬롯2, 2=D65/21 <- v2의 슬롯1). `core/dcp_interpolate.py`
+    보간은 이 스왑에 수학적으로 불변이라(g는 1-g로 뒤집히지만 최종
+    매트릭스 동일, 발급 스크립트가 매번 재확인) v2의 25장 held-out
+    검증이 그대로 승계된다. RT 수용검사도 통과했다(WB 2856K -> 슬롯1,
+    WB 6504K -> 슬롯2, `v3_rawtherapee_acceptance_report.json`). 사용자
+    승인 "새로 발급 ㄱㄱ"(2026-09-04). 이 테스트는 이제 v3 리포트를
+    보고 슬롯 의미가 뒤바뀐 것에 맞춰 검사한다 - v1/v2 리포트는 기록으로
+    남아있다."""
 
     @classmethod
     def setUpClass(cls):
-        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_DUAL_ILLUMINANT_REPORT_JSON_V2)):
+        if not (os.path.exists(_SHIPPED_DCP) and os.path.exists(_DUAL_ILLUMINANT_REPORT_JSON_V3)):
             raise unittest.SkipTest("커밋된 .dcp/리포트 JSON이 없음")
-        with open(_DUAL_ILLUMINANT_REPORT_JSON_V2, encoding="utf-8") as f:
+        with open(_DUAL_ILLUMINANT_REPORT_JSON_V3, encoding="utf-8") as f:
             cls.report = json.load(f)
         cls.tags = read_dcp(_SHIPPED_DCP)
         cls.cm1 = cls.tags[TAG_COLOR_MATRIX_1].reshape(3, 3)
@@ -378,43 +401,67 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
             np.array(self.report["dcp_color_matrix_2"], dtype=np.float64),
             atol=1e-6)
 
-    def test_calibration_illuminants_match_the_two_lighting_clusters(self):
-        # illuminant1=D65(21) 근사(daylight성 저R/G 클러스터),
-        # illuminant2=Standard Light A(17) 근사(tungsten성 고R/G 클러스터).
-        self.assertEqual(self.tags[TAG_CALIBRATION_ILLUMINANT_1], 21)
-        self.assertEqual(self.tags[TAG_CALIBRATION_ILLUMINANT_2], 17)
-        self.assertEqual(self.report["group1_daylight_like"]["calibration_illuminant"], 21)
-        self.assertEqual(self.report["group2_tungsten_like"]["calibration_illuminant"], 17)
+    def test_calibration_illuminants_are_in_adobe_ascending_order(self):
+        """v3: 슬롯1=Standard Light A(17, 2856K, tungsten성 고R/G 클러스터),
+        슬롯2=D65(21, 6504K, daylight성 저R/G 클러스터). Adobe 관례이자
+        RawTherapee 매트릭스 보간 경로가 전제하는 오름차순 - 이게 뒤집히면
+        RT에서 dual-illuminant가 죽는다(클래스 독스트링 v3 정정 참고)."""
+        self.assertEqual(self.tags[TAG_CALIBRATION_ILLUMINANT_1], 17)
+        self.assertEqual(self.tags[TAG_CALIBRATION_ILLUMINANT_2], 21)
+        self.assertEqual(self.report["slot_1"]["calibration_illuminant"], 17)
+        self.assertEqual(self.report["slot_2"]["calibration_illuminant"], 21)
+        self.assertLess(self.report["slot_1"]["cct_k"],
+                        self.report["slot_2"]["cct_k"])
 
-    def test_color_matrix_1_maps_own_illuminant_white_to_group1_measured_native_neutral(self):
-        """물리적 정합성(v2): `ColorMatrixN`은 XYZ(D50)이 아니라 **자기
+    def test_color_matrix_1_maps_own_illuminant_white_to_tungsten_measured_native_neutral(self):
+        """물리적 정합성(v2 이후): `ColorMatrixN`은 XYZ(D50)이 아니라 **자기
         캘리브레이션 조명 자체의 색도** -> 카메라 네이티브다(DNG 스펙,
-        `hybrid_engine/EVALUATION.md` "D50 편향 근본 수정" 절). matrix_1은
-        D65 기준이므로 XYZ(D65) 백색점을 넣어야 group1 실측 중립색과
-        비례한다 - v1 시절의 XYZ(D50) 검사(`_XYZ_D50`)는 이제 이 매트릭스
-        구성과 안 맞아서 여기서 깨진다."""
+        `hybrid_engine/EVALUATION.md` "D50 편향 근본 수정" 절). v3에서
+        슬롯1은 Standard Illuminant A 기준이므로 XYZ(A) 백색점을 넣어야
+        tungsten 클러스터 실측 중립색과 비례한다 - v1 시절의 XYZ(D50)
+        검사(`_XYZ_D50`)는 이 매트릭스 구성과 안 맞아서 여기서 깨진다."""
         measured = np.array(
-            self.report["group1_daylight_like"]["measured_native_neutral_g_normalized"],
+            self.report["slot_1"]["measured_native_neutral_g_normalized"],
             dtype=np.float64)
-        predicted = self.cm1 @ _XYZ_D65
+        predicted = self.cm1 @ _XYZ_STD_A
         predicted = predicted / predicted[1]
-        np.testing.assert_allclose(predicted, measured, rtol=0.15)
+        # rtol은 0.05 - v2까지 쓰던 0.15는 슬롯이 뒤바뀐 매트릭스(상대오차
+        # 0.1155, 2026-09-04 측정)도 통과시켜 순서를 못 잡았다. 올바른
+        # 짝은 0.0148이라 0.05면 3배 여유를 두고 판별한다.
+        np.testing.assert_allclose(predicted, measured, rtol=0.05)
 
-    def test_color_matrix_2_maps_own_illuminant_white_to_group2_measured_native_neutral(self):
-        """matrix_2는 Standard Illuminant A 기준이므로 XYZ(A) 백색점을
-        넣어야 group2 실측 중립색과 비례한다."""
+    def test_color_matrix_2_maps_own_illuminant_white_to_daylight_measured_native_neutral(self):
+        """v3에서 슬롯2는 D65 기준이므로 XYZ(D65) 백색점을 넣어야 daylight
+        클러스터 실측 중립색과 비례한다."""
         measured = np.array(
-            self.report["group2_tungsten_like"]["measured_native_neutral_g_normalized"],
+            self.report["slot_2"]["measured_native_neutral_g_normalized"],
             dtype=np.float64)
-        predicted = self.cm2 @ _XYZ_STD_A
+        predicted = self.cm2 @ _XYZ_D65
         predicted = predicted / predicted[1]
-        np.testing.assert_allclose(predicted, measured, rtol=0.15)
+        # rtol 근거는 위 슬롯1 테스트 주석 참고(뒤바뀐 짝 0.1227 vs
+        # 올바른 짝 0.0142).
+        np.testing.assert_allclose(predicted, measured, rtol=0.05)
+
+    def test_matrices_are_unchanged_from_v2(self):
+        """v3는 슬롯 순서만 바꾼 재발급이다 - 매트릭스 값은 v2 리포트의
+        것과 교차로 같아야 한다(DCP SRATIONAL 양자화 오차 ~5e-7만 허용)."""
+        if not os.path.exists(_DUAL_ILLUMINANT_REPORT_JSON_V2):
+            self.skipTest("v2 리포트 JSON이 없음")
+        with open(_DUAL_ILLUMINANT_REPORT_JSON_V2, encoding="utf-8") as f:
+            v2 = json.load(f)
+        np.testing.assert_allclose(
+            self.cm1, np.array(v2["dcp_color_matrix_2"], dtype=np.float64),
+            atol=1e-5)
+        np.testing.assert_allclose(
+            self.cm2, np.array(v2["dcp_color_matrix_1"], dtype=np.float64),
+            atol=1e-5)
+        self.assertTrue(self.report["matrices_unchanged_from_v2"])
 
     def test_plain_inverse_would_fail_the_physical_invariant(self):
         # 위 테스트들이 진짜로 버그를 잡는지 확인 - 버그 버전 매트릭스는
         # 같은 검사를 통과하지 못해야 한다.
         measured = np.array(
-            self.report["group1_daylight_like"]["measured_native_neutral_g_normalized"],
+            self.report["slot_1"]["measured_native_neutral_g_normalized"],
             dtype=np.float64)
         buggy = np.linalg.inv(self.chart_m1) @ _XYZ_D50
         buggy = buggy / buggy[1]
