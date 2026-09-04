@@ -123,6 +123,12 @@ class TestProtectBranchEndToEnd(unittest.TestCase):
                'XEOF\n)"')
         self.assertEqual(self._run_hook(cmd), "allow")
 
+    def test_eval_wrapped_commit_on_main_still_asks(self):
+        """2026-08-20 정정 (README 2차 라운드 #4, 실증): eval "git commit
+        ..."가 _STMT_START 요건을 못 맞춰서 완전히 안 걸렸다."""
+        self._write_decision_record("main")
+        self.assertEqual(self._run_hook('eval "git commit -m test"'), "ask")
+
 
 if __name__ == "__main__":
     unittest.main()

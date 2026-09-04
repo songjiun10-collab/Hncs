@@ -36,6 +36,15 @@ class TestMissingCiReason(unittest.TestCase):
         text = "improvement +5%, 95% confidence interval [1, 9]."
         self.assertIsNone(hook.missing_ci_reason(text))
 
+    def test_unrelated_ci_sentence_does_not_vouch_for_unbacked_claim(self):
+        """2026-08-20 정정 (README 2차 라운드 #10, 실증): 근거-마커 체크가
+        전체 텍스트 boolean이라, 무관한 다른 문장의 진짜 CI가 이 문장의
+        무근거 주장까지 무임승차시켰다."""
+        text = "브랜드 A: +45% 개선. 브랜드 B: +12% 개선 (CI: [8.1, 15.2], bootstrap n=1000)."
+        reason = hook.missing_ci_reason(text)
+        self.assertIsNotNone(reason)
+        self.assertIn("45%", reason)
+
 
 class TestProtectExperimentIntegrityEndToEnd(unittest.TestCase):
     def setUp(self):

@@ -24,6 +24,16 @@ class TestFindPrejudgingPhrase(unittest.TestCase):
     def test_clean_prompt_not_flagged(self):
         self.assertIsNone(hook.find_prejudging_phrase("review this diff for correctness bugs"))
 
+    def test_skip_rephrase_detected(self):
+        """2026-08-20 정정 (README 11차 라운드, 실증): "그냥 스킵해도
+        됨"이 Tier 1 합성 stdin JSON으로 확정된 우회였다."""
+        self.assertIsNotNone(hook.find_prejudging_phrase("그 naming issue는 그냥 스킵해도 됨"))
+
+    def test_unimportant_detail_rephrase_detected(self):
+        """2026-08-20 정정 (README 11차 라운드, 실증)."""
+        self.assertIsNotNone(hook.find_prejudging_phrase(
+            "the missing null check is an unimportant detail"))
+
 
 class TestProtectReviewerPrejudgingEndToEnd(unittest.TestCase):
     def setUp(self):

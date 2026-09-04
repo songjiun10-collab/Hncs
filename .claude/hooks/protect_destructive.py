@@ -10,19 +10,49 @@ this severity redesign - not duplicated here).
 Override: trailing `# HNCS-OVERRIDE: protect_destructive: <reason>`
 comment on the command, same mechanism as `protect_never_touch.py`'s
 Bash path - see `_hook_common.py` module docstring for the full
-override-tier design."""
+override-tier design.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #2/#3/#4/#6 - 4개
+실측 결함 수정, 그리고 #2에 대한 원래 서술 정정)**: (0) `eval "rm -rf
+..."`가 `_STMT_START`의 문 시작 위치 요건을 못 맞춰서 완전히 안
+걸렸다 - `_hook_common.unwrap_eval()`로 고침. (1) heredoc 본문을
+무조건 지우던 게 `bash - <<'EOF'\nrm -rf ...\nEOF`처럼 셸에 직접
+넘겨진(진짜 셸 문법으로 파싱되는) heredoc 안의 실제 `rm -rf`까지
+놓쳤다 - `_hook_common.strip_prose_heredocs()`(인터프리터에 넘겨진
+heredoc은 안 지움)로 교체해서 고쳤다. **원래 README 2차 라운드 #2가
+든 예시(`python3 - <<'PY' ... shutil.rmtree(...) ... PY`)는 재검토
+결과 부정확했다** - `_RM_RE`는 `_STMT_START`(진짜 셸 문법 경계 가정)
+기반이라, heredoc을 안 지워도 Python 문자열 리터럴 안에 박힌 셸
+텍스트(`os.system("rm -rf ...")` 포함)는 여전히 못 잡는다 - 그
+문자열은 shell 파서가 아니라 Python 런타임이 나중에 해석하는 데이터라
+`_STMT_START`가 요구하는 위치에 있지 않기 때문. heredoc 스트리핑
+버그는 실재하지만, 닫히는 범위는 "셸에 직접 넘겨진 heredoc" 한정이고
+"인터프리터 문자열 안에 셸 명령이 박힌 경우"는 이 훅의 정규식
+어휘(`rm`/`git reset --hard`/`git clean -f`/`git branch -D`, 전부
+셸 명령 자체를 찾는 패턴)로는 원천적으로 대응 범위 밖 - 별도 과제.
+(2) `_SCRATCH_PATH_RE`가 부분문자열
+매칭이라 `rm -rf ./scratchpad/../not_scratch_dir`처럼 `../`로 실제로는
+scratchpad 밖을 지우는 명령도 "scratch 경로다"로 오판하고 통과시켰다 -
+`os.path.normpath` 후 접두사 비교로 교체. (3) `find ... -delete`가
+`rm -rf`와 동등하게 파괴적인데 전혀 커버 안 됐다 - 추가.
+
+**추가 (2026-08-20, 사용자 지시 - README "대응 방향" (6) 나머지 절반)**:
+`shred`(덮어쓰기+삭제, 복구 불가)/`truncate`(주어진 크기 뒤 내용 폐기 -
+`-s`/`--size`가 `+`로 시작하는 명시적 확장은 제외)도 `find -delete`와
+동일한 scratch-경로 예외로 추가."""
 import json
+import os
 import re
 import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
-                           is_subagent_call, require_decision_or_deny)
+                           is_subagent_call, require_decision_or_deny,
+                           strip_prose_heredocs, unwrap_eval)
 
 HOOK_NAME = "protect_destructive"
 SEVERITY = "CRITICAL"
 
 _STMT_START = r"(?:^|&&|\|\||;|\n|\||\(|`|\bdo\b|\bthen\b|\belse\b)\s*"
-_HEREDOC_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
 
 # rm -r/-f in any combination (long or short form), with the target -
 # only flagged if none of the targets look like a scratch/temp path.
@@ -31,7 +61,13 @@ _RM_RE = re.compile(
 )
 _RM_RECURSIVE_RE = re.compile(r"(^|\s)(-\w*[rR]\w*|--recursive)(\s|$)")
 _RM_FORCE_RE = re.compile(r"(^|\s)(-\w*f\w*|--force)(\s|$)")
-_SCRATCH_PATH_RE = re.compile(r"(^|\s)(/tmp/|\.\/?scratchpad/|/scratchpad/)")
+_FIND_DELETE_RE = re.compile(_STMT_START + r"find\s+(?P<args>[^\n;&|`]*?)-delete\b")
+_SHRED_RE = re.compile(_STMT_START + r"shred\s+(?P<args>[^\n;&|`]*)")
+_TRUNCATE_RE = re.compile(_STMT_START + r"truncate\s+(?P<args>[^\n;&|`]*)")
+_TRUNCATE_GROW_RE = re.compile(r"(?:-s|--size)[= ]\+")
+_TRUNCATE_SIZE_FLAG_RE = re.compile(r"^(?:-s|--size)$")
+_TRUNCATE_SIZE_INLINE_RE = re.compile(r"^(?:-s|--size)=")
+_SCRATCH_PREFIXES = ("/tmp/", "/scratchpad/", "scratchpad/")
 
 _GIT_RESET_HARD_RE = re.compile(_STMT_START + r"git\s+reset\s+.*--hard\b")
 _GIT_CLEAN_FORCE_RE = re.compile(
@@ -46,19 +82,73 @@ def read_input():
     return json.load(sys.stdin)
 
 
+def _all_targets_under_scratch(args):
+    """True if every non-flag token in `args` normalizes to a path under
+    /tmp/ or a scratchpad/ dir - normpath-based so `./scratchpad/../x`
+    (which contains the substring "./scratchpad/" but actually resolves
+    outside it) isn't mistaken for a safe scratch path."""
+    tokens = [t for t in args.split() if t and not t.startswith("-")]
+    if not tokens:
+        return False
+    for token in tokens:
+        normalized = os.path.normpath(token).replace(os.sep, "/") + "/"
+        if not normalized.startswith(_SCRATCH_PREFIXES) and "/scratchpad/" not in normalized:
+            return False
+    return True
+
+
 def destructive_reason(command):
     """Returns a human-readable reason string if `command` looks
     destructive, else None."""
-    command = _HEREDOC_RE.sub("", command)
+    command = unwrap_eval(strip_prose_heredocs(command))
 
     for m in _RM_RE.finditer(command):
         args = m.group("args")
         if _RM_RECURSIVE_RE.search(args) and _RM_FORCE_RE.search(args):
-            if _SCRATCH_PATH_RE.search(args):
+            if _all_targets_under_scratch(args):
                 continue
             return ("`rm` with both a recursive and a force flag, on a path "
                     "that isn't under /tmp/ or a scratchpad/ dir - this "
                     "permanently deletes files with no undo.")
+
+    for m in _FIND_DELETE_RE.finditer(command):
+        if _all_targets_under_scratch(m.group("args")):
+            continue
+        return ("`find ... -delete` is as destructive as `rm -rf` on "
+                "whatever it matches, on a path that isn't under /tmp/ or "
+                "a scratchpad/ dir - this permanently deletes files with "
+                "no undo.")
+
+    for m in _SHRED_RE.finditer(command):
+        if _all_targets_under_scratch(m.group("args")):
+            continue
+        return ("`shred` overwrites and deletes files with no recovery "
+                "path, on a path that isn't under /tmp/ or a scratchpad/ "
+                "dir.")
+
+    for m in _TRUNCATE_RE.finditer(command):
+        args = m.group("args")
+        if _TRUNCATE_GROW_RE.search(args):
+            continue
+        # -s/--size takes a separate value token (e.g. "-s 0") that isn't a
+        # path - _all_targets_under_scratch() would otherwise treat "0" as
+        # an unrecognized (non-scratch) "target" and always flag.
+        tokens, skip_next, targets = args.split(), False, []
+        for t in tokens:
+            if skip_next:
+                skip_next = False
+                continue
+            if _TRUNCATE_SIZE_FLAG_RE.match(t):
+                skip_next = True
+                continue
+            if _TRUNCATE_SIZE_INLINE_RE.match(t):
+                continue
+            targets.append(t)
+        if _all_targets_under_scratch(" ".join(targets)):
+            continue
+        return ("`truncate` can discard file content beyond the given "
+                "size with no recovery path, on a path that isn't under "
+                "/tmp/ or a scratchpad/ dir.")
 
     if _GIT_RESET_HARD_RE.search(command):
         return ("`git reset --hard` discards uncommitted changes with no "

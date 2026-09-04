@@ -23,7 +23,32 @@ so Bash coverage is file-level (any write-shaped command referencing a
 protected path is blocked), not function-level like the Edit/Write path
 above - coarser, but still a real, text-matching-based net rather than a
 guarantee. A command with no write-shaped pattern that merely reads or
-greps a protected path (e.g. `cat brands/hasselblad.py`) is left alone."""
+greps a protected path (e.g. `cat brands/hasselblad.py`) is left alone.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #1 - 실측 결함
+수정)**: heredoc 본문을 무조건 지우던 게, `python3 - <<'PY'
+... open("brands/hasselblad.py","w").write(...) ... PY`처럼 인터프리터에
+넘겨져서 실제로 실행되는 코드까지 놓쳤다(파일에 진짜 쓰기가 일어남) -
+프로즈 오탐만 막고 인터프리터로 넘어가는 heredoc 본문은 스캔 대상에
+남겨두는 `_hook_common.strip_prose_heredocs()`로 교체.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #2 - 실측 결함
+수정)**: `_PY_WRITE_OPEN_RE`는 `open(...)`의 첫 인자가 단일 따옴표 쌍
+안에 통째로 들어있다고 가정하는데, (1) 인접 문자열 리터럴
+연결(`open('brand''s/hasselblad.py','w')` - Python이 런타임에 이어붙이지만
+정규식은 첫 `'...'` 안에서 매칭이 끊김)과 (2) 변수 간접 참조
+(`p='brands/hasselblad.py'; open(p,'w')` - `open()` 호출부엔 리터럴
+자체가 없음) 둘 다 놓쳤다. `_py_open_literal_target()`(인접 리터럴을
+이어붙여서 재검사)과 `_py_open_var_target()`(같은 커맨드 안에서 그
+변수에 대한 대입을 찾아서 재검사)로 보강.
+
+**정정(2026-08-20, 사용자 지시 - 단일 홉 → 다단계 체인)**:
+`_py_open_var_target()`이 원래 단일 홉만 따라갔음(`p='brands/x.py';
+open(p,'w')`는 잡지만 `q=p; p='brands/x.py'; open(q,'w')`는 여전히
+놓침). `_resolve_var_literal()`이 바인딩 체인을 `_MAX_VAR_HOPS`(5)까지
+재귀적으로 따라가도록 교체 - 여전히 완전한 데이터흐름 분석은 아님
+(f-string 표현식, 문자열 메서드 호출로 계산된 값은 못 봄), 경계를
+5홉으로 명시적으로 그은 국소 패치."""
 import ast
 import json
 import os
@@ -31,7 +56,8 @@ import re
 import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
-                           is_subagent_call, require_decision_or_deny, sentinel_override)
+                           is_subagent_call, require_decision_or_deny,
+                           sentinel_override, strip_prose_heredocs)
 
 HOOK_NAME = "protect_never_touch"
 SEVERITY = "CRITICAL"
@@ -56,25 +82,90 @@ _PY_WRITE_OPEN_RE = re.compile(
     r"open\(\s*f?[\"']([^\"']*" + _PROTECTED_PATH + r")[\"']\s*,\s*"
     r"[\"'](?:w|a|wb|ab|x)[\"']")
 
+_PROTECTED_PATH_BARE_RE = re.compile(_PROTECTED_PATH)
+_QUOTED_SEGMENT_RE = re.compile(r"[\"']([^\"']*)[\"']")
+_PY_OPEN_LITERAL_ARG_RE = re.compile(
+    r"open\(\s*f?((?:[\"'][^\"']*[\"']\s*){1,20})\s*,\s*[\"'](?:w|a|wb|ab|x)[\"']")
+_PY_OPEN_VAR_ARG_RE = re.compile(
+    r"open\(\s*(\w+)\s*,\s*[\"'](?:w|a|wb|ab|x)[\"']")
+# RHS is either 1+ quoted literal(s) (leaf) or a bare identifier (another
+# hop to follow) - covers both `p='brands/x.py'` and `q=p` in one pattern.
+_PY_ANY_ASSIGN_RE = re.compile(
+    r"\b(\w+)\s*=\s*f?((?:[\"'][^\"']*[\"']\s*)+|\w+)")
+_MAX_VAR_HOPS = 5
 
-# Strips heredoc bodies (`<<EOF ... EOF` / `<<'EOF' ... EOF` / `<<-EOF ...
-# EOF`) before scanning - otherwise a heredoc body that merely *mentions* a
-# redirect/protected-path pattern as prose (e.g. a commit message explaining
-# this very hook) gets misread as a real write. Same false-positive class
-# `protect_push_safety.py` hit and fixed earlier this session.
-_HEREDOC_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
+
+def _concat_quoted_literal(raw):
+    return "".join(_QUOTED_SEGMENT_RE.findall(raw))
+
+
+def _resolve_var_literal(command, var, upto, hops=0):
+    """Walks assignment chains backward from position `upto`, resolving
+    `var` to its concatenated literal string - follows bare-identifier
+    hops (q=p; p=r; r='brands/x.py') up to `_MAX_VAR_HOPS` before giving
+    up. Bounded heuristic, not full data-flow analysis - a computed value
+    (f-string with an expression, string method call, etc.) still evades
+    this."""
+    if hops >= _MAX_VAR_HOPS:
+        return None
+    latest = None
+    for am in _PY_ANY_ASSIGN_RE.finditer(command[:upto]):
+        if am.group(1) == var:
+            latest = am
+    if latest is None:
+        return None
+    rhs = latest.group(2)
+    if rhs and rhs[0] in "\"'":
+        return _concat_quoted_literal(rhs)
+    if rhs == var:
+        return None
+    return _resolve_var_literal(command, rhs, latest.start(), hops + 1)
+
+
+def _py_open_literal_target(command):
+    """Adjacent string-literal concatenation - open('brand''s/x.py','w')
+    is one path at runtime (Python joins adjacent literals at parse time)
+    but _PY_WRITE_OPEN_RE's single-literal match ends at the first closing
+    quote. Re-join the quoted segments and re-check against the protected
+    path pattern."""
+    m = _PY_OPEN_LITERAL_ARG_RE.search(command)
+    if not m:
+        return None
+    path_m = _PROTECTED_PATH_BARE_RE.search(_concat_quoted_literal(m.group(1)))
+    return path_m.group(0) if path_m else None
+
+
+def _py_open_var_target(command):
+    """Heuristic for open(var, 'w') where var was assigned a literal
+    string earlier in the same command, possibly through a chain of
+    bare-identifier reassignments (q=p; p=r; r='brands/x.py'; open(q,'w'))
+    - open()'s own call site has no literal for the single-literal regex
+    to match. Follows up to `_MAX_VAR_HOPS` hops, not a full data-flow
+    analysis - a computed value still evades this."""
+    m = _PY_OPEN_VAR_ARG_RE.search(command)
+    if not m:
+        return None
+    literal = _resolve_var_literal(command, m.group(1), m.start())
+    if literal is None:
+        return None
+    path_m = _PROTECTED_PATH_BARE_RE.search(literal)
+    return path_m.group(0) if path_m else None
 
 
 def bash_write_target(command):
     """Returns the matched protected-path string if `command` looks like it
     writes to a protected path, else None. Coarser than the Edit/Write path
     below (file-level, not function-level - see module docstring)."""
-    command = _HEREDOC_RE.sub("", command)
+    command = strip_prose_heredocs(command)
     for rx in (_REDIRECT_TARGET_RE, _SED_INPLACE_TARGET_RE, _TEE_TARGET_RE,
                _CP_MV_DEST_RE, _PY_WRITE_OPEN_RE):
         m = rx.search(command)
         if m:
             return m.group(1)
+    for fn in (_py_open_literal_target, _py_open_var_target):
+        target = fn(command)
+        if target:
+            return target
     return None
 
 

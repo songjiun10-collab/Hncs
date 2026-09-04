@@ -18,7 +18,12 @@ hotfix workflow, or a repo where main IS the working branch).
 high_tier_decision() fallback 전에 consensus 확인 단계가 하나 더 생겼다
 - 자세한 설계는 `_hook_common.py`의 `write_consensus_verdict()`/
 `consensus_verdict()` docstring 참고. 안 쓰면(컨트롤러가 2-agent 디스패치를
-아예 안 하면) 기존 동작과 완전히 동일."""
+아예 안 하면) 기존 동작과 완전히 동일.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #4 - 실측 결함
+수정)**: `eval "git commit -m test"`는 `git`이 큰따옴표 바로 뒤라
+`_STMT_START`가 요구하는 문 시작 위치가 아니어서 완전히 안 걸렸다 -
+`_hook_common.unwrap_eval()`로 고침."""
 import json
 import re
 import subprocess
@@ -26,7 +31,7 @@ import sys
 
 from _hook_common import (allow, allow_with_consensus, allow_with_override,
                            bash_override, consensus_verdict, high_tier_decision,
-                           require_decision_or_deny)
+                           require_decision_or_deny, unwrap_eval)
 
 HOOK_NAME = "protect_branch"
 SEVERITY = "HIGH"
@@ -72,7 +77,7 @@ def main():
         allow()
         return
     command = str((data.get("tool_input") or {}).get("command", ""))
-    stripped = _HEREDOC_RE.sub("", command)
+    stripped = unwrap_eval(_HEREDOC_RE.sub("", command))
     if not _COMMIT_OR_PUSH_RE.search(stripped):
         allow()
         return

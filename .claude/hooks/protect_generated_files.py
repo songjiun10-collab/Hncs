@@ -36,7 +36,15 @@ override(bash 주석/sentinel)가 MEDIUM-APPROVE와 나란히 열려있으니
 발견, `protect_never_touch.py`의 `touched_function()`이 이미 쓰고 있는
 `"__unknown__"` fail-closed 패턴과 대조해서 확인). 파싱 실패 시
 `"__unknown__"`을 반환하도록 분리하고, `main()`에서 그 경우를 별도
-deny 경로로 처리하도록 수정."""
+deny 경로로 처리하도록 수정.
+
+**추가 (2026-08-20, README "알려진 한계" 9차 라운드 B - 대응 방향
+반영)**: 배치 검토(여러 브랜드를 한 디스패치로 같이 확인해달라는 요청)에서
+opus 승인자가 "커밋 메시지/diff 패턴이 서로 내적으로 일관됨"만으로
+마커를 낸 사례가 실측됐다 - 코드 결함이 아니라 디스패치 프롬프트
+설계에만 의존하던 행동 레벨 위험이라, deny 메시지 자체에 재현
+가능성을 스스로 자문하게 하는 체크리스트를 박아 넣어 프롬프트 설계와
+무관하게 항상 보이게 함(아래 deny 메시지의 체크리스트 항목)."""
 import ast
 import json
 import os
@@ -130,7 +138,14 @@ def _deny_or_override(target, reason, tool_use_id=None):
         "was always easier). Dispatch an opus Agent whose response "
         f'contains "MEDIUM-APPROVE: {HOOK_NAME} :: {target} :: <caution>" '
         "- the next matching call will be let through with that caution "
-        "delivered back to you.",
+        "delivered back to you. Before issuing MEDIUM-APPROVE, the "
+        "approving agent should be able to answer yes to: (1) did I "
+        "actually reproduce this value from tools/fit_final_lut.py or an "
+        "equivalent re-run, not just check that a commit message and diff "
+        "shape are internally consistent with each other? (2) if this is "
+        "one of several items in a batch, did I verify this specific item "
+        "on its own, not by pattern-matching it against the others in the "
+        "batch?",
         severity=SEVERITY, target=target, decision=decision,
     )
 

@@ -77,6 +77,48 @@ class TestBashWriteTarget(unittest.TestCase):
     def test_no_protected_path_mentioned_not_flagged(self):
         self.assertIsNone(hook.bash_write_target("echo hi >> /tmp/scratch.txt"))
 
+    def test_python_heredoc_write_still_caught(self):
+        """2026-08-20 정정 (README 2차 라운드 #1, 실증): heredoc 본문을
+        무조건 지우던 게, python3 - <<'PY' ... PY로 넘겨져서 실제
+        실행되는 open(...).write(...) 코드까지 놓쳤다 - 실제로 파일에
+        쓰기가 일어남에도 이 훅의 Bash 커버리지를 완전히 우회했었다."""
+        cmd = 'python3 - <<\'PY\'\nopen("brands/hasselblad.py","w").write("x")\nPY'
+        self.assertEqual(hook.bash_write_target(cmd), "brands/hasselblad.py")
+
+    def test_adjacent_literal_concat_still_caught(self):
+        """2026-08-20 정정 (README 2차 라운드 #2, 실증): Python이 런타임에
+        이어붙이는 인접 문자열 리터럴(open('brand''s/x.py','w'))이 단일
+        따옴표쌍 가정 정규식을 피해갔다."""
+        cmd = "python3 -c \"open('brand''s/hasselblad.py','w').write('x')\""
+        self.assertIsNotNone(hook.bash_write_target(cmd))
+
+    def test_variable_indirection_still_caught(self):
+        """2026-08-20 정정 (README 2차 라운드 #2, 실증): open() 호출부에
+        리터럴이 아예 없는 변수 간접 참조가 놓쳤다."""
+        cmd = "python3 -c \"p='brands/hasselblad.py'; open(p,'w').write('x')\""
+        self.assertIsNotNone(hook.bash_write_target(cmd))
+
+    def test_variable_indirection_to_unrelated_file_not_flagged(self):
+        cmd = "python3 -c \"p='tools/scratch.py'; open(p,'w').write('x')\""
+        self.assertIsNone(hook.bash_write_target(cmd))
+
+    def test_multihop_variable_indirection_still_caught(self):
+        """2026-08-20 정정 (사용자 지시): 단일 홉만 따라가던 걸 다단계로
+        확장 - p='brands/x.py'; q=p; open(q,'w') 같은 체인."""
+        cmd = "python3 -c \"p='brands/hasselblad.py'; q=p; open(q,'w').write('x')\""
+        self.assertIsNotNone(hook.bash_write_target(cmd))
+
+    def test_multihop_variable_indirection_to_unrelated_file_not_flagged(self):
+        cmd = "python3 -c \"p='tools/scratch.py'; q=p; open(q,'w').write('x')\""
+        self.assertIsNone(hook.bash_write_target(cmd))
+
+    def test_hop_limit_exceeded_gives_up_safely(self):
+        """6홉 체인(_MAX_VAR_HOPS=5 초과)은 이 국소 패치의 문서화된
+        한계 - 무한 재귀는 아니지만(hops 카운터로 종료) 값도 못 찾음."""
+        chain = "; ".join(f"v{i}=v{i-1}" for i in range(1, 7))
+        cmd = f"python3 -c \"v0='brands/hasselblad.py'; {chain}; open(v6,'w').write('x')\""
+        self.assertIsNone(hook.bash_write_target(cmd))
+
 
 class TestMainEndToEnd(unittest.TestCase):
     """main()의 tool_name 라우팅(Bash 분기 vs 기존 Edit/Write/MultiEdit
