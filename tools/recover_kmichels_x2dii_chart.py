@@ -29,7 +29,23 @@ def _extract_id(drive_url):
     return m.group(1) if m else None
 
 
-def _download_drive_file(file_id, dest):
+_TIFF_MAGIC = (bytes.fromhex("49492a00"), bytes.fromhex("4d4d002a"))
+_JPEG_MAGIC = bytes.fromhex("ffd8ff")
+
+
+def _verify_signature(dest, kind):
+    with open(dest, "rb") as f:
+        head = f.read(4)
+    if kind == "raw":
+        return head in _TIFF_MAGIC
+    if kind == "jpeg":
+        return head.startswith(_JPEG_MAGIC)
+    return True
+
+
+def _download_drive_file(file_id, dest, kind):
+    if file_id is None:
+        raise ValueError("Google Drive URL에서 file_id를 추출하지 못했다")
     raw_bytes = subprocess.run(
         ["curl", "-sL", f"https://drive.google.com/uc?export=download&id={file_id}"],
         capture_output=True, timeout=60).stdout
@@ -44,6 +60,12 @@ def _download_drive_file(file_id, dest):
         # 작은 파일은 interstitial 없이 바로 받아짐 - 응답 바이트를 그대로 저장
         with open(dest, "wb") as f:
             f.write(raw_bytes)
+    # 대용량 확인 페이지(바이러스 스캔 interstitial)나 인증 실패 HTML이
+    # 200 응답으로 와서 실제 파일로 저장되면, 이후 매트릭스 분석에 손상
+    # 데이터가 조용히 섞인다 - 매직바이트로 실패를 잡는다.
+    if not _verify_signature(dest, kind):
+        raise RuntimeError(
+            f"다운로드 결과가 {kind} 시그니처가 아닌 응답이다 (HTML/손상 가능): {dest}")
 
 
 def main():
@@ -65,7 +87,7 @@ def main():
         if not os.path.exists(raw_dest) or os.path.getsize(raw_dest) < 1_000_000:
             raw_id = _extract_id(raw_url)
             print(f"  {raw_name} 다운로드 중...", flush=True)
-            _download_drive_file(raw_id, raw_dest)
+            _download_drive_file(raw_id, raw_dest, kind="raw")
             print(f"    {os.path.getsize(raw_dest) / 1e6:.1f}MB")
         else:
             print(f"  {raw_name} 이미 있음, 스킵")
@@ -73,7 +95,7 @@ def main():
         if jpg_url and (not os.path.exists(jpg_dest) or os.path.getsize(jpg_dest) < 100_000):
             jpg_id = _extract_id(jpg_url)
             print(f"  {jpg_name} 다운로드 중...", flush=True)
-            _download_drive_file(jpg_id, jpg_dest)
+            _download_drive_file(jpg_id, jpg_dest, kind="jpeg")
             print(f"    {os.path.getsize(jpg_dest) / 1e6:.1f}MB")
         elif os.path.exists(jpg_dest):
             print(f"  {jpg_name} 이미 있음, 스킵")

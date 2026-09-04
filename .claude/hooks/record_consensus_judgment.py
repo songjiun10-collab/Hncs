@@ -37,7 +37,7 @@ _VERDICT_RE = re.compile(
     r"(?P<role>[AB])\s*::\s*(?P<verdict>SAFE|RISKY)\s*::\s*(?P<reasoning>.+?)\s*$",
     re.MULTILINE,
 )
-_OPUS_RE = re.compile(r"^claude-opus-", re.IGNORECASE)
+_OPUS_RE = re.compile(r"claude-(?:\d+(?:\.\d+)?-)?opus\b", re.IGNORECASE)
 
 
 def read_input():

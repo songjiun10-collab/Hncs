@@ -53,6 +53,12 @@ def _irls_fit(sources, targets, init_weights, max_iters=MAX_ITERS):
         new_weights = new_weights * init_weights  # 초기 사전 가중치와 결합(곱셈)
         if np.max(np.abs(new_weights - weights)) < 1e-4:
             weights = new_weights
+            # break 직전 weights와 m이 한 iteration 어긋났다 - 수렴한
+            # weights로 m을 다시 피팅해 보고값과 배포 행렬이 짝을 이루게
+            # 한다(refit_dcp_irls_final.py/refit_dcp_irls_cyan_init.py가
+            # 이 두 값을 그대로 배포하므로 정확성 결함이었다).
+            m = raw_baseline.fit_color_matrix(
+                sources, targets, weights=[weights for _ in sources])
             break
         weights = new_weights
     return weights, m

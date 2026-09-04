@@ -1534,6 +1534,15 @@ opus도 2회 이상 반복해야 하는데, 지금까지 축적된 증거(delta 
 낮다고 판단, 여기서 멈춤. real sentinel 4종 전부 미오염 확인,
 scratch repo 삭제 완료.
 
+### 2026-09-02 정정 - protect_never_touch eval 우회와 후속 수정 4건
+
+protect_never_touch.py 의 Bash 가드가 eval 이나 bash -c 래핑을 풀지 않아
+보호 경로가 우회되던 것을 Tier 1 재현 후 수정했다. unwrap_eval 적용 외
+후속 4건(opus 정규식 통일, protected_generated_files replace_all 전체 매치
+검사, _irls_fit 수렴 직전 가중치 정합, recover 스크립트 매직바이트 검증)도
+함께 고쳤다. dcp 는 Never-list 라 재배포하지 않았고, 수정 후 재배포 여부는
+사용자 승인이 필요하다.
+
 ### `ask()`가 사람 없을 때 어떻게 되는지 - 참고용 조사 결과(2026-08-15)
 
 **정정(같은 날, 이후)**: 아래는 원래 "이 프로젝트는 ask()를 완전히
