@@ -29,10 +29,10 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 
 처음이라면 이 순서로: 이 README -> [docs/project_structure.md](docs/project_structure.md)로
 파일 단위 지도 확인 -> 건드릴 영역의 `README.md`(사용법/예시)와
-`CLAUDE.md`(기여 규칙) - [brands/README.md](brands/README.md),
-[tools/README.md](tools/README.md),
-[hybrid_engine/README.md](hybrid_engine/README.md),
-[gui/README.md](gui/README.md), [tests/README.md](tests/README.md).
+`CLAUDE.md`(기여 규칙) - [brands/README.ko.md](brands/README.ko.md),
+[tools/README.ko.md](tools/README.ko.md),
+[hybrid_engine/README.ko.md](hybrid_engine/README.ko.md),
+[gui/README.ko.md](gui/README.ko.md), [tests/README.ko.md](tests/README.ko.md).
 전체 디렉토리 지도 + "무엇을 하려면 어디를 읽어야 하는지" 표는
 [docs/START_HERE.md](docs/START_HERE.md) 참고.
 
@@ -57,7 +57,7 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 **12개 브랜드**: Hasselblad, Fujifilm, Leica, Phase One, Pentax, Ricoh
 GR, Canon, Nikon, Sony, Panasonic, Olympus, Sigma. 검증 방식 표 전체,
 브랜드별 근거 링크, 공통 한계, 빠른 예시 코드는
-[brands/README.md](brands/README.md)에 있다.
+[brands/README.ko.md](brands/README.ko.md)에 있다.
 
 ## 설치
 
@@ -74,15 +74,15 @@ pip install -r requirements.txt
 브랜드별 `apply_*` 함수 말고도 각자 `README.md`를 가진 엔진 3개가 더
 있다:
 
-- [tools/README.md](tools/README.md) - RAW → Log 색공간 파이프라인
+- [tools/README.ko.md](tools/README.ko.md) - RAW → Log 색공간 파이프라인
   (`raw_pipeline.py`), 렌즈 왜곡 보정, Photoshop/DaVinci용 `.cube` LUT
   내보내기, DCP 카메라 프로필 내보내기(X2D II), 브랜드 시그니처
   판별력 검증, 프레임 단위 비디오 엔진, 그리고 이 프로젝트의 모든
   실측을 재현/재검증하는 명령어
-- [hybrid_engine/README.md](hybrid_engine/README.md) - EXIF 기반
+- [hybrid_engine/README.ko.md](hybrid_engine/README.ko.md) - EXIF 기반
   카메라 간 색감 변환(V0.1): 카메라 A로 찍은 JPEG/RAW를 카메라 B가
   찍은 것처럼 재렌더링, raw 기준선 캘리브레이션 실험 전체 기록 포함
-- [gui/README.md](gui/README.md) - 위 전부를 클릭 몇 번으로 쓸 수 있게
+- [gui/README.ko.md](gui/README.ko.md) - 위 전부를 클릭 몇 번으로 쓸 수 있게
   묶은 Tkinter 데스크톱 앱
 
 [`docs/demo/hncs_convert_demo.html`](docs/demo/hncs_convert_demo.html)은
@@ -183,8 +183,8 @@ GitHub 사용자 **kmichels** (Reddit: Big_Rip4015) 님께 감사드립니다.
 Chris Schmauch 님께도 감사드립니다. DCP 카메라 프로필 내보내기
 (`core/dcp_export.py`)를 실제 Lightroom에서 직접 테스트해서 안 뜨는
 원인을 헤더 매직 넘버와 `UniqueCameraModel` 값까지 정확히 짚어주셨습니다
-- [tools/README.md](tools/README.md#dcp-camera-profile-colorimetric-correction-x2d-ii-only)
-참고 (해당 문서는 영어로만 되어 있습니다).
+- [tools/README.ko.md](tools/README.ko.md#dcp-카메라-프로필-색채측정-보정-x2d-ii-전용)
+참고.
 
 ## 라이선스
 

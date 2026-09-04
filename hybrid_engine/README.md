@@ -1,5 +1,7 @@
 # hybrid_engine/ - EXIF-driven cross-camera color conversion (V0.1)
 
+*[한국어 README](README.ko.md)*
+
 A third, independent module with yet another purpose from `brands/*.py`
 and `tools/raw_pipeline.py`: "re-render a finished JPEG shot on camera A
 as if camera B had shot it." There are two entry points - one for RAW

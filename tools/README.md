@@ -1,5 +1,7 @@
 # tools/
 
+*[한국어 README](README.ko.md)*
+
 CLIs and research scripts. Nothing here is imported by shipped code -
 see this directory's `CLAUDE.md` for conventions. Run everything below
 from the repo root so the `core`/`brands`/`tools` import paths resolve.
