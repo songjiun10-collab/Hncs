@@ -166,4 +166,30 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/build_devicelink_icc_for_look.py` | 아무 `brands/*.py` `apply_*()` 룩이든 캡처원 DeviceLink ICC(`.icc`)로 굽는 범용 CLI - `core.lut_export.bake_lut_from_function()`(굽기, .cube와 동일 로직 재사용)+`core.icc_export.write_icc_devicelink_look_from_lut()`(파일 포맷만 변환)만 조합, 새 로직 없음. `hasselblad_hncs_look.icc`/`fuji_provia_look.icc` 예시로 발급 |
 | `tools/fit_brand_native_matrix_for_icc.py` | 챠트 실측 없는 브랜드(Sony/Sigma/Leica)용 ICC - `decode_raw_native()`(WB/매트릭스 우회, ICC가 요구하는 진짜 native 공간) 기준으로 3x3 매트릭스를 새로 피팅(카메라 JPEG 근사 타깃, `brands/*_raw_matrix.py`와는 다른 입력공간이라 재사용 불가했음) + 5-fold LOO + `<brand>_generic_jpeg_approx.icc` 자동 발급. 무보정 대비 Sony +39.19%/Sigma +42.33%/Leica +45.04% |
 | `tools/validate_dpreview_chart_brand.py` | dpreview 스튜디오씬 공용 챠트 DB(브랜드 무관 REST API, `wp-json/wayfinder-image-compare/v1/widgets/<id>/frontend`)에서 받은 임의 브랜드 RAW를 `fit_leica_sl3p_studio_chart.py`와 같은 방법론(유채색 18패치 3x 가중, 5-fold CV)으로 검증만 함(DCP/ICC 미발급) - Sony a7 V/a7R VI/Fujifilm X-E5에 처음 적용 |
+| `tools/evaluate_dcp_weighted_patches.py` | X2D II DCP 챠트 매트릭스(LOO ΔE00 2.83)를 유채색 패치 가중 최소자승으로 재검증한 결과 LOO 2.7179까지 개선(-4.9%, 3.5x~5x 구간 평평한 신호) - `refit_dcp_weighted_chroma.py`로 배포 |
+| `tools/refit_dcp_weighted_chroma.py` | 위 -4.9% 개선을 실제 배포 반영(2026-09-01, 사용자 승인) - kmichels 9장 전체로 홀드아웃 없이 재피팅해 `.dcp` 재발급 |
+| `tools/evaluate_dcp_irls_weighted.py` | Huber IRLS로 더 낮출 수 있는지 검증한 결과 무채색-4x 초기값 IRLS가 LOO ΔE00 2.6078까지 개선(균등가중 LOO 2.8588 대비 -8.8%, weighted-only 단독 -4.9%보다 더 낮음) |
+| `tools/refit_dcp_irls_final.py` | 위 IRLS -8.8% 검증 결과를 실제 배포 반영(2026-09-01, 사용자 승인) |
+| `tools/refit_dcp_irls_cyan_init.py` | IRLS 패치별 잔차를 검증해보니 patch 17(cyan)만 9장 전부에서 평균 ΔE00=7.166(표준편차 0.977, 노이즈 아님)로 유독 나쁨을 발견 - cyan 초기가중치만 4.0→2.0으로 낮춰 재수렴, LOO 2.6078→2.5942 추가 개선(-0.52%), 실제 배포 반영 |
+| `tools/evaluate_dcp_huesatmap.py` | 배포된 챠트 매트릭스 위에 DCP HueSatMap(hue-only, Lab 평면 회전 근사)을 얹어 LOO를 더 낮출 수 있는지 검증하는 실험 - patch 17(cyan) a*축 잔차(+11.98, 표준편차 0.496) 대응 |
+| `tools/evaluate_dcp_huesatmap_srgb.py` | 위 Lab 근사 대신 실제 DNG `ProfileHueSatMapEncoding=1`이 명시하는 sRGB HSV 좌표계로 재검증해 근사 격차를 메움 |
+| `tools/dcp_export_huesatmap_experimental.py` | `core/dcp_export.py`(Never-list) 격리 사본 - HueSatMap 태그 3종(ProfileHueSatMapDims/Data1/Encoding) 지원만 추가, 원본 write_dcp/read_dcp 로직은 불변 |
+| `tools/build_dcp_huesatmap_experimental.py` | 위 HueSatMap 실험을 실기기 미검증 상태로 별도 `.dcp`(`hasselblad_x2dii_chart_huesatmap_experimental.dcp`, 배포 파일과 분리)로 발급 - N=8division/sigma=30, 스윕 검증 결과 N을 8~24로 늘려도 -4.98%~-5.04%로 수렴/포화 |
+| `tools/refit_x2dii_chart_combined.py` | X2D II 챠트 매트릭스를 kmichels 단일조명 9장 + dpreview 스튜디오씬 16장(2026-09)으로 합쳐 재피팅(사용자 승인) - IRLS/cyan 조정 단계는 n=9 과적합 우려로 재적용 안 함 |
+| `tools/refit_x2dii_chart_combined_irls.py` | 위 combined 매트릭스에 IRLS를 마저 검증(사용자 승인 "Irls ㄱㄱ") - null result(5-fold CV 12.687 vs 비-IRLS 12.6865, 조명이 여러 개일 땐 IRLS 가정이 안 맞음), 배포 매트릭스는 non-IRLS 유지 |
+| `tools/analyze_x2dii_loss_breakdown.py` | combined(25장) 검증에서 "단일매트릭스가 이긴 9건이 전부 kmichels"인 현상을 검증 - kmichels 9장이 같은 버스트라 5-fold CV에서 늘 8/9이 학습셋에 남는 리키지로 진단 |
+| `tools/analyze_x2dii_burst_fair_comparison.py` | 위 리키지를 고쳐 재검증 - kmichels 점수만 dpreview 단독 학습 매트릭스(리키지 없음)로 교체, group1/2 16장은 원래 25-fold CV 유지 |
+| `tools/analyze_x2dii_combined_patch_residuals.py` | combined 25장 5-fold CV의 패치별 잔차를 검증 - 특정 패치가 25장 전부에서 구조적으로 반복되는 이상치인지 확인 |
+| `tools/analyze_x2dii_combined_lighting_split.py` | combined 데이터가 실은 조명이 2개 이상 섞여있다는 가설을 검증 - 무채색 6패치 실측 native R/G로 데이터 기반 2-클러스터링, 클러스터별 재피팅 시 CV가 조명 1개 수준까지 내려가는지 확인 |
+| `tools/refit_x2dii_dual_illuminant.py` | 위에서 확인된 조명 2종(daylight성/tungsten성)을 DNG dual-illuminant(ColorMatrix1+2, CalibrationIlluminant1/2)로 풀어 배포(v1, 2026-09-03) - kmichels(중간 조명, n=9)는 완전 홀드아웃 |
+| `tools/analyze_x2dii_kmichels_own_matrix_gap.py` | kmichels 전용 매트릭스가 있었다면 얼마나 좋을지("오라클" 상한)를 검증 - dual-illuminant holdout 결과와의 격차 정량화 |
+| `tools/analyze_x2dii_full_interpolation_end_to_end.py` | 기존 dual-illuminant 검증들이 실제 `interpolate_dng_matrix()`를 거치지 않고 in-cluster CV로만 냈던 결함을 검증으로 확인 - 25장 전부를 실제 보간 함수로 평가한 첫 end-to-end 검증, 매트릭스가 D50 기준이라 g가 illuminant1 쪽으로 쏠리는 구조적 편향 발견 |
+| `tools/analyze_x2dii_illuminant_referenced_interpolation.py` | 위 D50 편향의 근본 수정(매트릭스를 D50이 아니라 각자의 캘리브레이션 조명 색도로 fit)판을 검증 - group1/group2 자기 중립색 self-consistency 회복 확인(g=0.9916/0.0176, 기대값 1/0 근처) |
+| `tools/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py` | 위 수정을 실제 배포 반영(v2, 2026-09-04, 현재 배포판) - 25장 전체 실제 보간 검증 CI=[+5.5509,+9.2794], 승/패=25/0, 사용자 승인("재배포 (권장)") |
+| `tools/validate_x2dii_dual_illuminant_real_algorithm.py` | 배포 당시 썼던 단순화 보간(선형보간 근사) 대신 실제 DNG 스펙 보간 알고리즘(`core/dcp_interpolate.py`, 고정점 반복+mired 선형보간+McCamy CCT)으로 재검증 - 원래 판정 유지 확인 |
+| `tools/recover_kmichels_x2dii_chart.py` | kmichels-x2dii-2026-07 챠트 세트가 로컬에서 유실된 것을 manifest.csv의 구글드라이브 URL로 검증 후 8장 복원(1장은 URL 자체가 manifest에 없어 복구 불가) |
+| `tools/validate_chart_pipeline_on_external_camera.py` | 챠트 기반 파이프라인이 하셀블라드 전용 우연이 아닌지 완전히 다른 카메라(Sony A57/Canon 1Ds III/Nikon D40, York University raw_2_raw/illuminant 데이터셋)로 방법론만 검증 - 배포 매트릭스에는 미반영, 카메라가 2012~2013년식이라 세대 자체가 다름 |
+| `tools/breakdown_fuji_provia_by_camera_body.py` | `apply_provia()` 검증(119쌍)이 GFX100RF(89/89) 위주였던 편중을 바디별로 분해해 재확인 |
+| `tools/write_dpreview_manifest.py` | dpreview 위젯 DB에서 받은 브랜드 raw/ 폴더를 manifest.csv(image_id/camera/product_id/raw_file_url)로 박제하고 raw/를 지우는 디스크 확보용 CLI |
+| `tools/match_dpreview_downloads_by_hash.py` | 브라우저 blob 다운로드가 이 앱 샌드박스에서 익명 파일명으로 저장되는 문제를 콘텐츠 SHA-256 매칭으로 해결하는 다운로드-후처리 CLI |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
