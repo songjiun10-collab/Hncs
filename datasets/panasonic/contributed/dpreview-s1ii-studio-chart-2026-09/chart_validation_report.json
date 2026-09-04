@@ -1,0 +1,40 @@
+{
+  "brand": "panasonic",
+  "camera": "Panasonic S1II",
+  "n_images": 18,
+  "n_failed_detect": 2,
+  "images": [
+    "panasonic_s1ii_iso100_2025_05_06_14_42_32.rw2",
+    "panasonic_s1ii_iso12800_2025_05_06_14_43_42.rw2",
+    "panasonic_s1ii_iso12800_2025_05_08_19_56_17.rw2",
+    "panasonic_s1ii_iso1600_2025_05_06_14_43_14.rw2",
+    "panasonic_s1ii_iso1600_2025_05_08_19_55_52.rw2",
+    "panasonic_s1ii_iso200_2025_05_06_14_42_44.rw2",
+    "panasonic_s1ii_iso200_2025_05_08_19_55_29.rw2",
+    "panasonic_s1ii_iso25600_2025_05_06_14_43_50.rw2",
+    "panasonic_s1ii_iso3200_2025_05_06_14_43_24.rw2",
+    "panasonic_s1ii_iso3200_2025_05_08_19_55_58.rw2",
+    "panasonic_s1ii_iso400_2025_05_06_14_42_56.rw2",
+    "panasonic_s1ii_iso400_2025_05_08_19_55_37.rw2",
+    "panasonic_s1ii_iso51200_2025_05_06_14_43_58.rw2",
+    "panasonic_s1ii_iso51200_2025_07_08_17_18_16.rw2",
+    "panasonic_s1ii_iso6400_2025_05_06_14_43_34.rw2",
+    "panasonic_s1ii_iso6400_2025_05_08_19_56_08.rw2",
+    "panasonic_s1ii_iso800_2025_05_06_14_43_06.rw2",
+    "panasonic_s1ii_iso800_2025_05_08_19_55_45.rw2"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 28.796548868044624,
+  "delta_e00_cv_mean": 12.84708368866457,
+  "delta_e00_improvement_pct": 55.386724473358996,
+  "delta_e00_bootstrap_ci95": [
+    13.68274626758334,
+    18.33430713891815
+  ],
+  "wins": 18,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.2222369068634723,
+  "rmse_xyz_cv_mean": 0.08846831458260873,
+  "rmse_xyz_improvement_pct": 60.19188899305649
+}
