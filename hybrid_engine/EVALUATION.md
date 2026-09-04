@@ -3668,20 +3668,25 @@ self-consistency(자기 중립색 넣었을 때 g=0.0176, 위에서 확인)도 �
 않았다** - 다만 실기기(Lightroom/ACR)에서 `AsShotNeutral` 기반 보간이
 챠트 검증만큼 깨끗하게 나올지는 여전히 미검증으로 남는다.
 
-## dpreview 스튜디오씬 챠트 - 7개 브랜드 컬러체커 검증 총괄 (2026-09-04)
+## dpreview 스튜디오씬 챠트 - 9개 브랜드 컬러체커 검증 총괄 (2026-09-04)
 
 `tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증
-전용) 하나로 7개 브랜드를 같은 방법론(무채색 6패치 대비 유채색 18패치
+전용) 하나로 9개 브랜드를 같은 방법론(무채색 6패치 대비 유채색 18패치
 3x 가중 최소자승, k=min(n,5)-fold CV, 부트스트랩 95% CI 20000회)으로
-돌렸다. 7개 전부 CI 하한이 0을 확실히 넘고 승/패가 만장일치였다:
+돌렸다. Nikon Z5II/Canon R6III 둘은 서로 다른 RAW 파일이라 서브에이전트
+2개로 병렬 실행(`superpowers:delegate-to-subagents` 패턴 - 각 서브에이전트는
+스크립트 실행+결과 보고만 하고 EVALUATION.md/git은 컨트롤러가 직접
+처리, 결과는 로그+report JSON을 직접 읽어 재확인함):
 
 - Sony a7R VI: n=22, ΔE00 30.53→11.54(+62.20%), CI=[+16.73,+21.15], 승/패=22/0 (`datasets/sony/contributed/dpreview-a7rvi-studio-chart-2026-09/chart_validation_report.json`)
 - Hasselblad X2D II 100C: n=16, ΔE00 32.73→12.63(+61.41%), CI=[+16.78,+23.36], 승/패=16/0 (`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/chart_validation_report.json`, 단일매트릭스 검증용 - 실배포 dual-illuminant와 별개)
 - Sigma fp L: n=20, ΔE00 30.69→11.90(+61.21%), CI=[+16.08,+21.41], 승/패=20/0 (`datasets/sigma/contributed/dpreview-fpl-studio-chart-2026-09/chart_validation_report.json`)
 - Sony a7 V: n=24, ΔE00 32.10→12.58(+60.82%), CI=[+17.22,+21.86], 승/패=24/0 (`datasets/sony/contributed/dpreview-a7v-studio-chart-2026-09/chart_validation_report.json`)
+- Nikon Z5II: n=24, ΔE00 27.58→11.13(+59.65%), CI=[+14.26,+18.66], 승/패=24/0 (`datasets/nikon/contributed/dpreview-z5ii-studio-chart-2026-09/chart_validation_report.json`)
 - Panasonic S1II: n=18(2실패), ΔE00 28.80→12.85(+55.39%), CI=[+13.68,+18.33], 승/패=18/0 (`datasets/panasonic/contributed/dpreview-s1ii-studio-chart-2026-09/chart_validation_report.json`)
 - Ricoh GR IV: n=23(1실패), ΔE00 28.80→13.14(+54.39%), CI=[+12.46,+18.68], 승/패=23/0 (`datasets/ricoh_gr/contributed/dpreview-griv-studio-chart-2026-09/chart_validation_report.json`)
 - Fujifilm X-E5: n=20, ΔE00 30.93→14.73(+52.39%), CI=[+13.76,+18.66], 승/패=20/0 (`datasets/fuji/contributed/dpreview-xe5-studio-chart-2026-09/chart_validation_report.json`)
+- **Canon R6III(예외적으로 약함)**: n=22, ΔE00 21.12→16.53(+21.72%), CI=[+2.63,+6.55](0은 안 걸침 - 통계적으로는 유의), **승/패=15/7**(다른 8개 브랜드는 전부 만장일치였는데 이것만 아님) (`datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/chart_validation_report.json`) - 무보정 ΔE00 자체가 21.12로 다른 브랜드(27~33)보다 훨씬 낮아서, 이 RAW가 이미 카메라/rawpy 기본 처리에서 더 정확했을 가능성. 원인 미조사.
 
 **주의할 점**:
 - Leica SL3-P는 위 목록에 없다 - 다른 파이프라인(`tools/fit_leica_sl3p_studio_chart.py`, 실제 DCP까지 발급)이 n=26, in-sample ΔE00=12.23을 냈는데 부트스트랩 CI가 계산되지 않은 값이다(`datasets/leica/contributed/dpreview-sl3p-studio-chart-2026-09/camera_native_matrix_report.json` `_comment` 필드에 "부트스트랩 CI 없음" 명시) - 위 7개와 통계적으로 직접 비교 불가.
