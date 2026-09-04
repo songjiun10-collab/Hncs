@@ -1,8 +1,26 @@
 """DNG dual-illuminant `ColorMatrix1`/`ColorMatrix2` 보간 - Adobe DNG
 스펙이 문서화한 알고리즘의 재현(Adobe DNG SDK 바이너리 자체가 아니라,
-그 스펙을 따르는 공개 구현들 - RawTherapee `dcp.cc`의
-`DCPProfile::MakeXYZCAM`, darktable `colorin.c` - 이 쓰는 것과 같은
-알고리즘). `tools/refit_x2dii_dual_illuminant.py`가 처음 배포할 때 쓴
+그 스펙을 따르는 공개 구현들 - RawTherapee `dcp.cc`,
+darktable `colorin.c` - 과 같은 계열의 알고리즘).
+
+**정정(2026-09-04)**: 이 독스트링은 원래 "RawTherapee `dcp.cc`의
+`MakeXYZCAM`이 쓰는 것과 **같은** 알고리즘"이라고 적혀 있었는데, 실제로
+비교해보니 두 군데가 다르다(`hybrid_engine/EVALUATION.md` "RawTherapee
+illuminant1 스냅 근본원인 확정" 절):
+  1. **슬롯 순서 처리**: 이 모듈은 슬롯 스왑에 불변이다(g가 1-g로
+     뒤집히고 최종 매트릭스는 동일). RT의 매트릭스 경로
+     (`findXyztoCamera`, `makeXyzCam`)는 `temperature_1 < temperature_2`를
+     검증 없이 전제해서 온도 역순 DCP에서 항상 `ColorMatrix1`로 스냅한다 -
+     RT는 `makeHueSatMap`에서만 `reverse` 스왑을 한다. Adobe DNG SDK
+     `dng_color_spec.cpp`는 역순이면 온도/매트릭스를 전부 스왑하므로
+     이 모듈의 동작이 SDK 쪽과 일치한다.
+  2. **CCT 근사식**: RT는 DNG SDK와 같은 Robertson uv 등온선 테이블,
+     이 모듈은 McCamy 다항식(아래 `_cct_from_xy`)이다. 같은 xy에서
+     1.2~5.4K 차이로 실용상 무시할 수준이지만 동일하지는 않다.
+따라서 "Adobe DNG SDK와 같은 계열"이 정확한 서술이고, "RT와 같다"는
+아니다.
+
+`tools/refit_x2dii_dual_illuminant.py`가 처음 배포할 때 쓴
 "측정 R/G를 두 기준 클러스터 R/G 사이에서 선형보간"은 이 프로젝트가
 급조한 근사였다 - 이 모듈이 그걸 실제 알고리즘으로 교체한다
 (`hybrid_engine/EVALUATION.md` "X2D II 100C dual-illuminant" 절
