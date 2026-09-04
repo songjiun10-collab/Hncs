@@ -1,0 +1,43 @@
+{
+  "brand": "leica",
+  "camera": "Leica SL (Typ 601)",
+  "n_images": 21,
+  "n_failed_detect": 1,
+  "images": [
+    "sl601_536790.dng",
+    "sl601_536792.dng",
+    "sl601_536794.dng",
+    "sl601_536796.dng",
+    "sl601_536798.dng",
+    "sl601_536800.dng",
+    "sl601_536802.dng",
+    "sl601_536804.dng",
+    "sl601_536808.dng",
+    "sl601_536810.dng",
+    "sl601_536813.dng",
+    "sl601_536815.dng",
+    "sl601_536817.dng",
+    "sl601_536819.dng",
+    "sl601_536821.dng",
+    "sl601_536823.dng",
+    "sl601_536825.dng",
+    "sl601_536827.dng",
+    "sl601_536829.dng",
+    "sl601_536831.dng",
+    "sl601_536833.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 26.024585171713117,
+  "delta_e00_cv_mean": 11.913099063246946,
+  "delta_e00_improvement_pct": 54.2236735585102,
+  "delta_e00_bootstrap_ci95": [
+    11.74267737153705,
+    16.516905254365113
+  ],
+  "wins": 21,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.19320226833645227,
+  "rmse_xyz_cv_mean": 0.07831021848851002,
+  "rmse_xyz_improvement_pct": 59.46723650669742
+}

@@ -1,0 +1,40 @@
+{
+  "brand": "leica",
+  "camera": "Leica D-Lux 8",
+  "n_images": 18,
+  "n_failed_detect": 0,
+  "images": [
+    "dlux8_536859.dng",
+    "dlux8_536861.dng",
+    "dlux8_536863.dng",
+    "dlux8_536865.dng",
+    "dlux8_536867.dng",
+    "dlux8_536869.dng",
+    "dlux8_536871.dng",
+    "dlux8_536873.dng",
+    "dlux8_536875.dng",
+    "dlux8_536877.dng",
+    "dlux8_536879.dng",
+    "dlux8_536881.dng",
+    "dlux8_536883.dng",
+    "dlux8_536885.dng",
+    "dlux8_536887.dng",
+    "dlux8_536889.dng",
+    "dlux8_536891.dng",
+    "dlux8_536893.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 32.91021256863135,
+  "delta_e00_cv_mean": 15.52619047528529,
+  "delta_e00_improvement_pct": 52.822576144390474,
+  "delta_e00_bootstrap_ci95": [
+    14.540608797851357,
+    20.337194792632236
+  ],
+  "wins": 18,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.2438891682308079,
+  "rmse_xyz_cv_mean": 0.14535400407979124,
+  "rmse_xyz_improvement_pct": 40.40161556406906
+}

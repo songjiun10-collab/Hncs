@@ -1,0 +1,42 @@
+{
+  "brand": "leica",
+  "camera": "Leica M10",
+  "n_images": 20,
+  "n_failed_detect": 0,
+  "images": [
+    "m10_536515.dng",
+    "m10_536518.dng",
+    "m10_536521.dng",
+    "m10_536524.dng",
+    "m10_536527.dng",
+    "m10_536530.dng",
+    "m10_536533.dng",
+    "m10_536536.dng",
+    "m10_536539.dng",
+    "m10_536542.dng",
+    "m10_536547.dng",
+    "m10_536549.dng",
+    "m10_536551.dng",
+    "m10_536553.dng",
+    "m10_536555.dng",
+    "m10_536557.dng",
+    "m10_536559.dng",
+    "m10_536561.dng",
+    "m10_536563.dng",
+    "m10_536565.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 28.81193826746802,
+  "delta_e00_cv_mean": 12.850601602447924,
+  "delta_e00_improvement_pct": 55.398343967168195,
+  "delta_e00_bootstrap_ci95": [
+    12.888187060182691,
+    19.06308360256048
+  ],
+  "wins": 20,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.22154965201048996,
+  "rmse_xyz_cv_mean": 0.10138787974709229,
+  "rmse_xyz_improvement_pct": 54.23694922242903
+}
