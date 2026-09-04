@@ -1,3 +1,4 @@
+import glob
 import json
 import os
 import struct
@@ -12,6 +13,7 @@ from core.dcp_export import (
     TAG_FORWARD_MATRIX_2, TAG_PROFILE_EMBED_POLICY, TAG_PROFILE_NAME,
     TAG_UNIQUE_CAMERA_MODEL, read_dcp, write_dcp,
 )
+from core.dcp_interpolate import STANDARD_ILLUMINANT_CCT_K
 
 _MATRIX = np.array([
     [0.7123, -0.1234, 0.0456],
@@ -41,6 +43,8 @@ _DUAL_ILLUMINANT_REPORT_JSON_V3 = os.path.join(
 _XYZ_D50 = np.array([0.9642956764295677, 1.0, 0.8251046025104605])
 _XYZ_D65 = np.array([0.9504559270516716, 1.0, 1.0890577507598784])
 _XYZ_STD_A = np.array([1.098490612345073, 1.0, 0.35579825745490257])
+
+_PROFILES_DIR = os.path.join(_REPO_ROOT, "hybrid_engine", "assets", "profiles")
 
 
 class TestWriteReadRoundTrip(unittest.TestCase):
@@ -467,6 +471,82 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
         buggy = buggy / buggy[1]
         with self.assertRaises(AssertionError):
             np.testing.assert_allclose(buggy, measured, rtol=0.05)
+
+
+class TestAllShippedDualIlluminantProfilesUseAdobeOrder(unittest.TestCase):
+    """배포되는 **모든** dual-illuminant DCP가 Adobe 관례인 온도 오름차순
+    (슬롯1=저온, 슬롯2=고온)을 지키는지 검사한다.
+
+    왜 파일 하나가 아니라 글롭인가: X2D II v2가 정확히 이 규칙을 어겨서
+    (1=D65 6504K, 2=StdA 2856K) RawTherapee에서 dual-illuminant가 통째로
+    죽었다 - RT `rtengine/dcp.cc`의 보간 경로(`findXyztoCamera` 1690-1697행,
+    `makeXyzCam` 1820-1827행)가 `temperature_1 < temperature_2`를 검증 없이
+    전제해 `wbtemp <= temperature_1` 분기로 모든 촬영이 빨려들어간다
+    (`hybrid_engine/EVALUATION.md` "RawTherapee illuminant1 스냅 근본원인
+    확정" 절). v3에서 그 파일은 고쳤지만, 앞으로 어느 브랜드에 dual-illuminant를
+    새로 발급하든 같은 실수가 재발할 수 있어 프로필 디렉토리 전체를 건다.
+
+    커밋된 `.dcp`만 읽으므로 RAW/데이터셋 없이 CI에서도 돈다."""
+
+    @staticmethod
+    def _scan_short_tags(path):
+        """IFD를 훑어 SHORT 태그만 {태그: 값}으로 뽑는다.
+
+        `read_dcp()`를 안 쓰는 이유: 그건 ASCII/SHORT/LONG/SRATIONAL만
+        다뤄서 이 저장소가 실제로 배포하는
+        `hasselblad_x2dii_chart_huesatmap_experimental.dcp`(HueSatMap이
+        FLOAT=타입 11)를 파싱하다 예외를 던진다. 그 파일을 건너뛰면
+        정작 검사해야 할 대상을 놓치므로, 순서 검증에 필요한 SHORT
+        태그만 읽고 모르는 타입은 건너뛴다."""
+        with open(path, "rb") as f:
+            data = f.read()
+        _, _, first_ifd = struct.unpack_from("<2sHI", data, 0)
+        (n_entries,) = struct.unpack_from("<H", data, first_ifd)
+        out = {}
+        for i in range(n_entries):
+            off = first_ifd + 2 + 12 * i
+            tag, typ, count = struct.unpack_from("<HHI", data, off)
+            if typ == 3 and count == 1:  # SHORT, 값이 엔트리에 인라인
+                out[tag] = struct.unpack_from("<H", data, off + 8)[0]
+        return out
+
+    def _dual_illuminant_profiles(self):
+        for path in sorted(glob.glob(os.path.join(_PROFILES_DIR, "*.dcp"))):
+            tags = self._scan_short_tags(path)
+            if (TAG_CALIBRATION_ILLUMINANT_1 in tags
+                    and TAG_CALIBRATION_ILLUMINANT_2 in tags):
+                yield path, tags
+
+    def test_at_least_one_dual_illuminant_profile_is_checked(self):
+        """글롭이 조용히 0건이 되면 이 클래스가 아무것도 안 지키게 된다 -
+        그 상태를 실패로 만든다."""
+        self.assertGreater(len(list(self._dual_illuminant_profiles())), 0,
+                           "dual-illuminant 프로필이 하나도 안 잡힘 - "
+                           "경로/글롭 확인 필요")
+
+    def test_calibration_illuminant_temperatures_ascend(self):
+        for path, tags in self._dual_illuminant_profiles():
+            with self.subTest(profile=os.path.basename(path)):
+                ill1 = tags[TAG_CALIBRATION_ILLUMINANT_1]
+                ill2 = tags[TAG_CALIBRATION_ILLUMINANT_2]
+                # 매핑에 없는 enum은 통과시키지 않는다 - 순서를 검증할 수
+                # 없다는 뜻이고, 그 침묵이 정확히 이 버그를 숨겼던 상황이다.
+                self.assertIn(ill1, STANDARD_ILLUMINANT_CCT_K,
+                              f"{os.path.basename(path)}: CalibrationIlluminant1"
+                              f"={ill1}이 core/dcp_interpolate.py의 CCT 매핑에 "
+                              f"없음 - 매핑을 확장해야 순서 검증이 가능하다")
+                self.assertIn(ill2, STANDARD_ILLUMINANT_CCT_K,
+                              f"{os.path.basename(path)}: CalibrationIlluminant2"
+                              f"={ill2}이 core/dcp_interpolate.py의 CCT 매핑에 "
+                              f"없음 - 매핑을 확장해야 순서 검증이 가능하다")
+                t1 = STANDARD_ILLUMINANT_CCT_K[ill1]
+                t2 = STANDARD_ILLUMINANT_CCT_K[ill2]
+                self.assertLess(
+                    t1, t2,
+                    f"{os.path.basename(path)}: CalibrationIlluminant1={ill1}"
+                    f"({t1}K)이 2={ill2}({t2}K)보다 높거나 같다 - Adobe 관례"
+                    f"(1=저온, 2=고온) 위반. RawTherapee에서 보간이 죽고 항상 "
+                    f"ColorMatrix1로 스냅된다.")
 
 
 if __name__ == "__main__":
