@@ -347,6 +347,7 @@ MEDIUM/HIGH/CRITICAL 행 전부 decision record 필수 게이트가 먼저 적�
 | `protect_ready_without_review.py` | 🟠 HIGH | mcp__github__update_pull_request | 전체-브랜치 리뷰 없이 PR draft 해제 (2-agent consensus fast-path 있음) |
 | `protect_agent_model_naming.py` | 🟢 LOW | Agent | model 미지정/haiku 디스패치 - 항상 allow, 로그만 남김 |
 | `protect_decision_record_bypass.py` | 🔴 CRITICAL, override 없음 | Edit/Write/MultiEdit | `.pending_decision_record.json`/`.pending_consensus.json` 직접 쓰기 차단(2026-08-19 - 후자 추가) - 각자의 전용 통로(MCP 툴/PostToolUse 훅)만 유효 |
+| `protect_hook_integrity.py` | 🔴 CRITICAL | Edit/Write/MultiEdit, Bash | `.claude/hooks/*.py`(직계 자식)/`session-start.sh`/`.claude/settings.json` 수정 - 훅 시스템 자체의 무결성·공급망 신뢰 보호(2026-08-20, `README.md`/`CLAUDE.md`는 의도적으로 제외, 서브에이전트발은 override 불가) |
 | `record_agent_approval.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) MEDIUM 승인 마커 파싱 + sentinel 기록 |
 | `deliver_caution.py` | PostToolUse, 등급 없음 | Edit/Write/MultiEdit | (차단 아님) MEDIUM 승인의 caution을 `additionalContext`로 전달 |
 | `record_whole_branch_review.py` | PostToolUse, 등급 없음 | Agent | (차단 아님) 전체-브랜치 리뷰 sentinel 기록 |
