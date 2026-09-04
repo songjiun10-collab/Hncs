@@ -1,5 +1,7 @@
 # gui/ - Desktop App
 
+*[한국어 README](README.ko.md)*
+
 A Tkinter desktop app that wraps the CLIs from `tools/` and
 `hybrid_engine/` into one window with 4 tabs - brand look preview,
 hybrid_engine conversion, RAW->Log pipeline, and lens correction. Pure

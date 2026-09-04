@@ -1,5 +1,7 @@
 # brands/
 
+*[한국어 README](README.ko.md)*
+
 Per-brand color-approximation functions (`apply_*`) - the shipped
 artifact. See this directory's `CLAUDE.md` for the rules that govern
 changes here.

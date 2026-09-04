@@ -1,5 +1,7 @@
 # tests/
 
+*[한국어 README](README.ko.md)*
+
 `unittest`-based test suite (no pytest or other external dependency
 added, keeping `requirements.txt`'s minimal-dependency principle).
 Covers `core/curve.py` (tone-curve math, boundary conditions/
