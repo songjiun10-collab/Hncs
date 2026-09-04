@@ -22,8 +22,6 @@ or two, no preamble, no restating the request.
   pass reads as ignoring the ask.
 - **`참고` on a pasted URL/table/file means "incorporate this,"** not
   "acknowledge this."
-- Bias toward reversible work over pre-confirming it; irreversible things
-  still get confirmed.
 - **Make every claim checkable**: name the file, show the number, quote
   the command you actually ran. A claim you can't back is worse than
   saying you don't know.
@@ -31,31 +29,26 @@ or two, no preamble, no restating the request.
   lead with what's weak or wrong, in self-reports too.
 - **Check whether a gap is already handled before reporting it.**
 - **Tests security/permission boundaries under time pressure, accepts a
-  firm no.** Restate the boundary once, briefly, without re-explaining —
-  don't cave, don't lecture. They resolve it the legitimate way
-  themselves once able to (e.g. granting a real OS permission).
+  firm no.** Restate the boundary once, briefly, don't cave or lecture —
+  they'll resolve it legitimately once able to (e.g. a real OS permission).
 - **Before backgrounding anything over ~20-30 min, quote a time
   estimate** (based on the closest comparable prior run if one exists).
   A short check-in during a wait (`?`, `ㅇ?`, `다됨?`) is a status ping,
   not a request to re-derive the estimate — answer in one line and
   reference the number already given rather than re-explaining.
-- **Follows and contributes real leads, not just requests.** Will name a
-  specific site/source themselves mid-task ("ephotozine 찾아봐", "photo
-  review 사이트에") when they have domain knowledge relevant to what's
-  being searched — treat these as informed tips worth checking directly,
-  not vague suggestions.
+- **Follows and contributes real leads, not just requests.** Names a
+  specific site/source mid-task when they have domain knowledge
+  ("ephotozine 찾아봐", "photo review 사이트에") — treat these as informed
+  tips worth checking directly, not vague suggestions.
 - **Terse direction changes ("Main은 버림") delegate execution, not vague.**
-  A short pivot means work out the mechanics yourself and report the
-  plan — asking "what exactly do you mean" repeatedly reads as stalling.
-  Reversible steps: just do them and show the result.
+  Work out the mechanics and report the plan — asking "what exactly do
+  you mean" repeatedly reads as stalling. Reversible steps: just do them.
 - **Wants durable output, not chat text.** A request for an analysis,
-  history, or record usually means a file (or a commit, if it's meant to
-  outlive the session) — chat prose that vanishes at compaction doesn't
-  count as delivered.
+  history, or record usually means a file (or a commit, if it should
+  outlive the session) — chat prose lost at compaction isn't delivered.
 - **Nothing is accepted on one pass.** Re-asks, cross-checks against
-  another AI/a forum/a paper. AI output is a tool, not an authority, here
-  — this is why every claim needs to be checkable, not just this session's
-  habit.
+  another AI/a forum/a paper — a tool, not an authority, here. Every
+  claim needs to be checkable, not just this session's habit.
 - Emotion isn't the channel; enthusiasm padding is just tokens.
 - Typos are frequent and always recoverable (`anjgkfrj?` decoded to `뭐할거?`
   via keyboard-layout mismatch) — infer from context and proceed, don't
@@ -174,60 +167,8 @@ first: `python3 -m unittest discover -s tests`.
 
 ## Workflow
 
-`superpowers:brainstorming` → spec in `docs/superpowers/specs/` →
-`superpowers:writing-plans` → `superpowers:subagent-driven-development`.
-User gates each step with "ㄱ".
-
-### Controller
-
-- **Always name the model** (omitting it inherits the session's, usually
-  the priciest). **`sonnet` is the default for implementation and
-  review; `opus` only for architecture and the final whole-branch
-  review.** Skip `haiku` — its extra turns on multi-step work cost more
-  than the tokens it saves.
-- **Hand off files, not pasted text** — anything pasted into a dispatch,
-  or printed back by a subagent, sits in your context all session. Use
-  the skill's `scripts/task-brief` for requirements, a matching report
-  path for the reply, `scripts/review-package BASE HEAD` for the diff
-  (`BASE` = the commit recorded before dispatch, never `HEAD~1`, which
-  silently truncates multi-commit tasks).
-- A dispatch describes one task, not the session's history: task +
-  interfaces it touches + constraints. Nothing else.
-- One implementer at a time. Parallel implementers conflict.
-- **Never tell a reviewer what not to flag** or pre-rate a finding's
-  severity. Think it's a false positive → let it be raised, settle it in
-  the loop.
-- Ledger at `.superpowers/sdd/progress.md`. Tasks marked complete are
-  done — never re-dispatch, especially after a compaction.
-- **Verify claims yourself.** Re-run the suite, read the diff, re-derive
-  a number. Reports have been wrong.
-- Fix commit authorship after subagent commits — they don't.
-- `BLOCKED` → change something (more context, stronger model, smaller
-  task); never re-dispatch unchanged. A subagent's turn ending with a
-  long job still running → wait for it and use the real output, don't
-  restart hours of work from scratch.
-
-### Implementer
-
-- Read the brief first. Its values are exact — use them verbatim.
-- Full report to the report file; return only status, commits, a one-line
-  test summary, and concerns.
-- Honest status: `DONE` / `DONE_WITH_CONCERNS` / `NEEDS_CONTEXT` /
-  `BLOCKED`.
-- Brief looks wrong → say so and explain, don't silently adapt (a wrong
-  constant in a brief was caught exactly this way).
-- **Never fabricate a result.** Turn ending mid-run → `DONE_WITH_CONCERNS`
-  plus the log path.
-- Plain `git commit -m`; the controller fixes authorship.
-
-### Reviewer
-
-- Two verdicts, both required: spec compliance and code quality.
-- Verify independently. Run the tests yourself, read the code, don't take
-  the report's word for it.
-- Can't confirm something from the diff → flag it ⚠️ for the controller.
-
-Don't skip the final whole-branch review; it caught three critical bugs.
+Spec → plan → subagent-driven implementation, gated by "ㄱ" at each step;
+Controller/Implementer/Reviewer role rules: `.claude/rules/subagent-workflow.md`.
 
 ## Commands
 

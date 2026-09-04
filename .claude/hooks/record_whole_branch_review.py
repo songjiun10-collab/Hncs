@@ -15,14 +15,25 @@ recording the sentinel. A dispatch that matches the pattern but fails,
 gets interrupted, or returns findings still marks the sentinel as
 satisfied. Combined with protect_reviewer_prejudging.py's phrase-blocklist
 limitation above, "PR left draft" mechanically guarantees only that a
-review-shaped Agent call was *made* at this commit, not that it passed."""
+review-shaped Agent call was *made* at this commit, not that it passed.
+
+**정정(2026-08-20, README "알려진 한계" 2차 라운드 #8)**: 이 sentinel의
+경로가 `_hook_common.py`의 `_WHOLE_BRANCH_REVIEW_SHA_PATH`(env var
+override 지원)로 이동됐다 - 예전엔 이 파일과 `protect_ready_without_review.py`
+둘 다 각자 `Path(__file__).parent / ".last_whole_branch_review_sha"`로
+하드코딩해서, 어떤 훅도 이 경로에 대한 직접 쓰기를 막지 않았다(decision
+record sentinel과 달리 `protect_decision_record_bypass.py`의 보호 대상이
+아니었음 - 그냥 아무도 안 봤다). 이제 `protect_decision_record_bypass.py`의
+보호 테이블에 들어가서 Edit/Write/Bash로 직접 쓰는 게 막힌다."""
 import json
 import re
 import subprocess
 import sys
 from pathlib import Path
 
-_SENTINEL = Path(__file__).parent / ".last_whole_branch_review_sha"
+from _hook_common import _WHOLE_BRANCH_REVIEW_SHA_PATH
+
+_SENTINEL = Path(_WHOLE_BRANCH_REVIEW_SHA_PATH)
 
 _REVIEW_MARKERS = re.compile(
     r"whole[- ]branch review|final.{0,20}review|requesting-code-review|code-reviewer",

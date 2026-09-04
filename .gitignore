@@ -54,3 +54,7 @@ models/upscale/
 .claude/hooks/.pending_medium_approval.json
 .claude/hooks/.pending_caution.json
 .claude/hooks/.pending_decision_record.json
+.claude/hooks/.subagent_dispatch_state/
+.claude/hooks/.recent_ask_user_question.json
+.claude/hooks/.execution_manager_state.json
+.claude/worktrees/

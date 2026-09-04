@@ -187,6 +187,9 @@ _DECISION_RECORD_PATH = os.environ.get(
     os.path.join(_HOOKS_DIR, ".pending_decision_record.json"))
 _CONSENSUS_PATH = os.environ.get(
     "HNCS_HOOK_CONSENSUS_SENTINEL", os.path.join(_HOOKS_DIR, ".pending_consensus.json"))
+_WHOLE_BRANCH_REVIEW_SHA_PATH = os.environ.get(
+    "HNCS_HOOK_WHOLE_BRANCH_REVIEW_SHA",
+    os.path.join(_HOOKS_DIR, ".last_whole_branch_review_sha"))
 
 SEVERITIES = ("LOW", "MEDIUM", "HIGH", "CRITICAL")
 
@@ -347,6 +350,86 @@ def allow_with_override(hook_name, severity, rule, target, reason, decision_id=N
                decision_kind="override", target=target, decision=dr)
     _record_override(rule, severity, target, reason, decision=dr)
     allow()
+
+
+_HEREDOC_BODY_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
+# A heredoc immediately following one of these interpreters (with only
+# flags/whitespace between, no filename argument - `python3 - <<'PY'` or
+# `python3 <<'PY'`, not `python3 script.py <<'PY'` which isn't reading the
+# heredoc as its program) is executable code, not prose.
+_INTERPRETER_HEREDOC_RE = re.compile(
+    r"\b(?:python3?|sh|bash|zsh|perl|ruby|node)\b(?:\s+-\w+)*\s*-?\s*"
+    r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b",
+    re.DOTALL | re.MULTILINE,
+)
+
+
+def strip_prose_heredocs(command):
+    """Strips heredoc bodies from `command` EXCEPT ones fed to a script-
+    executing interpreter, which are left in place so their content still
+    gets scanned by the caller's own regexes.
+
+    **Why this exists (2026-08-20, README 2차 라운드 finding #1/#2)**:
+    `protect_never_touch.py`/`protect_destructive.py` used to strip ALL
+    heredoc bodies unconditionally before scanning, to avoid misreading a
+    heredoc body that merely *mentions* a protected path/destructive
+    command as prose (e.g. a commit message explaining this very hook).
+    That blanket stripping had a false-NEGATIVE side nobody had checked:
+    `python3 - <<'PY'\\nopen("brands/hasselblad.py","w").write(...)\\nPY`
+    is REAL executable code that actually runs and writes to the
+    protected file - stripping it before scanning let it sail through
+    both hooks' Bash coverage entirely (verified live, 2026-08-18/19).
+    `shutil.rmtree(...)` fed the same way bypassed `protect_destructive.py`
+    identically. This function keeps interpreter-fed heredoc bodies in
+    the scanned text while still stripping non-interpreter ones (a heredoc
+    piped to `cat`, or a bare heredoc in prose) - callers should use this
+    instead of stripping unconditionally."""
+    interpreter_spans = [m.span() for m in _INTERPRETER_HEREDOC_RE.finditer(command)]
+
+    def repl(m):
+        for start, end in interpreter_spans:
+            if start <= m.start() < end:
+                return m.group(0)
+        return ""
+
+    return _HEREDOC_BODY_RE.sub(repl, command)
+
+
+_EVAL_WRAPPER_RE = re.compile(
+    r"\b(?:eval|bash\s+-c|sh\s+-c|zsh\s+-c)\s+"
+    r"(?:\"([^\"]*)\"|'([^']*)'|\$'([^']*)')",
+)
+
+
+def unwrap_eval(command):
+    """Appends the inner text of any `eval "..."`/`bash -c "..."`/
+    `sh -c "..."` wrapper (single- or double-quoted, or `$'...'`) to
+    `command`, each on its own new line, so a caller's `_STMT_START`-
+    anchored regexes see the unwrapped text as a fresh statement (the
+    appended `\\n` satisfies `_STMT_START`'s newline alternative) without
+    having to special-case eval/bash -c themselves. The original command
+    text is left untouched/still present, so this only ever adds
+    detection surface, never removes any.
+
+    **Why this exists (2026-08-20, README 2차 라운드 finding #4)**: every
+    `_STMT_START`-anchored hook here (`protect_destructive.py`,
+    `protect_push_safety.py`, `protect_branch.py`,
+    `protect_test_coverage.py`) only recognizes a new shell statement
+    starting after `^`/`&&`/`||`/`;`/newline/`|`/`(`/backtick/do/then/else
+    - the character right before `git`/`rm` inside `eval "git push
+    --force"` is a quote (`"`), which isn't in that set, so the whole
+    command evades detection even though `eval` actually executes it.
+    Verified live (2026-08-18/19) against `protect_destructive.py`,
+    `protect_push_safety.py`, and `protect_branch.py` - all three let the
+    wrapped command through unchecked."""
+    extracted = []
+    for m in _EVAL_WRAPPER_RE.finditer(command):
+        inner = next(g for g in m.groups() if g is not None)
+        if inner.strip():
+            extracted.append(inner)
+    if not extracted:
+        return command
+    return command + "\n" + "\n".join(extracted)
 
 
 def bash_override(rule, command):

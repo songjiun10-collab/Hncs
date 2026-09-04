@@ -93,6 +93,54 @@ class TestPushInvocationMatching(unittest.TestCase):
         self.assertEqual(_is_force_push("git status"), "not_a_push")
 
 
+class TestUnwrapEval(unittest.TestCase):
+    """2026-08-20 정정 (README 2차 라운드 #4, 실증): eval "git push
+    --force ..."는 git이 큰따옴표 바로 뒤라 _STMT_START가 요구하는 문
+    시작 위치가 아니어서 완전히 안 걸렸다."""
+
+    def test_eval_wrapped_force_push_detected_after_unwrap(self):
+        import _hook_common
+        unwrapped = _hook_common.unwrap_eval('eval "git push --force origin main"')
+        self.assertEqual(_is_force_push(unwrapped), "forced")
+
+    def test_bash_dash_c_wrapped_force_push_detected_after_unwrap(self):
+        import _hook_common
+        unwrapped = _hook_common.unwrap_eval("bash -c 'git push --force origin main'")
+        self.assertEqual(_is_force_push(unwrapped), "forced")
+
+    def test_plain_command_unaffected_by_unwrap(self):
+        import _hook_common
+        cmd = "git push -u origin main"
+        self.assertEqual(_hook_common.unwrap_eval(cmd), cmd)
+
+
+class TestForcePushAliasDetection(unittest.TestCase):
+    """2026-08-20 정정 (README 2차 라운드 #5, 실증): git alias가 실제로는
+    push --force를 실행해도, 훅이 보는 텍스트엔 "push"도 "--force"도
+    리터럴로 안 나타나서 전혀 못 봤다."""
+
+    def test_force_push_alias_name_extracted(self):
+        cfg = "alias.pushf push --force\nalias.co checkout\n"
+        names = set()
+        for line in cfg.splitlines():
+            m = hook._ALIAS_LINE_RE.match(line)
+            if not m:
+                continue
+            name, expansion = m.group(1), m.group(2)
+            if __import__("re").search(r"\bpush\b", expansion) and \
+                    hook._FORCE_RE.search(expansion + " "):
+                names.add(name)
+        self.assertEqual(names, {"pushf"})
+
+    def test_alias_invocation_regex_matches_only_registered_alias(self):
+        alias_re = hook.alias_invocation_re({"pushf"})
+        self.assertTrue(alias_re.search("git pushf origin main"))
+        self.assertFalse(alias_re.search("git push origin main"))
+
+    def test_no_aliases_returns_none_regex(self):
+        self.assertIsNone(hook.alias_invocation_re(set()))
+
+
 class TestHookEndToEnd(unittest.TestCase):
     """실제 스크립트를 subprocess로 실행해서 stdin JSON -> stdout
     permissionDecision까지 전체 경로를 확인한다. author email 체크가
@@ -188,6 +236,15 @@ class TestHookEndToEnd(unittest.TestCase):
                "  # HNCS-OVERRIDE: protect_push_safety: 사용자 명시 승인")
         self._write_decision_record(cmd)
         self.assertEqual(self._run_hook(cmd, agent_id="agt_1"), "deny")
+
+    def test_force_push_alias_denied_end_to_end(self):
+        """2026-08-20 정정 (README 2차 라운드 #5): 실제 scratch repo에
+        force-push 별칭을 등록하고, 그 별칭 이름으로 호출하면 걸리는지
+        end-to-end로 확인."""
+        run = lambda *args: subprocess.run(  # noqa: E731
+            args, cwd=self.repo, capture_output=True, text=True, check=True)
+        run("git", "config", "alias.pushf", "push --force")
+        self.assertEqual(self._run_hook("git pushf origin main"), "deny")
 
     def test_authorship_mismatch_has_no_override(self):
         """authorship 체크는 override 대상이 아님 - 항상 고쳤야 함."""
