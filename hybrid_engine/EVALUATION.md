@@ -3668,15 +3668,22 @@ self-consistency(자기 중립색 넣었을 때 g=0.0176, 위에서 확인)도 �
 않았다** - 다만 실기기(Lightroom/ACR)에서 `AsShotNeutral` 기반 보간이
 챠트 검증만큼 깨끗하게 나올지는 여전히 미검증으로 남는다.
 
-## dpreview 스튜디오씬 챠트 - 9개 브랜드 컬러체커 검증 총괄 (2026-09-04)
+## dpreview 스튜디오씬 챠트 - 11개 브랜드 컬러체커 검증 총괄 (2026-09-04)
 
 `tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증
-전용) 하나로 9개 브랜드를 같은 방법론(무채색 6패치 대비 유채색 18패치
+전용) 하나로 11개 브랜드를 같은 방법론(무채색 6패치 대비 유채색 18패치
 3x 가중 최소자승, k=min(n,5)-fold CV, 부트스트랩 95% CI 20000회)으로
 돌렸다. Nikon Z5II/Canon R6III 둘은 서로 다른 RAW 파일이라 서브에이전트
 2개로 병렬 실행(`superpowers:delegate-to-subagents` 패턴 - 각 서브에이전트는
 스크립트 실행+결과 보고만 하고 EVALUATION.md/git은 컨트롤러가 직접
-처리, 결과는 로그+report JSON을 직접 읽어 재확인함):
+처리, 결과는 로그+report JSON을 직접 읽어 재확인함). Olympus/Pentax는
+공용 위젯 DB(`products` 335개 항목)에 최신 328xxx대 신형 바디가 없어서
+각 브랜드의 최신 플래그십(OM System OM-3, Pentax K-3 Mark III)으로
+대체 - RAW는 `<a download>` 합성 클릭(Cloudflare 정적 자산이라 실제로
+gate가 없었음 - 브라우저 `fetch()`로 200 직접 응답 확인) + Downloads
+폴더의 해시 파일명을 content-length로 매칭해 복사하는 방식으로 받았다
+(파일명이 익명화된 해시라 사이즈 매칭이 유일한 식별 수단, 22+24장 전부
+충돌 없이 매칭됨):
 
 - Sony a7R VI: n=22, ΔE00 30.53→11.54(+62.20%), CI=[+16.73,+21.15], 승/패=22/0 (`datasets/sony/contributed/dpreview-a7rvi-studio-chart-2026-09/chart_validation_report.json`)
 - Hasselblad X2D II 100C: n=16, ΔE00 32.73→12.63(+61.41%), CI=[+16.78,+23.36], 승/패=16/0 (`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/chart_validation_report.json`, 단일매트릭스 검증용 - 실배포 dual-illuminant와 별개)
@@ -3687,8 +3694,14 @@ self-consistency(자기 중립색 넣었을 때 g=0.0176, 위에서 확인)도 �
 - Ricoh GR IV: n=23(1실패), ΔE00 28.80→13.14(+54.39%), CI=[+12.46,+18.68], 승/패=23/0 (`datasets/ricoh_gr/contributed/dpreview-griv-studio-chart-2026-09/chart_validation_report.json`)
 - Fujifilm X-E5: n=20, ΔE00 30.93→14.73(+52.39%), CI=[+13.76,+18.66], 승/패=20/0 (`datasets/fuji/contributed/dpreview-xe5-studio-chart-2026-09/chart_validation_report.json`)
 - **Canon R6III(예외적으로 약함)**: n=22, ΔE00 21.12→16.53(+21.72%), CI=[+2.63,+6.55](0은 안 걸침 - 통계적으로는 유의), **승/패=15/7**(다른 8개 브랜드는 전부 만장일치였는데 이것만 아님) (`datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/chart_validation_report.json`) - 무보정 ΔE00 자체가 21.12로 다른 브랜드(27~33)보다 훨씬 낮아서, 이 RAW가 이미 카메라/rawpy 기본 처리에서 더 정확했을 가능성. 원인 미조사.
+- OM System OM-3(Olympus 대표): n=22, ΔE00 31.13→13.45(+56.80%), CI=[+14.75,+20.54], 승/패=22/0 (`datasets/olympus/contributed/dpreview-om3-studio-chart-2026-09/chart_validation_report.json`)
+- Pentax K-3 Mark III(Pentax 대표): n=24, ΔE00 30.97→17.86(+42.33%), CI=[+11.18,+15.15], 승/패=24/0 (`datasets/pentax/contributed/dpreview-k3iii-studio-chart-2026-09/chart_validation_report.json`)
 
 **주의할 점**:
+- Phase One은 위젯 공용 DB(`products` 335개 항목, id 175222~670586)에
+  아예 없다 - "phase"/"iq3"/"iq4"/"xf " 키워드로 전수 검색해도 매칭 0건
+  (Leica SL만 걸림). dpreview가 Phase One 스튜디오씬 자체를 촬영한 적이
+  없는 것으로 보임 - 이 DB로는 Phase One 검증 불가능, 다른 소스 필요.
 - Leica SL3-P는 위 목록에 없다 - 다른 파이프라인(`tools/fit_leica_sl3p_studio_chart.py`, 실제 DCP까지 발급)이 n=26, in-sample ΔE00=12.23을 냈는데 부트스트랩 CI가 계산되지 않은 값이다(`datasets/leica/contributed/dpreview-sl3p-studio-chart-2026-09/camera_native_matrix_report.json` `_comment` 필드에 "부트스트랩 CI 없음" 명시) - 위 7개와 통계적으로 직접 비교 불가.
 - Panasonic S1II는 코드 주석(`tools/validate_dpreview_chart_brand.py` 74행 부근)에 챠트검출 assertion 2/20건 언급이 있었는데(원인 미조사, cv2.mcc가 특정 프레임에서 None 대신 예외를 던지는 걸로 추정), 실제로 재실행해보니 정확히 2/20건(`panasonic_s1ii_iso100_2025_07_08_16_22_10.rw2`, `panasonic_s1ii_iso25600_2025_07_08_17_17_44.rw2`)이 검출 실패했다 - 나머지 18장으로 위 표에 정상 반영됨.
 
