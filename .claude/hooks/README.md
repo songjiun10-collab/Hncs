@@ -1592,6 +1592,56 @@ totalToolUseCount, usage, toolStats}` 형태 - 서브에이전트가 실제로
 연결/`/tmp` 덤프는 실측 후 전부 제거함(이 세션의 다른 실측들과 동일한
 정리 관례).
 
+### `mcp__plugin_hook_must_hook__write_decision_record`가 항상 실패했던
+### 이유 - 발견 및 수정(2026-09-04)
+
+`write_decision_record` MCP 툴로 decision record를 써도
+`protect_decision_record_bypass.py` 등 실제 가드 훅이 항상 "decision
+record 없음"으로 deny했다. 원인: 이 MCP 툴을 서빙하는
+`must_hook_server.py`는 전역 플러그인 캐시본
+(`~/.claude/plugins/cache/hook/hook/0.1.0/hooks/_hook_common.py`)을
+import하는데, 그 파일의 `_HOOKS_DIR = os.path.dirname(os.path.abspath(__file__))`가
+**항상 플러그인 캐시 경로**를 가리켰다. 반면 이 리포의 실제 가드
+훅(`protect_decision_record_bypass.py` 등)은 리포에 로컬
+vendoring된 사본(`.claude/hooks/_hook_common.py`, `_HOOKS_DIR`이
+자기 파일 기준 = 리포의 `.claude/hooks/`)을 import한다. 둘이 서로
+다른 파일에 쓰고 읽어서 sentinel이 절대 만나지 않았다.
+
+확인 방법: `find`로 두 위치의 `.pending_decision_record.json`을
+대조 - 플러그인 캐시 쪽(`.../hook/hook/0.1.0/hooks/.pending_decision_record.json`)엔
+과거 세션이 쓴 파일이 있었고, 리포 쪽(`.claude/hooks/.pending_decision_record.json`)엔
+아예 없었음. `ps aux | grep must_hook_server`로 실행 중인 MCP 서버
+PID를 찾은 뒤 `lsof -p <pid> | awk '$4=="cwd"'`로 실측 - 서버
+프로세스의 cwd가 정확히 그 세션의 활성 프로젝트/워크트리 루트와
+일치함을 확인(Claude Code가 MCP 서버를 프로젝트 cwd로 스폰함).
+즉 `os.getcwd()`는 이미 맞는 값을 주므로, 리포 쪽 `settings.json`에
+`HNCS_HOOK_DECISION_RECORD_SENTINEL` 등 env var를 맞추는 방향(리포
+쪽에서 MCP 서버 프로세스에 env를 주입할 경로 자체가 없음 - MCP
+서버는 플러그인 자체 `.mcp.json`으로 스폰되지 이 리포
+`settings.json`의 hooks 항목과 무관)이 아니라, 플러그인을 고쳐서
+`__file__` 대신 `os.getcwd()` 기준으로 `_HOOKS_DIR`을 잡는 것이
+"project-agnostic"(plugin.json 설명)이라는 이 플러그인의 설계
+의도에 맞는 수정이었다.
+
+수정: `~/.claude/plugins/cache/hook/hook/0.1.0/hooks/_hook_common.py`의
+`_HOOKS_DIR`을 `os.path.join(os.getcwd(), ".claude", "hooks")`로
+변경(리포 내 파일이 아니라 사용자 홈의 플러그인 캐시 설치본이라 이
+리포의 git 이력에는 안 남음). 부수 효과로 `_repo_root()`(→
+`current_head_sha()`가 `git rev-parse HEAD`를 실행하는 cwd)도 같이
+바로잡힘 - 이전엔 플러그인 캐시 디렉터리에서 git 명령을 실행하고
+있었음. `MEDIUM_APPROVAL`/`PENDING_CAUTION`/`CONSENSUS`/
+`WHOLE_BRANCH_REVIEW_SHA` 4개 sentinel은 이 버그의 영향을 받지
+않는다 - 전부 리포 안의 PostToolUse 훅(`record_*.py`,
+`deliver_caution.py`)이 리포 로컬 `_hook_common.py`로 쓰고 리포
+로컬 가드가 같은 파일로 읽으므로 항상 경로가 일치한다(CONSENSUS/
+WHOLE_BRANCH_REVIEW_SHA는 애초에 전역 플러그인 `_hook_common.py`엔
+정의조차 없다 - 리포에서 나중에 추가된 항목).
+
+수정 후 검증 남음: 이 패치는 이미 떠 있던 `must_hook_server.py`
+프로세스엔 반영 안 됨(메모리에 로드된 코드라 재시작 필요) - 다음
+세션에서 실제 `write_decision_record` 호출 → 가드 훅 allow 여부로
+확인할 것.
+
 ## 로그 유지관리
 
 `violations_log.jsonl`/`override_audit.jsonl`/`learning_data.jsonl`(2026-08-16
