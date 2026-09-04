@@ -3573,7 +3573,9 @@ group1/group2 16장의 "dual" 점수를 **그 이미지가 자기 클러스터�
 **처음으로** `interpolate_dng_matrix()`에 실제로 통과시켜 재평가했다
 (`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/full_interpolation_end_to_end_report.json`에
 저장): group2(텅스텐성) 7장의 진짜 보간 ΔE00=19.878이 같은 7장의
-combined 단일매트릭스 ΔE00=18.998보다 높다(나쁘다) - 이 group2 단독
+combined 단일매트릭스 ΔE00=18.998(출처: `illuminant_referenced_interpolation_report.json`의
+`group2_global_mean` 필드 - `full_interpolation_end_to_end_report.json`에는 이 값이 없다;
+CI(다음 문장 참고))보다 높다(나쁘다) - 이 group2 단독
 비교의 부트스트랩 95% CI(paired diff=global-real, n=7)=[-1.4904,+0.0591]로
 **0을 걸쳐서 n=7 단독으로는 통계적으로 유의하지 않지만**, 방향은
 7장 중 6장이 손실(real-interp가 나쁨)로 일관됐다 - dual-illuminant가
