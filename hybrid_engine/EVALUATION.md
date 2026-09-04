@@ -3743,3 +3743,108 @@ dpreview 위젯 DB의 Leica 커버리지는 모노크롬 2대를 빼면 전부 �
 - Panasonic S1II는 코드 주석(`tools/validate_dpreview_chart_brand.py` 74행 부근)에 챠트검출 assertion 2/20건 언급이 있었는데(원인 미조사, cv2.mcc가 특정 프레임에서 None 대신 예외를 던지는 걸로 추정), 실제로 재실행해보니 정확히 2/20건(`panasonic_s1ii_iso100_2025_07_08_16_22_10.rw2`, `panasonic_s1ii_iso25600_2025_07_08_17_17_44.rw2`)이 검출 실패했다 - 나머지 18장으로 위 표에 정상 반영됨.
 
 이 검증들은 전부 DCP/ICC를 발급하지 않는다(스크립트 docstring에 명시) - `apply_*` 배포에 영향 없음, Never-list 파일 변경 없음.
+
+## X2D II 100C: RawTherapee illuminant1 스냅 근본원인 확정 (2026-09-04)
+
+v2 재배포 직후 남긴 미해결 캐비어트("group2 텅스텐성 이미지가
+`DCPIlluminant=0`에서 `=1`(D65)과 픽셀 동일 - 수학은 g=0.0176으로
+illuminant2를 가리키는데 RT는 정반대") 의 근본원인을 확정했다.
+당초 후보였던 AsShotNeutral 품질 가설이 아니라 **태그 순서 문제**다.
+
+**근본원인**: 이 프로젝트의 v2 DCP는 `CalibrationIlluminant1=21(D65,
+6504K)`, `CalibrationIlluminant2=17(StdA, 2856K)` - 온도가 **내림차순**
+이다. Adobe 관례(그리고 Adobe DNG SDK가 강제하는 정규형)는 그 반대
+(1=저온, 2=고온)다. RawTherapee `rtengine/dcp.cc`(5.13 태그, dev 브랜치와
+diff 없음 확인)의 매트릭스 보간 경로는 이 정렬을 검증 없이 전제한다:
+
+```
+// findXyztoCamera 1690-1697행, makeXyzCam 1820-1827행 (동일 로직)
+if (wbtemp <= temperature_1)      mix = 1.0;   // -> ColorMatrix1
+else if (wbtemp >= temperature_2) mix = 0.0;   // -> ColorMatrix2
+else                              mix = mired 선형보간;
+```
+
+`temperature_1=6504`이면 wbtemp가 6504K 이하인 **모든 정상 촬영**(텅스텐
+2856K 포함)이 첫 분기에 걸려 무조건 ColorMatrix1(D65)이 된다 - 관찰된
+"항상 illuminant1로 스냅"과 정확히 일치. 같은 파일의 `makeHueSatMap`
+(1967행)에는 `reverse = temperature_1 > temperature_2` 스왑 처리가
+**있는데** 매트릭스 경로에만 없다 - RT 쪽의 이식 누락이자, 우리 쪽의
+관례 위반이 만난 지점. 반면 Adobe DNG SDK `dng_color_spec.cpp`
+생성자(183-208행, "Swap values if temperatures are out of order")는
+온도가 역순이면 온도·ColorMatrix·ForwardMatrix·ReductionMatrix·
+CameraCalibration을 **전부 스왑**한다 - 즉 ACR/Lightroom은 이 역순
+DCP도 올바르게 보간할 것으로 예상(레퍼런스 코드 기준, 실기 미검증).
+
+**증거 1 - 수식 재도출**: 실행한 명령은
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_rt_illuminant_order_snap`
+(RT의 `xyCoordToTemperature` Robertson uv 테이블 + `neutralToXy` 고정점 +
+비스왑 mix 공식을 축자 포팅). 아래 표는 그 stdout에서 전사한 것이고
+전체 수치는 산출 리포트
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/rt_illuminant_order_root_cause_report.json`에
+있다(opus 서브에이전트가 JSON 원본과 대조 검증, 전사 오류 없음 확인):
+
+| 입력(챠트 실측 중립색) | RT 현재 순서 | RT 스왑 순서(CM1 가중치) | 우리 DNG 재현 g |
+|---|---|---|---|
+| group1(daylight, 수렴 wbtemp 6428K) | mix=1.0 → CM1 | 0.9914 | 0.9916 |
+| group2(tungsten, 수렴 wbtemp 2620K) | **mix=1.0 → CM1** | **0.0153** | **0.0176** |
+
+태그 순서만 Adobe 관례로 바꾸면 RT 로직이 우리 수학과 소수점 둘째
+자리까지 일치한다. CCT 근사식 차이(RT Robertson vs 우리 McCamy)는
+같은 xy에서 1.2~5.4K로(같은 리포트의 `cct_method_delta_at_same_xy`)
+원인이 아님을 함께 확인.
+
+**증거 2 - rawtherapee-cli 실렌더 2x3 실험**: 실행한 명령은
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_rt_render_swap_test`,
+아래 표는 그 stdout에서 전사, 수치 원본은 산출 리포트
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/rt_render_swap_test_report.json`
+(위와 동일하게 opus 대조 검증됨). dpreview group2 raw가 재다운로드
+불가라(아래 환경 메모) 로컬 kmichels `B_31325.3FR`에 pp3로 WB=2856K를
+강제해 텅스텐 촬영을 재현 - RT의 보간 입력 neutral은 파일 태그가
+아니라 RT 자체 WB에서 오므로(`dcp.cc` 1753-1786행, "Same as the DNG
+AsShotNeutral tag if white balance is Camera's own") 이 강제는 실촬영과
+등가다. 배포본(S)과, illuminant/매트릭스를 함께 스왑한 실험 사본(W,
+임시 새 파일 - 배포본은 읽기만) 각각에 DCPIlluminant=0/1/2 총 6렌더,
+mean abs diff(16-bit, `rt_render_swap_test_report.json`의
+`mean_abs_diff_16bit` 필드):
+
+| 비교 | mean\|Δ\| | 해석 |
+|---|---|---|
+| S:0 vs S:1(D65) | **0.0000** | WB 2856K인데도 D65로 스냅 - 기존 관찰 재현 |
+| S:0 vs S:2(StdA) | 1018.49 | 스냅 방향이 D65임을 정량 확인 |
+| W:0 vs W:1(StdA) | 266.91 | 스왑하면 자동보간이 StdA 쪽으로 감 |
+| W:0 vs W:2(D65) | 849.10 | 〃 (StdA에 3.2배 가까움 - 진짜 보간 작동) |
+| S:0 vs W:0 | **849.10** | 태그 순서만 바꿨는데 선택 매트릭스가 뒤집힘 |
+| S:1 vs W:2 / S:2 vs W:1 | 0.0000 / 0.0000 | 무결성: 매트릭스 자체는 동일, 슬롯 순서만 다름 |
+
+**가설별 판정**: (1) AsShotNeutral 품질 가설 - **기각**(원인으로서).
+RT는 배포본 태그 순서에서 neutral이 무엇이든(완벽한 텅스텐 WB를
+강제해도) illuminant1로 스냅한다 - 위 S:0==S:1이 그 직접 증거. 또한
+RT는 애초에 파일의 AsShotNeutral 태그가 아니라 자체 WB에서 neutral을
+계산한다. dpreview group2 파일들의 실제 AsShotNeutral 고정값 여부는
+Cloudflare 차단으로 재확인 불가였으나(이전 절의 캐비어트는 캐비어트대로
+유효) 이 RT 관찰의 원인이 아니다. (2) RT 보간 로직 가설 - **확정**
+(위 증거 1·2). (3) 합성 테스트 - exiftool로 3FR 태그를 덮어쓰는 대신
+pp3 WB 강제로 수행(등가이면서 사유 포맷 태그 조작 리스크 없음).
+
+**부수 발견(보고만, 수정 안 함)**: `core/dcp_interpolate.py` 독스트링
+2-5행의 "RawTherapee dcp.cc의 MakeXYZCAM이 쓰는 것과 같은 알고리즘"
+주장은 부정확 - RT는 태그 역순에서 다르게 동작하고(위), CCT 근사식도
+다르다(Robertson vs McCamy). Adobe DNG SDK와 같다는 서술이 정확하다.
+
+**권고(결정은 사용자 몫)**: v2 재배포 결정을 뒤집을 문제는 아니다 -
+25장 챠트 통계 검증(CI=[+5.55,+9.28])은 태그 순서와 무관한 파이썬
+파이프라인이고, Adobe 계열은 SDK가 스왑해서 흡수한다. 다만 RawTherapee
+사용자에게는 현재 배포본의 dual-illuminant가 완전히 죽어있다(사실상
+D65 단일 매트릭스). **재발급 시 태그를 Adobe 관례(1=StdA/17,
+2=D65/21)로 스왑하는 v3를 권장** - 매트릭스 값 자체는 그대로, 순서만
+바꾸면 되고 위 실렌더로 RT 정상화가 이미 실증됐다. `hasselblad_x2dii_chart.dcp`는
+Never-list라 이 조사에서 손대지 않았고, v3 발급은 별도 승인 필요.
+
+**환경 메모**: dpreview `image-compare/` URL이 이번엔 plain curl로
+403(Cloudflare 챌린지 HTML 확인) - 이전 세션 기록("챌린지 없이 바로
+받아짐")과 달리 세션/IP에 따라 게이트가 걸린다. 샌드박스 브라우저는
+바이너리 다운로드 자체가 차단, 실 Chrome 확장은 이번 세션 미연결이라
+group2 raw 재확보는 보류(kmichels 대체로 조사 완결에는 지장 없었음).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_rt_illuminant_order_snap`,
+`... -m tools.analyze_x2dii_rt_render_swap_test`(rawtherapee-cli 5.13, 렌더 6장 약 3분).

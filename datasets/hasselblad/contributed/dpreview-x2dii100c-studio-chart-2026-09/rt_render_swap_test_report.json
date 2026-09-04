@@ -1,0 +1,48 @@
+{
+ "raw": "datasets/hasselblad/contributed/kmichels-x2dii-2026-07/raw/B_31325.3FR",
+ "wb_forced": "Custom 2856K (StdA성 촬영 재현)",
+ "diffs": [
+  {
+   "a": "shipped:ill0",
+   "b": "shipped:ill1",
+   "mean_abs_diff_16bit": 0.0,
+   "label": "S: 자동 vs 슬롯1(D65) - 0이면 기존 관찰 재현"
+  },
+  {
+   "a": "shipped:ill0",
+   "b": "shipped:ill2",
+   "mean_abs_diff_16bit": 1018.4899,
+   "label": "S: 자동 vs 슬롯2(StdA) - 크면 스냅 방향이 D65라는 뜻"
+  },
+  {
+   "a": "swapped:ill0",
+   "b": "swapped:ill1",
+   "mean_abs_diff_16bit": 266.9094,
+   "label": "W: 자동 vs 슬롯1(StdA) - 작으면 올바른 방향으로 감"
+  },
+  {
+   "a": "swapped:ill0",
+   "b": "swapped:ill2",
+   "mean_abs_diff_16bit": 849.1049,
+   "label": "W: 자동 vs 슬롯2(D65) - 커야 정상"
+  },
+  {
+   "a": "shipped:ill0",
+   "b": "swapped:ill0",
+   "mean_abs_diff_16bit": 849.1049,
+   "label": "같은 설정, 태그 순서만 스왑 - 커야 근본원인 확정"
+  },
+  {
+   "a": "shipped:ill1",
+   "b": "swapped:ill2",
+   "mean_abs_diff_16bit": 0.0,
+   "label": "동일 매트릭스(D65) 강제 - 0이어야 함(무결성 체크)"
+  },
+  {
+   "a": "shipped:ill2",
+   "b": "swapped:ill1",
+   "mean_abs_diff_16bit": 0.0,
+   "label": "동일 매트릭스(StdA) 강제 - 0이어야 함(무결성 체크)"
+  }
+ ]
+}

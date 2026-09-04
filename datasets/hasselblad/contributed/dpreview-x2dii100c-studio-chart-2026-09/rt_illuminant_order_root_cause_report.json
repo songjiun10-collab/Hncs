@@ -1,0 +1,74 @@
+{
+ "dcp_path": "hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp",
+ "calibration_illuminant_1": 21,
+ "temperature_1_k": 6504.0,
+ "calibration_illuminant_2": 17,
+ "temperature_2_k": 2856.0,
+ "rt_source": "rtengine/dcp.cc @ tag 5.13 (dev와 diff 없음 확인); mix 공식 1690-1697/1820-1827행, 스왑은 makeHueSatMap 1967행에만 존재",
+ "cases": {
+  "group1_daylight_like": {
+   "neutral_g_normalized": [
+    0.3345404513869923,
+    1.0,
+    0.7218269266771231
+   ],
+   "rt_as_shipped": {
+    "converged_xy": [
+     0.314239,
+     0.327974
+    ],
+    "wbtemp_k": 6427.5,
+    "mix": 1.0,
+    "selected": "ColorMatrix1"
+   },
+   "rt_swapped_order": {
+    "converged_xy": [
+     0.314126,
+     0.32798
+    ],
+    "wbtemp_k": 6433.6,
+    "mix_toward_slot1_stda": 0.008569,
+    "weight_on_original_cm1_d65": 0.991431,
+    "selected": "interpolated"
+   },
+   "ours_dng_spec_g_toward_cm1": 0.991562,
+   "cct_method_delta_at_same_xy": {
+    "mccamy_k": 6428.6,
+    "robertson_rt_k": 6427.5,
+    "abs_diff_k": 1.2
+   }
+  },
+  "group2_tungsten_like": {
+   "neutral_g_normalized": [
+    0.6451373068317159,
+    1.0,
+    0.33303672486903185
+   ],
+   "rt_as_shipped": {
+    "converged_xy": [
+     0.466425,
+     0.411873
+    ],
+    "wbtemp_k": 2620.5,
+    "mix": 1.0,
+    "selected": "ColorMatrix1"
+   },
+   "rt_swapped_order": {
+    "converged_xy": [
+     0.4465,
+     0.408787
+    ],
+    "wbtemp_k": 2880.7,
+    "mix_toward_slot1_stda": 0.984732,
+    "weight_on_original_cm1_d65": 0.015268,
+    "selected": "interpolated"
+   },
+   "ours_dng_spec_g_toward_cm1": 0.017578,
+   "cct_method_delta_at_same_xy": {
+    "mccamy_k": 2615.0,
+    "robertson_rt_k": 2620.5,
+    "abs_diff_k": 5.4
+   }
+  }
+ }
+}
