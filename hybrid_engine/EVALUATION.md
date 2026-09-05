@@ -4289,3 +4289,50 @@ Classic Negative의 0.72와 거의 같은 "덜 벌어짐" 쪽이다.
 그리고 세트 인자를 준
 `... -m tools.find_fuji_same_scene_film_mode_groups 0.45 dpreview-gfx100rf-preprod-2026-08`,
 `... -m tools.evaluate_fuji_film_mode_separation dpreview-gfx100rf-preprod-2026-08`.
+
+### 후속: Velvia 미구현이 실제로 손해인가 - 신설 안 함, 여지만 측정 (같은 날)
+
+위에서 "측정된 크기가 있는 미구현 모드"로 남긴 Velvia를 바로 만들지 않고,
+**기존 룩으로 얼마나 커버되는지**부터 쟀다. 스크립트는
+`tools/evaluate_fuji_velvia_gap.py`이고, 대상 Velvia 페어 8쌍과 후보
+룩별 페어드 부호검정 + 부트스트랩 95% CI(20000회 고정 시드)는 전부
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`
+에 있다(실행 확인됨). 여기서는 같은 프레임의 raw/jpeg이라 화소가 정렬돼
+화소별 ΔE00을 쓰고 그 위에 부트스트랩 95% CI를 계산했다
+(`tools/evaluate_fuji_velvia_gap.py`의 `_mean_delta_e`/`summarize`, 실행
+확인됨) - 앞 절이 전역 평균 Lab을 썼던 것과 다른 점이다.
+
+| 후보 룩 | 평균 ΔE00 (출처 `velvia_gap_report.json`의 `paired_stats_vs_no_correction`, 실행 확인됨) | 승/패 | 부호검정 p | 부트스트랩 95% CI | 판정 |
+|---|---|---|---|---|---|
+| (무보정 neutral) | 15.7921 | — | — | — | 기준 |
+| `apply_classic_chrome` | **12.9159** | 8/0 | 0.0078 | [+2.2142,+3.6386] | 우세 |
+| `apply_provia` | 13.5652 | 6/2 | 0.2891 | [+0.4067,+4.2928] | 우세 |
+| `apply_reala_ace` | 15.7744 | 3/5 | 0.7266 | [-0.0244,+0.0629] | **판정 보류** |
+| `apply_astia` | 15.8431 | 2/6 | 0.2891 | [-0.0720,-0.0240] | 무보정 우세 |
+| `apply_nostalgic_neg` | 16.2704 | 0/8 | 0.0078 | [-0.5252,-0.4382] | 무보정 우세 |
+
+**의외의 결과 하나**: Velvia에 가장 가까운 기존 룩은 이름이 가까운
+`apply_provia`가 아니라 `apply_classic_chrome`이다 -
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`의
+`closest_existing_look` 기준 12.9159(CI [+2.2142,+3.6386], 8/0) vs
+13.5652(CI [+0.4067,+4.2928], 6/2), 실행 확인됨. `apply_provia`는 CI가
+0을 배제하긴 하지만 승패 6/2에 p=0.2891로 약하다.
+
+**여지는 크지 않다**: 이 룩 계열이 **자기 모드**에서 내는 통상 정확도를
+기준선으로 재보면,
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`의
+`benchmark` 필드 기준 `apply_provia`를 같은 세트의 Provia 68쌍에 적용했을
+때 11.7121이다(실행 확인됨). Velvia 잔여 12.9159와의 차이는 약 1.2 ΔE00
+인데 **이건 페어드 비교가 아니라 부트스트랩 CI를 낼 수 없다**(이미지
+집합이 서로 다르다). 그래서 유의성 주장이 아니라 "전용 함수가 가져갈
+몫의 대략적 상한"으로만 읽어야 한다.
+
+**결론(신설 안 함)**: `apply_velvia`를 만들면 되찾을 수 있는 폭이
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`
+기준 대략 1.2 ΔE00 수준이고(위와 같이 부트스트랩 CI 없는 대략치) 표본은
+8쌍이다. 새 `apply_*`를 배포 아티팩트에 추가하는 건 별도 결정이므로
+(`CLAUDE.md`의 "실험 결과를 자동으로 배포하지 않는다") 여기서는 측정만
+하고 `brands/fuji.py`를 건드리지 않았다. 만들 경우 목표선은 위 기준선
+11.7121이다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_velvia_gap`.
