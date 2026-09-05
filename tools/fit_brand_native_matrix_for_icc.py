@@ -66,7 +66,14 @@ def collect_contributed_pairs(brand):
         manifest = os.path.join(base, set_name, "manifest.csv")
         if not os.path.exists(manifest):
             continue
-        for row in csv.DictReader(open(manifest, encoding="utf-8-sig")):
+        reader = csv.DictReader(open(manifest, encoding="utf-8-sig"))
+        # 2026-09에 추가된 dpreview 스튜디오씬 챠트 매니페스트는 스키마가
+        # 다르다(`image_id,camera,product_id,raw_file_url,notes`) - raw+JPEG
+        # 페어가 아니라 챠트 RAW 목록이라 이 스크립트의 대상이 아니다.
+        # 컬럼이 없으면 KeyError로 죽던 것을 건너뛰도록 한다(2026-09-04).
+        if not reader.fieldnames or not {"filename_raw", "filename_jpeg"} <= set(reader.fieldnames):
+            continue
+        for row in reader:
             if row["filename_raw"] in seen:
                 continue
             raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])

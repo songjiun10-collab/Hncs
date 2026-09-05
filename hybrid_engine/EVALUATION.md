@@ -3974,3 +3974,77 @@ kmichels 1.3279 vs combined 9.8444), (c) `transicc` 독립 구현 재확인
 새 파일 2개만 추가했다.
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.build_x2dii_capture_one_illuminant_icc`.
+
+## Capture One 커버리지 확장: Fuji generic ICC + 룩 DeviceLink 40장 (2026-09-04)
+
+**1) Fuji generic JPEG-approx ICC 발급**: `tools/fit_brand_native_matrix_for_icc.py`는
+`BRAND_DESCRIPTIONS`에 sony/sigma/leica/fuji 넷을 갖고 있는데 fuji만
+ICC가 없었다. 원인은 스크립트가 브랜드의 **모든** 매니페스트를 훑는데
+2026-09에 추가된 dpreview 스튜디오씬 챠트 매니페스트가 다른 스키마
+(`image_id,camera,product_id,raw_file_url,notes`)라 `filename_raw`
+KeyError로 죽은 것이다 - 나중에 들어온 데이터에 스크립트가 깨져
+있었다. 페어 컬럼이 없는 매니페스트를 건너뛰도록 고치고 실행했다.
+
+**아래 표는 브랜드 간 우열 판정이 아니다 - 부트스트랩 CI가 없다.**
+이 스크립트(`tools/fit_brand_native_matrix_for_icc.py`, 158-159행)는
+5-fold CV 평균만 출력하고 `hybrid_engine/utils/evaluate.py`의
+`summarize()`(페어드 t-검정 + 부호검정 + 부트스트랩 95% CI)를 아예
+호출하지 않는다. 그래서 표의 목적은 신규 fuji가 기존 3개와 같은
+수준으로 수렴했는지 확인하는 것 하나뿐이고 브랜드 순위는 주장하지
+않는다(기존 3개와 동일한 방법론/한계를 그대로 따랐다). 각 행의 값은
+그 행에 적힌 리포트 파일에서 전사했고, opus 서브에이전트가 네 파일
+전부와 대조해 전사 오류 없음을 확인했다(verified):
+
+| 브랜드 | n | 무보정 ΔE00 | 매트릭스 CV ΔE00 | 개선(CI 없음, 우열판정 아님) | 값 출처(verified) |
+|---|---|---|---|---|---|
+| **fuji(신규)** | 119 | 20.047 | **11.591** | +42.18% | `datasets/fuji/contributed/native_matrix_for_icc_report.json` |
+| leica | 244 | 18.597 | 10.220 | +45.04% | `datasets/leica/contributed/native_matrix_for_icc_report.json` |
+| sigma | 83 | 22.644 | 13.058 | +42.33% | `datasets/sigma/contributed/native_matrix_for_icc_report.json` |
+| sony | 288 | 20.593 | 12.523 | +39.19% | `datasets/sony/contributed/native_matrix_for_icc_report.json` |
+
+이 계열은 컬러체커 실측이 아니라 카메라 JPEG 근사다(스크립트 독스트링에
+명시).
+
+**2) 룩 DeviceLink ICC 40장 일괄 발급**(`tools/build_all_capture_one_look_iccs.py`,
+리포트 `hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`):
+배포된 `apply_*` 룩 41개 중 캡처원 프로필은 2개뿐이었다. 룩 목록을
+`tests/test_brands.py`의 자동 발견(`BRAND_LOOKS`)에서 가져와 굽도록 해서
+**테스트가 아는 룩과 캡처원 프로필이 같은 집합**이 되게 했다 - 수동
+목록이 뒤처지는 문제(그 allowlist에서 11개가 누락됐던 것)를 반복하지
+않으려는 것. 발급 40 / 건너뜀 1(이미 배포된 `apply_hncs`) / 실패 0 -
+`hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`의
+`counts` 필드에서 전사, opus 서브에이전트 대조 검증(verified).
+
+**충실도를 측정했고, 절반 이상이 룩을 충실히 전달하지 못한다.** 이건
+CI가 필요한 비교가 아니라 결정론적 왕복 오차 측정이다 - 고정 시드
+(`seed=0`, `tools/build_all_capture_one_look_iccs.py`의 `_measure_fidelity`)
+합성 입력이라 매번 같은 값이 나온다. 랜덤 BGR 이미지를 LUT 경유와 룩
+직접 호출로 통과시킨 평균 절대오차(ΔBGR)를 그 룩의 효과(원본 대비
+변화량)와 비교했고, 값은 모두
+`hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`의
+`lut_vs_direct_mean_abs_bgr` / `look_effect_mean_abs_bgr` 필드에서
+전사했다(`faithful` 플래그로 요약, opus 대조 verified):
+**충실 14 / 오차>효과 26**. CLAHE 같은 적응형 연산이 강한 룩일수록
+나쁘다 - 같은 리포트 기준 `apply_canon_look` 오차 19.53 vs 효과 16.34,
+`apply_hncs_x2dii` 22.43 vs 12.41. 반대로 점별 연산 위주인 것들은
+좋다 - `apply_hasselblad_night` 2.20 vs 6.23, `apply_canon_raw_look`
+10.44 vs 65.50. 이건 `.cube`도 공유하는 LUT 포맷의 구조적 한계이지
+이번 굽기의 버그가 아니다. **이미 배포돼 있던 `fuji_provia_look.icc`도
+같은 상태였다**(같은 스크립트로 측정해 오차 23.12 vs 효과 18.17) -
+즉 새로 생긴 문제가 아니라, 이번에 처음 측정해서 리포트에 플래그로
+박은 것이다. 40장 모두 발급하되 그 플래그로 사용자가 고르게 한다.
+
+**오검증 한 번(기록)**: 처음 충실도를 쟀을 때 오차가 63으로 나와
+문서값 ≈21과 안 맞았다. 원인은 내 검증 코드가 LUT 출력(RGB)을 BGR
+이미지와 그대로 비교한 것 - `tools/build_all_capture_one_look_iccs.py`
+에서 채널을 뒤집자(`out_rgb[..., ::-1]`) 19.53/19.47/2.20으로 문서값과
+맞았다. LUT는 `[b_idx, g_idx, r_idx]`로 인덱싱되고 값은 RGB라는
+`core/lut_export.py`의 `write_cube_file` 규약을 스크립트 독스트링에
+명시해뒀다.
+
+**한계**: 캡처원 실기기 미검증(구조 검증 + 위 왕복/충실도 측정만).
+룩 ICC는 `hybrid_engine/assets/profiles/looks/`에 새로 넣었고 기존 배포
+프로필은 건드리지 않았다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.fit_brand_native_matrix_for_icc fuji`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.build_all_capture_one_look_iccs`.
