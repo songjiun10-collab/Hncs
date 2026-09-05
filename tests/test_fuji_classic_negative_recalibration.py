@@ -135,8 +135,8 @@ class TestGridDefinition(unittest.TestCase):
         # 이 상한이 밝기 보정 탈출구를 막는 장치다 - 넓히면 실험의 전제가 깨진다
         self.assertLessEqual(max(v2.WHITE_POINTS), 1.0)
 
-    def test_saturation_floor_was_widened_to_020(self):
-        self.assertAlmostEqual(min(v2.SAT_MULTS), 0.20, places=9)
+    def test_saturation_floor_was_widened_to_010(self):
+        self.assertAlmostEqual(min(v2.SAT_MULTS), 0.10, places=9)
 
     def test_combo_count_matches_axes(self):
         self.assertEqual(
@@ -235,10 +235,10 @@ class TestRecordedV2Run(unittest.TestCase):
         rec = self.rep["stats"]
         self.assertEqual(self.rep["n_pairs"], 47)
         self.assertAlmostEqual(rec["mean_base"], 15.2787, places=3)
-        self.assertAlmostEqual(rec["mean_new"], 12.3201, places=3)
+        self.assertAlmostEqual(rec["mean_new"], 12.3081, places=3)
         self.assertEqual((rec["wins"], rec["losses"]), (46, 1))
-        self.assertAlmostEqual(rec["ci_lo"], 2.5039, places=3)
-        self.assertAlmostEqual(rec["ci_hi"], 3.4143, places=3)
+        self.assertAlmostEqual(rec["ci_lo"], 2.5045, places=3)
+        self.assertAlmostEqual(rec["ci_hi"], 3.4374, places=3)
 
     def test_criterion_passed_and_ci_excludes_zero(self):
         self.assertTrue(self.rep["criterion_passed"])
@@ -249,7 +249,20 @@ class TestRecordedV2Run(unittest.TestCase):
         self.assertFalse(self.rep["modifies_shipped_code"])
 
     def test_full_sample_constants_are_the_recorded_ones(self):
-        self.assertEqual(self.rep["full_sample_combo"], [0.0, 0.82, 1.0, 0.2])
+        self.assertEqual(self.rep["full_sample_combo"], [0.0, 0.94, 1.0, 0.15])
+
+    def test_shoulder_and_saturation_moved_off_the_edge_after_widening(self):
+        # 격자 확장(shoulder_start 상한 0.90->0.97, sat_mult 하한 0.20->0.10)
+        # 이후 전체표본 최적값이 둘 다 격자 안쪽으로 들어왔다 - 이전엔 두 축
+        # 모두 경계에 붙어 있었다(참고: classic_negative_v2_boundary_probe.json).
+        self.assertNotIn("shoulder_start", self.rep["params_on_grid_edge"])
+        self.assertNotIn("sat_mult", self.rep["params_on_grid_edge"])
+
+    def test_white_point_remains_the_only_deliberately_capped_edge(self):
+        # white_point<=1.0은 노출 보정 탈출구를 막으려고 설계상 넓히지 않은
+        # 상한이다(WHITE_POINTS 정의부 주석 참고) - 경계에 붙는 게 예상된 결과다.
+        self.assertIn("white_point", self.rep["params_on_grid_edge"])
+        self.assertLessEqual(max(v2.WHITE_POINTS), 1.0)
 
 
 class TestRecordedBoundaryProbe(unittest.TestCase):

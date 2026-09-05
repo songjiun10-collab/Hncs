@@ -4722,11 +4722,46 @@ p<0.0001, 부트스트랩 95% CI [+2.5039, +3.4143]으로 사전 기준을 통�
 있었는데 아무 데도 그 숫자가 안 남았다. 감사 스크립트는 이상 시 종료코드
 1이라 다음 바디를 받을 때 자동으로 걸린다.
 
+### 6. 격자 확장 재실행 - shoulder_start/sat_mult 경계 해소, white_point만 설계상 상한 (2026-09-06)
+
+5절의 경계 재확인은 univariate 프로브(다른 세 축 고정)였다 - 결합적으로
+더 크게 달아날 가능성을 배제 못 한다는 지적(코덱스, `d5070e9`)에 따라
+`tools/evaluate_fuji_classic_negative_v2_grid.py`의 실제 5-fold 격자를
+`SHOULDER_STARTS` 상한 0.90->0.97, `SAT_MULTS` 하한 0.20->0.10으로 넓혀
+콤보 1540개->**2860개**로 전체 재실행했다(`white_point`는 노출 보정
+탈출구 방지 장치라 의도적으로 1.0 초과로 넓히지 않았다).
+
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_grid_report.json`
+기준 5-fold 홀드아웃 15.2787 -> **12.3081**(+19.44%), 46승1패, 부호검정
+p<0.0001, 부트스트랩 95% CI [+2.5045, +3.4374] - 4절의 좁은 격자 결과
+(+19.36%, CI [+2.5039,+3.4143])와 사실상 동일하다. 전체표본 최종 상수는
+`toe_lift=0.0, shoulder_start=0.94, white_point=1.0, sat_mult=0.15`
+(in-sample ΔE00 10.8707, CI 없음 - 전체표본 단일 적합이라 페어드 비교
+대상이 없다). 폴드 선택은 5개 중 3개가 (0.94, 0.15), 2개가 (0.97, 0.20)로
+만장일치는 아니다.
+
+**결론**: `shoulder_start`(0.94, 격자 상한 0.97에 안 붙음)와 `sat_mult`
+(0.15, 격자 하한 0.10에 안 붙음) 둘 다 확장된 격자 **안쪽**의 값으로
+수렴했다 - 4절/5절에서 경계에 붙었던 건 격자가 좁아서였다는 뜻이다.
+`params_on_grid_edge`에 남은 축은 `toe_lift`(0.0 - 5절에서 이미 하한 밖으로
+갈수록 단조 악화하는 진짜 최적점으로 확인됨)와 `white_point`(1.0 -
+`WHITE_POINTS` 정의부에 넓히지 않기로 명시한 설계상 상한, 5절 프로브에서
+1.20까지 밀어도 이득이 -0.48%(10.8968->10.8443)로 작다고 이미 확인됨)뿐이다.
+둘 다 "탈출구"가 아니라 "설계상/실측상 진짜 경계"로 판정한다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`
+(콤보 2860개, ~2.5시간 소요 - `tools/CLAUDE.md`의 장기 실행 규칙대로 `nohup`+`Monitor`).
+
 ### 권고
 
 `apply_classic_negative_v2` 추가를 제안한다 - 기존 `apply_classic_negative`는
 `brands/CLAUDE.md`대로 그대로 두고 나란히 둔다. **추가 실행은 배포 결정이라
 하지 않았다.** 현행 계열 재보정 결과(1절)는 채택하지 않는다.
+
+> **추가(2026-09-06, 6절)**: 5절에서 미뤄뒀던 "범위를 넓힌 재적합"을
+> 완료했다. shoulder_start/sat_mult 경계가 해소되어 v2 후보의 우세 신호가
+> 좁은 격자의 인공물이 아님을 확인했지만, 이 절 자체의 배포 보류 결정은
+> 그대로 유지한다 - 채택은 별개의 배포 결정이다.
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.probe_fuji_classic_negative_v2_boundary`,

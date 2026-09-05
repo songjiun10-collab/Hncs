@@ -68,13 +68,25 @@ SEED = 0
 # 검증된 계열의 범위를 그대로 쓴다(tools/evaluate_new_body_de00_grid.py) +
 # Classic Negative의 핵심인 채도 축.
 TOE_LIFTS = (0.0, 0.02, 0.036, 0.06, 0.09)
-SHOULDER_STARTS = (0.50, 0.58, 0.66, 0.70, 0.74, 0.78, 0.82)
+# 색공간 버그 수정 후 재실행에서 전체표본 최적이 shoulder_start=0.82(당시
+# 상한)로 5/5 만장일치 - 단변량 확인(tools/probe_fuji_classic_negative_v2_boundary.py)
+# 으로는 0.999까지 훑어도 개선폭이 미미(10.8968->10.8777, 0.18%)했지만, 결합
+# 탐색에서 조합 효과로 더 크게 달아날 수 있다는 지적(Codex, EVALUATION.md 5절)
+# 에 따라 실제 격자 자체를 넓혀 5-fold를 다시 돈다.
+SHOULDER_STARTS = (0.50, 0.58, 0.66, 0.70, 0.74, 0.78, 0.82, 0.86, 0.90, 0.94, 0.97)
+# white_point는 1.0 초과를 구조적으로 막는 의도된 상한이라 넓히지 않는다
+# (test_white_point_cannot_exceed_one) - 노출 보정 탈출구를 도로 여는 것이라서.
 WHITE_POINTS = (0.85, 0.90, 0.95, 1.0)
 # 1차 실행(하한 0.45)에서 fold 1이 sat_mult=0.45 하한에 붙어서 사용자
 # 지시로 0.20까지 넓혔다. neutral 렌더가 카메라 JPEG보다 HSV S 평균 19.490
 # 과채도인 것(`tools/diagnose_fuji_neutral_render_offset.py`, 0/47쌍,
 # 부트스트랩 95% CI [-22.964,-16.162])과 방향이 일치한다.
-SAT_MULTS = (0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.55, 0.65, 0.75, 0.85, 1.0)
+# 색공간 버그 수정 후 재실행에서도 5/5 만장일치로 0.20에 붙어서 더
+# 넓혔다 - 단변량 확인에서는 0.15가 소폭 더 낮고 그 아래는 도로 나빠지는
+# 비단조 패턴(진짜 완만한 내부 최적에 가까움)이었지만, 결합 탐색에서
+# 확인한다.
+SAT_MULTS = (0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.55, 0.65, 0.75,
+             0.85, 1.0)
 COMBOS = [(tl, ss, wp, sm) for tl in TOE_LIFTS for ss in SHOULDER_STARTS
           for wp in WHITE_POINTS for sm in SAT_MULTS]
 
