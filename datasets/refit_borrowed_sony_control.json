@@ -1,0 +1,228 @@
+{
+  "purpose": "핫셀블라드에서 차용한 shoulder_start/clahe_clip을 그 브랜드 자신의 raw+jpeg 페어로 재적합",
+  "criterion": "LOO 홀드아웃 페어드 부트스트랩 95% CI 20000회 고정 시드가 0을 배제하고 재적합이 우세할 때만 교체 권고",
+  "brand": "brands.sony",
+  "sets": [
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08"
+  ],
+  "current_constants": {
+    "toe_lift": 0.03568627450980392,
+    "shoulder_start": 0.5,
+    "white_point": 0.8964705882352941,
+    "clahe_clip": 4.0
+  },
+  "n_pairs": 22,
+  "images": [
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/8691198572.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/7849945770.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/5676846937.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/8172817143.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/2787995420.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/6792404367.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/9285879496.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/0988055692.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/3050820243.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/1379885252.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/3161927315.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/1620263313.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/8105093336.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/0257613106.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/0664785471.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/3584371790.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/8048712568.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/3008033066.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/2356857026.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/5246842851.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/7163682208.arw",
+    "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/8548235626.arw"
+  ],
+  "grid": {
+    "shoulder_start": [
+      0.5,
+      0.58,
+      0.66,
+      0.7,
+      0.74,
+      0.78,
+      0.82,
+      0.86,
+      0.9,
+      0.94,
+      0.97,
+      0.99,
+      0.995,
+      0.999
+    ],
+    "clahe_clip": [
+      0.4,
+      0.6,
+      0.8,
+      1.0,
+      1.25,
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      4.0
+    ]
+  },
+  "loo_picks": [
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.5,
+      2.5
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.58,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.58,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.5,
+      2.5
+    ],
+    [
+      0.5,
+      2.5
+    ],
+    [
+      0.58,
+      2.0
+    ],
+    [
+      0.58,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.5,
+      2.5
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ],
+    [
+      0.66,
+      2.0
+    ]
+  ],
+  "loo_unanimous": false,
+  "full_sample_combo": [
+    0.66,
+    2.0
+  ],
+  "params_on_grid_edge": [],
+  "delta_e_current": [
+    13.401815004990656,
+    23.957775559155092,
+    15.52902114780893,
+    16.496855890626545,
+    14.93765671365652,
+    21.25657937956635,
+    14.869946815333465,
+    18.80091372927828,
+    9.331638615456459,
+    13.542927804665212,
+    13.352783388981505,
+    19.646227073232087,
+    19.1647357372191,
+    17.395550936604135,
+    15.367894284928838,
+    15.940184421863355,
+    14.99983070694263,
+    19.77839735087773,
+    19.2741191248256,
+    19.747020148983694,
+    19.994089704712305,
+    19.759621538463264
+  ],
+  "delta_e_refit": [
+    13.318422011807543,
+    22.55590446406804,
+    14.986926415335036,
+    15.654802889556715,
+    14.896920148728935,
+    21.53706909213066,
+    14.348370341686957,
+    17.393719392996495,
+    8.96334918221746,
+    12.961435055940838,
+    13.524198928775407,
+    17.323684719449368,
+    17.251303128376247,
+    17.139088988089355,
+    16.157949511590726,
+    14.67775958278819,
+    14.00429150490132,
+    17.99380342127519,
+    18.353487670957275,
+    19.01458644438198,
+    19.156185091207824,
+    19.09231992044459
+  ],
+  "stats": {
+    "mean_base": 17.115708412644167,
+    "mean_new": 16.377526268486644,
+    "n": 22,
+    "wins": 19,
+    "losses": 3,
+    "p_value": 0.0008554458618164062,
+    "ci_lo": 0.434403998713675,
+    "ci_hi": 1.0454697612908916,
+    "inconclusive": false,
+    "verdict": "재적합 우세"
+  },
+  "criterion_passed": true,
+  "is_positive_control": true,
+  "modifies_shipped_code": false
+}
