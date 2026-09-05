@@ -4395,3 +4395,207 @@ Classic Negative의 0.72와 거의 같은 "덜 벌어짐" 쪽이다.
 데이터 문제가 아니어서 아무 조치도 하지 않았다.
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_pairing_fix_impact`.
+
+## 룩 LUT 굽는 방식 - 실사진 조건부 평균은 현재 방식보다 나쁘다 + 배포 리포트의 충실도 판정은 난수 이미지 탓 (2026-09-05)
+
+배포된 `hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`은
+발급된 52장 중 **30장을 `faithful=false`** 로 기록하고, 원인을 "CLAHE 등
+적응형 연산은 점별 LUT에 담을 수 없다"는 포맷의 구조적 한계로 설명한다.
+한계 자체는 사실이지만 두 가지가 측정된 적이 없어서 잰다.
+
+1. 그 한계 **안에서** 현재 굽는 방식이 최선인가.
+2. 그 `faithful` 판정이 실제 사용 조건에서도 같은가.
+
+### 1. 조건부 평균 굽기 - 가설 기각
+
+현재 방식(`core.lut_export.bake_lut_from_function`)은 33³ 격자를 1089x33
+합성 이미지 하나로 펴서 룩에 통과시킨다. CLAHE 입장에서 그 이웃 분포는
+무지개 격자라 실사진과 무관하고, 적응형 성분이 임의 값으로 구워진다.
+비교 대상은 학습 사진에서 추정한 **조건부 평균**이다 - 점별 함수로 공간
+적응형 연산자를 근사할 때 MSE를 최소화하는 것이 입력값 조건부 기대값이라는
+성질을 쓴다(삼선형 가중치 splat이라 정확한 최소제곱해가 아니라 정규방정식의
+대각 근사다). 학습 사진이 닿지 않은 격자점은 현재 값을 유지했다 -
+공식 13장 중 학습 7장이 닿은 격자점은 35937개 중 **17841개**뿐이다.
+
+데이터는 공식 13장 JPEG(cdn.hasselblad.com), 학습 7 / held-out 6, 작업
+해상도 최대 1024px. 평가는 held-out 사진에서 LUT 경유와 룩 직접 호출
+사이의 ΔE00(CIEDE2000)이고, 적용은 캡처원/포토샵이 실제로 하는 **삼선형**
+보간이다(항등 LUT에서 원본을 최대오차 0으로 복원하는 것을 확인했다).
+성공 기준은 실행 전에 고정했다 - 부트스트랩 95% CI가 0을 제외하고
+부호검정이 같은 방향일 때만 개선.
+
+| 항목 | 값 (출처: `tools/evaluate_lut_bake_conditional_mean.py` 실행, 실행 확인됨) |
+|---|---|
+| 현재 방식 평균 ΔE00 | **4.8339** |
+| 조건부 평균 평균 ΔE00 | **5.2870** |
+| 개선폭 | **-9.4%** (조건부 평균이 나쁨) |
+| 승패 | 조건부 평균 5승 49패 |
+| 부호검정 p | 3.8914e-10 |
+| 부트스트랩 95% CI | **[-0.5944, -0.2874]** - 0을 음의 방향에서 제외 |
+| drop-one | -10.6% ~ -8.8% (방향 안 뒤집힘) |
+
+**판정: 현재 방식이 낫다.**
+
+**양성 대조는 예측과 반대로 나왔고, 그게 이유를 설명한다.** 설계할 때는
+"CLAHE를 안 쓰는 순수 점별 룩에서는 조건부 평균이 그 점의 정확한 상으로
+수렴하므로 두 방식이 같아져야 한다"고 적었다. 실제로는 반대다 - 룩
+소스에 `CLAHE`가 있는지로 갈라서 두 방식 차이를 그 룩의 효과로 나눈 값의
+평균을 보면:
+
+| 그룹 | n | 두 방식 차이 / 룩 효과 (출처: `report.json` 재집계, 실행 확인됨) |
+|---|---|---|
+| CLAHE 미사용(점별) | 25 | **0.2513** |
+| CLAHE 사용(적응형) | 29 | **0.0686** |
+
+점별 룩에서 **오히려 3.7배 더 벌어진다**. 조건부 평균이 그 점의 정확한
+상으로 수렴하지 않기 때문이다 - 삼선형 splat은 각 격자점에 그 이웃
+색공간의 출력을 가중 평균해 넣으므로, 참 매핑이 정확히 점별인 곳에서도
+평활 편향이 남는다. 현재 굽기는 바로 그런 곳에서 정확하다. 즉 이 실험이
+진 이유는 "적응형 성분을 잘 못 잡아서"가 아니라 **"점별 성분에서 잃는
+평활 편향이, 적응형 성분에서 얻는 것보다 크기 때문"** 이고, 위 두 줄이
+그 직접 증거다. (설계 문서에 적었던 수렴 예상은 틀렸다 - 조건부 평균
+자체는 MSE 최적이지만, splat 추정량은 그 조건부 평균의 평활된 근사다.)
+
+`hasselblad.apply_hncs`는 CLAHE를 쓰므로 이 대조의 점별 예시가 아니다
+(base 5.6847 / cond 5.9146 / 효과 6.5497). 굽는 코드는 바꾸지 않았다.
+
+룩별 held-out 평균(6장) 전체 표 - 통계를 다시 돌리지 않고 감사할 수 있게 전부 싣는다. `tests/test_evaluate_lut_bake_conditional_mean.py`가 이 표를 `summarize()`에 다시 먹여 위 수치를 재현한다:
+
+| 룩 | 현재 방식 ΔE00 | 조건부 평균 ΔE00 | 룩 효과 ΔE00 | 현재 faithful |
+|---|---|---|---|---|
+| `canon.apply_canon_look` | 5.0452 | 5.6662 | 4.6714 | X |
+| `canon.apply_canon_raw_look` | 6.7216 | 7.0180 | 16.6645 | O |
+| `canon_r1_raw.apply_canon_r1_raw_look` | 8.4457 | 8.1387 | 16.2116 | O |
+| `canon_r6iii_raw.apply_canon_r6iii_raw_look` | 6.9269 | 7.3116 | 16.4718 | O |
+| `fuji.apply_astia` | 0.7630 | 1.6266 | 2.1299 | O |
+| `fuji.apply_classic_chrome` | 5.0341 | 5.6335 | 4.5513 | X |
+| `fuji.apply_classic_chrome_v2` | 5.1400 | 5.7095 | 4.5505 | X |
+| `fuji.apply_classic_negative` | 0.7077 | 1.3535 | 5.8381 | O |
+| `fuji.apply_eterna_bleach_bypass` | 0.5642 | 0.8707 | 9.1126 | O |
+| `fuji.apply_eterna_cinema` | 0.6270 | 1.1299 | 8.2145 | O |
+| `fuji.apply_nostalgic_neg` | 2.0283 | 3.4691 | 4.1683 | O |
+| `fuji.apply_nostalgic_neg_v2` | 5.0446 | 5.6511 | 4.7574 | X |
+| `fuji.apply_nostalgic_neg_v3` | 5.1400 | 5.7095 | 4.5505 | X |
+| `fuji.apply_pro_neg_hi` | 3.3125 | 4.9354 | 4.5920 | O |
+| `fuji.apply_pro_neg_std` | 0.8313 | 1.6624 | 5.2431 | O |
+| `fuji.apply_provia` | 9.0204 | 9.7674 | 8.9984 | X |
+| `fuji.apply_reala_ace` | 0.2401 | 1.6476 | 0.5257 | O |
+| `fuji_provia_learned.apply_provia_learned` | 4.8207 | 4.9169 | 11.5526 | O |
+| `fuji_provia_matrix.apply_fuji_provia_matrix_look` | 8.4475 | 8.8358 | 14.1511 | O |
+| `hasselblad.apply_hncs` | 5.6847 | 5.9146 | 6.5497 | O |
+| `hasselblad.apply_hncs_video_frame` | 0.7447 | 1.7574 | 4.3368 | O |
+| `hasselblad_day.apply_hasselblad_day` | 4.1920 | 4.8849 | 4.3154 | O |
+| `hasselblad_learned.apply_hncs_learned` | 5.3625 | 5.2481 | 18.3870 | O |
+| `hasselblad_night.apply_hasselblad_night` | 1.7525 | 2.4502 | 2.4239 | O |
+| `hasselblad_x1d.apply_hncs_x1d` | 5.0622 | 5.3454 | 11.2109 | O |
+| `hasselblad_x1d50c.apply_hncs_x1d50c` | 5.3139 | 5.4604 | 8.7901 | O |
+| `hasselblad_x1dii50c.apply_hncs_x1dii50c` | 5.3122 | 5.4607 | 8.7953 | O |
+| `hasselblad_x2dii.apply_hncs_x2dii` | 5.1387 | 5.4831 | 10.4206 | O |
+| `leica.apply_leica_look` | 5.0335 | 5.6530 | 4.6853 | X |
+| `leica_raw.apply_leica_raw_look` | 5.1400 | 5.7095 | 4.5505 | X |
+| `leica_raw_learned.apply_leica_raw_learned` | 5.0154 | 5.2368 | 7.3499 | O |
+| `leica_raw_matrix.apply_leica_raw_matrix_look` | 5.6308 | 5.5858 | 7.6253 | O |
+| `nikon.apply_nikon_look` | 5.0428 | 5.6608 | 4.6696 | X |
+| `olympus.apply_olympus_look` | 5.0312 | 5.6540 | 4.7072 | X |
+| `panasonic.apply_panasonic_look` | 5.0104 | 5.6382 | 4.7607 | X |
+| `pentax.apply_pentax_look` | 5.0498 | 5.6582 | 4.6514 | X |
+| `phaseone.apply_phaseone_look` | 5.0207 | 5.6430 | 4.7346 | X |
+| `ricoh_gr.apply_ricoh_gr_look` | 5.0736 | 5.6738 | 4.5904 | X |
+| `sigma.apply_sigma_look` | 5.0309 | 5.6502 | 4.6951 | X |
+| `sigma_bf.apply_sigma_bf_look` | 8.9718 | 9.7156 | 9.0837 | O |
+| `sigma_bf_learned.apply_sigma_bf_learned` | 4.6309 | 4.7816 | 18.1308 | O |
+| `sigma_fpl.apply_sigma_fpl_look` | 5.1263 | 5.7023 | 4.5730 | X |
+| `sigma_fpl_learned.apply_sigma_fpl_learned` | 5.1754 | 5.4533 | 11.0736 | O |
+| `sigma_raw.apply_sigma_raw_look` | 9.0104 | 9.7571 | 9.0089 | X |
+| `sigma_raw_matrix.apply_sigma_raw_matrix_look` | 9.6544 | 8.2830 | 13.8434 | O |
+| `sony.apply_sony_look` | 5.0313 | 5.6494 | 4.6935 | X |
+| `sony_a7rvi.apply_sony_a7rvi_look` | 4.7952 | 5.4849 | 4.9152 | O |
+| `sony_a7rvi_learned.apply_sony_a7rvi_learned` | 3.6572 | 3.8742 | 11.7158 | O |
+| `sony_a7rvi_learned.apply_sony_a7rvi_learned_v2` | 3.3291 | 3.5565 | 11.6371 | O |
+| `sony_a7v.apply_sony_a7v_look` | 5.0985 | 5.7002 | 4.6448 | X |
+| `sony_a7v_learned.apply_sony_a7v_learned` | 4.1701 | 4.4039 | 9.7726 | O |
+| `sony_a7v_learned.apply_sony_a7v_learned_v2` | 4.0612 | 4.3550 | 9.9200 | O |
+| `sony_raw.apply_sony_raw_look` | 6.3323 | 7.6546 | 6.6890 | O |
+| `sony_raw_matrix.apply_sony_raw_matrix_look` | 8.4843 | 6.3049 | 13.4803 | O |
+
+### 2. 부산물 - 배포 리포트의 `faithful` 판정은 난수 이미지 때문이다
+
+위 측정에서 실사진+삼선형 기준 faithful이 54개 중 54개였는데, 배포 리포트는
+같은 정의로 22/52다. 리포트의 `_measure_fidelity`는 **64x64 난수 이미지**에
+**최근접** 보간으로 잰다 - 캡처원이 실제로 하는 건 실사진에 삼선형이라
+실사용과 두 겹으로 다르다. 어느 겹이 판정을 뒤집는지 리포트와 **같은
+단위(ΔBGR)** 로 2x2로 분리했다(`tools/audit_look_lut_fidelity_metric.py`).
+
+**먼저 재구현이 리포트를 그대로 재현하는지 확인했다**: 난수/최근접 조건에서
+리포트에 실린 52개 룩의 `lut_vs_direct_mean_abs_bgr`과 **52/52 일치,
+최대차 0.0000**(나머지 2개는 리포트가 건너뛴 기배포 룩이라 대조 대상이
+아니다). 즉 아래 표의 좌상단 칸은 리포트 그 자체다.
+
+| 조건 | faithful(오차<효과) | 평균 ΔBGR |
+|---|---|---|
+| 난수 / 최근접 **(리포트 조건)** | **23/54** | 16.34 |
+| 난수 / 삼선형 | 23/54 | 15.98 |
+| 실사진 / 최근접 | 50/54 | 13.30 |
+| 실사진 / 삼선형 **(실제 적용 조건)** | **54/54** | 12.92 |
+
+요인은 하나다. 난수/최근접에서 불충실이던 룩이 충실로 뒤집히는 수는
+**이미지 소스만 실사진으로 바꾸면 28개, 보간만 삼선형으로 바꾸면 0개**다.
+보간 차이는 평균 ΔBGR 0.3~0.4 수준으로 판정을 하나도 못 뒤집는다.
+
+**결론: "발급된 프로필 30장이 룩을 충실히 전달하지 못한다"는 배포 리포트의
+기록은 실사용 조건에서 성립하지 않는다.** 난수 이미지에서는 이웃 픽셀
+분포가 실사진과 전혀 달라 CLAHE가 극단적으로 반응하고, 그 조건에서만
+오차가 효과를 넘는다. 실사진에서는 54개 전부 오차 < 효과다.
+
+주의해서 읽어야 할 것: 이건 "LUT 근사가 정확하다"는 뜻이 **아니다**.
+실사진/삼선형에서도 평균 ΔBGR은 12.92로 작지 않고, ΔE00로는 평균 4.83이다.
+바뀐 건 "그 오차가 룩 자체의 효과보다 큰가"라는 리포트의 판정 기준
+쪽이다. 적응형 연산이 점별 LUT에 안 담긴다는 원래 한계 서술 자체는 여전히
+맞다.
+
+난수/최근접에서 불충실로 기록됐던 룩들이 실사용 조건에서 어떻게 되는지 전체 표(총 31개):
+
+| 룩 | 난수/최근접 오차 | 효과 | 실사진/삼선형 오차 | 효과 |
+|---|---|---|---|---|
+| `canon.apply_canon_look` | 19.53 | 16.34 | 13.53 | 15.23 |
+| `fuji.apply_classic_chrome` | 20.43 | 18.49 | 13.92 | 14.50 |
+| `fuji.apply_classic_chrome_v2` | 20.30 | 18.17 | 14.10 | 14.21 |
+| `fuji.apply_nostalgic_neg_v2` | 18.48 | 16.97 | 13.51 | 15.76 |
+| `fuji.apply_nostalgic_neg_v3` | 20.30 | 18.17 | 14.10 | 14.21 |
+| `fuji.apply_provia` | 23.12 | 18.17 | 26.78 | 28.33 |
+| `fuji_provia_learned.apply_provia_learned` | 18.90 | 16.31 | 12.96 | 32.13 |
+| `hasselblad_x1d.apply_hncs_x1d` | 22.97 | 14.26 | 13.32 | 30.34 |
+| `hasselblad_x1d50c.apply_hncs_x1d50c` | 19.79 | 15.45 | 14.00 | 23.97 |
+| `hasselblad_x1dii50c.apply_hncs_x1dii50c` | 19.77 | 15.43 | 13.98 | 24.01 |
+| `hasselblad_x2dii.apply_hncs_x2dii` | 22.43 | 12.41 | 13.34 | 28.30 |
+| `leica.apply_leica_look` | 19.10 | 15.83 | 13.47 | 15.44 |
+| `leica_raw.apply_leica_raw_look` | 20.30 | 18.17 | 14.10 | 14.21 |
+| `leica_raw_learned.apply_leica_raw_learned` | 20.22 | 12.82 | 13.55 | 21.06 |
+| `nikon.apply_nikon_look` | 19.47 | 16.20 | 13.54 | 15.25 |
+| `olympus.apply_olympus_look` | 19.18 | 15.80 | 13.44 | 15.51 |
+| `panasonic.apply_panasonic_look` | 18.66 | 16.09 | 13.31 | 15.90 |
+| `pentax.apply_pentax_look` | 19.50 | 16.23 | 13.58 | 15.16 |
+| `phaseone.apply_phaseone_look` | 18.87 | 15.87 | 13.38 | 15.73 |
+| `ricoh_gr.apply_ricoh_gr_look` | 19.88 | 17.07 | 13.73 | 14.74 |
+| `sigma.apply_sigma_look` | 19.05 | 15.83 | 13.45 | 15.50 |
+| `sigma_bf.apply_sigma_bf_look` | 22.90 | 17.92 | 26.43 | 28.71 |
+| `sigma_fpl.apply_sigma_fpl_look` | 20.26 | 18.12 | 14.01 | 14.38 |
+| `sigma_fpl_learned.apply_sigma_fpl_learned` | 20.09 | 19.55 | 14.01 | 30.95 |
+| `sigma_raw.apply_sigma_raw_look` | 23.08 | 18.12 | 26.69 | 28.40 |
+| `sony.apply_sony_look` | 19.04 | 15.83 | 13.45 | 15.50 |
+| `sony_a7rvi.apply_sony_a7rvi_look` | 17.91 | 16.92 | 12.54 | 17.22 |
+| `sony_a7v.apply_sony_a7v_look` | 20.14 | 18.01 | 13.85 | 14.73 |
+| `sony_a7v_learned.apply_sony_a7v_learned` | 16.00 | 9.97 | 10.50 | 30.88 |
+| `sony_a7v_learned.apply_sony_a7v_learned_v2` | 15.25 | 10.11 | 10.00 | 31.54 |
+| `sony_raw.apply_sony_raw_look` | 23.18 | 18.12 | 18.69 | 21.17 |
+
+**아무것도 재발급하지 않았다.** `capture_one_look_iccs_report.json`은
+배포 아티팩트(루트 `CLAUDE.md`의 never 목록)이고, 그 안의 `faithful`
+필드와 `limitation` 문구를 고치는 것은 배포 결정이라 사용자 승인 없이는
+하지 않는다. 위 측정은 그 판단 근거를 만든 것이다.
+
+재현:
+`python3 -m tools.evaluate_lut_bake_conditional_mean <13장JPEG폴더> report.json`,
+`python3 -m tools.audit_look_lut_fidelity_metric <13장JPEG폴더> metric_2x2.json`.
+JPEG는 `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv`의 `jpeg_url`에서
+받는다(공개 CDN, raw 불필요).
