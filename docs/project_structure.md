@@ -174,6 +174,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/refit_dcp_irls_cyan_init.py` | IRLS 패치별 잔차를 검증해보니 patch 17(cyan)만 9장 전부에서 평균 ΔE00=7.166(표준편차 0.977, 노이즈 아님)로 유독 나쁨을 발견 - cyan 초기가중치만 4.0→2.0으로 낮춰 재수렴, LOO 2.6078→2.5942 추가 개선(-0.52%), 실제 배포 반영 |
 | `tools/evaluate_dcp_huesatmap.py` | 배포된 챠트 매트릭스 위에 DCP HueSatMap(hue-only, Lab 평면 회전 근사)을 얹어 LOO를 더 낮출 수 있는지 검증하는 실험 - patch 17(cyan) a*축 잔차(+11.98, 표준편차 0.496) 대응 |
 | `tools/evaluate_dcp_huesatmap_srgb.py` | 위 Lab 근사 대신 실제 DNG `ProfileHueSatMapEncoding=1`이 명시하는 sRGB HSV 좌표계로 재검증해 근사 격차를 메움 |
+| `tools/evaluate_dcp_huesatmap_full_srgb.py` | 위가 hue만 열었던 것을 HueSatMap 3값 전부(hueShift/satScale/valScale)로 확장 - 사용자 질문 "1점대는 안되?"(2026-09-04)에 대한 상한 측정. division 4~24 x 3변형 15조합 진짜 LOO에 **조합마다** 페어드 부호검정+부트스트랩 95% CI를 붙였다(기존 HueSatMap 실험들은 평균만 봤음). 결론: 성립하는 최저 2.4218(N=4 hue+sat, 9/0, CI=[+0.1316,+0.2169]), val까지 열면 평균은 2.3616이지만 CI가 0 포함 -> 판정 보류. 1점대 미도달. 배포 아님 |
 | `tools/dcp_export_huesatmap_experimental.py` | `core/dcp_export.py`(Never-list) 격리 사본 - HueSatMap 태그 3종(ProfileHueSatMapDims/Data1/Encoding) 지원만 추가, 원본 write_dcp/read_dcp 로직은 불변 |
 | `tools/build_dcp_huesatmap_experimental.py` | 위 HueSatMap 실험을 실기기 미검증 상태로 별도 `.dcp`(`hasselblad_x2dii_chart_huesatmap_experimental.dcp`, 배포 파일과 분리)로 발급 - N=8division/sigma=30, 스윕 검증 결과 N을 8~24로 늘려도 -4.98%~-5.04%로 수렴/포화 |
 | `tools/refit_x2dii_chart_combined.py` | X2D II 챠트 매트릭스를 kmichels 단일조명 9장 + dpreview 스튜디오씬 16장(2026-09)으로 합쳐 재피팅(사용자 승인) - IRLS/cyan 조정 단계는 n=9 과적합 우려로 재적용 안 함 |

@@ -4048,3 +4048,99 @@ CI가 필요한 비교가 아니라 결정론적 왕복 오차 측정이다 - �
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.fit_brand_native_matrix_for_icc fuji`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.build_all_capture_one_look_iccs`.
+
+## HueSatMap 전자유도 LOO - "1점대는 되나?"의 상한 측정, 배포 아님 (2026-09-04)
+
+사용자 질문("1점대는 안되?", 2026-09-04)에 대한 답을 재는 실험이다.
+현행 배포 챠트 매트릭스의 진짜 LOO ΔE00은 2.5942이고(이 값은 비교
+기준선일 뿐이며 각 조합의 부트스트랩 95% CI와 부호검정은 아래 표에
+15조합 전부 실었다; 이번 실행 로그 `/tmp/hsm_full2.log`의 baseline),
+`tools/evaluate_dcp_huesatmap_srgb.py`가 2026-09-01절에서 낸 hue-only
+HueSatMap은 2.4651(-4.98%, 부트스트랩 CI는 아래 표 참조)까지만 내렸다.
+1점대(<2.0)까지 가려면 같은 baseline 2.5942(`/tmp/hsm_full2.log`)
+기준으로 (2.5942-2.0)/2.5942 = -22.9%가 필요한데, 위 hue-only는 그
+5분의 1이다. 그래서 HueSatMap이 실제로 담을 수 있는 세 값
+(`hueShift`/`satScale`/`valScale`)을 **전부** 열면 어디까지 가는지가
+질문이었다. 이번 스크립트는
+`tools/evaluate_dcp_huesatmap_full_srgb.py`, 로그 `/tmp/hsm_full2.log`,
+리포트
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`.
+
+좌표계/커널/LOO 방식은 2026-09-01절의 sRGB(`ProfileHueSatMapEncoding=1`)
+HSV 판과 동일하고(폴드마다 3x3 매트릭스도 재피팅하는 진짜 LOO, 원형
+가우시안 sigma=30도 - `tools/evaluate_dcp_huesatmap_full_srgb.py`의
+`KERNEL_SIGMA_DEG`/`_loo()`), 달라진 건 division마다 학습하는 값이
+1개에서 3개로 늘어난 것뿐이다. sat/val은 비율이라 로그공간에서
+평균한다(같은 파일 `_fit_tables()`).
+
+**기존 HueSatMap 실험들과 달리 15조합 전부에 페어드 통계를 붙였다** -
+2026-09-01절은 "부트스트랩 CI 없음"이라고 명시한 채 평균과 부호
+일관성만 봤는데, 이번 결과가 바로 그 규칙이 왜 필요한지를 보여준다.
+아래 값은 전부 리포트
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`
+의 `sweep[].paired_stats`에서 전사했고(n=9 페어드, 부트스트랩 20000회
+고정 시드), 같은 스윕을 두 번 독립 실행해 15조합 수치가 완전히 동일하게
+재현되는 것을 확인했다(`/tmp/hsm_full.log`, `/tmp/hsm_full2.log`, 실행
+확인됨):
+
+| N | 변형 | LOO ΔE00 (출처 `/tmp/hsm_full2.log`) | 개선 | 승/패 | 부호검정 p | 부트스트랩 95% CI (출처 `huesatmap_full_srgb_loo_report.json`의 `sweep[].paired_stats`) | 판정 |
+|---|---|---|---|---|---|---|---|
+| 4 | hue만 | 2.5116 | +3.18% | 9/0 | 0.0039 | [+0.0686,+0.0946] | 유의 |
+| 4 | hue+sat | **2.4218** | +6.65% | 9/0 | 0.0039 | [+0.1316,+0.2169] | **유의(성립 최저)** |
+| 4 | hue+sat+val | 2.3616 | +8.97% | 6/3 | 0.5078 | [-0.0070,+0.4504] | **판정 보류** |
+| 8 | hue만 | 2.4651 | +4.98% | 9/0 | 0.0039 | [+0.1175,+0.1389] | 유의 |
+| 8 | hue+sat | 2.4541 | +5.40% | 9/0 | 0.0039 | [+0.0961,+0.1860] | 유의 |
+| 8 | hue+sat+val | 2.4070 | +7.22% | 5/4 | 1.0000 | [-0.0752,+0.4340] | 판정 보류 |
+| 12 | hue만 | 2.4692 | +4.82% | 9/0 | 0.0039 | [+0.1116,+0.1363] | 유의 |
+| 12 | hue+sat | 2.4713 | +4.74% | 9/0 | 0.0039 | [+0.0791,+0.1682] | 유의 |
+| 12 | hue+sat+val | 2.4184 | +6.78% | 5/4 | 1.0000 | [-0.0885,+0.4254] | 판정 보류 |
+| 16 | hue만 | 2.4642 | +5.01% | 9/0 | 0.0039 | [+0.1160,+0.1420] | 유의 |
+| 16 | hue+sat | 2.4702 | +4.78% | 9/0 | 0.0039 | [+0.0818,+0.1681] | 유의 |
+| 16 | hue+sat+val | 2.4189 | +6.76% | 5/4 | 1.0000 | [-0.0890,+0.4243] | 판정 보류 |
+| 24 | hue만 | 2.4634 | +5.04% | 9/0 | 0.0039 | [+0.1166,+0.1428] | 유의 |
+| 24 | hue+sat | 2.4709 | +4.75% | 9/0 | 0.0039 | [+0.0819,+0.1672] | 유의 |
+| 24 | hue+sat+val | 2.4202 | +6.71% | 5/4 | 1.0000 | [-0.0905,+0.4237] | 판정 보류 |
+
+**답: 1점대는 안 된다.** 통계적으로 성립하는(부트스트랩 95% CI가 0을
+포함하지 않는) 최저는 2.4218(N=4 hue+sat, CI=[+0.1316,+0.2169], 9/0)
+이고 이는 현행 2.5942 대비 -6.65%다 - 전부
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`
+의 `best_statistically_established` 필드에서 전사했다. 필요치는
+(2.5942-2.0)/2.5942 = -22.9%(baseline 출처 `/tmp/hsm_full2.log`)라
+자릿수가 다르다.
+
+**`valScale`은 평균만 좋아지고 성립하지 않는다.** 평균 최저는 N=4
+hue+sat+val의 2.3616(+8.97%)인데 부트스트랩 95% CI가
+[-0.0070,+0.4504]로 0을 포함하고 승패도 6/3(p=0.5078)이다 - 같은 리포트
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`
+의 `best_by_mean` 필드. 나머지 val 변형 4개도 전부 5/4, p=1.0000에 CI가
+0을 포함한다(위 표, 로그 `/tmp/hsm_full2.log`) - 평균은 커지는데 분산이
+같이 커지는, 이미지 9장 표본에 자유도만 늘렸을 때의 전형적 패턴이다.
+`hybrid_engine/CLAUDE.md`의 "평균 차이로 승자를 부르지 않는다"가 정확히
+이 경우를 위한 규칙이고, CI 없이 평균만 봤다면 +8.97%짜리 승리로
+기록됐을 것이다.
+
+**부수 확인 두 가지**: (1) N=8 hue-only가 2.4651로 2026-09-01절
+(`tools/evaluate_dcp_huesatmap_srgb.py`)의 수치를 소수점 4자리까지
+그대로 재현했다 - 그 절은 부트스트랩 CI를 내지 않았는데, 이번 실행
+(`/tmp/hsm_full2.log`)에서 CI=[+0.1175,+0.1389](9/0, p=0.0039)로
+뒷받침됐다. 즉 그 결론은 사후적으로 성립한다. (2) hue/hue+sat 계열은
+division을 4에서 24로 늘려도 개선폭이 +4.7~+6.7% 대에서 포화하고 계속
+커지지 않으며 CI도 전부 0을 배제한다(위 표의 해당 행들,
+`/tmp/hsm_full2.log`) - 2026-09-01절이 Lab 근사판
+(`tools/evaluate_dcp_huesatmap.py`)을 기각했던 과적합 패턴(자유도를
+늘릴수록 개선폭이 계속 커짐)이 여기서는 안 나타난다.
+
+**남은 레버(미실험)**: 1점대는 HueSatMap이 아니라 다른 축이 필요하다 -
+LookTable(3D), 조명별 분리 프로필, 또는 애초에 챠트 표본을 9장 이상으로
+늘리는 것. 어느 쪽도 이번 세션에서 측정하지 않았으므로 가능하다고
+주장하지 않는다.
+
+**배포 아님**: 배포된 `hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`
+는 Never-list이고 `tools/evaluate_dcp_huesatmap_full_srgb.py`는 어떤
+프로필도 쓰지 않는다. 설령 위 -6.65%(CI=[+0.1316,+0.2169])가 성립한다
+해도 배포는 별도 결정이며, 2026-09-01절이 남긴 실기기 미검증
+리스크(exiftool 구조 검증만으로는 Lightroom 렌더링을 확인 못 함)가
+그대로 남아 있다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_huesatmap_full_srgb`.
