@@ -6,6 +6,7 @@
   "input_render": "tools.calibrate.load_neutral_render(raw, max_dim=400) - tools/evaluate_fuji_preset_de00.py와 동일 경로",
   "unmapped_modes": "Velvia는 brands/fuji.py에 대응 apply_* 함수가 없어 룩 거리 계산에서 빠진다",
   "deployment": "배포 아님 - 어떤 apply_*나 프로필도 수정하지 않는다",
+  "set": "datasets/fuji/contributed/local-work-2026-08",
   "groups": [
     {
       "group": 1,

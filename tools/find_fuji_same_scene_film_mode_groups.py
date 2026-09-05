@@ -26,7 +26,12 @@
 묶음에 들어올 수 있다. 리포트에 묶음별 최대 거리를 같이 실으니 임계값을
 바꿔가며 확인할 것.
 
-  python3 -m tools.find_fuji_same_scene_film_mode_groups [max_dist]
+**세트 인자**: 기본은 `local-work-2026-08`이고, 두 번째 인자로 다른
+`datasets/fuji/contributed/<세트>`를 지정할 수 있다 - 묶음 표본이 1개라
+`tools/evaluate_fuji_film_mode_separation.py`가 부트스트랩 CI를 못 냈기
+때문에(2026-09-04) 다른 세트에서 묶음을 더 찾으려고 일반화했다.
+
+  python3 -m tools.find_fuji_same_scene_film_mode_groups [max_dist] [세트명]
 """
 import csv
 import json
@@ -38,8 +43,8 @@ import cv2
 import numpy as np
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SET_DIR = os.path.join(BASE, "datasets", "fuji", "contributed", "local-work-2026-08")
-OUT_REPORT = os.path.join(SET_DIR, "same_scene_film_mode_groups.json")
+CONTRIB = os.path.join(BASE, "datasets", "fuji", "contributed")
+DEFAULT_SET = "local-work-2026-08"
 
 THUMB = 32
 MAX_DIST = 0.35  # 표준화 썸네일 평균 절대차
@@ -89,17 +94,22 @@ class _Union:
 
 def main():
     max_dist = float(sys.argv[1]) if len(sys.argv) > 1 else MAX_DIST
-    rows = read_exif(os.path.join(SET_DIR, "jpeg"))
+    set_name = sys.argv[2] if len(sys.argv) > 2 else DEFAULT_SET
+    set_dir = os.path.join(CONTRIB, set_name)
+    out_report = os.path.join(set_dir, "same_scene_film_mode_groups.json")
+    print(f"세트 {set_name}")
+
+    rows = read_exif(os.path.join(set_dir, "jpeg"))
     print(f"EXIF 읽은 JPEG {len(rows)}장")
 
     raw_by_jpeg = {}
-    with open(os.path.join(SET_DIR, "manifest.csv"), encoding="utf-8-sig") as f:
+    with open(os.path.join(set_dir, "manifest.csv"), encoding="utf-8-sig") as f:
         for row in csv.DictReader(f):
             raw_by_jpeg[row["filename_jpeg"]] = row["filename_raw"]
 
     keep, thumbs = [], []
     for r in rows:
-        t = thumbnail(os.path.join(SET_DIR, "jpeg", r["jpeg"]))
+        t = thumbnail(os.path.join(set_dir, "jpeg", r["jpeg"]))
         if t is not None:
             keep.append(r)
             thumbs.append(t)
@@ -147,10 +157,10 @@ def main():
         "purpose": "같은 장면을 필름시뮬레이션만 바꿔 촬영한 묶음 - 필름모드 "
                    "변환 자체만 분리해서 평가할 수 있는 부분집합",
         "lead": "사용자 제보(2026-09-04): 후지에 같은 장면 필터만 바꿔 찍은 것 있음",
-        "set": "datasets/fuji/contributed/local-work-2026-08",
+        "set": f"datasets/fuji/contributed/{set_name}",
         "grouping": f"표준화 {THUMB}x{THUMB} 그레이스케일 썸네일 평균 절대차 "
                     f"<= {max_dist}, 같은 바디끼리만, union-find",
-        "why_not_time": "이 세트 GFX50S II는 카메라 시계 미설정으로 "
+        "why_not_time": "local-work-2026-08의 GFX50S II는 카메라 시계 미설정으로 "
                         "DateTimeOriginal이 전부 2021:01:01 00:00~00:01 - "
                         "104장이 80초 안에 들어가 시간으로는 장면이 안 갈린다",
         "n_jpeg": n,
@@ -158,9 +168,9 @@ def main():
         "n_multi_mode_clusters": len(multi),
         "groups": report_groups,
     }
-    with open(OUT_REPORT, "w", encoding="utf-8") as f:
+    with open(out_report, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
-    print(f"\n리포트: {OUT_REPORT}")
+    print(f"\n리포트: {out_report}")
 
 
 if __name__ == "__main__":

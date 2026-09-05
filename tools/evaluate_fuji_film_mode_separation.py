@@ -43,7 +43,12 @@
 
 **배포 아님**: 어떤 `apply_*`나 프로필도 수정하지 않는다. 측정만 한다.
 
-  ~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_film_mode_separation
+**세트 인자**: 기본은 `local-work-2026-08`. 2026-09-04에 유효 묶음이 1개
+뿐이라 부트스트랩 CI를 못 냈기 때문에, 다른 세트(예:
+`dpreview-gfx100rf-preprod-2026-08`)에서도 돌릴 수 있게 인자를 받는다.
+같은 이름의 `same_scene_film_mode_groups.json`을 그 세트 폴더에서 읽는다.
+
+  ~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_film_mode_separation [세트명]
 """
 import itertools
 import json
@@ -59,10 +64,12 @@ import numpy as np
 from tools.calibrate import load_neutral_render
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SET_DIR = os.path.join(BASE, "datasets", "fuji", "contributed", "local-work-2026-08")
-GROUPS_JSON = os.path.join(SET_DIR, "same_scene_film_mode_groups.json")
-OUT_REPORT = os.path.join(SET_DIR, "film_mode_separation_report.json")
+CONTRIB = os.path.join(BASE, "datasets", "fuji", "contributed")
+DEFAULT_SET = "local-work-2026-08"
 MAX_DIM = 400
+
+# 세트별 경로는 main()에서 정한다. 모듈 전역으로 두면 세트 인자가 안 먹는다.
+SET_DIR = os.path.join(CONTRIB, DEFAULT_SET)
 
 # EXIF FilmMode 문자열 -> brands/fuji.py의 룩. Velvia는 대응 함수가 없어
 # (FUJI_COLOR_PRESETS에 apply_velvia가 없다) 매핑에서 빠진다.
@@ -72,6 +79,11 @@ MODE_TO_LOOK = {
     "Classic Chrome": "apply_classic_chrome",
     "F0/Standard (Provia)": "apply_provia",
     "F1b/Studio Portrait Smooth Skin Tone (Astia)": "apply_astia",
+    "Reala ACE": "apply_reala_ace",
+    "Eterna": "apply_eterna_cinema",
+    "Bleach Bypass": "apply_eterna_bleach_bypass",
+    "Pro Neg. Hi": "apply_pro_neg_hi",
+    "Pro Neg. Std": "apply_pro_neg_std",
 }
 
 
@@ -98,11 +110,16 @@ def _load_jpeg(name):
 
 def main():
     import importlib
+    global SET_DIR
+    set_name = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_SET
+    SET_DIR = os.path.join(CONTRIB, set_name)
+    groups_json = os.path.join(SET_DIR, "same_scene_film_mode_groups.json")
+    out_report = os.path.join(SET_DIR, "film_mode_separation_report.json")
     fuji = importlib.import_module("brands.fuji")
 
-    with open(GROUPS_JSON, encoding="utf-8") as f:
+    with open(groups_json, encoding="utf-8") as f:
         groups = json.load(f)["groups"]
-    print(f"같은 장면 묶음 {len(groups)}개 로드 ({GROUPS_JSON})\n")
+    print(f"세트 {set_name}: 같은 장면 묶음 {len(groups)}개 로드 ({groups_json})\n")
 
     results = []
     for gi, g in enumerate(groups, 1):
@@ -236,11 +253,12 @@ def main():
         "unmapped_modes": "Velvia는 brands/fuji.py에 대응 apply_* 함수가 없어 "
                           "룩 거리 계산에서 빠진다",
         "deployment": "배포 아님 - 어떤 apply_*나 프로필도 수정하지 않는다",
+        "set": f"datasets/fuji/contributed/{set_name}",
         "groups": results,
     }
-    with open(OUT_REPORT, "w", encoding="utf-8") as f:
+    with open(out_report, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
-    print(f"리포트: {OUT_REPORT}")
+    print(f"리포트: {out_report}")
 
 
 if __name__ == "__main__":
