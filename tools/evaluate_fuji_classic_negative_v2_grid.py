@@ -52,7 +52,7 @@ import numpy as np
 
 from brands.fuji import apply_classic_negative
 from core.curve import film_curve
-from hybrid_engine.utils.evaluate import mean_delta_e
+from hybrid_engine.utils.evaluate import bgr_u8_to_linear_rgb, mean_delta_e
 from tools.calibrate import load_neutral_render
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -140,10 +140,14 @@ def summarize(base, new, label_base, label_new, n_bootstrap=20000, seed=SEED):
 
 
 def _best_combo(idxs, grids, targets_grid):
+    targets_linear = [bgr_u8_to_linear_rgb(target) for target in targets_grid]
     best, best_de = None, float("inf")
     for combo in COMBOS:
-        de = float(np.mean([mean_delta_e(apply_candidate(grids[i], *combo),
-                                         targets_grid[i]) for i in idxs]))
+        de = float(np.mean([
+            mean_delta_e(bgr_u8_to_linear_rgb(apply_candidate(grids[i], *combo)),
+                         targets_linear[i])
+            for i in idxs
+        ]))
         if de < best_de:
             best, best_de = combo, de
     return best, best_de
@@ -193,10 +197,13 @@ def main():
         print(f"  선택 combo={combo}  학습 ΔE00={tr_de:.4f}", flush=True)
         fold_combos.append(list(combo))
         for i in test_idx.tolist():
-            de_cur[i] = mean_delta_e(apply_classic_negative(confirms[i]),
-                                     targets_confirm[i])
-            de_new[i] = mean_delta_e(apply_candidate(confirms[i], *combo),
-                                     targets_confirm[i])
+            target_linear = bgr_u8_to_linear_rgb(targets_confirm[i])
+            de_cur[i] = mean_delta_e(
+                bgr_u8_to_linear_rgb(apply_classic_negative(confirms[i])),
+                target_linear)
+            de_new[i] = mean_delta_e(
+                bgr_u8_to_linear_rgb(apply_candidate(confirms[i], *combo)),
+                target_linear)
         print(f"  홀드아웃 현행 {np.mean([de_cur[i] for i in test_idx]):.4f} -> "
               f"v2 {np.mean([de_new[i] for i in test_idx]):.4f}", flush=True)
 

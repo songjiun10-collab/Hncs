@@ -26,8 +26,6 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import colour
 import numpy as np
-from colour.difference.delta_e import intermediate_attributes_CIE2000
-from dataclasses import astuple
 
 from hybrid_engine.calibrate_profile import _find_pairs, _resize_max_dim, CALIB_MAX_DIM
 from hybrid_engine.core import color_matrix
@@ -38,6 +36,45 @@ from hybrid_engine.utils.io import decode_raw, load_image_linear
 
 def _de00_from_lab(lab_a, lab_b):
     return np.mean(delta_E_CIE2000_weighted(lab_a.reshape(-1, 3), lab_b.reshape(-1, 3)))
+
+
+def _cie2000_lch_terms(lab_1, lab_2):
+    """CIEDE2000의 L/C/H 정규화 항을 public NumPy/colour API만으로 구한다."""
+    lab_1 = np.asarray(colour.utilities.to_domain_100(lab_1), dtype=np.float64)
+    lab_2 = np.asarray(colour.utilities.to_domain_100(lab_2), dtype=np.float64)
+    L_1, a_1, b_1 = np.moveaxis(lab_1, -1, 0)
+    L_2, a_2, b_2 = np.moveaxis(lab_2, -1, 0)
+    C_1, C_2 = np.hypot(a_1, b_1), np.hypot(a_2, b_2)
+    C_bar = (C_1 + C_2) / 2
+    G = 0.5 * (1 - np.sqrt(C_bar ** 7 / (C_bar ** 7 + 25 ** 7)))
+    a_p_1, a_p_2 = (1 + G) * a_1, (1 + G) * a_2
+    C_p_1, C_p_2 = np.hypot(a_p_1, b_1), np.hypot(a_p_2, b_2)
+    h_p_1 = np.degrees(np.arctan2(b_1, a_p_1)) % 360
+    h_p_2 = np.degrees(np.arctan2(b_2, a_p_2)) % 360
+    product = C_p_1 * C_p_2
+    hue_difference = h_p_2 - h_p_1
+    delta_h_p = np.select(
+        [product == 0, np.abs(hue_difference) <= 180,
+         hue_difference > 180, hue_difference < -180],
+        [0, hue_difference, hue_difference - 360, hue_difference + 360])
+    delta_L_p = L_2 - L_1
+    delta_C_p = C_p_2 - C_p_1
+    delta_H_p = 2 * np.sqrt(product) * np.sin(np.deg2rad(delta_h_p / 2))
+    L_bar, C_bar = (L_1 + L_2) / 2, (C_p_1 + C_p_2) / 2
+    hue_sum, hue_separation = h_p_1 + h_p_2, np.abs(h_p_1 - h_p_2)
+    h_bar = np.select(
+        [product == 0, hue_separation <= 180,
+         (hue_separation > 180) & (hue_sum < 360),
+         (hue_separation > 180) & (hue_sum >= 360)],
+        [hue_sum, hue_sum / 2, (hue_sum + 360) / 2, (hue_sum - 360) / 2])
+    T = (1 - 0.17 * np.cos(np.deg2rad(h_bar - 30))
+         + 0.24 * np.cos(np.deg2rad(2 * h_bar))
+         + 0.32 * np.cos(np.deg2rad(3 * h_bar + 6))
+         - 0.20 * np.cos(np.deg2rad(4 * h_bar - 63)))
+    S_L = 1 + 0.015 * (L_bar - 50) ** 2 / np.sqrt(20 + (L_bar - 50) ** 2)
+    S_C = 1 + 0.045 * C_bar
+    S_H = 1 + 0.015 * C_bar * T
+    return S_L, S_C, S_H, delta_L_p, delta_C_p, delta_H_p
 
 
 def main():
@@ -78,8 +115,8 @@ def main():
     # 1) L/C/H 성분 분해 (R_T 교차항 제외, 세 항만으로 정규화)
     l_frac, c_frac, h_frac = [], [], []
     for i in range(n):
-        S_L, S_C, S_H, dLp, dCp, dHp, _R_T = astuple(
-            intermediate_attributes_CIE2000(lab_preds[i], lab_targets[i]))
+        S_L, S_C, S_H, dLp, dCp, dHp = _cie2000_lch_terms(
+            lab_preds[i], lab_targets[i])
         l_sq = np.mean((dLp / S_L) ** 2)
         c_sq = np.mean((dCp / S_C) ** 2)
         h_sq = np.mean((dHp / S_H) ** 2)
