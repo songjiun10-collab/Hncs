@@ -131,8 +131,12 @@ def _detect_chart_bgr8(bgr_u8):
     """cv2.mcc로 24패치 차트를 검출. 성공 시 (24, 4, 2) 꼭짓점 배열
     (PATCH_NAMES 순서), 실패 시 None."""
     detector = cv2.mcc.CCheckerDetector_create()
-    detector.setColorChartType(cv2.mcc.MCC24)
-    if not detector.process(bgr_u8):
+    if hasattr(detector, "setColorChartType"):
+        detector.setColorChartType(cv2.mcc.MCC24)
+        detected = detector.process(bgr_u8)
+    else:
+        detected = detector.process(bgr_u8, cv2.mcc.MCC24)
+    if not detected:
         return None
     checker = detector.getListColorChecker()[0]
     return checker.getColorCharts().reshape(24, 4, 2)

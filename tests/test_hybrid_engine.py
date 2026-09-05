@@ -455,6 +455,32 @@ class TestDeltaE2000Weighted(unittest.TestCase):
         mine = delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0)
         np.testing.assert_allclose(mine, official, atol=1e-9)
 
+    def test_calculates_when_colour_lacks_private_intermediate_helper(self):
+        """Weighted ΔE must import when the private helper is unavailable."""
+        import colour
+        import importlib.util
+        import sys
+        from pathlib import Path
+        from types import ModuleType
+
+        Lab_1 = np.array([[50.0, 2.6772, -79.7751]])
+        Lab_2 = np.array([[50.0, 0.0, -82.7485]])
+        expected = colour.delta_E(Lab_1, Lab_2, method="CIE 2000")
+
+        spec = importlib.util.spec_from_file_location(
+            "evaluate_without_private_helper",
+            Path(__file__).resolve().parents[1] / "hybrid_engine/utils/evaluate.py",
+        )
+        module = importlib.util.module_from_spec(spec)
+        public_delta_e = ModuleType("colour.difference.delta_e")
+        with patch.dict(sys.modules,
+                        {"colour.difference.delta_e": public_delta_e}):
+            spec.loader.exec_module(module)
+
+        actual = module.delta_E_CIE2000_weighted(Lab_1, Lab_2)
+
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
     def test_matches_colour_science_textiles_at_kl2(self):
         import colour
         rng = np.random.default_rng(1)
