@@ -53,8 +53,35 @@ entries below; don't rewrite old ones.
   test p=0.047, CCT bootstrap CI lower bound +0.017). RB vs. CCT is still
   inconclusive. `apply_hncs()` itself was not touched.
 
+## Snapshot (2026-09-05, branch `develop`)
+
+- `python3 -m unittest discover -s tests` → **855 tests, 0 failures, 0
+  errors, 15 skipped** in this container (was 843 with 12 errors). The
+  "errors are just packages this container lacks" caveat in the
+  2026-08-03 snapshot above is obsolete: every environment-dependent
+  test now skips instead of erroring. The 15 skips are 12 needing
+  `exiftool` + 3 needing committed `.dcp`/`.icc`/`transicc`. CI installs
+  `libimage-exiftool-perl`, so all 12 run there
+  (`.github/workflows/tests.yml`).
+- `tools/audit_repo_integrity.py` no longer dies on a machine without
+  `exiftool` — it skips only that check and says so on the last line, so
+  "이상 없음" never over-claims the verified scope. It also gained a
+  pure-Python header check (`dcp_header_problems` /
+  `icc_header_problems`) that catches what `exiftool -validate` cannot:
+  a DCP with the standard TIFF magic (42) instead of Adobe's `0x4352`
+  passes exiftool, and that magic was the real cause of the 2026-08-31
+  "Lightroom won't read the profiles" bug. All 65 committed artifacts
+  (3 DCP + 62 ICC) pass — a regression guard, not a fix.
+- Default branch is `claude/hncs-v13-dpreview-calibration`; `develop` is
+  51 commits ahead of it and 113 behind, so the two have long diverged.
+  Work landed directly on `develop`.
+
 ## Open threads
 
-- None tracked here as blocking; check `.superpowers/sdd/progress.md`
-  for any in-flight subagent-driven-development plan before assuming a
-  clean slate.
+- `apply_classic_negative` recalibration is **decided by the user, not
+  open work**: `hybrid_engine/EVALUATION.md` (2026-09-04) measured that
+  4 of its 47 pairs were mis-paired and its mode mean was inflated by
+  1.0532 ΔE00. Nothing in `brands/fuji.py` or the profiles was touched.
+- Otherwise nothing tracked here as blocking; check
+  `.superpowers/sdd/progress.md` for any in-flight
+  subagent-driven-development plan before assuming a clean slate.
