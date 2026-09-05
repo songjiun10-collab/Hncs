@@ -12,14 +12,14 @@ COLOR_BGR2HSV)` 왕복을 쓰는 함수(apply_pro_neg_std/pro_neg_hi/
 eterna_cinema/eterna_bleach_bypass/reala_ace/classic_negative,
 hasselblad_night)는 opencv 버전/플랫폼에 따라 최하위 비트가 달라져서
 로컬에서 뽑은 해시가 CI에서 재현 안 됨. 이 7개는 CI 기준 출력 픽셀 배열이
-보관돼 있지 않아 임의의 교차 플랫폼 허용오차를 만들지 않는다. 대신 기준 출력의
-채널별 평균/표준편차/분위수 앵커를 비교한다. 허용오차 1.001은 문서화된 최하위
-비트 차이의 통계량 상한에 부동소수점 집계 오차만 더한 값이며, 0 출력 같은 실제
-회귀는 잡는다. Lab 전용
+보관돼 있지 않아 임의의 교차 플랫폼 허용오차를 만들지 않는다. 대신 커밋된 기준
+출력 fixture와 픽셀별로 비교한다. 허용오차 1은 문서화된 최하위 비트 차이의
+상한이며, 위치가 바뀐 출력이나 0 출력 같은 실제 회귀를 잡는다. Lab 전용
 CLAHE+LUT 함수는 전부 플랫폼 무관하게 일치해 정확한 해시를 계속 쓴다. 새 안정
 함수의 골든해시는 로컬에서 계산만 하지 말고 CI 실행 결과로 검증/교정할 것."""
 import hashlib
 import importlib
+from pathlib import Path
 import unittest
 from unittest import mock
 
@@ -161,11 +161,8 @@ FUJI_PRESET_GOLDEN_HASHES = [
 
 
 # OpenCV's BGR→HSV→BGR uint8 conversion differs by platform at the least
-# significant bit. CI reference images were not retained, but these independent
-# statistics of the known-good output still catch material regressions. If every
-# output pixel changes by at most one LSB, every listed statistic changes by at
-# most 1.0. The extra 0.001 only absorbs floating-point aggregation error
-# (for example, a measured difference of 1.000000000000014).
+# significant bit. The committed arrays preserve position, so an output may
+# differ by only one LSB at every corresponding pixel.
 HSV_ROUND_TRIP_FUNCTIONS = [
     ("brands.fuji", "apply_pro_neg_std"),
     ("brands.fuji", "apply_pro_neg_hi"),
@@ -176,50 +173,20 @@ HSV_ROUND_TRIP_FUNCTIONS = [
     ("brands.hasselblad_night", "apply_hasselblad_night"),
 ]
 
-
-# (BGR channel means, stddevs, then q01/q25/q50/q75/q99 for each BGR channel)
-HSV_ROUND_TRIP_FINGERPRINTS = {
-    ("brands.fuji", "apply_pro_neg_std"): (
-        127.62030029, 128.67510986, 126.52734375, 65.90853967, 53.02543151,
-        63.63671084, 0.0, 35.0, 0.0, 72.0, 84.0, 76.0, 128.0, 127.0, 130.0,
-        183.0, 173.0, 180.0, 248.0, 226.0, 236.0,
-    ),
-    ("brands.fuji", "apply_pro_neg_hi"): (
-        127.04907227, 128.88391113, 128.75524902, 78.84088743, 91.57353056,
-        81.31213615, 0.0, 0.0, 0.0, 58.0, 42.0, 62.0, 124.0, 128.0, 125.0,
-        196.0, 220.0, 201.0, 255.0, 255.0, 255.0,
-    ),
-    ("brands.fuji", "apply_eterna_cinema"): (
-        144.97576904, 145.58489990, 139.61077881, 51.89278885, 44.96498061,
-        52.29090788, 46.0, 49.0, 33.0, 102.0, 110.0, 98.0, 142.0, 144.0,
-        139.0, 187.0, 182.0, 183.0, 245.0, 226.0, 235.0,
-    ),
-    ("brands.fuji", "apply_eterna_bleach_bypass"): (
-        177.40344238, 177.50573730, 177.84057617, 58.59764531, 64.03347735,
-        60.36362065, 33.0, 32.0, 32.83, 140.0, 130.0, 136.0, 191.0, 188.0,
-        193.0, 223.0, 236.0, 226.0, 255.0, 255.0, 255.0,
-    ),
-    ("brands.fuji", "apply_reala_ace"): (
-        129.70098877, 130.43536377, 129.87652588, 71.42089230, 70.99891750,
-        70.33031077, 10.0, 10.0, 10.0, 68.0, 69.0, 69.0, 129.0, 129.0, 130.0,
-        191.0, 192.0, 190.0, 254.0, 254.0, 253.0,
-    ),
-    ("brands.fuji", "apply_classic_negative"): (
-        163.22705078, 163.19525146, 164.64471436, 61.25137284, 68.69215624,
-        62.64817927, 26.0, 27.0, 27.0, 120.0, 107.0, 121.0, 162.0, 165.0,
-        165.0, 216.0, 229.0, 218.0, 255.0, 255.0, 255.0,
-    ),
-    ("brands.hasselblad_night", "apply_hasselblad_night"): (
-        123.11090088, 123.85662842, 123.93957520, 72.04034713, 76.66099063,
-        71.82608567, 5.0, 5.0, 5.0, 59.0, 57.0, 60.0, 126.0, 126.0, 127.0,
-        181.0, 192.0, 181.0, 237.0, 237.0, 237.0,
-    ),
-}
-
-HSV_FINGERPRINT_ATOL = 1.001
+HSV_GOLDEN_FIXTURE = (
+    Path(__file__).with_name("fixtures") / "hsv_golden_outputs.npz"
+)
 
 
 class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with np.load(HSV_GOLDEN_FIXTURE, allow_pickle=False) as fixture:
+            cls.expected_outputs = {
+                fn_name: fixture[fn_name].copy()
+                for _, fn_name in HSV_ROUND_TRIP_FUNCTIONS
+            }
+
     def test_reference_check_rejects_all_zero_hsv_round_trip_output(self):
         mod_name, fn_name = HSV_ROUND_TRIP_FUNCTIONS[0]
         mod = importlib.import_module(mod_name)
@@ -228,7 +195,7 @@ class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
         with mock.patch.object(mod, fn_name, return_value=zeros):
             output = getattr(mod, fn_name)(make_test_image())
             with self.assertRaises(AssertionError):
-                self._assert_matches_fingerprint(mod_name, fn_name, output)
+                self._assert_matches_reference(mod_name, fn_name, output)
 
     def test_reference_check_accepts_clipped_one_lsb_variation(self):
         for mod_name, fn_name in HSV_ROUND_TRIP_FUNCTIONS:
@@ -237,9 +204,20 @@ class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
                     make_test_image()
                 )
                 one_lsb_higher = np.minimum(output.astype(np.uint16) + 1, 255)
-                self._assert_matches_fingerprint(
+                self._assert_matches_reference(
                     mod_name, fn_name, one_lsb_higher.astype(np.uint8)
                 )
+
+    def test_reference_check_rejects_row_permutation(self):
+        mod_name, fn_name = HSV_ROUND_TRIP_FUNCTIONS[0]
+        output = getattr(importlib.import_module(mod_name), fn_name)(
+            make_test_image()
+        )
+
+        with self.assertRaises(AssertionError):
+            self._assert_matches_reference(
+                mod_name, fn_name, np.roll(output, 1, axis=0)
+            )
 
     def test_known_round_trip_looks_are_deterministic_uint8_images(self):
         for mod_name, fn_name in HSV_ROUND_TRIP_FUNCTIONS:
@@ -248,31 +226,26 @@ class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
                 first = fn(make_test_image())
                 second = fn(make_test_image())
 
-                self._assert_matches_fingerprint(mod_name, fn_name, first)
+                self._assert_matches_reference(mod_name, fn_name, first)
 
                 pixel_difference = np.abs(
                     first.astype(np.int16) - second.astype(np.int16)
                 ).max()
                 self.assertLessEqual(pixel_difference, 0)
 
-    def _assert_matches_fingerprint(self, mod_name, fn_name, output):
+    def _assert_matches_reference(self, mod_name, fn_name, output):
         self.assertEqual(output.shape, (128, 128, 3))
         self.assertEqual(output.dtype, np.uint8)
-        self.assertGreaterEqual(output.min(), 0)
-        self.assertLessEqual(output.max(), 255)
-
-        fingerprint = np.concatenate((
-            output.mean(axis=(0, 1)),
-            output.std(axis=(0, 1)),
-            np.quantile(output, (0.01, 0.25, 0.50, 0.75, 0.99),
-                        axis=(0, 1)).ravel(),
-        ))
-        np.testing.assert_allclose(
-            fingerprint,
-            HSV_ROUND_TRIP_FINGERPRINTS[(mod_name, fn_name)],
-            rtol=0,
-            atol=HSV_FINGERPRINT_ATOL,
-            err_msg=f"{mod_name}.{fn_name} output fingerprint changed",
+        expected = self.expected_outputs[fn_name]
+        self.assertEqual(output.shape, expected.shape)
+        self.assertEqual(output.dtype, expected.dtype)
+        pixel_difference = np.abs(
+            output.astype(np.int16) - expected.astype(np.int16)
+        ).max()
+        self.assertLessEqual(
+            pixel_difference,
+            1,
+            f"{mod_name}.{fn_name} pixel output changed beyond one LSB",
         )
 
 

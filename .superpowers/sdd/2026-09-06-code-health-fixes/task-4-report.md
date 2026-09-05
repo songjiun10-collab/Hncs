@@ -61,3 +61,21 @@ floating-point aggregation error beyond the documented one-LSB variation.
   test pass alongside the exact-hash checks (7 golden tests).
 - Final verification: `.venv/bin/python -m unittest discover -s tests` — 908
   tests, OK (43.144 s).
+
+## Final review P1 correction — position-preserving fixture
+
+Histogram-style fingerprints did not preserve pixel positions: a row
+permutation could pass while changing a pixel by as much as 248. The HSV
+checks now load `tests/fixtures/hsv_golden_outputs.npz`, which stores the seven
+known-good deterministic 128×128×3 uint8 outputs. Each function is compared
+at the same pixel position with `max |Δ| <= 1`.
+
+- Reproducibility: `tools/generate_hsv_golden_fixture.py` regenerates the
+  fixture from `make_test_image()` and the explicitly listed seven functions;
+  it is for an approved new baseline only.
+- RED: the row-permutation test failed under the histogram check because its
+  fingerprint was unchanged.
+- GREEN: row permutation and all-zero stubs are rejected; a clipped `+1` LSB
+  output is accepted. `tests.test_population_fit_look_golden` passed 8 tests.
+- Final verification: `.venv/bin/python -m unittest discover -s tests` — 909
+  tests, OK (24.240 s).
