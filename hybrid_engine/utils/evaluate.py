@@ -5,6 +5,7 @@
 """
 import numpy as np
 import colour
+from colour.utilities import to_domain_100
 
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
 
@@ -23,8 +24,8 @@ def delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0):
     비공개 API에 의존하지 않는다. kL=kC=kH=1.0이면 colour.delta_E(method=
     "CIE 2000")과 정확히 같아야 한다(tests/test_hybrid_engine.py의
     TestDeltaE2000Weighted가 확인)."""
-    Lab_1 = np.asarray(Lab_1, dtype=np.float64)
-    Lab_2 = np.asarray(Lab_2, dtype=np.float64)
+    Lab_1 = np.asarray(to_domain_100(Lab_1), dtype=np.float64)
+    Lab_2 = np.asarray(to_domain_100(Lab_2), dtype=np.float64)
     L_1, a_1, b_1 = np.moveaxis(Lab_1, -1, 0)
     L_2, a_2, b_2 = np.moveaxis(Lab_2, -1, 0)
 

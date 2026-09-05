@@ -455,6 +455,18 @@ class TestDeltaE2000Weighted(unittest.TestCase):
         mine = delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0)
         np.testing.assert_allclose(mine, official, atol=1e-9)
 
+    def test_matches_colour_science_with_domain_range_scale_one(self):
+        """CIEDE2000 formula inputs must honour colour's active Lab domain."""
+        import colour
+
+        Lab_1 = np.array([[0.50, 0.02, -0.10]])
+        Lab_2 = np.array([[0.55, 0.00, -0.08]])
+        with colour.domain_range_scale("1"):
+            expected = colour.delta_E(Lab_1, Lab_2, method="CIE 2000")
+            actual = delta_E_CIE2000_weighted(Lab_1, Lab_2)
+
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
     def test_calculates_when_colour_lacks_private_intermediate_helper(self):
         """Weighted ΔE must import when the private helper is unavailable."""
         import colour
