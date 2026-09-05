@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import colour
@@ -63,6 +64,33 @@ class TestReferencePatchesXyz(unittest.TestCase):
 
 
 class TestDetectAndSample(unittest.TestCase):
+    def test_detector_without_set_color_chart_type_uses_process_chart_type(self):
+        """OpenCV 4.x passes MCC24 to process() instead of exposing the
+        unavailable setColorChartType() method."""
+        quads = np.arange(24 * 4 * 2, dtype=np.float32).reshape(24, 4, 2)
+
+        class Checker:
+            def getColorCharts(self):
+                return quads
+
+        class Detector:
+            def process(self, image, chart_type):
+                self.image = image
+                self.chart_type = chart_type
+                return True
+
+            def getListColorChecker(self):
+                return [Checker()]
+
+        detector = Detector()
+        bgr_u8 = np.zeros((10, 10, 3), dtype=np.uint8)
+        with patch.object(chart_baseline.cv2.mcc, "CCheckerDetector_create",
+                          return_value=detector):
+            actual = chart_baseline._detect_chart_bgr8(bgr_u8)
+
+        self.assertEqual(detector.chart_type, chart_baseline.cv2.mcc.MCC24)
+        np.testing.assert_array_equal(actual, quads)
+
     def test_recovers_known_colors_from_synthetic_chart(self):
         ref = chart_baseline.reference_patches_linear_srgb()
         linear = _synthetic_chart_linear(ref)

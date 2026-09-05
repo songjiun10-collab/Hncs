@@ -3,11 +3,8 @@
 카메라 JPEG 또는 완성 그레이딩본)를 같은 Lab 도메인으로 변환해서 픽셀별
 색차를 계산한다. 인간 눈이 구별하기 힘든 수준은 대략 ΔE < 2.0.
 """
-from dataclasses import astuple
-
 import numpy as np
 import colour
-from colour.difference.delta_e import intermediate_attributes_CIE2000
 
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
 
@@ -21,14 +18,58 @@ def delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0):
     """CIEDE2000을 커스텀 (kL, kC, kH)로 계산. colour-science의
     delta_E_CIE2000()은 kL/kC/kH를 임의로 못 받는다(textiles=True일 때
     kL=2 고정만 지원 - 소스 확인함, colour/difference/delta_e.py). 결합
-    전 중간값(S_L, S_C, S_H, ΔL', ΔC', ΔH', R_T)을 반환하는
-    intermediate_attributes_CIE2000()을 재사용해서 직접 결합한다 -
-    hue 회전 등 복잡한 기하 계산은 colour-science 것을 그대로 쓰므로
-    재구현 위험이 없다. kL=kC=kH=1.0이면 colour.delta_E(method="CIE
-    2000")과 정확히 같아야 한다(tests/test_hybrid_engine.py의
+    전 중간값(S_L, S_C, S_H, ΔL', ΔC', ΔH', R_T)을 직접 계산해 결합한다.
+    colour-science 0.4.4에는 private intermediate helper가 없으므로 그
+    비공개 API에 의존하지 않는다. kL=kC=kH=1.0이면 colour.delta_E(method=
+    "CIE 2000")과 정확히 같아야 한다(tests/test_hybrid_engine.py의
     TestDeltaE2000Weighted가 확인)."""
-    S_L, S_C, S_H, delta_L_p, delta_C_p, delta_H_p, R_T = astuple(
-        intermediate_attributes_CIE2000(Lab_1, Lab_2))
+    Lab_1 = np.asarray(Lab_1, dtype=np.float64)
+    Lab_2 = np.asarray(Lab_2, dtype=np.float64)
+    L_1, a_1, b_1 = np.moveaxis(Lab_1, -1, 0)
+    L_2, a_2, b_2 = np.moveaxis(Lab_2, -1, 0)
+
+    C_1 = np.hypot(a_1, b_1)
+    C_2 = np.hypot(a_2, b_2)
+    C_bar = (C_1 + C_2) / 2
+    G = 0.5 * (1 - np.sqrt(C_bar ** 7 / (C_bar ** 7 + 25 ** 7)))
+    a_p_1, a_p_2 = (1 + G) * a_1, (1 + G) * a_2
+    C_p_1, C_p_2 = np.hypot(a_p_1, b_1), np.hypot(a_p_2, b_2)
+    h_p_1 = np.where((a_p_1 == 0) & (b_1 == 0), 0,
+                     np.degrees(np.arctan2(b_1, a_p_1)) % 360)
+    h_p_2 = np.where((a_p_2 == 0) & (b_2 == 0), 0,
+                     np.degrees(np.arctan2(b_2, a_p_2)) % 360)
+
+    delta_L_p = L_2 - L_1
+    delta_C_p = C_p_2 - C_p_1
+    product = C_p_1 * C_p_2
+    hue_difference = h_p_2 - h_p_1
+    delta_h_p = np.select(
+        [product == 0, np.abs(hue_difference) <= 180,
+         hue_difference > 180, hue_difference < -180],
+        [0, hue_difference, hue_difference - 360, hue_difference + 360],
+    )
+    delta_H_p = 2 * np.sqrt(product) * np.sin(np.deg2rad(delta_h_p / 2))
+
+    L_bar = (L_1 + L_2) / 2
+    C_bar = (C_p_1 + C_p_2) / 2
+    hue_sum = h_p_1 + h_p_2
+    hue_separation = np.abs(h_p_1 - h_p_2)
+    h_bar = np.select(
+        [product == 0, hue_separation <= 180,
+         (hue_separation > 180) & (hue_sum < 360),
+         (hue_separation > 180) & (hue_sum >= 360)],
+        [hue_sum, hue_sum / 2, (hue_sum + 360) / 2, (hue_sum - 360) / 2],
+    )
+    T = (1 - 0.17 * np.cos(np.deg2rad(h_bar - 30))
+         + 0.24 * np.cos(np.deg2rad(2 * h_bar))
+         + 0.32 * np.cos(np.deg2rad(3 * h_bar + 6))
+         - 0.20 * np.cos(np.deg2rad(4 * h_bar - 63)))
+    R_C = 2 * np.sqrt(C_bar ** 7 / (C_bar ** 7 + 25 ** 7))
+    delta_theta = 30 * np.exp(-((h_bar - 275) / 25) ** 2)
+    S_L = 1 + 0.015 * (L_bar - 50) ** 2 / np.sqrt(20 + (L_bar - 50) ** 2)
+    S_C = 1 + 0.045 * C_bar
+    S_H = 1 + 0.015 * C_bar * T
+    R_T = -np.sin(np.deg2rad(2 * delta_theta)) * R_C
     return np.sqrt(
         (delta_L_p / (kL * S_L)) ** 2
         + (delta_C_p / (kC * S_C)) ** 2
