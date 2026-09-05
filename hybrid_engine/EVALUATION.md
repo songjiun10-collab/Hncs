@@ -4162,3 +4162,86 @@ LookTable(3D), 조명별 분리 프로필, 또는 애초에 챠트 표본을 9�
 그대로 남아 있다.
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_huesatmap_full_srgb`.
+
+## 후지 필름모드 분리력 - 같은 장면 묶음, 부트스트랩 CI 없음(리드) (2026-09-04)
+
+사용자가 준 리드("후지에 같은장면 필터만 바꿔서 찍은거 있음")로만 던질
+수 있는 질문을 쟀다: `brands/fuji.py`의 필름시뮬레이션 룩들이 카메라가
+실제로 만드는 모드 간 차이만큼 서로 벌어져 있는가. 보통은 장면이 전부
+달라 "모드 차이"와 "장면 차이"가 섞여 이 질문 자체가 안 선다.
+묶음은 `tools/find_fuji_same_scene_film_mode_groups.py`가 찾았고
+(리포트 `datasets/fuji/contributed/local-work-2026-08/same_scene_film_mode_groups.json`),
+측정은 `tools/evaluate_fuji_film_mode_separation.py`, 결과는
+`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`.
+
+**먼저, 이 절은 부트스트랩 CI를 내지 않는다.** 유효 묶음이 1개(11장)
+뿐이고 쌍들이 프레임을 공유해 독립 표본이 아니라 `summarize()`를 그대로
+쓸 수 없다. 따라서 아래는 **판정이 아니라 리드**이고, 확정하려면 같은
+장면 묶음을 더 모아야 한다(`hybrid_engine/CLAUDE.md`의 CI 규칙을 만족
+못 하므로 승자 선언을 하지 않는다).
+
+**대조군을 붙이며 해석이 두 번 뒤집혔다 - 그 과정이 이 절의 핵심이다.**
+
+1. 초판(`tools/evaluate_fuji_film_mode_separation.py`)은 같은 프레임에
+   두 룩을 적용한 거리(`model_same_frame_de00`)만 실제 JPEG 모드거리
+   (`ground_truth_de00`)와 비교했다. 그런데 실제 거리에는 프레이밍/노출
+   흔들림이 섞이고 룩 거리에는 안 섞여 비대칭이었다.
+2. 그래서 실제 거리와 **같은 프레임쌍**으로 룩 거리를 다시 냈더니
+   `film_mode_separation_report.json`의 `model_cross_frame_de00`이
+   18.292~23.383으로 나왔다(실행 확인됨) - 같은 파일의
+   `ground_truth_de00` 3.200~6.101의 몇 배라 "룩이 모드를 과하게
+   벌려놓는다"고 읽힐 수 있는 값이었다. 하지만 같은 프레임쌍에 **같은
+   룩**을 양쪽 적용하는 대조군을 안 뒀던 게 문제였다.
+3. 대조군을 넣자 `film_mode_separation_report.json`의
+   `model_same_look_control_de00`이 19.646~22.309로(실행 확인됨) 위
+   `model_cross_frame_de00`과 거의 같았다. 즉 그 숫자는 모드 분리력이
+   아니라 프레임 변동이었다.
+4. 마지막으로 룩을 안 씌운 neutral 렌더끼리의 거리를 기준선으로 재보니
+   `film_mode_separation_report.json`의
+   `neutral_baseline_cross_frame_de00`이 21.560~25.042였다(실행 확인됨).
+   **같은 파일 `look_frame_variation_amplification` 기준 룩의 증폭률은
+   0.89~1.31배다** - 룩이 변동을 키운 게 아니라, `tools/calibrate.py`의
+   `load_neutral_render()` 경로에 카메라의 AE/AWB에 해당하는 정규화가
+   없어서 입력 자체가 그만큼 달랐던 것이다(같은 장면 같은 모드의 카메라
+   JPEG끼리는 1.293 - 같은 파일 `within_mode_floor_de00`). **3번 직후
+   "룩이 프레임 변동을 크게 증폭한다"고 읽었던 해석은 이 기준선으로
+   반증됐다.**
+
+결론적으로 `model_cross_frame_de00` 계열은 입력 잡음이 신호를 압도해
+쓸 수 없고(위 `film_mode_separation_report.json` 기준 21~25 대 3~6),
+장면 요인이 0인 `model_same_frame_de00`만 정보를 준다.
+
+**유효한 묶음은 1개뿐이다.** 묶음 2는 실제 모드거리 2.680이 그 묶음의
+모드 내 바닥 3.072보다 작아 비교가 성립하지 않는다
+(`film_mode_separation_report.json`의
+`ground_truth_above_within_mode_floor: false`). 묶음 3은 Velvia에 대응
+함수가 없다. 아래는 묶음 1(GFX50S II 11장, 모드 내 바닥 1.293, n=19):
+
+| 모드 쌍 | 실제 JPEG 모드거리 | 룩 거리(same-frame) | 비율(CI 없음, 판정 아님) | 값 출처(실행 확인됨) |
+|---|---|---|---|---|
+| Classic Chrome vs Classic Negative | 6.101 (n=12) | 4.389 | **0.72** | `film_mode_separation_report.json` |
+| Classic Chrome vs Nostalgic Neg | 4.966 (n=6) | 6.381 | 1.28 | `film_mode_separation_report.json` |
+| Classic Negative vs Nostalgic Neg | 3.200 (n=18) | 9.192 | **2.87** | `film_mode_separation_report.json` |
+
+**읽는 법**: 실제 거리에는 프레이밍 흔들림(바닥 1.293,
+`film_mode_separation_report.json`의 `within_mode_floor_de00`)이 섞여
+있고 `model_same_frame_de00`에는 없으므로, 위 비율은 **하한**이다 -
+실제 비율은 이보다 높다.
+
+**가장 눈에 띄는 것**: `film_mode_separation_report.json` 기준
+`apply_classic_negative`와 `apply_nostalgic_neg`가 카메라가 그 두 모드를
+가르는 것보다 최소 2.87배 멀리 떨어져 있다. 반대로 Classic Chrome vs
+Classic Negative는 0.72로 오히려 덜 벌어져 있다(같은 파일). 즉 룩들이
+"구분이 안 된다"는 게 아니라 **구분의 크기가 모드쌍마다 어긋나 있다**.
+다만 위 CI 단서대로 이건 리드다.
+
+**부수 발견**: `film_mode_separation_report.json`의 묶음 3에서 Provia와
+Velvia의 실제 모드거리는 4.310으로 그 묶음 바닥 0.336보다 한참 위인데,
+`brands/fuji.py`에는 `apply_velvia`가 없다 - `tests/test_brands.py`의
+`FUJI_COLOR_PRESETS` 13개에 Velvia가 빠져 있다. 측정된 크기가 있는
+미구현 모드다.
+
+**배포 아님**: `apply_*`도 프로필도 수정하지 않았다. 측정만 했다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.find_fuji_same_scene_film_mode_groups 0.45`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_film_mode_separation`.
