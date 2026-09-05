@@ -4243,5 +4243,49 @@ Velvia의 실제 모드거리는 4.310으로 그 묶음 바닥 0.336보다 한�
 
 **배포 아님**: `apply_*`도 프로필도 수정하지 않았다. 측정만 했다.
 
+### 확장: GFX100RF 세트로 두 번째 유효 측정 (같은 날)
+
+위 리드를 판정으로 올리려면 묶음이 더 필요해서 두 스크립트에 세트 인자를
+붙이고 `datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08`에서
+다시 찾았다(그 세트의 필름모드는 Provia 51 / Reala ACE 11로, 둘 다
+`brands/fuji.py`에 대응 함수가 있다). 임계 0.45에서 묶음 1개(5장,
+Provia 2 + Reala ACE 3)가 나왔고 결과는
+`datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/film_mode_separation_report.json`
+에 있다(실행 확인됨).
+
+| 모드 쌍 | 세트 | 모드 내 바닥 | 실제 JPEG 모드거리 | 룩 거리(same-frame) | 비율(CI 없음, 판정 아님) |
+|---|---|---|---|---|---|
+| Provia vs Reala ACE | `dpreview-gfx100rf-preprod-2026-08` | 5.182 (n=4) | 9.702 (n=6) | 6.898 | **0.71** |
+
+**재현된 것 하나**: 이 세트에서도 룩의 증폭률은 1.07배였다(neutral 기준선
+10.448 → 룩 적용 후 11.209 -
+`datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/film_mode_separation_report.json`,
+실행 확인됨). 이는
+`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`
+의 0.89~1.31배와 같은 범위다 - **다른 카메라(GFX100RF vs GFX50S II),
+다른 세트, 다른 모드쌍에서 "룩이 프레임 변동을 증폭하지 않는다"가
+재현됐다.** 앞 절 4번 단계에서 오해석을 반증한 근거가 우연이 아니었다는
+뜻이다.
+
+**여전히 부트스트랩 CI는 못 낸다.** 유효 모드쌍이 4개(위 3개 + 이번 1개)로
+늘었을 뿐, 서로 다른 모드쌍이라 페어드 표본이 아니고 쌍끼리 프레임을
+공유한다. 등급은 그대로 리드다.
+
+**비율은 0.71~2.87로 흩어져 있다** - 앞 절 표
+(`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`)
+의 0.72/1.28/2.87과 이번 0.71을 합친 범위다. 한 방향으로 치우친 게
+아니라 모드쌍마다 과/부족이 갈린다는 앞 절의 관찰이 네 번째 데이터점
+에서도 유지된다. Provia vs Reala ACE의 0.71은 Classic Chrome vs
+Classic Negative의 0.72와 거의 같은 "덜 벌어짐" 쪽이다.
+
+**측정 방법의 한계 하나(기록)**: 이 세트의 모드 내 바닥 5.182는
+`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`
+묶음 1의 1.293보다 훨씬 크다. dpreview 샘플 갤러리라 같은 장면이라도
+프레이밍 차이가 커서다. 바닥이 클수록 실제 모드거리가 부풀려져 비율이
+낮게 나오므로, 위 0.71은 특히 하한으로 읽어야 한다.
+
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.find_fuji_same_scene_film_mode_groups 0.45`,
-`~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_film_mode_separation`.
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_film_mode_separation`,
+그리고 세트 인자를 준
+`... -m tools.find_fuji_same_scene_film_mode_groups 0.45 dpreview-gfx100rf-preprod-2026-08`,
+`... -m tools.evaluate_fuji_film_mode_separation dpreview-gfx100rf-preprod-2026-08`.

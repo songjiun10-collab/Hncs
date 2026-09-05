@@ -1,0 +1,44 @@
+{
+  "question": "brands/fuji.py의 필름시뮬레이션 룩들이 실제 모드 간 차이만큼 서로 벌어져 있는가 - 같은 장면 묶음이라야 답할 수 있는 질문",
+  "lead": "사용자 제보(2026-09-04): 후지에 같은 장면 필터만 바꿔 찍은 것 있음",
+  "metric": "이미지 전역 평균 Lab 사이의 ΔE00. 묶음 안 프레임이 픽셀 정렬돼 있지 않아 화소별 비교는 불가",
+  "within_mode_floor_meaning": "같은 모드 JPEG끼리의 거리 - 프레이밍/노출 흔들림이 만드는 바닥. 실제 모드 간 거리가 이보다 크지 않으면 비교 자체가 성립하지 않는다",
+  "input_render": "tools.calibrate.load_neutral_render(raw, max_dim=400) - tools/evaluate_fuji_preset_de00.py와 동일 경로",
+  "unmapped_modes": "Velvia는 brands/fuji.py에 대응 apply_* 함수가 없어 룩 거리 계산에서 빠진다",
+  "deployment": "배포 아님 - 어떤 apply_*나 프로필도 수정하지 않는다",
+  "set": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08",
+  "groups": [
+    {
+      "group": 1,
+      "camera": "GFX100RF",
+      "n_frames": 5,
+      "modes": [
+        "F0/Standard (Provia)",
+        "Reala ACE"
+      ],
+      "within_mode_floor_de00": 5.181769330781048,
+      "n_within_pairs": 4,
+      "n_decoded": 5,
+      "pairs": [
+        {
+          "mode_a": "F0/Standard (Provia)",
+          "mode_b": "Reala ACE",
+          "look_a": "apply_provia",
+          "look_b": "apply_reala_ace",
+          "ground_truth_de00": 9.701670488228606,
+          "n_gt_pairs": 6,
+          "model_cross_frame_de00": 13.16355627855179,
+          "model_same_look_control_de00": 11.209093681704212,
+          "neutral_baseline_cross_frame_de00": 10.44758583819767,
+          "look_frame_variation_amplification": 1.072888402670249,
+          "n_model_cross_pairs": 6,
+          "model_same_frame_de00": 6.897878249102885,
+          "n_model_same_frames": 5,
+          "ratio_same_frame_over_ground_truth": 0.7109990240827427,
+          "ground_truth_above_within_mode_floor": true,
+          "model_cross_above_same_look_control": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "purpose": "같은 장면을 필름시뮬레이션만 바꿔 촬영한 묶음 - 필름모드 변환 자체만 분리해서 평가할 수 있는 부분집합",
+  "lead": "사용자 제보(2026-09-04): 후지에 같은 장면 필터만 바꿔 찍은 것 있음",
+  "set": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08",
+  "grouping": "표준화 32x32 그레이스케일 썸네일 평균 절대차 <= 0.45, 같은 바디끼리만, union-find",
+  "why_not_time": "local-work-2026-08의 GFX50S II는 카메라 시계 미설정으로 DateTimeOriginal이 전부 2021:01:01 00:00~00:01 - 104장이 80초 안에 들어가 시간으로는 장면이 안 갈린다",
+  "n_jpeg": 63,
+  "n_scene_clusters": 59,
+  "n_multi_mode_clusters": 1,
+  "groups": [
+    {
+      "camera": "GFX100RF",
+      "n_frames": 5,
+      "film_modes": [
+        "F0/Standard (Provia)",
+        "Reala ACE"
+      ],
+      "max_intra_distance": 0.6700255418446552,
+      "frames": [
+        {
+          "jpeg": "2817545232.jpg",
+          "raw": "9210172390.raf",
+          "time": "2025:02:17 02:31:03",
+          "film_mode": "F0/Standard (Provia)"
+        },
+        {
+          "jpeg": "8310556322.jpg",
+          "raw": "1172760108.raf",
+          "time": "2025:03:21 21:25:22",
+          "film_mode": "Reala ACE"
+        },
+        {
+          "jpeg": "9089923413.jpg",
+          "raw": "1662919625.raf",
+          "time": "2025:03:21 21:19:58",
+          "film_mode": "Reala ACE"
+        },
+        {
+          "jpeg": "0308305322.jpg",
+          "raw": "3164253496.raf",
+          "time": "2025:03:21 21:25:53",
+          "film_mode": "Reala ACE"
+        },
+        {
+          "jpeg": "1828279182.jpg",
+          "raw": "9491094006.raf",
+          "time": "2025:03:18 03:19:13",
+          "film_mode": "F0/Standard (Provia)"
+        }
+      ]
+    }
+  ]
+}
