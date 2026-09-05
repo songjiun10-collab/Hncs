@@ -234,11 +234,11 @@ class TestRecordedV2Run(unittest.TestCase):
     def test_recorded_numbers_match_evaluation_md(self):
         rec = self.rep["stats"]
         self.assertEqual(self.rep["n_pairs"], 47)
-        self.assertAlmostEqual(rec["mean_base"], 16.7007, places=3)
-        self.assertAlmostEqual(rec["mean_new"], 15.2317, places=3)
-        self.assertEqual((rec["wins"], rec["losses"]), (39, 8))
-        self.assertAlmostEqual(rec["ci_lo"], 1.0738, places=3)
-        self.assertAlmostEqual(rec["ci_hi"], 1.8493, places=3)
+        self.assertAlmostEqual(rec["mean_base"], 15.2787, places=3)
+        self.assertAlmostEqual(rec["mean_new"], 12.3201, places=3)
+        self.assertEqual((rec["wins"], rec["losses"]), (46, 1))
+        self.assertAlmostEqual(rec["ci_lo"], 2.5039, places=3)
+        self.assertAlmostEqual(rec["ci_hi"], 3.4143, places=3)
 
     def test_criterion_passed_and_ci_excludes_zero(self):
         self.assertTrue(self.rep["criterion_passed"])
@@ -249,7 +249,7 @@ class TestRecordedV2Run(unittest.TestCase):
         self.assertFalse(self.rep["modifies_shipped_code"])
 
     def test_full_sample_constants_are_the_recorded_ones(self):
-        self.assertEqual(self.rep["full_sample_combo"], [0.0, 0.78, 1.0, 0.4])
+        self.assertEqual(self.rep["full_sample_combo"], [0.0, 0.82, 1.0, 0.2])
 
 
 class TestRecordedBoundaryProbe(unittest.TestCase):
@@ -258,19 +258,25 @@ class TestRecordedBoundaryProbe(unittest.TestCase):
         cls.rep = _load("classic_negative_v2_boundary_probe.json")
 
     def test_toe_lift_boundary_is_a_true_optimum(self):
-        self.assertFalse(self.rep["toe_lift_boundary_binds"])
+        self.assertFalse(self.rep["boundary_binds"]["toe_lift"])
         sweep = self.rep["toe_lift_sweep"]
         # 하한 밖으로 갈수록 단조 악화
         ordered = [sweep[k] for k in sorted(sweep, key=float)]
         self.assertEqual(ordered, sorted(ordered, reverse=True))
 
     def test_white_point_escape_is_negligible(self):
-        self.assertTrue(self.rep["white_point_boundary_binds"])
+        self.assertTrue(self.rep["boundary_binds"]["white_point"])
         sweep = self.rep["white_point_sweep"]
         gain = self.rep["baseline_de00"] - min(sweep.values())
         # 현행 계열에서 같은 탈출구가 6.5 ΔE00을 가져갔던 것과 대비된다
         self.assertLess(gain, 0.15)
-        self.assertAlmostEqual(gain, 0.0944, places=3)
+        self.assertAlmostEqual(gain, 0.0525, places=3)
+
+    def test_shoulders_and_saturation_edges_are_recorded(self):
+        self.assertTrue(self.rep["boundary_binds"]["shoulder_start"])
+        self.assertTrue(self.rep["boundary_binds"]["sat_mult"])
+        self.assertIn("0.999", self.rep["shoulder_start_sweep"])
+        self.assertIn("0.15", self.rep["sat_mult_sweep"])
 
 
 class TestRecordedOffsetDiagnostics(unittest.TestCase):
