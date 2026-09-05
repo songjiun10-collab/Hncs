@@ -103,3 +103,10 @@ $ python3 -m unittest tests.test_fuji_classic_negative_recalibration
 Ran 30 tests
 OK
 ```
+
+## Corrected report artifact committed
+
+The corrected `autobright_vs_look_classic_negative.json` contains the 47
+linear-domain paired ΔE arrays and their recomputed statistics (15.2787 →
+11.4546, +25.028995%).  It is a required Task 2 artifact: without it a clean
+checkout retains the pre-fix values and the recorded-results regression fails.
