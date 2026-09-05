@@ -1,0 +1,10 @@
+{
+  "purpose": "매니페스트 raw<->jpeg 짝을 RAW 내장 프리뷰로 검증",
+  "set": "datasets/fuji/contributed/local-work-2026-08",
+  "method": "RAF 내장 프리뷰와 JPEG를 표준화 32x32 그레이스케일 썸네일로 만들어 평균 절대차 비교. 매니페스트가 지정한 짝보다 파일번호가 같은 JPEG이 더 가까우면 오매칭으로 판정",
+  "n_dscf_rows": 180,
+  "n_checked": 180,
+  "n_mismatched": 0,
+  "raw_without_preview": [],
+  "mismatches": []
+}

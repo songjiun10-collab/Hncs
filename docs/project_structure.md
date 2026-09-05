@@ -198,6 +198,9 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/recover_kmichels_x2dii_chart.py` | kmichels-x2dii-2026-07 챠트 세트가 로컬에서 유실된 것을 manifest.csv의 구글드라이브 URL로 검증 후 8장 복원(1장은 URL 자체가 manifest에 없어 복구 불가) |
 | `tools/validate_chart_pipeline_on_external_camera.py` | 챠트 기반 파이프라인이 하셀블라드 전용 우연이 아닌지 완전히 다른 카메라(Sony A57/Canon 1Ds III/Nikon D40, York University raw_2_raw/illuminant 데이터셋)로 방법론만 검증 - 배포 매트릭스에는 미반영, 카메라가 2012~2013년식이라 세대 자체가 다름 |
 | `tools/breakdown_fuji_provia_by_camera_body.py` | `apply_provia()` 검증(119쌍)이 GFX100RF(89/89) 위주였던 편중을 바디별로 분해해 재확인 |
+| `tools/find_fuji_same_scene_film_mode_groups.py` | 사용자 제보 리드(2026-09-04 "후지에 같은장면 필터만 바꿔서 찍은거 있음")를 따라 `local-work-2026-08`에서 같은 장면·필름모드만 다른 묶음을 찾음 - 장면이 상수로 고정돼 필름모드 변환 자체만 분리 평가할 수 있는 부분집합. **시간으로는 못 찾는다**(이 세트 GFX50S II는 시계 미설정이라 246장이 전부 `2021:01:01 00:00~00:01`)는 걸 확인하고 표준화 32x32 썸네일 거리 + union-find로 내용 기반 묶음. 임계 0.45에서 GFX50S II 3묶음(11/7/4장), 그중 4장짜리가 Provia vs Velvia 정대조군 |
+| `tools/verify_fuji_manifest_pairing.py` | 위 작업 중 눈에 띈 매니페스트 raw↔jpeg 엇갈림을 RAF 내장 프리뷰로 검증 - 오매칭 8행 확정(매니페스트 지정 JPEG 거리 0.0911~1.1419 vs 같은 번호 JPEG 0.0009~0.0019) + 고아 1행. 커밋 `1a759a5`의 페어 매칭 버그 잔여분 |
+| `tools/fix_fuji_manifest_pairing.py` | 위 검증 결과를 매니페스트에 반영(8행 수정 + 고아 1행 제거). 영향 필름모드는 Classic Negative 4/Classic Chrome 1/Nostalgic Neg 2로 Provia는 없어 `fuji_generic_jpeg_approx.icc`(Provia 필터, n=119)는 무관. 프로필은 건드리지 않음 |
 | `tools/write_dpreview_manifest.py` | dpreview 위젯 DB에서 받은 브랜드 raw/ 폴더를 manifest.csv(image_id/camera/product_id/raw_file_url)로 박제하고 raw/를 지우는 디스크 확보용 CLI |
 | `tools/match_dpreview_downloads_by_hash.py` | 브라우저 blob 다운로드가 이 앱 샌드박스에서 익명 파일명으로 저장되는 문제를 콘텐츠 SHA-256 매칭으로 해결하는 다운로드-후처리 CLI |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |

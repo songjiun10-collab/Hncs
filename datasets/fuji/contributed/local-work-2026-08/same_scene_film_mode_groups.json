@@ -1,0 +1,178 @@
+{
+  "purpose": "같은 장면을 필름시뮬레이션만 바꿔 촬영한 묶음 - 필름모드 변환 자체만 분리해서 평가할 수 있는 부분집합",
+  "lead": "사용자 제보(2026-09-04): 후지에 같은 장면 필터만 바꿔 찍은 것 있음",
+  "set": "datasets/fuji/contributed/local-work-2026-08",
+  "grouping": "표준화 32x32 그레이스케일 썸네일 평균 절대차 <= 0.45, 같은 바디끼리만, union-find",
+  "why_not_time": "이 세트 GFX50S II는 카메라 시계 미설정으로 DateTimeOriginal이 전부 2021:01:01 00:00~00:01 - 104장이 80초 안에 들어가 시간으로는 장면이 안 갈린다",
+  "n_jpeg": 246,
+  "n_scene_clusters": 141,
+  "n_multi_mode_clusters": 3,
+  "groups": [
+    {
+      "camera": "GFX50S II",
+      "n_frames": 11,
+      "film_modes": [
+        "Classic Chrome",
+        "Classic Negative",
+        "Nostalgic Neg"
+      ],
+      "max_intra_distance": 0.5369398341413859,
+      "frames": [
+        {
+          "jpeg": "DSCF9361.JPG",
+          "raw": "DSCF9361.RAF",
+          "time": "2021:01:01 00:02:00",
+          "film_mode": "Classic Negative"
+        },
+        {
+          "jpeg": "DSCF9360.JPG",
+          "raw": "DSCF9360.RAF",
+          "time": "2021:01:01 00:01:49",
+          "film_mode": "Classic Negative"
+        },
+        {
+          "jpeg": "DSCF9362.JPG",
+          "raw": "DSCF9362.RAF",
+          "time": "2021:01:01 00:02:02",
+          "film_mode": "Classic Negative"
+        },
+        {
+          "jpeg": "DSCF9363.JPG",
+          "raw": "DSCF9363.RAF",
+          "time": "2021:01:01 00:02:07",
+          "film_mode": "Classic Negative"
+        },
+        {
+          "jpeg": "DSCF9401.JPG",
+          "raw": "DSCF9401.RAF",
+          "time": "2021:01:01 00:02:55",
+          "film_mode": "Classic Chrome"
+        },
+        {
+          "jpeg": "DSCF9402.JPG",
+          "raw": "DSCF9402.RAF",
+          "time": "2021:01:01 00:02:56",
+          "film_mode": "Classic Chrome"
+        },
+        {
+          "jpeg": "DSCF9364.JPG",
+          "raw": "DSCF9364.RAF",
+          "time": "2021:01:01 00:02:08",
+          "film_mode": "Classic Negative"
+        },
+        {
+          "jpeg": "DSCF9358.JPG",
+          "raw": "DSCF9428.RAF",
+          "time": "2021:01:01 00:01:39",
+          "film_mode": "Classic Negative"
+        },
+        {
+          "jpeg": "DSCF9355.JPG",
+          "raw": "DSCF9355.RAF",
+          "time": "2021:01:01 00:01:05",
+          "film_mode": "Nostalgic Neg"
+        },
+        {
+          "jpeg": "DSCF9357.JPG",
+          "raw": "DSCF9357.RAF",
+          "time": "2021:01:01 00:01:11",
+          "film_mode": "Nostalgic Neg"
+        },
+        {
+          "jpeg": "DSCF9356.JPG",
+          "raw": "DSCF9356.RAF",
+          "time": "2021:01:01 00:01:10",
+          "film_mode": "Nostalgic Neg"
+        }
+      ]
+    },
+    {
+      "camera": "GFX50S II",
+      "n_frames": 7,
+      "film_modes": [
+        "Classic Chrome",
+        "Nostalgic Neg"
+      ],
+      "max_intra_distance": 0.6026320730642847,
+      "frames": [
+        {
+          "jpeg": "DSCF9412.JPG",
+          "raw": "DSCF9412.RAF",
+          "time": "2021:01:01 00:00:30",
+          "film_mode": "Classic Chrome"
+        },
+        {
+          "jpeg": "DSCF9411.JPG",
+          "raw": "DSCF9411.RAF",
+          "time": "2021:01:01 00:00:22",
+          "film_mode": "Classic Chrome"
+        },
+        {
+          "jpeg": "DSCF9341.JPG",
+          "raw": "DSCF9342.RAF",
+          "time": "2021:01:01 00:01:03",
+          "film_mode": "Nostalgic Neg"
+        },
+        {
+          "jpeg": "DSCF9342.JPG",
+          "raw": "DSCF9341.RAF",
+          "time": "2021:01:01 00:01:03",
+          "film_mode": "Nostalgic Neg"
+        },
+        {
+          "jpeg": "DSCF9346.JPG",
+          "raw": "DSCF9346.RAF",
+          "time": "2021:01:01 00:03:09",
+          "film_mode": "Nostalgic Neg"
+        },
+        {
+          "jpeg": "DSCF9347.JPG",
+          "raw": "DSCF9347.RAF",
+          "time": "2021:01:01 00:03:13",
+          "film_mode": "Nostalgic Neg"
+        },
+        {
+          "jpeg": "DSCF9345.JPG",
+          "raw": "DSCF9345.RAF",
+          "time": "2021:01:01 00:03:08",
+          "film_mode": "Nostalgic Neg"
+        }
+      ]
+    },
+    {
+      "camera": "GFX50S II",
+      "n_frames": 4,
+      "film_modes": [
+        "F0/Standard (Provia)",
+        "F2/Fujichrome (Velvia)"
+      ],
+      "max_intra_distance": 0.45425926860481786,
+      "frames": [
+        {
+          "jpeg": "DSCF9239.JPG",
+          "raw": "DSCF9239.RAF",
+          "time": "2021:01:01 00:05:40",
+          "film_mode": "F0/Standard (Provia)"
+        },
+        {
+          "jpeg": "DSCF9243.JPG",
+          "raw": "DSCF9243.RAF",
+          "time": "2021:01:01 00:06:45",
+          "film_mode": "F2/Fujichrome (Velvia)"
+        },
+        {
+          "jpeg": "DSCF9240.JPG",
+          "raw": "DSCF9240.RAF",
+          "time": "2021:01:01 00:05:42",
+          "film_mode": "F0/Standard (Provia)"
+        },
+        {
+          "jpeg": "DSCF9244.JPG",
+          "raw": "DSCF9244.RAF",
+          "time": "2021:01:01 00:06:47",
+          "film_mode": "F2/Fujichrome (Velvia)"
+        }
+      ]
+    }
+  ]
+}
