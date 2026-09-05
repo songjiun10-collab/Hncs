@@ -56,3 +56,27 @@ imports successfully with the installed colour-science 0.4.4.
 Existing committed Fuji JSON reports retain values produced before this domain
 fix. They are preserved per scope, but must not be treated as recomputed output
 of the corrected tools until their expensive RAW evaluations are rerun.
+
+## Review follow-up — shared CIEDE2000 terms
+
+Review found the residual verifier had copied the CIEDE2000 intermediate
+calculation without the achromatic signed-zero hue guard.  Added
+`TestDeltaEColorDomain.test_l_channel_terms_treat_signed_zero_as_achromatic`.
+It failed before the repair because the verifier helper returned six values
+instead of the shared seven-value intermediate contract (including `R_T`).
+
+Moved the only intermediate formula to
+`hybrid_engine.utils.evaluate._cie2000_intermediate_terms`; the existing
+weighted ΔE function and residual verifier both consume it.  The shared helper
+retains the `np.where((a_p == 0) & (b == 0), 0, atan2(...))` guard, so signed
+zero cannot create a spurious achromatic hue.
+
+```text
+$ python3 -m unittest tests.test_fuji_classic_negative_recalibration.TestDeltaEColorDomain tests.test_hybrid_engine.TestDeltaE2000Weighted
+Ran 8 tests
+OK
+
+$ python3 -m unittest tests.test_fuji_classic_negative_recalibration
+Ran 29 tests
+OK
+```

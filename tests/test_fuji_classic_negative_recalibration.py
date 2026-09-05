@@ -160,7 +160,21 @@ class TestDeltaEColorDomain(unittest.TestCase):
         """The research verifier must run with colour-science 0.4.4's public API."""
         import hybrid_engine.verify_l_channel_residual as residual
 
-        self.assertTrue(callable(residual._cie2000_lch_terms))
+        self.assertTrue(callable(residual._cie2000_intermediate_terms))
+
+    def test_l_channel_terms_treat_signed_zero_as_achromatic(self):
+        """Signed zero in an achromatic Lab input must not change CIEDE2000 terms."""
+        import hybrid_engine.verify_l_channel_residual as residual
+
+        signed_zero = np.array([[50.0, -0.0, -0.0]])
+        zero = np.array([[50.0, 0.0, 0.0]])
+        chromatic = np.array([[55.0, 20.0, 10.0]])
+        signed_terms = residual._cie2000_intermediate_terms(signed_zero, chromatic)
+        zero_terms = residual._cie2000_intermediate_terms(zero, chromatic)
+
+        self.assertEqual(len(signed_terms), 7)
+        for signed, expected in zip(signed_terms, zero_terms):
+            np.testing.assert_allclose(signed, expected, atol=1e-12)
 
 
 class TestRecordedV2Run(unittest.TestCase):

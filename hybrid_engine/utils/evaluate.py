@@ -24,15 +24,8 @@ def bgr_u8_to_linear_rgb(bgr_u8):
     return colour.cctf_decoding(rgb, function="sRGB")
 
 
-def delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0):
-    """CIEDE2000을 커스텀 (kL, kC, kH)로 계산. colour-science의
-    delta_E_CIE2000()은 kL/kC/kH를 임의로 못 받는다(textiles=True일 때
-    kL=2 고정만 지원 - 소스 확인함, colour/difference/delta_e.py). 결합
-    전 중간값(S_L, S_C, S_H, ΔL', ΔC', ΔH', R_T)을 직접 계산해 결합한다.
-    colour-science 0.4.4에는 private intermediate helper가 없으므로 그
-    비공개 API에 의존하지 않는다. kL=kC=kH=1.0이면 colour.delta_E(method=
-    "CIE 2000")과 정확히 같아야 한다(tests/test_hybrid_engine.py의
-    TestDeltaE2000Weighted가 확인)."""
+def _cie2000_intermediate_terms(Lab_1, Lab_2):
+    """CIEDE2000 결합 전의 S_L/S_C/S_H, ΔL'/ΔC'/ΔH', R_T를 구한다."""
     Lab_1 = np.asarray(to_domain_100(Lab_1), dtype=np.float64)
     Lab_2 = np.asarray(to_domain_100(Lab_2), dtype=np.float64)
     L_1, a_1, b_1 = np.moveaxis(Lab_1, -1, 0)
@@ -80,6 +73,20 @@ def delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0):
     S_C = 1 + 0.045 * C_bar
     S_H = 1 + 0.015 * C_bar * T
     R_T = -np.sin(np.deg2rad(2 * delta_theta)) * R_C
+    return S_L, S_C, S_H, delta_L_p, delta_C_p, delta_H_p, R_T
+
+
+def delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0):
+    """CIEDE2000을 커스텀 (kL, kC, kH)로 계산. colour-science의
+    delta_E_CIE2000()은 kL/kC/kH를 임의로 못 받는다(textiles=True일 때
+    kL=2 고정만 지원 - 소스 확인함, colour/difference/delta_e.py). 결합
+    전 중간값(S_L, S_C, S_H, ΔL', ΔC', ΔH', R_T)을 직접 계산해 결합한다.
+    colour-science 0.4.4에는 private intermediate helper가 없으므로 그
+    비공개 API에 의존하지 않는다. kL=kC=kH=1.0이면 colour.delta_E(method=
+    "CIE 2000")과 정확히 같아야 한다(tests/test_hybrid_engine.py의
+    TestDeltaE2000Weighted가 확인)."""
+    S_L, S_C, S_H, delta_L_p, delta_C_p, delta_H_p, R_T = (
+        _cie2000_intermediate_terms(Lab_1, Lab_2))
     return np.sqrt(
         (delta_L_p / (kL * S_L)) ** 2
         + (delta_C_p / (kC * S_C)) ** 2
