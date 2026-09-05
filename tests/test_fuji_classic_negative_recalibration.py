@@ -292,10 +292,9 @@ class TestRecordedOffsetDiagnostics(unittest.TestCase):
                          "neutral", "auto-bright")
         for k in ("mean_a", "mean_b", "ci_lo", "ci_hi"):
             self.assertAlmostEqual(s[k], rep["stats"][k], places=9, msg=k)
-        # 방향은 맞지만 재보정의 +42.87%를 설명하지 못한다
+        # linear-RGB 도메인에서 auto-bright가 격차의 약 1/4을 닫는다.
         improvement = 100.0 * (s["mean_a"] - s["mean_b"]) / s["mean_a"]
-        self.assertGreater(improvement, 0.0)
-        self.assertLess(improvement, 15.0)
+        self.assertAlmostEqual(improvement, 25.02899516425401, places=9)
 
 
 class TestRecordedCrossBrandOffset(unittest.TestCase):
