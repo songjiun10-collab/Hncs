@@ -207,4 +207,5 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/fix_fuji_manifest_pairing.py` | 위 검증 결과를 매니페스트에 반영(8행 수정 + 고아 1행 제거). 영향 필름모드는 Classic Negative 4/Classic Chrome 1/Nostalgic Neg 2로 Provia는 없어 `fuji_generic_jpeg_approx.icc`(Provia 필터, n=119)는 무관. 프로필은 건드리지 않음 |
 | `tools/write_dpreview_manifest.py` | dpreview 위젯 DB에서 받은 브랜드 raw/ 폴더를 manifest.csv(image_id/camera/product_id/raw_file_url)로 박제하고 raw/를 지우는 디스크 확보용 CLI |
 | `tools/match_dpreview_downloads_by_hash.py` | 브라우저 blob 다운로드가 이 앱 샌드박스에서 익명 파일명으로 저장되는 문제를 콘텐츠 SHA-256 매칭으로 해결하는 다운로드-후처리 CLI |
+| `tools/evaluate_lut_bake_conditional_mean.py` | 룩 LUT을 굽는 방식 두 가지를 held-out 실사진에서 비교 - 현재 방식(`core.lut_export.bake_lut_from_function`, 33³ 격자를 합성 이미지 하나로 통과) vs 학습 사진의 조건부 평균(삼선형 splat, 미적중 격자점은 현재 값 유지). 평가는 LUT 경유 vs 룩 직접 호출의 ΔE00이고 적용은 **삼선형** - 캡처원/포토샵이 실제로 하는 방식이다(기존 `capture_one_look_iccs_report.json`의 충실도는 64x64 **난수** 이미지에 **최근접** 보간이라 실사용과 두 겹으로 다르다). 데이터는 공식 13장 JPEG(공개 CDN, raw 불필요). 결과는 `hybrid_engine/EVALUATION.md` |
 | `models/yunet.onnx` | 얼굴 검출 모델 (OpenCV Zoo, YuNet 2023mar) - `tools/analyze.py portrait`가 사용 |
