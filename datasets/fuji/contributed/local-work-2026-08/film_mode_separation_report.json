@@ -1,0 +1,144 @@
+{
+  "question": "brands/fuji.py의 필름시뮬레이션 룩들이 실제 모드 간 차이만큼 서로 벌어져 있는가 - 같은 장면 묶음이라야 답할 수 있는 질문",
+  "lead": "사용자 제보(2026-09-04): 후지에 같은 장면 필터만 바꿔 찍은 것 있음",
+  "metric": "이미지 전역 평균 Lab 사이의 ΔE00. 묶음 안 프레임이 픽셀 정렬돼 있지 않아 화소별 비교는 불가",
+  "within_mode_floor_meaning": "같은 모드 JPEG끼리의 거리 - 프레이밍/노출 흔들림이 만드는 바닥. 실제 모드 간 거리가 이보다 크지 않으면 비교 자체가 성립하지 않는다",
+  "input_render": "tools.calibrate.load_neutral_render(raw, max_dim=400) - tools/evaluate_fuji_preset_de00.py와 동일 경로",
+  "unmapped_modes": "Velvia는 brands/fuji.py에 대응 apply_* 함수가 없어 룩 거리 계산에서 빠진다",
+  "deployment": "배포 아님 - 어떤 apply_*나 프로필도 수정하지 않는다",
+  "groups": [
+    {
+      "group": 1,
+      "camera": "GFX50S II",
+      "n_frames": 11,
+      "modes": [
+        "Classic Chrome",
+        "Classic Negative",
+        "Nostalgic Neg"
+      ],
+      "within_mode_floor_de00": 1.2927813268419759,
+      "n_within_pairs": 19,
+      "n_decoded": 11,
+      "pairs": [
+        {
+          "mode_a": "Classic Chrome",
+          "mode_b": "Classic Negative",
+          "look_a": "apply_classic_chrome",
+          "look_b": "apply_classic_negative",
+          "ground_truth_de00": 6.101134514442688,
+          "n_gt_pairs": 12,
+          "model_cross_frame_de00": 18.29178821067192,
+          "model_same_look_control_de00": 22.309165202756756,
+          "neutral_baseline_cross_frame_de00": 25.04215561407834,
+          "look_frame_variation_amplification": 0.8908644106585962,
+          "n_model_cross_pairs": 12,
+          "model_same_frame_de00": 4.389132678526539,
+          "n_model_same_frames": 11,
+          "ratio_same_frame_over_ground_truth": 0.7193961497056859,
+          "ground_truth_above_within_mode_floor": true,
+          "model_cross_above_same_look_control": false
+        },
+        {
+          "mode_a": "Classic Chrome",
+          "mode_b": "Nostalgic Neg",
+          "look_a": "apply_classic_chrome",
+          "look_b": "apply_nostalgic_neg",
+          "ground_truth_de00": 4.96630814444756,
+          "n_gt_pairs": 6,
+          "model_cross_frame_de00": 23.383103732862008,
+          "model_same_look_control_de00": 19.646340627759994,
+          "neutral_baseline_cross_frame_de00": 21.560307506816685,
+          "look_frame_variation_amplification": 0.9112272921686504,
+          "n_model_cross_pairs": 6,
+          "model_same_frame_de00": 6.3807371133354165,
+          "n_model_same_frames": 11,
+          "ratio_same_frame_over_ground_truth": 1.2848049149888572,
+          "ground_truth_above_within_mode_floor": true,
+          "model_cross_above_same_look_control": true
+        },
+        {
+          "mode_a": "Classic Negative",
+          "mode_b": "Nostalgic Neg",
+          "look_a": "apply_classic_negative",
+          "look_b": "apply_nostalgic_neg",
+          "ground_truth_de00": 3.1998064972006954,
+          "n_gt_pairs": 18,
+          "model_cross_frame_de00": 7.850936480573954,
+          "model_same_look_control_de00": 4.622172091916309,
+          "neutral_baseline_cross_frame_de00": 3.5214943199441575,
+          "look_frame_variation_amplification": 1.3125598600964394,
+          "n_model_cross_pairs": 18,
+          "model_same_frame_de00": 9.191818235218692,
+          "n_model_same_frames": 11,
+          "ratio_same_frame_over_ground_truth": 2.872616904572205,
+          "ground_truth_above_within_mode_floor": true,
+          "model_cross_above_same_look_control": true
+        }
+      ]
+    },
+    {
+      "group": 2,
+      "camera": "GFX50S II",
+      "n_frames": 7,
+      "modes": [
+        "Classic Chrome",
+        "Nostalgic Neg"
+      ],
+      "within_mode_floor_de00": 3.071950639586828,
+      "n_within_pairs": 11,
+      "n_decoded": 7,
+      "pairs": [
+        {
+          "mode_a": "Classic Chrome",
+          "mode_b": "Nostalgic Neg",
+          "look_a": "apply_classic_chrome",
+          "look_b": "apply_nostalgic_neg",
+          "ground_truth_de00": 2.6798475246194906,
+          "n_gt_pairs": 10,
+          "model_cross_frame_de00": 12.39705219676026,
+          "model_same_look_control_de00": 8.751314381552834,
+          "neutral_baseline_cross_frame_de00": 9.273189422487693,
+          "look_frame_variation_amplification": 0.9437221631999342,
+          "n_model_cross_pairs": 10,
+          "model_same_frame_de00": 5.832727924760621,
+          "n_model_same_frames": 7,
+          "ratio_same_frame_over_ground_truth": 2.176514846899286,
+          "ground_truth_above_within_mode_floor": false,
+          "model_cross_above_same_look_control": true
+        }
+      ]
+    },
+    {
+      "group": 3,
+      "camera": "GFX50S II",
+      "n_frames": 4,
+      "modes": [
+        "F0/Standard (Provia)",
+        "F2/Fujichrome (Velvia)"
+      ],
+      "within_mode_floor_de00": 0.33592820016799485,
+      "n_within_pairs": 2,
+      "n_decoded": 4,
+      "pairs": [
+        {
+          "mode_a": "F0/Standard (Provia)",
+          "mode_b": "F2/Fujichrome (Velvia)",
+          "look_a": "apply_provia",
+          "look_b": null,
+          "ground_truth_de00": 4.31038490746223,
+          "n_gt_pairs": 4,
+          "model_cross_frame_de00": NaN,
+          "model_same_look_control_de00": NaN,
+          "neutral_baseline_cross_frame_de00": NaN,
+          "look_frame_variation_amplification": NaN,
+          "n_model_cross_pairs": 0,
+          "model_same_frame_de00": NaN,
+          "n_model_same_frames": 0,
+          "ratio_same_frame_over_ground_truth": NaN,
+          "ground_truth_above_within_mode_floor": true,
+          "model_cross_above_same_look_control": false
+        }
+      ]
+    }
+  ]
+}
