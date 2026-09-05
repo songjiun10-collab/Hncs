@@ -88,3 +88,18 @@ uint8 candidate and JPEG arrays.  Its pending change was reviewed and retained:
 targets are converted once with `bgr_u8_to_linear_rgb`, and every candidate is
 converted at the `mean_delta_e` boundary.  No raw BGR metric path remains in
 that probe.
+
+## Corrected auto-bright recorded assertion
+
+The full suite exposed a stale pre-fix assertion that auto-bright improvement
+was below 15%.  The current corrected-domain
+`autobright_vs_look_classic_negative.json` records 15.2787 → 11.4546 ΔE00,
+or 25.02899516425401% improvement.  The test now asserts that recorded value
+directly; the previous comment/threshold described pre-fix output and was not
+a valid invariant after BGR uint8 inputs were corrected to linear RGB.
+
+```text
+$ python3 -m unittest tests.test_fuji_classic_negative_recalibration
+Ran 30 tests
+OK
+```
