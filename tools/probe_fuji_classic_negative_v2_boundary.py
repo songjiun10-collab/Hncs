@@ -59,8 +59,8 @@ def _film_mode(jpg_path):
 
 
 def main():
-    rows = list(csv.DictReader(open(os.path.join(SET_DIR, "manifest.csv"),
-                                    encoding="utf-8-sig")))
+    with open(os.path.join(SET_DIR, "manifest.csv"), encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
     imgs, targets = [], []
     for r in rows:
         jpg = os.path.join(SET_DIR, "jpeg", r["filename_jpeg"])
@@ -74,6 +74,9 @@ def main():
         targets.append(cv2.resize(cv2.imread(jpg), (g.shape[1], g.shape[0]),
                                   interpolation=cv2.INTER_AREA))
     n = len(imgs)
+    if n == 0:
+        raise ValueError(f"No usable pairs found for {FILM_MODE}; check manifest.csv "
+                         "and local JPEG/RAW files.")
     print(f"[{FILM_MODE}] {n}쌍, 기준 상수 {BEST}\n")
 
     def de(tl, wp):

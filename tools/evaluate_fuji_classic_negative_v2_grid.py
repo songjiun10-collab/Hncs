@@ -159,8 +159,8 @@ def _on_edge(combo):
 
 
 def main():
-    rows = list(csv.DictReader(open(os.path.join(SET_DIR, "manifest.csv"),
-                                    encoding="utf-8-sig")))
+    with open(os.path.join(SET_DIR, "manifest.csv"), encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
     grids, targets_grid, confirms, targets_confirm, names = [], [], [], [], []
     for r in rows:
         jpg = os.path.join(SET_DIR, "jpeg", r["filename_jpeg"])
@@ -183,6 +183,9 @@ def main():
             print(f"  {len(names)}개 로드", flush=True)
 
     n = len(names)
+    if n == 0:
+        raise ValueError(f"No usable pairs found for {FILM_MODE}; check manifest.csv "
+                         "and local JPEG/RAW files.")
     print(f"\n[{FILM_MODE}] {n}쌍, 콤보 {len(COMBOS)}개, {N_FOLDS}-fold\n", flush=True)
 
     rng = np.random.default_rng(SEED)

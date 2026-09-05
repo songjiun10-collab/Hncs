@@ -98,8 +98,8 @@ def summarize(a, b, label_a, label_b, n_bootstrap=20000, seed=0):
 
 
 def main():
-    rows = list(csv.DictReader(open(os.path.join(SET_DIR, "manifest.csv"),
-                                    encoding="utf-8-sig")))
+    with open(os.path.join(SET_DIR, "manifest.csv"), encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
     de_neutral, de_autobright, names = [], [], []
     for r in rows:
         jpg = os.path.join(SET_DIR, "jpeg", r["filename_jpeg"])
@@ -125,6 +125,9 @@ def main():
         if len(names) % 10 == 0:
             print(f"  {len(names)}개 처리", flush=True)
 
+    if not names:
+        raise ValueError(f"No usable pairs found for {FILM_MODE}; check manifest.csv "
+                         "and local JPEG/RAW files.")
     print(f"\n[{FILM_MODE}] {len(names)}쌍 - apply_classic_negative 현행 상수 고정, "
           f"RAW 렌더만 교체")
     stats = summarize(de_neutral, de_autobright, "neutral(현행)", "auto-bright")

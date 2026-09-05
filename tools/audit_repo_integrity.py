@@ -55,8 +55,10 @@ ASSET_REF = re.compile(r"[\"']([^\"']*assets/[^\"']+\.(?:json|dcp|icc|npy|cube))
 
 
 def check_registration():
-    ko = open(os.path.join(DOCS, "project_structure.md"), encoding="utf-8").read()
-    en = open(os.path.join(DOCS, "project_structure.en.md"), encoding="utf-8").read()
+    with open(os.path.join(DOCS, "project_structure.md"), encoding="utf-8") as f:
+        ko = f.read()
+    with open(os.path.join(DOCS, "project_structure.en.md"), encoding="utf-8") as f:
+        en = f.read()
     problems = []
     for d in CODE_DIRS:
         files = sorted(f for f in os.listdir(os.path.join(BASE, d))
@@ -100,7 +102,8 @@ def check_asset_refs():
                 continue
             path = os.path.join(root, f)
             try:
-                text = open(path, encoding="utf-8").read()
+                with open(path, encoding="utf-8") as source:
+                    text = source.read()
             except Exception:
                 continue
             for ref in ASSET_REF.findall(text):
@@ -192,7 +195,8 @@ def check_profiles():
             if f.endswith(".json"):
                 n_json += 1
                 try:
-                    json.load(open(os.path.join(root, f), encoding="utf-8"))
+                    with open(os.path.join(root, f), encoding="utf-8") as profile:
+                        json.load(profile)
                 except Exception as e:
                     problems.append(f"JSON 파싱 실패: {f}: {e}")
     print(f"  프로필 JSON {n_json}개 확인")

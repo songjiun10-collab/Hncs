@@ -89,8 +89,8 @@ def main():
     out_report = os.path.join(
         SET_DIR, f"neutral_render_offset_{mode.replace(' ', '_').lower()}.json")
 
-    rows = list(csv.DictReader(open(os.path.join(SET_DIR, "manifest.csv"),
-                                    encoding="utf-8-sig")))
+    with open(os.path.join(SET_DIR, "manifest.csv"), encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
     keys = ["lab_L_mean", "lab_L_median", "hsv_S_mean", "black_p2", "white_p995"]
     diffs = {k: [] for k in keys}
     names = []
@@ -112,6 +112,9 @@ def main():
         if len(names) % 10 == 0:
             print(f"  {len(names)}개 처리", flush=True)
 
+    if not names:
+        raise ValueError(f"No usable pairs found for {mode}; check manifest.csv "
+                         "and local JPEG/RAW files.")
     print(f"\n[{mode}] {len(names)}쌍 - 카메라 JPEG 에서 neutral 렌더를 뺀 차이\n")
     stats = {k: _paired(k, diffs[k]) for k in keys}
 
