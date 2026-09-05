@@ -2,7 +2,7 @@
 
 ## Status
 
-DONE_WITH_CONCERNS
+DONE
 
 ## Changed
 
@@ -32,9 +32,18 @@ DONE_WITH_CONCERNS
   — 906 tests, OK (13.789 s).
 - `git diff --check` — clean.
 
-## Concern
+## Review P1 correction
 
-The exact cross-platform maximum pixel difference is still unknown because
-the historical CI output images were not retained. The test intentionally does
-not invent a non-zero tolerance; obtaining a CI pixel fixture is required for
-a future cross-platform magnitude assertion.
+The first version's same-environment repeat check could accept a deterministic
+all-zero implementation. It was replaced with seven independent output
+fingerprints: BGR channel means, standard deviations, and q01/q25/q50/q75/q99
+quantiles. Each statistic allows an absolute difference of at most `1.0`.
+That bound follows from the documented one-least-significant-bit OpenCV
+round-trip variation: a per-pixel difference no larger than one bounds each
+mean, standard deviation, and quantile difference by one.
+
+- RED: monkeypatching `brands.fuji.apply_pro_neg_std` to an all-zero image made
+  the previous repeat-only test pass, proving the review finding. After adding
+  the fingerprint assertion, the same replacement failed with 19/21 anchor
+  values outside the `1.0` bound.
+- GREEN: the all-zero rejection test and all golden tests passed (6 tests).
