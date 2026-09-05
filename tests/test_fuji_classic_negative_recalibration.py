@@ -7,9 +7,12 @@
 숫자가 재계산되지 않으면 문서의 주장이 깨진 것이다.
 """
 import json
+import io
 import os
 import sys
+import tempfile
 import unittest
+from contextlib import redirect_stdout
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,7 +20,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import numpy as np
 
 from tools import diagnose_fuji_autobright_vs_look as ab
+from tools import diagnose_fuji_neutral_render_offset as neutral
 from tools import evaluate_fuji_classic_negative_v2_grid as v2
+from tools import probe_fuji_classic_negative_v2_boundary as boundary
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SET_DIR = os.path.join(BASE, "datasets", "fuji", "contributed", "local-work-2026-08")
@@ -90,6 +95,39 @@ class TestSummarize(unittest.TestCase):
         diff = s["mean_base"] - s["mean_new"]
         self.assertLessEqual(s["ci_lo"], diff)
         self.assertGreaterEqual(s["ci_hi"], diff)
+
+
+class TestEmptyFujiManifest(unittest.TestCase):
+    """빈 manifest는 통계를 계산하거나 NaN 리포트를 쓰면 안 된다."""
+
+    class _TrackingManifest(io.StringIO):
+        def __init__(self):
+            super().__init__("filename_jpeg,filename_raw\n")
+            self.was_closed = False
+
+        def close(self):
+            self.was_closed = True
+            super().close()
+
+    def test_empty_manifest_fails_before_statistics_and_closes_csv(self):
+        # 이 검사가 빠지면 빈 데이터셋이 bootstrap의 high <= 0 / min(empty)나
+        # NaN 리포트까지 진행한다. manifest는 명시적으로 닫혀야 한다.
+        modules = (v2, ab, neutral, boundary)
+        with tempfile.TemporaryDirectory() as directory:
+            for module in modules:
+                manifest = self._TrackingManifest()
+
+                def open_manifest(path, *args, **kwargs):
+                    self.assertEqual(path, os.path.join(directory, "manifest.csv"))
+                    return manifest
+
+                with patch.object(module, "SET_DIR", directory), \
+                     patch("builtins.open", side_effect=open_manifest), \
+                     patch.object(sys, "argv", [module.__name__]), \
+                     redirect_stdout(io.StringIO()):
+                    with self.assertRaisesRegex(ValueError, "usable.*pairs"):
+                        module.main()
+                self.assertTrue(manifest.was_closed, module.__name__)
 
 
 class TestGridDefinition(unittest.TestCase):

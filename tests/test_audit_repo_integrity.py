@@ -7,6 +7,7 @@ Lightroom이 프로필을 못 읽던 실제 원인). 그래서 여기서는 "정
 통과한다"만 보지 않고 **그 버그를 그대로 재현한 파일이 실제로 걸리는지**를
 같이 본다(`tests/CLAUDE.md`: 테스트는 틀릴 수 있어야 한다).
 """
+import io
 import os
 import struct
 import tempfile
@@ -122,6 +123,32 @@ class TestCheckProfilesSkipsWithoutExiftool(unittest.TestCase):
             run.return_value.stdout = "OK\n"
             self.assertEqual(check_profiles(), [])
         self.assertTrue(run.called)
+
+    def test_closes_profile_json_after_parsing(self):
+        class TrackingJson(io.StringIO):
+            def __init__(self):
+                super().__init__("{}")
+                self.was_closed = False
+
+            def close(self):
+                self.was_closed = True
+                super().close()
+
+        with tempfile.TemporaryDirectory() as directory:
+            json_path = os.path.join(directory, "profile.json")
+            with open(json_path, "w", encoding="utf-8"):
+                pass
+            handle = TrackingJson()
+
+            def open_profile(path, *args, **kwargs):
+                self.assertEqual(path, json_path)
+                return handle
+
+            with patch("tools.audit_repo_integrity.PROFILES", directory), \
+                 patch("tools.audit_repo_integrity.shutil.which", return_value=None), \
+                 patch("builtins.open", side_effect=open_profile):
+                self.assertIsNone(check_profiles())
+            self.assertTrue(handle.was_closed)
 
 
 if __name__ == "__main__":
