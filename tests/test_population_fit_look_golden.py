@@ -13,8 +13,9 @@ eterna_cinema/eterna_bleach_bypass/reala_ace/classic_negative,
 hasselblad_night)는 opencv 버전/플랫폼에 따라 최하위 비트가 달라져서
 로컬에서 뽑은 해시가 CI에서 재현 안 됨. 이 7개는 CI 기준 출력 픽셀 배열이
 보관돼 있지 않아 임의의 교차 플랫폼 허용오차를 만들지 않는다. 대신 기준 출력의
-채널별 평균/표준편차/분위수 앵커를 비교한다. 허용오차 1.0은 문서화된 최하위
-비트 차이의 통계량 상한이며, 0 출력 같은 실제 회귀는 잡는다. Lab 전용
+채널별 평균/표준편차/분위수 앵커를 비교한다. 허용오차 1.001은 문서화된 최하위
+비트 차이의 통계량 상한에 부동소수점 집계 오차만 더한 값이며, 0 출력 같은 실제
+회귀는 잡는다. Lab 전용
 CLAHE+LUT 함수는 전부 플랫폼 무관하게 일치해 정확한 해시를 계속 쓴다. 새 안정
 함수의 골든해시는 로컬에서 계산만 하지 말고 CI 실행 결과로 검증/교정할 것."""
 import hashlib
@@ -163,7 +164,8 @@ FUJI_PRESET_GOLDEN_HASHES = [
 # significant bit. CI reference images were not retained, but these independent
 # statistics of the known-good output still catch material regressions. If every
 # output pixel changes by at most one LSB, every listed statistic changes by at
-# most 1.0; use that documented bound without weakening stable SHA-256 checks.
+# most 1.0. The extra 0.001 only absorbs floating-point aggregation error
+# (for example, a measured difference of 1.000000000000014).
 HSV_ROUND_TRIP_FUNCTIONS = [
     ("brands.fuji", "apply_pro_neg_std"),
     ("brands.fuji", "apply_pro_neg_hi"),
@@ -214,7 +216,7 @@ HSV_ROUND_TRIP_FINGERPRINTS = {
     ),
 }
 
-HSV_FINGERPRINT_ATOL = 1.0
+HSV_FINGERPRINT_ATOL = 1.001
 
 
 class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
@@ -227,6 +229,17 @@ class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
             output = getattr(mod, fn_name)(make_test_image())
             with self.assertRaises(AssertionError):
                 self._assert_matches_fingerprint(mod_name, fn_name, output)
+
+    def test_reference_check_accepts_clipped_one_lsb_variation(self):
+        for mod_name, fn_name in HSV_ROUND_TRIP_FUNCTIONS:
+            with self.subTest(brand=mod_name, fn=fn_name):
+                output = getattr(importlib.import_module(mod_name), fn_name)(
+                    make_test_image()
+                )
+                one_lsb_higher = np.minimum(output.astype(np.uint16) + 1, 255)
+                self._assert_matches_fingerprint(
+                    mod_name, fn_name, one_lsb_higher.astype(np.uint8)
+                )
 
     def test_known_round_trip_looks_are_deterministic_uint8_images(self):
         for mod_name, fn_name in HSV_ROUND_TRIP_FUNCTIONS:
