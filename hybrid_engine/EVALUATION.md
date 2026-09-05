@@ -4005,6 +4005,24 @@ KeyError로 죽은 것이다 - 나중에 들어온 데이터에 스크립트가 
 이 계열은 컬러체커 실측이 아니라 카메라 JPEG 근사다(스크립트 독스트링에
 명시).
 
+> **정정(2026-09-04, 같은 날 커버리지를 세다가 발견)**: 아래 2)의
+> "발급 40 / 건너뜀 1", "충실 14 / 오차>효과 26"은 **후지 필름시뮬레이션
+> 프리셋 13개가 통째로 빠진 수치**다. 원인은 단일 소스로 삼은
+> `tests/test_brands.py`의 `BRAND_LOOKS` 자동 발견이
+> `_EXCLUDED_MODULES = {"fuji"}`로 `brands/fuji.py`를 **제외**하기
+> 때문(fuji는 자체 `TestFujiPresets`가 완전성 검사를 한다). "자동 발견을
+> 재사용하니 안전하다"는 가정이 그 자동 발견의 제외 목록까지 확인해야
+> 성립한다는 걸 놓쳤다. 같은 파일의 `FUJI_COLOR_PRESETS`를 합치도록
+> 고쳐 재실행한 결과는 **발급 52 / 건너뜀 2(`apply_hncs`, `apply_provia`
+> - 둘 다 이미 다른 경로로 배포됨) / 실패 0, 충실 22 / 오차>효과 30**
+> 이다(`hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`
+> 의 `counts`, 실행 확인됨). 새로 구워진 후지 프리셋은 대체로 충실도가
+> 좋다 - 같은 리포트 기준 `apply_eterna_bleach_bypass` 오차 1.76 vs 효과
+> 54.78, `apply_classic_negative` 1.83 vs 37.60, `apply_astia` 1.92 vs
+> 11.36. 반면 CLAHE가 센 `apply_classic_chrome`(20.43 vs 18.49)과
+> `apply_nostalgic_neg_v2/v3`(18.48 vs 16.97, 20.30 vs 18.17)은 여전히
+> 오차>효과다. 아래 원문은 이력으로 남긴다.
+
 **2) 룩 DeviceLink ICC 40장 일괄 발급**(`tools/build_all_capture_one_look_iccs.py`,
 리포트 `hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`):
 배포된 `apply_*` 룩 41개 중 캡처원 프로필은 2개뿐이었다. 룩 목록을

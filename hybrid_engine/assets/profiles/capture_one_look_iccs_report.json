@@ -1,17 +1,17 @@
 {
   "purpose": "Capture One DeviceLink ICC - 배포된 brands/*.py apply_* 룩 전체",
-  "source_of_truth": "tests/test_brands.py BRAND_LOOKS (자동 발견) - 테스트가 아는 룩과 캡처원 프로필이 같은 집합이 되도록",
+  "source_of_truth": "tests/test_brands.py BRAND_LOOKS(자동 발견) + FUJI_COLOR_PRESETS - 테스트가 아는 룩과 캡처원 프로필이 같은 집합이 되도록. BRAND_LOOKS는 fuji.py를 통째로 제외하므로 FUJI_COLOR_PRESETS를 따로 합쳐야 한다(초판이 이걸 빠뜨려 후지 프리셋 13개가 안 구워졌음). FUJI_MONO_PRESETS는 1채널 반환이라 제외",
   "lut_size": 33,
   "format": "ICC DeviceLink, lut8Type('mft1') - 캡처원이 .cube를 지원 안 함",
   "limitation": "CLAHE 등 적응형 연산은 점별 LUT로 담을 수 없어 실사진 기준 평균 절대오차 ΔBGR≈21/255 수준의 근사(.cube와 동일한 구조적 한계). 캡처원 실기기 미검증.",
   "user_approval": "2026-09-04 '캡처원용도 다 만들어'",
   "fidelity_metric": "랜덤 BGR 이미지(64x64, seed 0)를 LUT 경유와 룩 직접 호출로 각각 통과시킨 결과의 평균 절대오차(ΔBGR)를, 그 룩이 원본 대비 만드는 변화량(효과)과 비교. faithful=false는 오차가 효과보다 커서 그 프로필이 룩을 충실히 전달하지 못한다는 뜻 - CLAHE 등 적응형 연산이 강한 룩에서 발생하며 LUT 포맷의 구조적 한계다.",
   "counts": {
-    "issued": 40,
-    "skipped": 1,
+    "issued": 52,
+    "skipped": 2,
     "failed": 0,
-    "faithful": 14,
-    "not_faithful": 26
+    "faithful": 22,
+    "not_faithful": 30
   },
   "issued": [
     {
@@ -493,6 +493,150 @@
       "look_effect_mean_abs_bgr": 38.5,
       "faithful": true,
       "file_kb": 107.2
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_astia",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_astia.icc",
+      "description": "HNCS fuji astia look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 1.92,
+      "look_effect_mean_abs_bgr": 11.36,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_pro_neg_std",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_pro_neg_std.icc",
+      "description": "HNCS fuji pro neg std look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 1.98,
+      "look_effect_mean_abs_bgr": 15.09,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_pro_neg_hi",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_pro_neg_hi.icc",
+      "description": "HNCS fuji pro neg hi look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 17.37,
+      "look_effect_mean_abs_bgr": 20.03,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_eterna_cinema",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_eterna_cinema.icc",
+      "description": "HNCS fuji eterna cinema look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 1.69,
+      "look_effect_mean_abs_bgr": 26.83,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_eterna_bleach_bypass",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_eterna_bleach_bypass.icc",
+      "description": "HNCS fuji eterna bleach bypass look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 1.76,
+      "look_effect_mean_abs_bgr": 54.78,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_nostalgic_neg",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_nostalgic_neg.icc",
+      "description": "HNCS fuji nostalgic neg look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 2.18,
+      "look_effect_mean_abs_bgr": 9.08,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_reala_ace",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_reala_ace.icc",
+      "description": "HNCS fuji reala ace look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 2.09,
+      "look_effect_mean_abs_bgr": 3.42,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_classic_negative",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_classic_negative.icc",
+      "description": "HNCS fuji classic negative look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 1.83,
+      "look_effect_mean_abs_bgr": 37.6,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_classic_chrome",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_classic_chrome.icc",
+      "description": "HNCS fuji classic chrome look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 20.43,
+      "look_effect_mean_abs_bgr": 18.49,
+      "faithful": false,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_nostalgic_neg_v2",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_nostalgic_neg_v2.icc",
+      "description": "HNCS fuji nostalgic neg v2 look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 18.48,
+      "look_effect_mean_abs_bgr": 16.97,
+      "faithful": false,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_classic_chrome_v2",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_classic_chrome_v2.icc",
+      "description": "HNCS fuji classic chrome v2 look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 20.3,
+      "look_effect_mean_abs_bgr": 18.17,
+      "faithful": false,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_nostalgic_neg_v3",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_nostalgic_neg_v3.icc",
+      "description": "HNCS fuji nostalgic neg v3 look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 20.3,
+      "look_effect_mean_abs_bgr": 18.17,
+      "faithful": false,
+      "file_kb": 107.1
     }
   ],
   "skipped": [
@@ -501,6 +645,12 @@
       "func": "apply_hncs",
       "reason": "이미 다른 경로로 배포됨",
       "existing": "hybrid_engine/assets/profiles/hasselblad_hncs_look.icc"
+    },
+    {
+      "module": "brands.fuji",
+      "func": "apply_provia",
+      "reason": "이미 다른 경로로 배포됨",
+      "existing": "hybrid_engine/assets/profiles/fuji_provia_look.icc"
     }
   ],
   "failed": []
