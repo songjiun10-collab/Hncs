@@ -15,6 +15,15 @@ def _linear_rgb_to_lab(rgb_linear):
     return colour.XYZ_to_Lab(xyz)
 
 
+def bgr_u8_to_linear_rgb(bgr_u8):
+    """OpenCV BGR uint8 이미지를 sRGB linear RGB float64로 바꾼다."""
+    bgr_u8 = np.asarray(bgr_u8)
+    if bgr_u8.dtype != np.uint8:
+        raise ValueError(f"expected BGR uint8 image, got {bgr_u8.dtype}")
+    rgb = bgr_u8[..., ::-1].astype(np.float64) / 255.0
+    return colour.cctf_decoding(rgb, function="sRGB")
+
+
 def delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0):
     """CIEDE2000을 커스텀 (kL, kC, kH)로 계산. colour-science의
     delta_E_CIE2000()은 kL/kC/kH를 임의로 못 받는다(textiles=True일 때

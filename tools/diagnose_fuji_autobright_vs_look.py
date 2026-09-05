@@ -38,7 +38,7 @@ import numpy as np
 import rawpy
 
 from brands.fuji import apply_classic_negative
-from hybrid_engine.utils.evaluate import mean_delta_e
+from hybrid_engine.utils.evaluate import bgr_u8_to_linear_rgb, mean_delta_e
 from tools.calibrate import load_neutral_render
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -116,8 +116,11 @@ def main():
                             interpolation=cv2.INTER_AREA)
         tgt = cv2.resize(cv2.imread(jpg), (nr.shape[1], nr.shape[0]),
                          interpolation=cv2.INTER_AREA)
-        de_neutral.append(mean_delta_e(apply_classic_negative(nr), tgt))
-        de_autobright.append(mean_delta_e(apply_classic_negative(ab), tgt))
+        target_linear = bgr_u8_to_linear_rgb(tgt)
+        de_neutral.append(mean_delta_e(
+            bgr_u8_to_linear_rgb(apply_classic_negative(nr)), target_linear))
+        de_autobright.append(mean_delta_e(
+            bgr_u8_to_linear_rgb(apply_classic_negative(ab)), target_linear))
         names.append(r["filename_raw"])
         if len(names) % 10 == 0:
             print(f"  {len(names)}개 처리", flush=True)

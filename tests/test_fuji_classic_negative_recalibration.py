@@ -10,6 +10,7 @@ import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -128,6 +129,38 @@ class TestApplyCandidateContract(unittest.TestCase):
         s_low = cv2.cvtColor(low, cv2.COLOR_BGR2HSV)[:, :, 1].mean()
         s_high = cv2.cvtColor(high, cv2.COLOR_BGR2HSV)[:, :, 1].mean()
         self.assertLess(s_low, s_high)
+
+
+class TestDeltaEColorDomain(unittest.TestCase):
+    def test_grid_converts_bgr_uint8_inputs_before_delta_e(self):
+        """Removing the BGR-to-linear conversion must expose raw bytes here."""
+        grid_bgr = np.array([[[0, 0, 255]]], dtype=np.uint8)
+        target_bgr = np.array([[[128, 64, 32]]], dtype=np.uint8)
+        received = []
+
+        def capture_delta_e(actual, target):
+            received.append((actual, target))
+            return 0.0
+
+        with patch.object(v2, "COMBOS", ((0.0, 0.78, 1.0, 0.40),)), \
+             patch.object(v2, "mean_delta_e", side_effect=capture_delta_e):
+            v2._best_combo([0], [grid_bgr], [target_bgr])
+
+        actual, target = received[0]
+        self.assertEqual(actual.dtype, np.float64)
+        self.assertEqual(target.dtype, np.float64)
+        self.assertLessEqual(float(actual.max()), 1.0)
+        np.testing.assert_allclose(
+            target,
+            np.array([[[0.01444384, 0.05126946, 0.21586050]]]),
+            atol=1e-8,
+        )
+
+    def test_l_channel_residual_imports_without_private_colour_helper(self):
+        """The research verifier must run with colour-science 0.4.4's public API."""
+        import hybrid_engine.verify_l_channel_residual as residual
+
+        self.assertTrue(callable(residual._cie2000_lch_terms))
 
 
 class TestRecordedV2Run(unittest.TestCase):
