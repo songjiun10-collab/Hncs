@@ -1,0 +1,29 @@
+{
+  "purpose": "v2 후보의 격자 경계 두 축이 진짜 제약인지 최적점인지 확인",
+  "film_mode": "Classic Negative",
+  "n_pairs": 47,
+  "fixed": {
+    "toe_lift": 0.0,
+    "shoulder_start": 0.78,
+    "white_point": 1.0,
+    "sat_mult": 0.4
+  },
+  "baseline_de00": 14.185976486176559,
+  "toe_lift_sweep": {
+    "-0.08": 15.39305411770497,
+    "-0.06": 15.208074281577925,
+    "-0.04": 14.824728928689291,
+    "-0.02": 14.498710989123103,
+    "0.0": 14.185976486176559
+  },
+  "white_point_sweep": {
+    "1.0": 14.185976486176559,
+    "1.05": 14.147220226220355,
+    "1.1": 14.122970927962811,
+    "1.15": 14.104842193173834,
+    "1.2": 14.091628335791421
+  },
+  "toe_lift_boundary_binds": false,
+  "white_point_boundary_binds": true,
+  "modifies_shipped_code": false
+}

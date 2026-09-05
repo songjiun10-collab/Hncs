@@ -4599,3 +4599,133 @@ Classic Negative의 0.72와 거의 같은 "덜 벌어짐" 쪽이다.
 `python3 -m tools.audit_look_lut_fidelity_metric <13장JPEG폴더> metric_2x2.json`.
 JPEG는 `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv`의 `jpeg_url`에서
 받는다(공개 CDN, raw 불필요).
+## Classic Negative 재보정 - 기준은 통과했는데 기준이 틀린 걸 재고 있었다 (2026-09-05)
+
+사용자 승인("classic negative 재보정 ㄱㄱ")으로 `apply_classic_negative`를
+재보정했다. 결과부터: **현행 계열 재보정은 기각했고**, 검증된 다른
+파라미터 계열로 재적합한 v2 후보가 기준을 통과했다. `brands/fuji.py`와
+`hybrid_engine/assets/profiles/**`는 이 조사에서 하나도 수정하지 않았다 -
+v2 추가는 별도의 배포 결정이다.
+
+### 1. 현행 계열 재보정 - 기준 통과, 그러나 기각
+
+`tools/recalibrate_fuji_classic_negative.py`로 GFX50S II 47쌍에 3패스
+좌표하강 + 5-fold 교차검증을 돌렸다. 사전에 못 박은 기준("부트스트랩 95%
+CI가 0을 배제하고 신규가 우세할 때만 교체")은 통과했다 -
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_recalibration_report.json`
+기준 15.2250 -> 8.6978(+42.87%), 46승1패, 부호검정 p<0.0001, 부트스트랩
+95% CI [+5.7623, +7.2889].
+
+기각한 이유는 **네 파라미터가 전부 격자 경계**였기 때문이다:
+`sat_mult` 0.65->0.45(하한), `contrast_n` 1.4->1.0(하한),
+`black_lift` 0.03->0.12(상한), `white_point` 1.05->1.18(상한). 방향이
+"밝기 크게 올리고 · S커브 제거 · 채도 절반"이라, 필름 시뮬레이션을 다듬는
+게 아니라 무언가 전역 격차를 상수로 메우는 모양이었다.
+
+### 2. 원인 - 룩이 아니라 렌더였다
+
+`tools/diagnose_fuji_neutral_render_offset.py`로 룩을 전혀 안 씌운
+`load_neutral_render()` 출력과 카메라 JPEG의 전역 통계를 페어별로 비교했다.
+`datasets/fuji/contributed/local-work-2026-08/neutral_render_offset_classic_negative.json`
+기준 Lab L 중앙값이 +74.851(47/47쌍, 부호검정 p<0.0001, 부트스트랩 95% CI
+[+68.851, +80.191]), HSV S 평균이 -19.490(0/47쌍, CI [-22.964, -16.162])으로
+다섯 지표 전부 CI가 0을 배제했다. 원인은 `tools/calibrate.py`의
+`no_auto_bright=True`로, "무가공 중립 베이스라인"이라는 의도된 동작이다.
+
+auto-bright로 메워지는지도 확인했다.
+`tools/diagnose_fuji_autobright_vs_look.py`가 현행 상수를 고정한 채 렌더만
+바꿔서 잰 결과는
+`datasets/fuji/contributed/local-work-2026-08/autobright_vs_look_classic_negative.json`
+기준 16.7007 -> 15.1488(+9.29%, 40승7패, 부트스트랩 95% CI
+[+1.0818, +2.0425])로, 방향은 맞지만 재보정의 +42.87%를 설명하지 못한다 -
+하이라이트 정규화라 미드톤 격차가 남기 때문이다.
+
+### 3. 이 편향은 후지만의 것이 아니다
+
+`tools/diagnose_neutral_render_offset_by_brand.py`로 raw가 디스크에 남은
+네 세트에서 같은 다섯 지표를 쟀다.
+`datasets/neutral_render_offset_by_brand.json` 기준:
+
+| 세트 | n | lab_L_mean | lab_L_median | hsv_S_mean | white_p995 |
+|---|---|---|---|---|---|
+| fuji Classic Negative | 47 | +50.476 | +74.851 | -19.490 | +33.000 |
+| hasselblad x1d-x2d100c-restore | 55 | +43.694 | +50.073 | -11.886 | +45.182 |
+| hasselblad xcd-lenses | 145 | +49.119 | +53.931 | -9.227 | +49.686 |
+| sony a7v-preprod | 22 | +47.598 | +47.409 | +1.565 (보류) | +65.818 |
+| leica sl3p | 15 | +25.764 | +30.933 | -2.750 (보류) | +21.500 |
+
+같은 리포트 기준 `lab_L_mean`/`lab_L_median`/`white_p995`는 다섯 세트
+284쌍 전부에서 부호가 일치하고 부트스트랩 95% CI가 0을 배제한다 - **밝기
+격차는 전 브랜드 공통**이다. 반면 `hsv_S_mean`은 소니가 +1.565로 CI
+[-3.556, +6.450], 라이카가 -2.750으로 CI [-5.948, +0.541]이라 판정
+보류다 - **과채도는 후지·핫셀만의 특성**이고, 그래서 Classic Negative의
+`sat_mult`만 유독 하한으로 달아났다.
+
+파급: 이 저장소의 population fit ΔE00 **절대값**은 전부 "무가공 렌더 기준"
+이라는 단서가 붙는다. 룩 간 상대비교는 그대로 유효하다.
+
+### 4. 처방 - 검증된 계열로 재적합
+
+같은 세트를 같은 경로로 적합한 `apply_provia`,
+`apply_classic_chrome_v2`, `apply_nostalgic_neg_v3`는 전부
+`toe_lift=0.0`/`white_point=1.0`으로 수렴했다 - 밝기 리프트를 안 쓴다.
+`core.curve.film_curve`는 `white_point<=1.0`이라 구조적으로 밝기를 못
+올린다. 그래서 `tools/evaluate_fuji_classic_negative_v2_grid.py`로 CLAHE +
+`film_curve` 계열에 Classic Negative의 핵심인 채도 축을 붙여 재적합했다
+(`apply_classic_chrome` -> `_v2` 전례와 같은 형태).
+
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_grid_report.json`
+기준 5-fold 홀드아웃 16.7007 -> 15.2317(**+8.80%**), 39승8패, 부호검정
+p<0.0001, 부트스트랩 95% CI [+1.0738, +1.8493]으로 사전 기준을 통과했다.
+전체표본 상수는 `toe_lift=0.0`, `shoulder_start=0.78`, `white_point=1.0`,
+`sat_mult=0.40`이고 in-sample ΔE00 14.1860이다. 폴드별 선택은
+`toe_lift`/`white_point`가 5/5 만장일치, `shoulder_start` 0.74~0.82,
+`sat_mult` 0.35~0.45로 좁게 뭉친다(같은 리포트, `apply_classic_chrome_v2`의
+42/42 만장일치보다는 약한 신호).
+
+**해석**: 재보정의 +42.87%와 v2의 +8.80% 사이 34%p가 룩이 아니라 노출
+보정이었다. +8.80%가 룩 자체에서 나온 몫이다.
+
+### 5. 경계 재확인
+
+4의 상수가 `toe_lift=0.0`/`white_point=1.0` 두 경계에 붙어서, 스스로 세운
+"경계면 실패 신호" 기준대로 `tools/probe_fuji_classic_negative_v2_boundary.py`로
+나머지 두 축을 고정하고 경계 밖을 훑었다.
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_boundary_probe.json`
+기준 `toe_lift`는 진짜 최적점이다 - 하한 밖 -0.02/-0.04/-0.06/-0.08에서
+14.4987/14.8247/15.2081/15.3931로 단조 악화한다(전체표본 in-sample 값,
+페어드 비교가 아니라 CI 없음).
+
+`white_point` 경계는 물긴 한다 - 같은 리포트 기준 1.05/1.10/1.15/1.20에서
+14.1472/14.1230/14.1048/14.0916으로, 0.20 구간 전체를 넘어가도
+**-0.0944 ΔE00(0.7%)**뿐이다(CI 없음, in-sample). 같은 탈출구가 현행
+계열에서는 6.5 ΔE00을 가져갔던 것(1절, CI [+5.7623, +7.2889])과 대비되어,
+밝기 보정 경로가 실제로 차단됐음을 보인다. 이 0.7%는 남은 밝기 격차의
+잔여 당김이고, 의도적으로 건 제약이라 1.0을 유지한다.
+
+### 부수 발견 - 소니 세트의 실효 표본은 62가 아니라 22이다
+
+3절을 돌리다 소니 `dpreview-a7v-preprod-2026-08` 62쌍 중 40개가 디코드
+실패하는 걸 발견했다. 손상이 아니다 - 전부 정상 TIFF 헤더에
+`exiftool -FileType`도 `ARW`다. `tools/audit_raw_decodability.py`로 전 세트를
+점검한 결과 `datasets/raw_decodability_audit.json` 기준 실패 40개는 전부
+`Sony Compressed RAW 2`(손실), 정상 22개는 전부
+`Sony Lossless Compressed RAW 2`로, LibRaw 0.22.1(rawpy 0.27.0)이 a7 V의
+손실 압축 ARW를 지원하지 않는 것이다. 나머지 8개 세트(후지 309, 핫셀 212,
+라이카 15)는 실패 0건이다.
+
+문제는 이게 조용하다는 점이다 - 대부분의 `evaluate_*.py`는 디코드 실패를
+건너뛰기만 해서, 소니 작업이 매니페스트 62행이 아니라 22쌍에서 돌아가고
+있었는데 아무 데도 그 숫자가 안 남았다. 감사 스크립트는 이상 시 종료코드
+1이라 다음 바디를 받을 때 자동으로 걸린다.
+
+### 권고
+
+`apply_classic_negative_v2` 추가를 제안한다 - 기존 `apply_classic_negative`는
+`brands/CLAUDE.md`대로 그대로 두고 나란히 둔다. **추가 실행은 배포 결정이라
+하지 않았다.** 현행 계열 재보정 결과(1절)는 채택하지 않는다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.probe_fuji_classic_negative_v2_boundary`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.diagnose_neutral_render_offset_by_brand`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.audit_raw_decodability`.

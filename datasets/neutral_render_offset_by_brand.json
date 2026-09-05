@@ -1,0 +1,252 @@
+{
+  "purpose": "load_neutral_render()의 노출/채도 계통 편향이 후지 고유인지 전 브랜드 공통인지 확인",
+  "cause_under_test": "tools/calibrate.py:130 no_auto_bright=True",
+  "metric": "카메라 JPEG 통계 - neutral 렌더 통계 (페어별), 부호검정 + 부트스트랩 95% CI 20000회 고정 시드",
+  "fuji_reference": {
+    "lab_L_mean": 50.476,
+    "lab_L_median": 74.851,
+    "hsv_S_mean": -19.49,
+    "black_p2": 7.106,
+    "white_p995": 33.0
+  },
+  "sets": [
+    {
+      "label": "hasselblad",
+      "set": "datasets/hasselblad/contributed/x1d-x2d100c-restore-2026-08",
+      "n_pairs": 55,
+      "n_failed": 0,
+      "stats": {
+        "lab_L_mean": {
+          "mean_diff": 43.69449822319073,
+          "n": 55,
+          "positive": 55,
+          "negative": 0,
+          "p_value": 5.551115123125783e-17,
+          "ci_lo": 38.28675511340237,
+          "ci_hi": 49.57687063858257,
+          "inconclusive": false
+        },
+        "lab_L_median": {
+          "mean_diff": 50.07272727272727,
+          "n": 55,
+          "positive": 55,
+          "negative": 0,
+          "p_value": 5.551115123125783e-17,
+          "ci_lo": 42.89090909090909,
+          "ci_hi": 57.90909090909091,
+          "inconclusive": false
+        },
+        "hsv_S_mean": {
+          "mean_diff": -11.886251045981046,
+          "n": 55,
+          "positive": 13,
+          "negative": 42,
+          "p_value": 0.00011361060320691507,
+          "ci_lo": -17.204178626518566,
+          "ci_hi": -7.2842177612588275,
+          "inconclusive": false
+        },
+        "black_p2": {
+          "mean_diff": 3.4545454545454546,
+          "n": 55,
+          "positive": 40,
+          "negative": 12,
+          "p_value": 0.0001275387838557407,
+          "ci_lo": 1.9272727272727272,
+          "ci_hi": 5.109090909090909,
+          "inconclusive": false
+        },
+        "white_p995": {
+          "mean_diff": 45.181636363636194,
+          "n": 55,
+          "positive": 42,
+          "negative": 9,
+          "p_value": 3.3888279489246997e-06,
+          "ci_lo": 35.03609090909065,
+          "ci_hi": 55.07263863636355,
+          "inconclusive": false
+        }
+      }
+    },
+    {
+      "label": "hasselblad-xcd",
+      "set": "datasets/hasselblad/contributed/xcd-lenses-2026-08",
+      "n_pairs": 145,
+      "n_failed": 0,
+      "stats": {
+        "lab_L_mean": {
+          "mean_diff": 49.11871442483124,
+          "n": 145,
+          "positive": 145,
+          "negative": 0,
+          "p_value": 4.484155085839415e-44,
+          "ci_lo": 45.627173750148245,
+          "ci_hi": 52.62987608686828,
+          "inconclusive": false
+        },
+        "lab_L_median": {
+          "mean_diff": 53.93103448275862,
+          "n": 145,
+          "positive": 145,
+          "negative": 0,
+          "p_value": 4.484155085839415e-44,
+          "ci_lo": 49.737931034482756,
+          "ci_hi": 58.12413793103448,
+          "inconclusive": false
+        },
+        "hsv_S_mean": {
+          "mean_diff": -9.227413523535851,
+          "n": 145,
+          "positive": 45,
+          "negative": 100,
+          "p_value": 5.72317416461909e-06,
+          "ci_lo": -12.4905500515759,
+          "ci_hi": -5.9045175760239905,
+          "inconclusive": false
+        },
+        "black_p2": {
+          "mean_diff": 9.86896551724138,
+          "n": 145,
+          "positive": 133,
+          "negative": 3,
+          "p_value": 9.62796454058168e-36,
+          "ci_lo": 8.310172413793103,
+          "ci_hi": 11.551724137931034,
+          "inconclusive": false
+        },
+        "white_p995": {
+          "mean_diff": 49.68603448275846,
+          "n": 145,
+          "positive": 118,
+          "negative": 21,
+          "p_value": 1.3966293565787202e-17,
+          "ci_lo": 43.22726293103426,
+          "ci_hi": 56.272290517241174,
+          "inconclusive": false
+        }
+      }
+    },
+    {
+      "label": "sony",
+      "set": "datasets/sony/contributed/dpreview-a7v-preprod-2026-08",
+      "n_pairs": 22,
+      "n_failed": 40,
+      "stats": {
+        "lab_L_mean": {
+          "mean_diff": 47.597944633248375,
+          "n": 22,
+          "positive": 22,
+          "negative": 0,
+          "p_value": 4.76837158203125e-07,
+          "ci_lo": 42.50833161639762,
+          "ci_hi": 52.28152564783346,
+          "inconclusive": false
+        },
+        "lab_L_median": {
+          "mean_diff": 47.40909090909091,
+          "n": 22,
+          "positive": 22,
+          "negative": 0,
+          "p_value": 4.76837158203125e-07,
+          "ci_lo": 40.90909090909091,
+          "ci_hi": 52.95454545454545,
+          "inconclusive": false
+        },
+        "hsv_S_mean": {
+          "mean_diff": 1.5652301047861785,
+          "n": 22,
+          "positive": 11,
+          "negative": 11,
+          "p_value": 1.0,
+          "ci_lo": -3.5564302605494205,
+          "ci_hi": 6.449695288161987,
+          "inconclusive": true
+        },
+        "black_p2": {
+          "mean_diff": 15.181818181818182,
+          "n": 22,
+          "positive": 22,
+          "negative": 0,
+          "p_value": 4.76837158203125e-07,
+          "ci_lo": 11.818181818181818,
+          "ci_hi": 18.5,
+          "inconclusive": false
+        },
+        "white_p995": {
+          "mean_diff": 65.81795454545467,
+          "n": 22,
+          "positive": 22,
+          "negative": 0,
+          "p_value": 4.76837158203125e-07,
+          "ci_lo": 59.045227272727395,
+          "ci_hi": 72.00111931818174,
+          "inconclusive": false
+        }
+      }
+    },
+    {
+      "label": "leica",
+      "set": "datasets/leica/contributed/dpreview-sl3p-2026-08",
+      "n_pairs": 15,
+      "n_failed": 0,
+      "stats": {
+        "lab_L_mean": {
+          "mean_diff": 25.76400335008375,
+          "n": 15,
+          "positive": 14,
+          "negative": 1,
+          "p_value": 0.0009765625,
+          "ci_lo": 18.329111948632047,
+          "ci_hi": 32.771034477945285,
+          "inconclusive": false
+        },
+        "lab_L_median": {
+          "mean_diff": 30.933333333333334,
+          "n": 15,
+          "positive": 13,
+          "negative": 2,
+          "p_value": 0.00738525390625,
+          "ci_lo": 19.866666666666667,
+          "ci_hi": 41.4,
+          "inconclusive": false
+        },
+        "hsv_S_mean": {
+          "mean_diff": -2.7497934115019564,
+          "n": 15,
+          "positive": 4,
+          "negative": 11,
+          "p_value": 0.11846923828125,
+          "ci_lo": -5.947516806253493,
+          "ci_hi": 0.5405028754885479,
+          "inconclusive": true
+        },
+        "black_p2": {
+          "mean_diff": 0.5333333333333333,
+          "n": 15,
+          "positive": 5,
+          "negative": 4,
+          "p_value": 1.0,
+          "ci_lo": -0.3333333333333333,
+          "ci_hi": 1.5333333333333334,
+          "inconclusive": true
+        },
+        "white_p995": {
+          "mean_diff": 21.49966666666684,
+          "n": 15,
+          "positive": 9,
+          "negative": 1,
+          "p_value": 0.021484375,
+          "ci_lo": 11.8,
+          "ci_hi": 31.133333333333333,
+          "inconclusive": false
+        }
+      }
+    }
+  ],
+  "universal_biased_metrics": [
+    "lab_L_mean",
+    "lab_L_median",
+    "white_p995"
+  ],
+  "modifies_shipped_code": false
+}
