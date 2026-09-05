@@ -47,3 +47,17 @@ mean, standard deviation, and quantile difference by one.
   the fingerprint assertion, the same replacement failed with 19/21 anchor
   values outside the `1.0` bound.
 - GREEN: the all-zero rejection test and all golden tests passed (6 tests).
+
+## Re-review tolerance correction
+
+`atol=1.0` rejected a valid clipped uniform `+1` LSB variation for three
+functions because NumPy reported a statistic difference of
+`1.000000000000014`. The bound is now `1.001`: the extra `0.001` covers only
+floating-point aggregation error beyond the documented one-LSB variation.
+
+- RED: `test_reference_check_accepts_clipped_one_lsb_variation` failed for
+  Pro Neg Std, Eterna Cinema, and Eterna Bleach Bypass at `atol=1.0`.
+- GREEN: with `atol=1.001`, the clipped `+1` LSB test and all-zero rejection
+  test pass alongside the exact-hash checks (7 golden tests).
+- Final verification: `.venv/bin/python -m unittest discover -s tests` — 908
+  tests, OK (43.144 s).
