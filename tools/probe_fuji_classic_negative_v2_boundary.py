@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import cv2
 import numpy as np
 
-from hybrid_engine.utils.evaluate import mean_delta_e
+from hybrid_engine.utils.evaluate import bgr_u8_to_linear_rgb, mean_delta_e
 from tools.calibrate import load_neutral_render
 from tools.evaluate_fuji_classic_negative_v2_grid import apply_candidate
 
@@ -79,10 +79,13 @@ def main():
                          "and local JPEG/RAW files.")
     print(f"[{FILM_MODE}] {n}쌍, 기준 상수 {BEST}\n")
 
+    targets_linear = [bgr_u8_to_linear_rgb(t) for t in targets]
+
     def de(tl, wp):
         return float(np.mean([mean_delta_e(
-            apply_candidate(imgs[i], tl, BEST["shoulder_start"], wp,
-                            BEST["sat_mult"]), targets[i]) for i in range(n)]))
+            bgr_u8_to_linear_rgb(apply_candidate(imgs[i], tl, BEST["shoulder_start"], wp,
+                                                 BEST["sat_mult"])),
+            targets_linear[i]) for i in range(n)]))
 
     base = de(BEST["toe_lift"], BEST["white_point"])
     print(f"기준(경계 위) ΔE00={base:.4f}\n")

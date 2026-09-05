@@ -80,3 +80,11 @@ $ python3 -m unittest tests.test_fuji_classic_negative_recalibration
 Ran 29 tests
 OK
 ```
+
+## Boundary probe follow-up
+
+`tools/probe_fuji_classic_negative_v2_boundary.py` also evaluates OpenCV BGR
+uint8 candidate and JPEG arrays.  Its pending change was reviewed and retained:
+targets are converted once with `bgr_u8_to_linear_rgb`, and every candidate is
+converted at the `mean_delta_e` boundary.  No raw BGR metric path remains in
+that probe.
