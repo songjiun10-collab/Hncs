@@ -4732,3 +4732,60 @@ p<0.0001, 부트스트랩 95% CI [+2.5039, +3.4143]으로 사전 기준을 통�
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.probe_fuji_classic_negative_v2_boundary`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.diagnose_neutral_render_offset_by_brand`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.audit_raw_decodability`.
+
+## 핫셀블라드 차용 파라미터(shoulder_start/clahe_clip) 재적합 - Leica/Sony 둘 다 null, 양성 대조로 방법 검증 (2026-09-06)
+
+population-fit 브랜드 10개(canon, leica, nikon, olympus, panasonic, pentax,
+phaseone, ricoh_gr, sigma, sony)가 `# 미검증 - 핫셀블라드 기본값 차용`이라고
+스스로 적어둔 채 `_SHOULDER_START=0.78`, `_CLAHE_CLIP=1.25`를 쓰고 있었다.
+raw+jpeg 페어를 로컬에 갖고 있어 재적합 가능한 건 Leica, Sony 둘뿐이었다
+(나머지 8개는 RAW 재수집 필요, 미착수).
+
+`tools/refit_borrowed_population_fit_params.py`(성공 기준은 그 파일
+docstring 16-20행에 사전 확정: LOO 홀드아웃 부트스트랩 95% CI 20000회
+고정 시드가 0을 배제하고 재적합이 우세할 때만 교체 권고)로 브랜드별
+`shoulder_start` x `clahe_clip` 2축 LOO를 돌렸다(`_TOE_LIFT`/`_WHITE_POINT`는
+실측값 그대로 고정).
+
+`datasets/refit_borrowed_leica.json`(n=15): 8.1163 -> 8.0432, 10승5패,
+부호검정 **p=0.3018**, CI [+0.0023, +0.1956](0을 아슬아슬하게 배제).
+전체표본 최종 `shoulder_start=0.999`(격자 상한이자 `film_curve` 자체의
+구조적 clamp 값), `clahe_clip=1.25`(현행과 동일). 15/15 폴드 만장일치로
+`shoulder_start`만 경계에 붙는다.
+
+`datasets/refit_borrowed_sony.json`(n=22, `tools/audit_raw_decodability.py`로
+확인된 디코드 가능 표본만): 16.5606 -> 16.3775, 13승9패, p=0.5235,
+CI [-0.1048, +0.4567] - 0을 포함해 **판정 보류**. 경계에 붙은 축 없음.
+
+**해석**: 자동 기준만 보면 Leica는 "통과"(CI가 0을 배제)지만, p=0.3018은
+부호검정 기준으로는 유의하지 않고 - CI가 0을 배제하는 것과 부호검정이
+유의한 것은 다른 질문이다 - 유일하게 움직인 축(`shoulder_start`)이
+`film_curve`의 실제 수학적 상한(0.999)에 정확히 붙는다. 이번 세션에서
+이미 두 번(Classic Negative v2 경계, Leica 1차 좁은 격자) "경계에 붙은
+결과는 좁은 격자 탓이거나 노출 보정 탈출구"였던 패턴과 정확히 같은 모양이다
+- 다만 이번엔 격자를 더 넓힐 수가 없다(0.999가 곧 코드의 진짜 한계). 그래서
+CI 통과를 그대로 "채택 권고"로 읽지 않는다. n=15가 작고 승/패도 10/5로
+근소해서, 데이터를 더 모으거나 Classic Negative에서 쓴 auto-bright 통제
+실험 없이는 신호와 노출 탈출구를 못 가른다. Sony는 애초에 CI가 0을 포함해
+더 명확히 판정 보류다.
+
+**양성 대조 검증**: 두 브랜드 모두 기준선을 일부러 틀린 값
+(`--control-shoulder`/`--control-clahe`)으로 바꾼 뒤 같은 도구로 돌려
+`datasets/refit_borrowed_leica_control.json`(8.1163 대신 10.1385 ->
+8.0432, +20.67%, 14승1패, p=0.0010, CI [+1.2863,+2.9960])과
+`datasets/refit_borrowed_sony_control.json`(17.1157 -> 16.3775, +4.31%,
+19승3패, p=0.0009, CI [+0.4344,+1.0455]) 둘 다 도구가 주입된 열화를
+정확히 잡아냈다 - null 결과가 도구의 둔감함 때문이 아니라는 확인이다.
+
+**권고**: Leica/Sony 둘 다 `brands/*.py` 상수를 교체하지 않는다. 나머지
+8개 브랜드(canon, nikon, sigma, olympus, panasonic, pentax, ricoh_gr,
+phaseone)는 raw+jpeg 페어가 없어 재적합 자체를 못 했다 - RAW 재수집이
+먼저다.
+
+재현:
+```
+~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_borrowed_population_fit_params \
+    --brand brands.leica --set datasets/leica/contributed/dpreview-sl3p-2026-08
+~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_borrowed_population_fit_params \
+    --brand brands.sony --set datasets/sony/contributed/dpreview-a7v-preprod-2026-08
+```
