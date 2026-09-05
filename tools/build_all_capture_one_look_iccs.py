@@ -6,8 +6,16 @@ ICC로 굽는다. 지금까지는 `tools/build_devicelink_icc_for_look.py`를 �
 **왜 배치인가**: 룩이 늘어날 때마다 수동으로 한 줄씩 굽는 방식은
 `tests/test_brands.py`의 수동 allowlist가 그랬듯 조용히 뒤처진다(실제로
 2026-09에 그 allowlist에서 11개가 누락된 채 발견됐다). 이 스크립트는
-룩 목록을 `tests/test_brands.py`의 자동 발견(`BRAND_LOOKS`)에서 그대로
-가져와 **테스트가 아는 룩과 캡처원 프로필이 항상 같은 집합**이 되게 한다.
+룩 목록을 `tests/test_brands.py`에서 그대로 가져와 **테스트가 아는 룩과
+캡처원 프로필이 항상 같은 집합**이 되게 한다.
+
+**목록은 두 군데서 온다**: `BRAND_LOOKS`(자동 발견)는 `brands/fuji.py`를
+통째로 제외하므로(fuji는 자체 `TestFujiPresets`가 완전성 검사를 한다)
+`FUJI_COLOR_PRESETS`를 따로 합쳐야 한다. 이 스크립트 초판이 `BRAND_LOOKS`
+만 써서 후지 필름시뮬레이션 13개가 전부 안 구워진 채 배포됐고,
+2026-09-04에 커버리지를 세다가 발견했다 - "자동 발견을 재사용하니
+안전하다"는 가정 자체가 그 자동 발견의 제외 목록까지 확인해야 성립한다는
+사례.
 
 **굽는 방식**: 새 로직 없음 - `core.lut_export.bake_lut_from_function()`
 (합성 이미지 한 장을 통과시켜 격자를 얻는, 이미 검증된 방식)으로 33³
@@ -96,15 +104,30 @@ def _describe(module_name, func_name):
     return brand, look, f"HNCS {brand.replace('_', ' ')} {look.replace('_', ' ')} look"
 
 
+def _collect_looks():
+    """구울 룩 목록을 `tests/test_brands.py`에서 모은다.
+
+    `BRAND_LOOKS`만으로는 부족하다 - 그 자동 발견은 `brands/fuji.py`를
+    통째로 제외한다(`_EXCLUDED_MODULES = {"fuji"}`, fuji는 자체
+    `TestFujiPresets`가 완전성 검사를 하기 때문). 초판이 `BRAND_LOOKS`만
+    썼다가 후지 필름시뮬레이션 프리셋 13개가 전부 안 구워진 걸 2026-09-04에
+    발견해서, 같은 파일의 `FUJI_COLOR_PRESETS`도 합친다. 모노 프리셋
+    (`FUJI_MONO_PRESETS`)은 설계상 1채널 그레이스케일을 반환해 3채널
+    DeviceLink LUT로 담을 수 없으므로 제외한다.
+    """
+    from test_brands import BRAND_LOOKS, FUJI_COLOR_PRESETS
+    return list(BRAND_LOOKS) + [("brands.fuji", fn) for fn in FUJI_COLOR_PRESETS]
+
+
 def main():
-    from test_brands import BRAND_LOOKS  # 테스트의 자동 발견을 단일 소스로 재사용
+    looks = _collect_looks()
 
     os.makedirs(OUT_DIR, exist_ok=True)
-    print(f"배포 룩 {len(BRAND_LOOKS)}개 발견 "
-          f"(tests/test_brands.py의 BRAND_LOOKS 자동 발견 재사용)\n")
+    print(f"배포 룩 {len(looks)}개 발견 (tests/test_brands.py의 BRAND_LOOKS "
+          f"자동 발견 + FUJI_COLOR_PRESETS)\n")
 
     issued, skipped, failed = [], [], []
-    for module_name, func_name in BRAND_LOOKS:
+    for module_name, func_name in looks:
         key = (module_name, func_name)
         if key in ALREADY_SHIPPED:
             skipped.append({"module": module_name, "func": func_name,
@@ -159,8 +182,12 @@ def main():
 
     report = {
         "purpose": "Capture One DeviceLink ICC - 배포된 brands/*.py apply_* 룩 전체",
-        "source_of_truth": "tests/test_brands.py BRAND_LOOKS (자동 발견) - "
-                           "테스트가 아는 룩과 캡처원 프로필이 같은 집합이 되도록",
+        "source_of_truth": "tests/test_brands.py BRAND_LOOKS(자동 발견) + "
+                           "FUJI_COLOR_PRESETS - 테스트가 아는 룩과 캡처원 "
+                           "프로필이 같은 집합이 되도록. BRAND_LOOKS는 fuji.py를 "
+                           "통째로 제외하므로 FUJI_COLOR_PRESETS를 따로 합쳐야 "
+                           "한다(초판이 이걸 빠뜨려 후지 프리셋 13개가 안 구워졌음). "
+                           "FUJI_MONO_PRESETS는 1채널 반환이라 제외",
         "lut_size": LUT_SIZE,
         "format": "ICC DeviceLink, lut8Type('mft1') - 캡처원이 .cube를 지원 안 함",
         "limitation": "CLAHE 등 적응형 연산은 점별 LUT로 담을 수 없어 실사진 기준 "
