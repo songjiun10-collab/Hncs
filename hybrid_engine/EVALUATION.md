@@ -4336,3 +4336,62 @@ Classic Negative의 0.72와 거의 같은 "덜 벌어짐" 쪽이다.
 11.7121이다.
 
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_velvia_gap`.
+
+## 후지 페어 오매칭 정정이 룩 측정치에 준 영향 - 재보정은 별도 결정 (2026-09-04)
+
+같은 날 `tools/fix_fuji_manifest_pairing.py`가 `local-work-2026-08`
+매니페스트에서 raw↔jpeg가 뒤바뀐 4쌍(8행)을 고쳤다. "8행이 틀렸다"만으로는
+재보정이 필요한지 알 수 없어서, 그 틀린 짝이 실제로 얼마나 큰 오차를
+싣고 있었는지 쟀다 - 스크립트 `tools/evaluate_fuji_pairing_fix_impact.py`,
+리포트
+`datasets/fuji/contributed/local-work-2026-08/pairing_fix_impact_report.json`
+(실행 확인됨). **바뀐 프레임이 모드당 1~4개뿐이라 부트스트랩 CI는 의미가
+없어 내지 않았고**, 아래는 성능 비교가 아니라 "정정 전에 보고되던 수치가
+얼마나 부풀려져 있었나"라는 편향 크기다.
+
+| 프레임 | 모드/룩 | 정정 전 짝 ΔE00 | 정정 후 짝 ΔE00 | 차이 (출처 `pairing_fix_impact_report.json`, CI 없음) |
+|---|---|---|---|---|
+| `DSCF9422.RAF` | Classic Chrome | 30.6299 | **11.6207** | +19.0092 |
+| `DSCF9316.RAF` | Classic Negative | 35.5300 | 20.0057 | +15.5244 |
+| `DSCF9328.RAF` | Classic Negative | 30.5569 | 16.6638 | +13.8930 |
+| `DSCF9391.RAF` | Classic Negative | 26.7573 | 13.0688 | +13.6885 |
+| `DSCF9358.RAF` | Classic Negative | 26.8279 | 20.4320 | +6.3958 |
+| `DSCF9341.RAF` | Nostalgic Neg | 14.7480 | 12.4865 | +2.2615 |
+| `DSCF9342.RAF` | Nostalgic Neg | 14.4823 | 12.5709 | +1.9114 |
+
+**7개 전부 정정 후 오차가 줄었다(7승 0패)** - 같은 리포트
+`pairing_fix_impact_report.json`의 `changed_frames_improved`/`worsened`
+기준이다(실행 확인됨, CI는 위 이유로 없음). 이건 성능 개선이 아니라,
+프리뷰 대조로 이미 확정했던 정정 방향을 룩 오차가 독립적으로 뒷받침한
+것이다.
+
+모드 평균의 이동폭은 아래와 같다 - 전부 같은 리포트
+`pairing_fix_impact_report.json`의 `mean_shift` 필드에서 전사했고
+부트스트랩 CI는 없다(실행 확인됨):
+
+| 모드 | 페어 수 | 정정 전 평균 ΔE00 | 정정 후 평균 ΔE00 | 이동 (출처 `pairing_fix_impact_report.json`, CI 없음) |
+|---|---|---|---|---|
+| Classic Negative | 47 | 16.3318 | 15.2786 | **+1.0532** |
+| Classic Chrome | 46 | 8.7704 | 8.3572 | +0.4132 |
+| Nostalgic Neg | 28 | 13.0095 | 12.8605 | +0.1490 |
+
+**재보정 판단 근거**: `apply_classic_negative`가 가장 크게 영향받았다 -
+`datasets/fuji/contributed/local-work-2026-08/pairing_fix_impact_report.json`
+기준 47쌍 중 4쌍(8.5%)이 오염돼 있었고 모드 평균이 1.0532만큼 부풀려져
+있었다(CI 없음, 실행 확인됨). `brands/fuji.py`의 그 룩 상수가
+`tools/fix_fuji_manifest_pairing.py`가 고친 그 4쌍의 영향을 받았을
+가능성이 있다는 뜻이다. 반면
+`datasets/fuji/contributed/local-work-2026-08/pairing_fix_impact_report.json`
+기준 `apply_classic_chrome`은 1쌍(이동 0.4132),
+`apply_nostalgic_neg`는 2쌍(이동 0.1490)으로 영향이 작다(CI 없음, 실행
+확인됨). **재보정 실행은 배포 결정이라 하지 않았다** - `brands/fuji.py`도
+프로필도 건드리지 않았다.
+
+**부수로 확인하고 기각한 것**: 이 세트를 훑을 때마다 뜨던
+`Premature end of JPEG file` 경고의 출처가
+`datasets/fuji/contributed/local-work-2026-08/jpeg/DSCF9414.JPG`임을
+찾았는데, 잘린 건 EOI 마커 수준이라 cv2가 8256x6192 전체를 정상
+디코드한다(균일 행 0개 - 잘린 JPEG 특유의 회색 띠가 없다, 실행 확인됨).
+데이터 문제가 아니어서 아무 조치도 하지 않았다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_pairing_fix_impact`.

@@ -1,0 +1,102 @@
+{
+  "question": "페어 오매칭 정정이 후지 룩 측정치를 얼마나 바꿨나 - 재보정이 필요한지 판단할 근거",
+  "fix_commit_context": "tools/fix_fuji_manifest_pairing.py (2026-09-04) - raw<->jpeg가 뒤바뀐 4쌍(8행) 정정 + 고아 1행 제거",
+  "set": "datasets/fuji/contributed/local-work-2026-08",
+  "method": "같은 모드 전체 페어에 그 모드의 apply_*를 돌려 화소별 ΔE00. 정정 전 짝(OLD_PAIRING)과 정정 후 짝으로 각각 계산",
+  "statistics_note": "바뀐 프레임이 모드당 최대 4개라 부트스트랩 CI는 의미가 없어 내지 않는다. 프레임별 값과 모드 평균 이동폭만 제시한다",
+  "deployment": "배포 아님 - brands/fuji.py도 프로필도 건드리지 않는다. 재보정 여부는 사용자 결정",
+  "modes": {
+    "Classic Chrome": {
+      "look": "apply_classic_chrome",
+      "n_pairs": 46,
+      "mean_de00_before_fix": 8.770428738494887,
+      "mean_de00_after_fix": 8.357184233025386,
+      "mean_shift": 0.41324450546950153,
+      "n_changed_frames": 1,
+      "changed_frames_improved": 1,
+      "changed_frames_worsened": 0,
+      "changed": [
+        {
+          "raw": "DSCF9422.RAF",
+          "old_jpeg": "DSCF9391.JPG",
+          "new_jpeg": "DSCF9422.JPG",
+          "de00_old": 30.6299,
+          "de00_new": 11.6207,
+          "delta": 19.0092
+        }
+      ]
+    },
+    "Classic Negative": {
+      "look": "apply_classic_negative",
+      "n_pairs": 47,
+      "mean_de00_before_fix": 16.331787093788947,
+      "mean_de00_after_fix": 15.27855813781906,
+      "mean_shift": 1.053228955969887,
+      "n_changed_frames": 4,
+      "changed_frames_improved": 4,
+      "changed_frames_worsened": 0,
+      "changed": [
+        {
+          "raw": "DSCF9391.RAF",
+          "old_jpeg": "DSCF9422.JPG",
+          "new_jpeg": "DSCF9391.JPG",
+          "de00_old": 26.7573,
+          "de00_new": 13.0688,
+          "delta": 13.6885
+        },
+        {
+          "raw": "DSCF9316.RAF",
+          "old_jpeg": "DSCF9328.JPG",
+          "new_jpeg": "DSCF9316.JPG",
+          "de00_old": 35.53,
+          "de00_new": 20.0057,
+          "delta": 15.5244
+        },
+        {
+          "raw": "DSCF9328.RAF",
+          "old_jpeg": "DSCF9316.JPG",
+          "new_jpeg": "DSCF9328.JPG",
+          "de00_old": 30.5569,
+          "de00_new": 16.6638,
+          "delta": 13.893
+        },
+        {
+          "raw": "DSCF9358.RAF",
+          "old_jpeg": "DSCF9428.JPG",
+          "new_jpeg": "DSCF9358.JPG",
+          "de00_old": 26.8279,
+          "de00_new": 20.432,
+          "delta": 6.3958
+        }
+      ]
+    },
+    "Nostalgic Neg": {
+      "look": "apply_nostalgic_neg",
+      "n_pairs": 28,
+      "mean_de00_before_fix": 13.0094928843491,
+      "mean_de00_after_fix": 12.860460413675325,
+      "mean_shift": 0.14903247067377556,
+      "n_changed_frames": 2,
+      "changed_frames_improved": 2,
+      "changed_frames_worsened": 0,
+      "changed": [
+        {
+          "raw": "DSCF9341.RAF",
+          "old_jpeg": "DSCF9342.JPG",
+          "new_jpeg": "DSCF9341.JPG",
+          "de00_old": 14.748,
+          "de00_new": 12.4865,
+          "delta": 2.2615
+        },
+        {
+          "raw": "DSCF9342.RAF",
+          "old_jpeg": "DSCF9341.JPG",
+          "new_jpeg": "DSCF9342.JPG",
+          "de00_old": 14.4823,
+          "de00_new": 12.5709,
+          "delta": 1.9114
+        }
+      ]
+    }
+  }
+}
