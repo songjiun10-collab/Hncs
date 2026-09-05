@@ -15,11 +15,23 @@
 3. 두 `project_structure`의 표 행 수가 같은지 - 한쪽만 늘어난 커밋을 잡는다.
 4. 코드가 문자열로 참조하는 `assets/**` 파일이 실제로 존재하는지.
 5. `assets/profiles/*.json`이 파싱되는지.
-6. `assets/profiles/**/*.icc`, `*.dcp`가 `exiftool -validate`를 통과하는지.
+6. `assets/profiles/**/*.dcp`, `*.icc`의 헤더를 직접 까서 보는 검사 - 아래
+   "exiftool이 못 잡는 것" 참고. 외부 도구 없이 항상 돈다.
+7. `assets/profiles/**/*.icc`, `*.dcp`가 `exiftool -validate`를 통과하는지.
+   exiftool이 없는 환경에서는 이 검사만 건너뛰고 마지막 줄에 그 사실을
+   적는다(6번은 그대로 돈다).
 
 **주의(2026-09-04에 실제로 겪은 것)**: `exiftool -validate -s3`는 정상일 때
 `OK`만 출력한다. 임시판에서 "출력이 있으면 경고"로 짰다가 정상 13개를
 전부 경고로 셌다 - 여기서는 출력이 정확히 `OK`인지로 판정한다.
+
+**exiftool이 못 잡는 것(6번을 따로 두는 이유)**: DCP는 표준 TIFF 매직(42)이
+아니라 Adobe 전용 `0x4352`를 요구하는데, 매직이 틀린 파일에도 exiftool은
+`Validate: OK`를 낸다(`tests/test_dcp_export.py`의
+`test_header_uses_dcp_magic_not_standard_tiff_magic` 주석 - 2026-08-31에
+Lightroom이 프로필을 못 읽던 실제 원인이었다). 즉 7번만으로는 그때 그
+버그를 다시 배포해도 통과한다. 6번은 그 매직과 ICC의 헤더 크기 필드·태그
+테이블을 순수 파이썬으로 직접 확인한다.
 
 이상이 하나라도 있으면 종료코드 1.
 
@@ -28,6 +40,8 @@
 import json
 import os
 import re
+import shutil
+import struct
 import subprocess
 import sys
 
@@ -102,37 +116,114 @@ def check_asset_refs():
     return problems
 
 
+def _binary_profiles():
+    for root, _, files in os.walk(PROFILES):
+        for f in sorted(files):
+            if f.endswith((".icc", ".dcp")):
+                yield os.path.join(root, f)
+
+
+def dcp_header_problems(path):
+    """DCP 8바이트 헤더를 직접 확인. exiftool은 매직이 틀려도 `OK`를 내므로
+    (위 독스트링) 배포 전에 이걸 통과해야 한다."""
+    name = os.path.basename(path)
+    size = os.path.getsize(path)
+    with open(path, "rb") as f:
+        head = f.read(8)
+    if len(head) < 8:
+        return [f"헤더가 8바이트 미만: {name}"]
+    byte_order, magic, first_ifd = struct.unpack("<2sHI", head)
+    problems = []
+    if byte_order != b"II":
+        problems.append(f"리틀엔디안이 아님: {name}: {byte_order!r}")
+    if magic != 0x4352:
+        # 42는 표준 TIFF 매직 - Lightroom이 프로필을 못 읽던 그 버그다.
+        problems.append(f"DCP 매직이 0x4352가 아님: {name}: 0x{magic:04X}"
+                        f"{' (표준 TIFF 매직 42)' if magic == 42 else ''}")
+    if not 8 <= first_ifd < size:
+        problems.append(f"첫 IFD 오프셋이 파일 밖: {name}: {first_ifd} (크기 {size})")
+    return problems
+
+
+def icc_header_problems(path):
+    """ICC 128바이트 헤더 + 태그 테이블이 파일 크기와 맞는지 확인."""
+    name = os.path.basename(path)
+    size = os.path.getsize(path)
+    with open(path, "rb") as f:
+        data = f.read()
+    if len(data) < 132:
+        return [f"헤더+태그 테이블보다 작음: {name}: {size}바이트"]
+    problems = []
+    declared = struct.unpack_from(">I", data, 0)[0]
+    if declared != size:
+        problems.append(f"헤더의 프로필 크기가 실제와 다름: {name}: "
+                        f"{declared} vs {size}")
+    if data[36:40] != b"acsp":
+        problems.append(f"`acsp` 시그니처 없음: {name}: {data[36:40]!r}")
+    ntags = struct.unpack_from(">I", data, 128)[0]
+    if 132 + ntags * 12 > size:
+        return problems + [f"태그 테이블이 파일 밖: {name}: {ntags}개"]
+    for i in range(ntags):
+        sig, offset, tag_size = struct.unpack_from(">4sII", data, 132 + i * 12)
+        if offset + tag_size > size:
+            problems.append(f"태그가 파일 밖: {name}: {sig!r} "
+                            f"{offset}+{tag_size} > {size}")
+    return problems
+
+
+def check_profile_headers():
+    problems, n_dcp, n_icc = [], 0, 0
+    for path in _binary_profiles():
+        if path.endswith(".dcp"):
+            n_dcp += 1
+            problems.extend(dcp_header_problems(path))
+        else:
+            n_icc += 1
+            problems.extend(icc_header_problems(path))
+    print(f"  DCP {n_dcp}개 / ICC {n_icc}개 헤더 확인")
+    return problems
+
+
 def check_profiles():
+    """`None`을 반환하면 exiftool이 없어서 건너뛴 것 - 이상 없음과 다르다."""
     problems, n_json, n_bin = [], 0, 0
     for root, _, files in os.walk(PROFILES):
         for f in sorted(files):
-            path = os.path.join(root, f)
             if f.endswith(".json"):
                 n_json += 1
                 try:
-                    json.load(open(path, encoding="utf-8"))
+                    json.load(open(os.path.join(root, f), encoding="utf-8"))
                 except Exception as e:
                     problems.append(f"JSON 파싱 실패: {f}: {e}")
-            elif f.endswith((".icc", ".dcp")):
-                n_bin += 1
-                out = subprocess.run(["exiftool", "-validate", "-s3", path],
-                                     capture_output=True, text=True,
-                                     timeout=120).stdout.strip()
-                # 정상은 정확히 "OK" - 출력 유무로 판정하면 안 된다(위 독스트링).
-                if out != "OK":
-                    problems.append(f"구조 검증 실패: {f}: {out or '(출력 없음)'}")
-    print(f"  프로필 JSON {n_json}개 / ICC·DCP {n_bin}개 확인")
+    print(f"  프로필 JSON {n_json}개 확인")
+    if shutil.which("exiftool") is None:
+        print("  ※ exiftool 없음 - ICC·DCP 구조 검증 건너뜀(헤더 검사는 위에서 끝냄)")
+        return None
+    for path in _binary_profiles():
+        n_bin += 1
+        out = subprocess.run(["exiftool", "-validate", "-s3", path],
+                             capture_output=True, text=True,
+                             timeout=120).stdout.strip()
+        # 정상은 정확히 "OK" - 출력 유무로 판정하면 안 된다(위 독스트링).
+        if out != "OK":
+            problems.append(f"구조 검증 실패: {os.path.basename(path)}: "
+                            f"{out or '(출력 없음)'}")
+    print(f"  ICC·DCP {n_bin}개 exiftool 검증")
     return problems
 
 
 def main():
-    all_problems = []
+    all_problems, skipped = [], []
     for title, fn in [("문서 등재", check_registration),
                       ("한/영 문서 짝", check_doc_pairs),
                       ("assets 참조", check_asset_refs),
+                      ("프로필 헤더", check_profile_headers),
                       ("프로필 무결성", check_profiles)]:
         print(f"[{title}]")
         found = fn()
+        if found is None:
+            skipped.append(title)
+            found = []
         all_problems.extend(found)
         for p in found:
             print(f"  ※ {p}")
@@ -141,7 +232,10 @@ def main():
     if all_problems:
         print(f"이상 {len(all_problems)}건")
         sys.exit(1)
-    print("이상 없음")
+    # 안 돈 검사가 있으면 "이상 없음"이라고만 쓰면 안 된다 - 검증된 범위를
+    # 실제보다 넓게 읽히게 한다.
+    print("이상 없음" + (f" - 단 {len(skipped)}개 검사({', '.join(skipped)})는"
+                        " exiftool이 없어 못 돌렸다" if skipped else ""))
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -62,11 +63,15 @@ class TestBrandConfigFilters(unittest.TestCase):
                 self.assertTrue(len(cfg["galleries"]) > 0)
 
 
+@unittest.skipUnless(shutil.which("exiftool"), "exiftool 없음")
 class TestCheckGenuineBytes(unittest.TestCase):
     """GitHub 이슈 #4에서 지적된 문제(genuine_render_check이 run_hasselblad()엔
     안 걸려있었던 것)의 수정 - EXIF Software 태그로 Photoshop/Lightroom 편집을
     잡아내는지 회귀 검증. 리사이즈 전 원본 바이트에서 검사해야 하므로 실제
-    exiftool로 Software 태그를 써넣은 JPEG 파일로 테스트한다."""
+    exiftool로 Software 태그를 써넣은 JPEG 파일로 테스트한다.
+
+    exiftool이 없으면 error가 아니라 skip - CI는 `libimage-exiftool-perl`을
+    깔아서 항상 돌린다(`.github/workflows/tests.yml`)."""
 
     def _jpeg_bytes_with_software(self, software):
         img = np.random.default_rng(0).integers(0, 256, (16, 16, 3), dtype=np.uint8)

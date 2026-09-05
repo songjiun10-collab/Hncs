@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -26,7 +27,12 @@ def _write_tagged_image(path, make="Hasselblad", model="X2D II 100C",
     os.replace(tmp_jpg, path)
 
 
+@unittest.skipUnless(shutil.which("exiftool"), "exiftool 없음")
 class TestVerifyRow(unittest.TestCase):
+    """EXIF를 심으려면 실제 exiftool이 필요하다 - 없으면 error가 아니라 skip.
+    CI는 `libimage-exiftool-perl`을 깔아서 항상 돌린다
+    (`.github/workflows/tests.yml`)."""
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
