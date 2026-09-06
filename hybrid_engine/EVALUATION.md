@@ -4839,3 +4839,56 @@ phaseone)는 raw+jpeg 페어가 없어 재적합 자체를 못 했다 - RAW 재�
 ~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_borrowed_population_fit_params \
     --brand brands.sony --set datasets/sony/contributed/dpreview-a7v-preprod-2026-08
 ```
+## dpreview 스튜디오씬 챠트 - 7브랜드 DCP/ICC 발급 (2026-09-06, 사용자 승인)
+
+위 "11개 브랜드 컬러체커 검증 총괄"의 11개 전부 CI가 0을 안 걸치는
+결정적 결과였지만(Canon R6III만 예외적으로 약함, CI [+2.63,+6.55]/
+승패 15/7), 이번에 실제 `.dcp`/`.icc`를 발급한 건 그중 이번 세션에
+RAW를 재다운로드한 7개(Canon R6III/Nikon Z5II/Panasonic S1II/Sigma
+fp L/Ricoh GR IV/OM System OM-3/Pentax K-3 Mark III)뿐이다. 나머지
+4개(Sony a7R VI/a7 V/Hasselblad X2D II 100C/Fujifilm X-E5)는 CI
+유의성은 동일하지만 이번 배치에서는 건드리지 않았다 - Hasselblad X2D
+II는 이미 전용 dual-illuminant 챠트 DCP/ICC(`hasselblad_x2dii_chart.dcp`/
+`.icc`)가 있어 확실히 제외 대상이고, Sony/Fuji는 "이미 프로파일이
+있어서"가 완전한 이유는 아니다(`sony_generic_jpeg_approx.icc`/
+`fuji_generic_jpeg_approx.icc`도 챠트 실측 이전 근사인데, 마찬가지로
+그런 근사가 있던 Sigma는 이번 배치에 포함됐다) - 실질적으로는 이번
+세션에 RAW를 재다운로드한 대상이 이 7개였다는 게 더 정확한 이유이고,
+Sony/Fuji/Hasselblad는(Hasselblad 제외 사유는 위와 별개로 확실함)
+챠트 기반으로 재발급할지가 아직 결정 안 된 상태로 남아있다.
+
+`tools/fit_dpreview_studio_chart.py`(`tools/fit_leica_sl3p_studio_chart.py`의
+일반화판, 전체 표본으로 최종 매트릭스 피팅 + in-sample ΔE00 보고, CI
+없음)로 발급했다. 사용자 지시 "클로드 크롬"(연결 확인) →
+"ㄱㄱ"(RAW 재다운로드, opencli Browser Bridge로 158장 성공) →
+"ㅇㅇ ㄱ"(DCP/ICC 발급).
+
+**정정(2026-09-06, 오퍼스 리뷰 3회)**: out-of-sample 정확도 판정
+(부트스트랩 95% CI)은 위 "11개 브랜드 컬러체커 검증 총괄"(2026-09-04,
+line 3673 부근)이 끝냈고, 아래는 그 판정을 다시 하는 게 아니다. Sigma
+fp L(위 표 n=20, `n_failed_detect: 0`)과 Ricoh GR IV(위 표 n=23,
+`n_failed_detect: 1`)는 이번 재다운로드 표본(각각 22장/24장, raw/
+폴더 전체)과 장수가 다르다 - manifest.csv는 두 브랜드 다 처음부터 각각
+22/24행이었으므로, Sigma는 그때 2장이 아예 다운로드/시도되지 않았던
+것이고(이번엔 전부 받아 22장), Ricoh는 24장 다 있었는데 그때 1장이
+검출 실패였던 것(이번엔 같은 24장 세트에서 재검출 성공, Panasonic과
+같은 경우) - 둘 다 위 CV CI가 정확히 이 발급 표본과 1:1 대응한다고
+주장하지는 않는다.
+
+각 브랜드 실행(`python3 -m tools.fit_dpreview_studio_chart <raw_dir> <brand> <camera> <ext>`)이 직접 출력한 in-sample ΔE00(부트스트랩 CI 없음 - 전체 표본을 다 써서 발급용으로 다시 피팅한 값이라 위 CV 수치와 직접 비교 불가, out-of-sample 유의성은 위 두 문단이 가리키는 CV 표로 이미 결정됨)과, 같은 값이 저장된 `camera_native_matrix_report.json`(`n_images`/`chart_matrix_in_sample_delta_e_mean` 필드) 경로 - DCP/ICC는 `hybrid_engine/assets/profiles/`에:
+
+- Canon R6III: n=22, in-sample ΔE00=16.3517(CI 없음) → `canon_chart.dcp`/`.icc`, `datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/camera_native_matrix_report.json`
+- Nikon Z5II: n=24, in-sample ΔE00=11.0676(CI 없음) → `nikon_chart.dcp`/`.icc`, `datasets/nikon/contributed/dpreview-z5ii-studio-chart-2026-09/camera_native_matrix_report.json`
+- Panasonic S1II: n=20(검증 때는 2실패였는데 재검출 시 20/20 성공), in-sample ΔE00=11.9754(CI 없음) → `panasonic_chart.dcp`/`.icc`, `datasets/panasonic/contributed/dpreview-s1ii-studio-chart-2026-09/camera_native_matrix_report.json`
+- Sigma fp L: n=22(위 표는 n=20 - 위 정정 참고), in-sample ΔE00=11.8200(CI 없음) → `sigma_fpl_chart.dcp`/`.icc`, `datasets/sigma/contributed/dpreview-fpl-studio-chart-2026-09/camera_native_matrix_report.json`
+- Ricoh GR IV: n=24(위 표는 n=23, 1실패 - 위 정정 참고), in-sample ΔE00=12.9574(CI 없음) → `ricoh_gr_griv_chart.dcp`/`.icc`, `datasets/ricoh_gr/contributed/dpreview-griv-studio-chart-2026-09/camera_native_matrix_report.json`
+- OM System OM-3: n=22, in-sample ΔE00=13.0214(CI 없음) → `olympus_om3_chart.dcp`/`.icc`, `datasets/olympus/contributed/dpreview-om3-studio-chart-2026-09/camera_native_matrix_report.json`
+- Pentax K-3 Mark III: n=24, in-sample ΔE00=17.2321(CI 없음) → `pentax_k3iii_chart.dcp`/`.icc`, `datasets/pentax/contributed/dpreview-k3iii-studio-chart-2026-09/camera_native_matrix_report.json`
+
+`exiftool -UniqueCameraModel -ProfileName`로 14개 파일(DCP 7 + ICC 7)
+전부 확인했고 `python3 -m tools.audit_repo_integrity`(ICC·DCP 80개
+exiftool 검증)도 이상 없음. 실기기 UniqueCameraModel 미확인 - EXIF
+Model 문자열을 그대로 씀(Leica SL3-P/하셀블라드 X2D II 선례와 동일한
+caveat). 파일명은 바디까지 명시(`sigma_fpl_chart`/`ricoh_gr_griv_chart`/
+`olympus_om3_chart`/`pentax_k3iii_chart`) - 같은 브랜드의 다른 바디를
+나중에 추가해도 충돌 안 나도록.
