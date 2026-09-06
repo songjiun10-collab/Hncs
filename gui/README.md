@@ -3,10 +3,11 @@
 *[한국어 README](README.ko.md)*
 
 A Tkinter desktop app that wraps the CLIs from `tools/` and
-`hybrid_engine/` into one window with 4 tabs - brand look preview,
-hybrid_engine conversion, RAW->Log pipeline, and lens correction. Pure
-wrapper: no new color-science logic, just point-and-click over the same
-commands documented in `tools/README.md` and `hybrid_engine/README.md`.
+`hybrid_engine/` into one window with 5 tabs - brand look preview,
+hybrid_engine conversion, RAW->Log pipeline, lens correction, and AI
+super-resolution upscaling. Pure wrapper: no new color-science logic,
+just point-and-click over the same commands documented in
+`tools/README.md` and `hybrid_engine/README.md`.
 
 ```
 pip install -r requirements.txt   # now includes Pillow, needed to display images in Tk

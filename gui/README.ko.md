@@ -2,9 +2,9 @@
 
 *[English README](README.md)*
 
-`tools/`와 `hybrid_engine/`의 CLI들을 4개 탭(브랜드 룩 미리보기,
-hybrid_engine 변환, RAW->Log 파이프라인, 렌즈 보정)으로 감싼 Tkinter
-데스크톱 앱. 순수 래퍼다 - 새 색채과학 로직 없이, `tools/README.md`와
+`tools/`와 `hybrid_engine/`의 CLI들을 5개 탭(브랜드 룩 미리보기,
+hybrid_engine 변환, RAW->Log 파이프라인, 렌즈 보정, AI 업스케일)으로 감싼
+Tkinter 데스크톱 앱. 순수 래퍼다 - 새 색채과학 로직 없이, `tools/README.md`와
 `hybrid_engine/README.md`에 문서화된 동일한 명령을 클릭 몇 번으로
 쓸 수 있게 할 뿐이다.
 
