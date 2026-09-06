@@ -4763,6 +4763,21 @@ p<0.0001, 부트스트랩 95% CI [+2.5045, +3.4374] - 4절의 좁은 격자 결�
 > 좁은 격자의 인공물이 아님을 확인했지만, 이 절 자체의 배포 보류 결정은
 > 그대로 유지한다 - 채택은 별개의 배포 결정이다.
 
+> **배포(2026-09-06, 사용자 승인)**: 위 권고대로 `apply_classic_negative_v2`를
+> `brands/fuji/look.py`에 추가했다(`toe_lift=0.0, shoulder_start=0.94,
+> white_point=1.0, sat_mult=0.15, clahe_clip=1.25`). 기존
+> `apply_classic_negative`는 `brands/CLAUDE.md`대로 그대로 두고 나란히
+> 둔다 - 교체가 아니라 추가다. 채택 수치는 6절과 동일 - 재현:
+> `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`,
+> 리포트는
+> `datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_grid_report.json`
+> (5-fold 홀드아웃 15.2787→12.3081, +19.44%, 46승1패, 부호검정 p<0.0001,
+> 부트스트랩 95% CI [+2.5045,+3.4374]). `tests/test_brands.py`의
+> `FUJI_COLOR_PRESETS`에 등록, `brands/fuji/__init__.py`에서 재수출,
+> `docs/project_structure.md`/`.en.md`에 등재. `tools/video_engine.py`
+> 통합이나 Capture One ICC 재발급 등은 이번 배포 범위 밖 - 요청된 것만
+> 한다.
+
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.probe_fuji_classic_negative_v2_boundary`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.diagnose_neutral_render_offset_by_brand`,

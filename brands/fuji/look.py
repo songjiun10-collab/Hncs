@@ -425,6 +425,64 @@ def apply_classic_negative(img_bgr, sat_mult=0.65, contrast_n=1.4,
 
 
 # ==========================================
+# 9b. Classic Negative v2 - 검증된 톤 계열로 재적합(2026-09, GFX50S II n=47)
+# ==========================================
+def apply_classic_negative_v2(img_bgr, toe_lift=0.0, shoulder_start=0.94,
+                               white_point=1.0, sat_mult=0.15, clahe_clip=1.25):
+    """`apply_classic_negative()`(위)의 재적합판. 위 함수의 네 파라미터
+    (`sat_mult`/`contrast_n`/`black_lift`/`white_point`)를 GFX50S II
+    47쌍으로 그대로 재보정하면 사전에 정한 채택 기준(부트스트랩 95% CI가
+    0을 배제하고 신규 우세)은 통과하지만(+42.87%, CI [+5.7623,+7.2889]),
+    네 상수가 전부 격자 경계로 달아난다 - `tools/calibrate.py`의
+    `no_auto_bright=True`("무가공 렌더" 기준) 때문에 생기는 전역 밝기
+    격차(Lab L 중앙값 +74.851, 47/47쌍, CI가 0 배제)를 룩 파라미터가
+    메우고 있었다(`hybrid_engine/EVALUATION.md` "Classic Negative
+    재보정" 절 1~3항). 이 원인은 후지에 국한되지 않는다 - 밝기 격차는
+    확인된 5개 세트 284쌍 전부에서 같은 부호로 CI가 0을 배제한다(같은
+    절 3항). 그래서 현행 계열 재보정은 채택하지 않았다.
+
+    대신 같은 세트를 같은 경로(`load_neutral_render`)로 적합한
+    `apply_provia`/`apply_classic_chrome_v2`/`apply_nostalgic_neg_v3`가
+    전부 수렴한 `toe_lift=0.0`/`white_point=1.0`(밝기 리프트 없음) 계열에
+    Classic Negative의 핵심인 채도 축(`sat_mult`)만 추가해 재적합했다
+    (`apply_classic_chrome`->`_v2`와 같은 전례). `core.curve.film_curve`는
+    `white_point<=1.0`이라 구조적으로 밝기를 못 올려 경계 탈출이 안 된다.
+
+    5-fold 홀드아웃(2860콤보 격자, `SHOULDER_STARTS` 0.50~0.97/`SAT_MULTS`
+    0.10~1.0) 기준 15.2787 -> 12.3081(**+19.44%**), 46승1패, 부호검정
+    p<0.0001, 부트스트랩 95% CI [+2.5045, +3.4374] - 채택 기준 통과.
+    전체표본 최종 상수(`toe_lift=0.0, shoulder_start=0.94, white_point=1.0,
+    sat_mult=0.15`, in-sample ΔE00 10.8707)는 `shoulder_start`/`sat_mult`
+    둘 다 격자 안쪽에 수렴했다 - 좁은 격자에서 경계에 붙었던 건 격자
+    자체가 좁아서였다(단변량 프로브: `shoulder_start`는 0.999까지, `sat_mult`
+    는 0.15 아래로 가면 도로 나빠지는 완만한 내부 최적). 남은 경계는
+    `toe_lift=0.0`(하한 밖에서 단조 악화하는 진짜 최적점)과
+    `white_point=1.0`(1.20까지 밀어도 이득 -0.48%인, `WHITE_POINTS`를
+    노출 보정 탈출구로 넓히지 않기로 한 설계상 상한)뿐 - 둘 다 진짜
+    경계지 격자 인공물이 아니다. 재현: `tools/evaluate_fuji_classic_negative_v2_grid.py`,
+    `hybrid_engine/EVALUATION.md` "Classic Negative 재보정" 절 4~6항.
+
+    기존 `apply_classic_negative()`는 `brands/CLAUDE.md`대로 그대로 두고
+    나란히 둔다 - 이 함수를 교체하지 않는다."""
+    img = ensure_uint8(img_bgr)
+    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    l, a, b = cv2.split(lab)
+
+    clahe = cv2.createCLAHE(clipLimit=clahe_clip, tileGridSize=(8, 8))
+    l = clahe.apply(l)
+
+    x = np.arange(256, dtype=np.float32) / 255.0
+    lut = np.clip(film_curve(x, toe_lift, shoulder_start, white_point) * 255,
+                  0, 255).astype(np.uint8)
+    l = cv2.LUT(l, lut)
+
+    img_u8 = cv2.cvtColor(cv2.merge((l, a, b)), cv2.COLOR_LAB2BGR)
+    hsv = cv2.cvtColor(img_u8, cv2.COLOR_BGR2HSV).astype(np.float32)
+    hsv[:, :, 1] = np.clip(hsv[:, :, 1] * sat_mult, 0, 255)
+    return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2BGR)
+
+
+# ==========================================
 # 10. PRO Neg. Hi 비디오 전용 변형 (CLAHE 생략) - tools/video_engine.py가 사용
 # ==========================================
 def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
