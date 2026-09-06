@@ -10,14 +10,10 @@ camera 스키마, 하셀블라드 collect_local_pairs()와 같은 dedup 로직)�
 
   python3 -m tools.evaluate_expanded_clahe_shoulder_refit
 """
-import csv
 import math
 import os
-import subprocess
 import sys
 
-import colour
-import cv2
 import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -28,67 +24,20 @@ from brands.leica.raw import apply_leica_raw_look
 from brands.sony import apply_sony_look
 from brands.sony.a7v import apply_sony_a7v_look
 from tools.calibrate import load_neutral_render
+from tools.evaluation_common import (
+    _exif_film_mode,
+    bgr_u8_to_linear,
+    collect_contributed_pairs,
+    load_target_linear,
+    mean_delta_e,
+)
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRID_MAX_DIM = 200
 CONFIRM_MAX_DIM = 400
 
 _GS_SHOULDER_STARTS = (0.50, 0.58, 0.66, 0.70, 0.74, 0.78, 0.82)
 _GS_CLAHE_CLIPS = (0.5, 1.0, 1.25, 1.5, 2.0, 3.0)
 _IDENTITY = lambda img, **kw: img
-
-
-def _exif_film_mode(jpg_path):
-    out = subprocess.run(["exiftool", "-s3", "-FilmMode", jpg_path],
-                          capture_output=True, text=True, timeout=30)
-    return out.stdout.strip()
-
-
-def collect_contributed_pairs(brand, model_filter=None, film_mode_filter=None):
-    """collect_local_pairs()와 같은 dedup(filename_raw 기준, 먼저 나온 세트
-    우선) - 하셀블라드 전용이던 걸 브랜드 인자로 일반화. film_mode_filter는
-    이 manifest 스키마엔 film_mode 컬럼이 없어서(fuji_new_pairs.csv류
-    별도 CSV에만 있음) EXIF FilmMode를 직접 읽어 확인한다."""
-    base = os.path.join(BASE, "datasets", brand, "contributed")
-    pairs = []
-    seen = set()
-    for set_name in sorted(os.listdir(base)):
-        manifest = os.path.join(base, set_name, "manifest.csv")
-        if not os.path.exists(manifest):
-            continue
-        for row in csv.DictReader(open(manifest, encoding="utf-8-sig")):
-            if row["filename_raw"] in seen:
-                continue
-            if model_filter and row.get("camera") != model_filter:
-                continue
-            raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
-            jpg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
-            if not (os.path.exists(raw_path) and os.path.exists(jpg_path)):
-                continue
-            if film_mode_filter and _exif_film_mode(jpg_path) != film_mode_filter:
-                continue
-            seen.add(row["filename_raw"])
-            pairs.append(dict(name=row["filename_raw"], raw_path=raw_path, jpeg_path=jpg_path))
-    return pairs
-
-
-def load_target_linear(jpg_path, shape_hw):
-    bgr = cv2.imread(jpg_path)
-    bgr = cv2.resize(bgr, (shape_hw[1], shape_hw[0]), interpolation=cv2.INTER_AREA)
-    rgb = bgr[:, :, ::-1].astype(np.float64) / 255.0
-    return colour.cctf_decoding(rgb, function="sRGB")
-
-
-def bgr_u8_to_linear(bgr_u8):
-    rgb = bgr_u8[:, :, ::-1].astype(np.float64) / 255.0
-    return colour.cctf_decoding(rgb, function="sRGB")
-
-
-def mean_delta_e(linear_a, linear_b):
-    from skimage.color import rgb2lab, deltaE_ciede2000
-    a = colour.cctf_encoding(np.clip(linear_a, 0.0, 1.0), function="sRGB")
-    b = colour.cctf_encoding(np.clip(linear_b, 0.0, 1.0), function="sRGB")
-    return float(np.mean(deltaE_ciede2000(rgb2lab(a), rgb2lab(b))))
 
 
 def _sign_test_p(wins, losses):

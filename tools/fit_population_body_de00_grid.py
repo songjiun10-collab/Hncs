@@ -19,7 +19,6 @@ ss=0.78, wp=228.6/255) - 그리드서치가 고르는 최적 콤보 자체는 �
 이 정정 이전에 다른 브랜드에 이 스크립트를 돌려 "판정: 개선/보류"
 문구만 보고 결론 낸 적이 있다면 재확인 필요. 이제 `brands.<brand>`의
 실제 `apply_<brand>_look()`을 직접 호출해서 비교한다."""
-import csv
 import itertools
 import math
 import os
@@ -27,7 +26,6 @@ import sys
 import time
 import multiprocessing
 
-import colour
 import cv2
 import importlib
 import numpy as np
@@ -37,8 +35,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.engine import apply_population_fit_look
 from core.validation import is_image_array_usable
 from tools.calibrate import load_neutral_render
+from tools.evaluation_common import (
+    bgr_u8_to_linear,
+    collect_contributed_pairs,
+    load_target_linear,
+    mean_delta_e,
+)
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GRID_MAX_DIM = 200
 CONFIRM_MAX_DIM = 400
 
@@ -49,49 +52,6 @@ _GS_CLAHE_CLIPS = (1.0, 1.25, 2.0, 3.0)
 COMBOS = list(itertools.product(_GS_TOE_LIFTS, _GS_SHOULDER_STARTS, _GS_WHITE_POINTS, _GS_CLAHE_CLIPS))  # 252개
 
 N_FOLDS = 5
-
-
-def collect_contributed_pairs(brand, model_filter=None):
-    base = os.path.join(BASE, "datasets", brand, "contributed")
-    pairs = []
-    seen = set()
-    if not os.path.isdir(base):
-        return pairs
-    for set_name in sorted(os.listdir(base)):
-        manifest = os.path.join(base, set_name, "manifest.csv")
-        if not os.path.exists(manifest):
-            continue
-        for row in csv.DictReader(open(manifest, encoding="utf-8-sig")):
-            if row["filename_raw"] in seen:
-                continue
-            if model_filter and row.get("camera") != model_filter:
-                continue
-            raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
-            jpg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
-            if not (os.path.exists(raw_path) and os.path.exists(jpg_path)):
-                continue
-            seen.add(row["filename_raw"])
-            pairs.append(dict(name=row["filename_raw"], raw_path=raw_path, jpeg_path=jpg_path))
-    return pairs
-
-
-def load_target_linear(jpg_path, shape_hw):
-    bgr = cv2.imread(jpg_path)
-    bgr = cv2.resize(bgr, (shape_hw[1], shape_hw[0]), interpolation=cv2.INTER_AREA)
-    rgb = bgr[:, :, ::-1].astype(np.float64) / 255.0
-    return colour.cctf_decoding(rgb, function="sRGB")
-
-
-def bgr_u8_to_linear(bgr_u8):
-    rgb = bgr_u8[:, :, ::-1].astype(np.float64) / 255.0
-    return colour.cctf_decoding(rgb, function="sRGB")
-
-
-def mean_delta_e(linear_a, linear_b):
-    from skimage.color import rgb2lab, deltaE_ciede2000
-    a = colour.cctf_encoding(np.clip(linear_a, 0.0, 1.0), function="sRGB")
-    b = colour.cctf_encoding(np.clip(linear_b, 0.0, 1.0), function="sRGB")
-    return float(np.mean(deltaE_ciede2000(rgb2lab(a), rgb2lab(b))))
 
 
 def _sign_test_p(wins, losses):

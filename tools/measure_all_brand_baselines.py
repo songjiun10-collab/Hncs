@@ -8,13 +8,11 @@ generic population-fit apply_*_look)의 실측 ΔE00을 한 번에 측정한다.
 
   python3 -m tools.measure_all_brand_baselines
 """
-import csv
 import multiprocessing
 import os
 import sys
 import time
 
-import colour
 import cv2
 import numpy as np
 
@@ -32,52 +30,14 @@ from brands.sony.a7rvi import apply_sony_a7rvi_look
 from brands.sony.a7v import apply_sony_a7v_look
 from core.validation import is_image_array_usable
 from tools.calibrate import load_neutral_render
+from tools.evaluation_common import (
+    bgr_u8_to_linear,
+    collect_contributed_pairs,
+    load_target_linear,
+    mean_delta_e,
+)
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MAX_DIM = 800
-
-
-def collect_contributed_pairs(brand, model_filter=None):
-    base = os.path.join(BASE, "datasets", brand, "contributed")
-    pairs = []
-    seen = set()
-    if not os.path.isdir(base):
-        return pairs
-    for set_name in sorted(os.listdir(base)):
-        manifest = os.path.join(base, set_name, "manifest.csv")
-        if not os.path.exists(manifest):
-            continue
-        for row in csv.DictReader(open(manifest, encoding="utf-8-sig")):
-            if row["filename_raw"] in seen:
-                continue
-            if model_filter and row.get("camera") != model_filter:
-                continue
-            raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
-            jpg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
-            if not (os.path.exists(raw_path) and os.path.exists(jpg_path)):
-                continue
-            seen.add(row["filename_raw"])
-            pairs.append(dict(name=row["filename_raw"], raw_path=raw_path, jpeg_path=jpg_path))
-    return pairs
-
-
-def load_target_linear(jpg_path, shape_hw):
-    bgr = cv2.imread(jpg_path)
-    bgr = cv2.resize(bgr, (shape_hw[1], shape_hw[0]), interpolation=cv2.INTER_AREA)
-    rgb = bgr[:, :, ::-1].astype(np.float64) / 255.0
-    return colour.cctf_decoding(rgb, function="sRGB")
-
-
-def bgr_u8_to_linear(bgr_u8):
-    rgb = bgr_u8[:, :, ::-1].astype(np.float64) / 255.0
-    return colour.cctf_decoding(rgb, function="sRGB")
-
-
-def mean_delta_e(linear_a, linear_b):
-    from skimage.color import rgb2lab, deltaE_ciede2000
-    a = colour.cctf_encoding(np.clip(linear_a, 0.0, 1.0), function="sRGB")
-    b = colour.cctf_encoding(np.clip(linear_b, 0.0, 1.0), function="sRGB")
-    return float(np.mean(deltaE_ciede2000(rgb2lab(a), rgb2lab(b))))
 
 
 def _decode_one(r):
