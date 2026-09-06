@@ -245,6 +245,15 @@ Still stop for decisions that are genuinely the user's: shipping a
 calibration change, deleting data, anything outward-facing. A stronger
 model resolves ambiguity, not authority.
 
+**Hit a CRITICAL hook gate (`protect_never_touch`/`protect_hook_integrity`/
+`protect_destructive`/`protect_decision_record_bypass`/`protect_push_safety`)
+while running unattended → don't stall waiting for the user.** Skip that
+one item, append it to `.superpowers/sdd/pending_signoff.md` (file/command,
+what you were trying to do, why, one line on urgency), and keep working
+the rest of the queue. Report the pending list when the user is back —
+CRITICAL still means a human decides, it just doesn't mean the whole run
+blocks on one item while nobody's there to answer.
+
 **`/loop [interval]`** — don't poll harness-tracked work (it notifies);
 set a long fallback (1200s+) and arm a `Monitor` for the real signal.
 Match interval to state-change rate only for external polling. Quiet →
