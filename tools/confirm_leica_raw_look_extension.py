@@ -18,7 +18,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from brands.leica import apply_leica_look
-from brands.leica_raw import apply_leica_raw_look
+from brands.leica.raw import apply_leica_raw_look
 from core.validation import is_image_array_usable
 from tools.calibrate import load_neutral_render
 

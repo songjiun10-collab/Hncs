@@ -23,7 +23,7 @@ from tools.calibrate import load_neutral_render
 from tools.evaluate_expanded_clahe_shoulder_refit import (
     collect_contributed_pairs, load_target_linear, mean_delta_e, bgr_u8_to_linear,
 )
-from brands.sony_raw import apply_sony_raw_look
+from brands.sony.raw import apply_sony_raw_look
 
 MAX_DIM = 400
 CANDIDATES = [

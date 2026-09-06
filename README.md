@@ -46,7 +46,7 @@ identifiable.*
 
 ![HNCS preset demo - 44 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
-*All 44 photo-mode `apply_*` looks from `brands/*.py` (+ the original) run
+*All 44 photo-mode `apply_*` looks from `brands/<brand>/*.py` (+ the original) run
 on the same source photo (a street snapshot from Itaewon, Seoul, shot on a
 Fuji GFX50S II - `DSCF9556.RAF`, from the same raw+jpeg library used for
 this session's Classic Chrome/Nostalgic Neg calibration, not a close-up of
@@ -132,7 +132,8 @@ needed, just open it.
 ## Structure
 
 ```
-brands/       Per-brand color-approximation functions (apply_*) - README.md, CLAUDE.md
+brands/       Per-brand color-approximation functions (apply_*), one package
+              per brand - README.md, CLAUDE.md
 core/         Tone-curve/LUT/stats/validation helpers shared across all brands
 datasets/     Committed reference CSVs (official sample metadata, scraped gallery links) - CLAUDE.md
 tools/        Analysis/download/calibration scripts, RAW->Log, lens correction, DCP/LUT export - README.md, CLAUDE.md

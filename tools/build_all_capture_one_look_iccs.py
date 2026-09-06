@@ -72,9 +72,9 @@ LUT_SIZE = 33
 # 이미 다른 이름으로 배포된 룩 - 파일명을 바꾸면 기존 사용자의 프로필이
 # 사라지므로 이 배치에서 새로 쓰지 않는다(기존 파일 그대로 둔다).
 ALREADY_SHIPPED = {
-    ("brands.hasselblad", "apply_hncs"):
+    ("brands.hasselblad.look", "apply_hncs"):
         "hybrid_engine/assets/profiles/hasselblad_hncs_look.icc",
-    ("brands.fuji", "apply_provia"):
+    ("brands.fuji.look", "apply_provia"):
         "hybrid_engine/assets/profiles/fuji_provia_look.icc",
 }
 
@@ -99,7 +99,19 @@ def _measure_fidelity(func, lut, size=LUT_SIZE, seed=0):
 
 
 def _describe(module_name, func_name):
-    brand = module_name.split(".", 1)[1]
+    """(파일명 앞부분, 룩 이름, ICC description)을 만든다.
+
+    **2026-09-06**: brands/를 브랜드별 패키지로 옮기면서(brands.canon ->
+    brands.canon.look) 모듈 경로를 그대로 쓰던 옛 방식이 파일명을
+    `canon.look_canon_look.icc`로 만들어, 기존 `canon_canon_look.icc`와
+    중복되는 프로필 41개를 새로 찍어냈다. `look.py`는 그 브랜드의 대표
+    룩이므로 브랜드명만 쓰고, 변형 모듈만 `<브랜드>_<모듈>`로 합쳐서
+    재편 이전과 똑같은 파일명(canon, canon_r1_raw, hasselblad_x2dii,
+    sony_a7v_learned ...)을 그대로 재현한다."""
+    parts = module_name.split(".")[1:]
+    if len(parts) > 1 and parts[-1] == "look":
+        parts = parts[:-1]
+    brand = "_".join(parts)
     look = func_name[len("apply_"):] if func_name.startswith("apply_") else func_name
     return brand, look, f"HNCS {brand.replace('_', ' ')} {look.replace('_', ' ')} look"
 
@@ -107,8 +119,8 @@ def _describe(module_name, func_name):
 def _collect_looks():
     """구울 룩 목록을 `tests/test_brands.py`에서 모은다.
 
-    `BRAND_LOOKS`만으로는 부족하다 - 그 자동 발견은 `brands/fuji.py`를
-    통째로 제외한다(`_EXCLUDED_MODULES = {"fuji"}`, fuji는 자체
+    `BRAND_LOOKS`만으로는 부족하다 - 그 자동 발견은 `brands/fuji/look.py`를
+    통째로 제외한다(`_EXCLUDED_MODULES = {"fuji.look"}`, fuji는 자체
     `TestFujiPresets`가 완전성 검사를 하기 때문). 초판이 `BRAND_LOOKS`만
     썼다가 후지 필름시뮬레이션 프리셋 13개가 전부 안 구워진 걸 2026-09-04에
     발견해서, 같은 파일의 `FUJI_COLOR_PRESETS`도 합친다. 모노 프리셋
@@ -116,7 +128,7 @@ def _collect_looks():
     DeviceLink LUT로 담을 수 없으므로 제외한다.
     """
     from test_brands import BRAND_LOOKS, FUJI_COLOR_PRESETS
-    return list(BRAND_LOOKS) + [("brands.fuji", fn) for fn in FUJI_COLOR_PRESETS]
+    return list(BRAND_LOOKS) + [("brands.fuji.look", fn) for fn in FUJI_COLOR_PRESETS]
 
 
 def main():

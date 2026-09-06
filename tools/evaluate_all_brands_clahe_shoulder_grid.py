@@ -25,14 +25,14 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from brands.fuji import apply_provia
 from brands.hasselblad import apply_hncs
-from brands.hasselblad_x1d50c import apply_hncs_x1d50c
+from brands.hasselblad.x1d50c import apply_hncs_x1d50c
 from brands.leica import apply_leica_look
-from brands.leica_raw import apply_leica_raw_look
+from brands.leica.raw import apply_leica_raw_look
 from brands.sigma import apply_sigma_look
-from brands.sigma_bf import apply_sigma_bf_look
+from brands.sigma.bf import apply_sigma_bf_look
 from brands.sony import apply_sony_look
-from brands.sony_a7rvi import apply_sony_a7rvi_look
-from brands.sony_a7v import apply_sony_a7v_look
+from brands.sony.a7rvi import apply_sony_a7rvi_look
+from brands.sony.a7v import apply_sony_a7v_look
 from tools.calibrate import load_neutral_render
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

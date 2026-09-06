@@ -44,7 +44,7 @@ GOLDEN_HASHES = [
      "a2d38d6afbdae1926632f46c92685845a40d40ed0baa2f05eb3e70eee5b31fa9"),
     ("brands.leica", "apply_leica_look",
      "670068f031446c463196e409d99560b6fd972e56b8049f988b371fe8c9fd9ec0"),
-    ("brands.leica_raw", "apply_leica_raw_look",
+    ("brands.leica.raw", "apply_leica_raw_look",
      "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
     ("brands.nikon", "apply_nikon_look",
      "c47edaf79ecafd047b473ad44375044180475284527dfa0b87a643c604125c95"),
@@ -62,7 +62,7 @@ GOLDEN_HASHES = [
      "2544e61c01ec5c741168bda8506657711eda51a0c616e002f65d5b3a1bc1a5eb"),
     ("brands.sony", "apply_sony_look",
      "49ee7af2612f66aac66433c1e695cd32864b24cae1b542154a9edada379c3be9"),
-    ("brands.sony_a7v", "apply_sony_a7v_look",
+    ("brands.sony.a7v", "apply_sony_a7v_look",
      "0bb0bb82d4f1636dee43ffb4c64a98e26f639ff0292e2be51687d483c190d104"),
 ]
 
@@ -85,9 +85,9 @@ class TestPopulationFitLookGoldenHashes(unittest.TestCase):
 # 단독바디 apply_hncs_* 변형 2개
 # (docs/superpowers/plans/2026-08-09-hasselblad-body-variant-wrapper-consolidation.md)
 HASSELBLAD_BODY_GOLDEN_HASHES = [
-    ("brands.hasselblad_x1d50c", "apply_hncs_x1d50c",
+    ("brands.hasselblad.x1d50c", "apply_hncs_x1d50c",
      "a2f56608aab5a6c06f69f9e041467edbcfa37a605576df0e5e7d4eb2ea8f9267"),
-    ("brands.hasselblad_x2dii", "apply_hncs_x2dii",
+    ("brands.hasselblad.x2dii", "apply_hncs_x2dii",
      "e56aae33aeb387ea18efc03371567c1e0da55a3e4e6fca3c77fa54e2790058fa"),
 ]
 
@@ -128,9 +128,9 @@ HASSELBLAD_CORE_GOLDEN_HASHES = [
      "6751b7a521f97640edfa4db32386a9b14a85bbdb08474f9b2b27f0d74ccc74d5"),
     ("brands.hasselblad", "apply_hncs_video_frame",
      "4ef5e2e2eab5a198421f0d037d8d073a4d87c0212b0e40dfb7f9ef94d87be6fa"),
-    ("brands.hasselblad_learned", "apply_hncs_learned",
+    ("brands.hasselblad.learned", "apply_hncs_learned",
      "be576e1017a3e3319c2bf68f235ae976f91ede1ccd7842ac65ba54952fd152b8"),
-    ("brands.hasselblad_day", "apply_hasselblad_day",
+    ("brands.hasselblad.day", "apply_hasselblad_day",
      "508a5d8cf5b44586a5ba0767582d39a935bf5b90570b62137df708f31690ec32"),
 ]
 
@@ -211,7 +211,7 @@ HSV_ROUND_TRIP_FUNCTIONS = [
     ("brands.fuji", "apply_eterna_bleach_bypass"),
     ("brands.fuji", "apply_reala_ace"),
     ("brands.fuji", "apply_classic_negative"),
-    ("brands.hasselblad_night", "apply_hasselblad_night"),
+    ("brands.hasselblad.night", "apply_hasselblad_night"),
 ]
 
 HSV_GOLDEN_FIXTURE = (

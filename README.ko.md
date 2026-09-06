@@ -48,7 +48,7 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 *동일한 소스 사진(Fuji GFX50S II로 찍은 서울 이태원 거리 스냅샷,
 `DSCF9556.RAF` - Classic Chrome/Nostalgic Neg 등 이 세션 캘리브레이션에
 쓰인 것과 같은 raw+jpeg 라이브러리에서 고른 실제 사진, 특정 인물 클로즈업이
-아니라 일반 거리 스냅샷) 한 장에 `brands/*.py`의 사진용 `apply_*` 룩
+아니라 일반 거리 스냅샷) 한 장에 `brands/<브랜드>/*.py`의 사진용 `apply_*` 룩
 44개(+원본)를 그대로 돌린 결과. `tools/build_readme_demo.py`로 생성 -
 새 룩이 추가될 때마다 재실행하면 됨.*
 
@@ -126,7 +126,8 @@ pip install -r requirements.txt
 ## 구조
 
 ```
-brands/       브랜드별 색감 근사 함수 (apply_*) - README.md, CLAUDE.md
+brands/       브랜드별 색감 근사 함수 (apply_*), 브랜드마다 패키지 하나
+              - README.md, CLAUDE.md
 core/         브랜드 전체가 공유하는 톤커브/LUT/통계/검증 헬퍼
 datasets/     커밋된 참조 CSV (공식 샘플 메타데이터, 스크레이핑한 갤러리 링크) - CLAUDE.md
 tools/        분석/다운로드/캘리브레이션 스크립트, RAW→Log, 렌즈 보정, DCP/LUT 내보내기 - README.md, CLAUDE.md

@@ -5,7 +5,8 @@
 [메인 README](../README.md)로 돌아가기.
 
 ```
-brands/       브랜드별 색감 근사 함수 (apply_*)
+brands/       브랜드별 색감 근사 함수 (apply_*) - 브랜드마다 패키지 하나
+              (`brands/<브랜드>/look.py` 대표 + 바디별/실험 변형)
 core/         브랜드 전체가 공유하는 톤커브/LUT/통계/검증 헬퍼
 datasets/     커밋된 참조 CSV (공식 샘플 메타데이터, 스크레이핑한 갤러리 링크)
 tools/        분석(analyze)/다운로드(download)/캘리브레이션(calibrate) 스크립트
@@ -15,43 +16,43 @@ docs/         상세 문서 (이 디렉토리)
 
 | 파일 | 역할 |
 |---|---|
-| `brands/hasselblad.py` | ⭐ 공식 Stable - `apply_hncs`(X 시스템 통합 HNCS 파라메트릭 근사) |
-| `brands/hasselblad_learned.py` | Experimental - `apply_hncs_learned` (raw+jpeg 페어에서 직접 학습한 LUT, RMSE는 더 낮지만 표본 10장) |
-| `brands/hasselblad_day.py` / `brands/hasselblad_night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (day/night 타깃이 apply_hncs 전체 population 타깃에 수렴 중이라 유지 근거 약해지는 중) |
-| `brands/hasselblad_x2dii.py` | Experimental - `apply_hncs_x2dii` (X2D II 100C 전용, exposure_gamma만 0.8->0.7 - 호출부가 모델 판별해서 골라 써야 함, 표본 41장이라 shoulder_start 등 나머지 파라미터는 안 건드림) |
-| `brands/hasselblad_x1d.py` | Experimental - `apply_hncs_x1d` (X1D 전용, raw+jpeg 121쌍 ΔE00 직접 그리드서치+완전 LOO, 121/121 폴드 전원일치 +18.35%·CI 0 미포함 - `exposure_gamma=0.6, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`. X1D가 세대별 분해에서 최악으로 확인된 데 대한 대응) |
-| `brands/hasselblad_x1dii50c.py` | Experimental - `apply_hncs_x1dii50c` (X1D II 50C 전용, raw+jpeg 38쌍 ΔE00 직접 그리드서치+완전 LOO, 38/38 폴드 전원일치 +9.63%·CI 0 미포함 - `exposure_gamma=0.7, toe_lift=0.02, shoulder_start=0.82, white_point=1.0`) |
-| `brands/hasselblad_x1d50c.py` | Experimental - `apply_hncs_x1d50c` (X1D-50c 전용, raw+jpeg 20쌍 기반, ΔE00 직접 그리드서치+LOO/원본 픽셀 재확인 모두 +6~7% - `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) |
-| `brands/fuji.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 15종 (Astia, PRO Neg, Eterna, Acros, Classic Negative, Provia, Classic Chrome/v2, Nostalgic Neg v2/v3 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 population 실측 검증됨, Pro Neg Hi/Eterna Cinema는 동일장면 비교차트로 추가 검증·재보정(표본 n=1~3, 저신뢰), **Provia/Classic Chrome/Nostalgic Neg v2는 raw+jpeg 페어 기반 ΔE00 그리드서치로 검증**(Provia 3바디 통합 67쌍 +19.1%, Classic Chrome 39쌍 +5.6%, Nostalgic Neg v2 27쌍 +6.1% - 구 `apply_nostalgic_neg`는 실측 결과 raw보다도 못한 -2.1%로 판명, 코드는 보존하고 v2로 대체 권장). **2026-08 정정**: `tools/build_local_manifest.py` 페어 매칭 버그로 위 Classic Chrome/Nostalgic Neg v2의 GFX50S II 표본 절반 이상이 오염돼 있었던 게 드러나 데이터셋을 고쳐 재검증 - `apply_classic_chrome_v2`(42쌍 +22.5%)/`apply_nostalgic_neg_v3`(28쌍 +18.1%, 28/28 만장일치)를 신설, 구버전은 컨벤션대로 보존 |
-| `brands/fuji_provia_matrix.py` | Experimental - `apply_fuji_provia_matrix_look` (`apply_provia`에 매트릭스+채도/색조 LUT 추가, Provia 필름모드 raw+jpeg 119쌍, 톤커브는 그대로 - LOO +4.17%·CI[+0.225,+0.848] 0 미포함, Sony/Sigma/Leica의 +8~9%보다 작음) |
-| `brands/fuji_provia_learned.py` | Experimental - `apply_provia_learned` (Provia 3바디 통합 256bin 학습 LUT, 파라메트릭 대비 +20.42% 개선) |
-| `brands/leica.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
-| `brands/leica_raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10/SL2-S 전용, raw+jpeg 215쌍 기반, ΔE00 직접 그리드서치로 5바디 모두 같은 값(toe=0/shoulder=0.82/wp=1.0)에 수렴·개선) |
-| `brands/leica_raw_matrix.py` | Experimental - `apply_leica_raw_matrix_look` (`apply_leica_raw_look`에 매트릭스+채도/색조 LUT 추가, raw+jpeg 244쌍, 톤커브는 그대로 - LOO +8.13%·CI[+0.632,+0.936] 0 미포함, ΔE00 9.634→8.850) |
-| `brands/leica_raw_learned.py` | Experimental - `apply_leica_raw_learned` (5바디 통합 256bin 학습 LUT, 파라메트릭 대비 +12.56% 개선 - 실측 톤커브 조사에서 파라메트릭 모양 자체가 안 맞는 걸 발견하고 만든 데이터 기반 버전) |
-| `brands/phaseone.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
-| `brands/pentax.py` | Pentax 색감 근사 - `apply_pentax_look()` |
-| `brands/ricoh_gr.py` | Ricoh GR 색감 근사 - `apply_ricoh_gr_look()` |
-| `brands/canon.py` | Canon 색감 근사(EOS R5/R6/R8/R3/R 5바디 population) - `apply_canon_look()`. `apply_canon_raw_look`도 이 파일에 있음(Experimental, raw+jpeg 143쌍(R6 Mark III 99+R1 44) 매트릭스+톤+채도 ΔE00 직접 피팅, LOO +26.48%·CI 0 미포함, ΔE00<10 목표는 구조적 바닥 확인돼 실패) |
-| `brands/canon_r6iii_raw.py` | Experimental - `apply_canon_r6iii_raw_look` (Canon EOS R6 Mark III 전용, `apply_canon_raw_look()`의 바디별 분해, raw+jpeg 95쌍, 풀링 대비 LOO +1.96%·CI[+0.195,+0.487] 0 미포함 - 작지만 실재) |
-| `brands/canon_r1_raw.py` | Experimental - `apply_canon_r1_raw_look` (Canon EOS R1 전용, 같은 바디별 분해, raw+jpeg 44쌍, 풀링 대비 LOO +8.49%·CI[+0.542,+1.806] 0 미포함) |
-| `brands/nikon.py` | Nikon 색감 근사(Z6/Z6 II/D780 3바디 population - Z9/D850 갤러리는 EXIF 빠진 자리표시자 이미지뿐이라 제외) - `apply_nikon_look()` |
-| `brands/sony.py` | Sony 색감 근사(A7/A7R/A7S/A7 III/A7 IV 5바디 population, 바디당 23장) - `apply_sony_look()` |
-| `brands/sony_raw.py` | Experimental - `apply_sony_raw_look` (raw+jpeg 288쌍 ΔE00 직접 그리드서치+LOO, toe=0.02/ss=0.82/wp=1.0/clip=2.0에 5/5 폴드 만장일치 수렴, 원본 픽셀 재확인 +2.56%·CI 0 미포함) |
-| `brands/sony_raw_matrix.py` | Experimental - `apply_sony_raw_matrix_look` (`apply_sony_raw_look`에 Canon 방식(3x3 매트릭스+채도/색조 LUT)을 얹은 버전, 같은 raw+jpeg 288쌍, 톤커브는 재탐색 없이 그대로 - LOO +9.11%·CI[+0.980,+1.480] 0 미포함) |
-| `brands/sony_a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V 전용, raw+jpeg 58쌍 기반 첫 raw 캘리브레이션, ΔE00 직접 그리드서치로 +0.53% 개선) |
-| `brands/sony_a7rvi.py` | Experimental - `apply_sony_a7rvi_look` (Sony a7R VI 전용, raw+jpeg 40쌍, ΔE00 직접 그리드서치로 +0.57% 개선 - CI 하한이 0에 가까워 근거 약함) |
-| `brands/sony_a7v_learned.py` | Experimental - `apply_sony_a7v_learned` (256bin 학습 LUT, 파라메트릭 대비 +11.10% 개선) |
-| `brands/sony_a7rvi_learned.py` | Experimental - `apply_sony_a7rvi_learned` (256bin 학습 LUT, 파라메트릭 대비 +9.12% 개선) |
-| `brands/panasonic.py` | Panasonic(Lumix) 색감 근사(GH5/GH6/G9 MFT + S5/S1 풀프레임 5바디 population, n=120) - `apply_panasonic_look()` |
-| `brands/olympus.py` | Olympus(현 OM System) 색감 근사(OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F 5바디 population, n=122) - `apply_olympus_look()` |
-| `brands/sigma.py` | Sigma 색감 근사(Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill 5바디 population, n=83) - `apply_sigma_look()` |
-| `brands/sigma_raw.py` | Experimental - `apply_sigma_raw_look` (raw+jpeg 83쌍 ΔE00 직접 그리드서치+LOO, toe=0.02/ss=0.82/wp=1.0/clip=3.0에 5/5 폴드 만장일치 수렴, 원본 픽셀 재확인 +5.82%·CI 0 미포함) |
-| `brands/sigma_raw_matrix.py` | Experimental - `apply_sigma_raw_matrix_look` (`apply_sigma_raw_look`에 매트릭스+채도/색조 LUT 추가, 같은 83쌍, 톤커브는 그대로 - LOO +9.16%·CI[+0.760,+1.888] 0 미포함) |
-| `brands/sigma_bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF 전용, raw+jpeg 51쌍, ΔE00 직접 그리드서치로 +0.53% 개선 - 이 세션에서 가장 근거 약한 채택, CI 하한 +0.007) |
-| `brands/sigma_fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L 전용, raw+jpeg 32쌍, ΔE00 직접 그리드서치로 +0.55% 개선, CI[+0.038,+0.124]) |
-| `brands/sigma_bf_learned.py` | Experimental - `apply_sigma_bf_learned` (256bin 학습 LUT, 파라메트릭 대비 **+38.52% 개선 - 이 세션 전체에서 가장 큰 개선폭**) |
-| `brands/sigma_fpl_learned.py` | Experimental - `apply_sigma_fpl_learned` (256bin 학습 LUT, 파라메트릭 대비 +17.01% 개선) |
+| `brands/hasselblad/look.py` | ⭐ 공식 Stable - `apply_hncs`(X 시스템 통합 HNCS 파라메트릭 근사) |
+| `brands/hasselblad/learned.py` | Experimental - `apply_hncs_learned` (raw+jpeg 페어에서 직접 학습한 LUT, RMSE는 더 낮지만 표본 10장) |
+| `brands/hasselblad/day.py` / `brands/hasselblad/night.py` | Legacy - `apply_hasselblad_day`/`apply_hasselblad_night` (day/night 타깃이 apply_hncs 전체 population 타깃에 수렴 중이라 유지 근거 약해지는 중) |
+| `brands/hasselblad/x2dii.py` | Experimental - `apply_hncs_x2dii` (X2D II 100C 전용, exposure_gamma만 0.8->0.7 - 호출부가 모델 판별해서 골라 써야 함, 표본 41장이라 shoulder_start 등 나머지 파라미터는 안 건드림) |
+| `brands/hasselblad/x1d.py` | Experimental - `apply_hncs_x1d` (X1D 전용, raw+jpeg 121쌍 ΔE00 직접 그리드서치+완전 LOO, 121/121 폴드 전원일치 +18.35%·CI 0 미포함 - `exposure_gamma=0.6, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`. X1D가 세대별 분해에서 최악으로 확인된 데 대한 대응) |
+| `brands/hasselblad/x1dii50c.py` | Experimental - `apply_hncs_x1dii50c` (X1D II 50C 전용, raw+jpeg 38쌍 ΔE00 직접 그리드서치+완전 LOO, 38/38 폴드 전원일치 +9.63%·CI 0 미포함 - `exposure_gamma=0.7, toe_lift=0.02, shoulder_start=0.82, white_point=1.0`) |
+| `brands/hasselblad/x1d50c.py` | Experimental - `apply_hncs_x1d50c` (X1D-50c 전용, raw+jpeg 20쌍 기반, ΔE00 직접 그리드서치+LOO/원본 픽셀 재확인 모두 +6~7% - `exposure_gamma=0.7, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`) |
+| `brands/fuji/look.py` | 후지필름 스타일 필름 시뮬레이션 프리셋 15종 (Astia, PRO Neg, Eterna, Acros, Classic Negative, Provia, Classic Chrome/v2, Nostalgic Neg v2/v3 등) - Astia/Pro Neg Std/Eterna Bleach Bypass/Classic Negative는 population 실측 검증됨, Pro Neg Hi/Eterna Cinema는 동일장면 비교차트로 추가 검증·재보정(표본 n=1~3, 저신뢰), **Provia/Classic Chrome/Nostalgic Neg v2는 raw+jpeg 페어 기반 ΔE00 그리드서치로 검증**(Provia 3바디 통합 67쌍 +19.1%, Classic Chrome 39쌍 +5.6%, Nostalgic Neg v2 27쌍 +6.1% - 구 `apply_nostalgic_neg`는 실측 결과 raw보다도 못한 -2.1%로 판명, 코드는 보존하고 v2로 대체 권장). **2026-08 정정**: `tools/build_local_manifest.py` 페어 매칭 버그로 위 Classic Chrome/Nostalgic Neg v2의 GFX50S II 표본 절반 이상이 오염돼 있었던 게 드러나 데이터셋을 고쳐 재검증 - `apply_classic_chrome_v2`(42쌍 +22.5%)/`apply_nostalgic_neg_v3`(28쌍 +18.1%, 28/28 만장일치)를 신설, 구버전은 컨벤션대로 보존 |
+| `brands/fuji/provia_matrix.py` | Experimental - `apply_fuji_provia_matrix_look` (`apply_provia`에 매트릭스+채도/색조 LUT 추가, Provia 필름모드 raw+jpeg 119쌍, 톤커브는 그대로 - LOO +4.17%·CI[+0.225,+0.848] 0 미포함, Sony/Sigma/Leica의 +8~9%보다 작음) |
+| `brands/fuji/provia_learned.py` | Experimental - `apply_provia_learned` (Provia 3바디 통합 256bin 학습 LUT, 파라메트릭 대비 +20.42% 개선) |
+| `brands/leica/look.py` | 라이카 색감 근사 - `apply_leica_look()` (population-fit 1차 버전) |
+| `brands/leica/raw.py` | Experimental - `apply_leica_raw_look` (SL3-P/Q3 43/SL2/M10/SL2-S 전용, raw+jpeg 215쌍 기반, ΔE00 직접 그리드서치로 5바디 모두 같은 값(toe=0/shoulder=0.82/wp=1.0)에 수렴·개선) |
+| `brands/leica/raw_matrix.py` | Experimental - `apply_leica_raw_matrix_look` (`apply_leica_raw_look`에 매트릭스+채도/색조 LUT 추가, raw+jpeg 244쌍, 톤커브는 그대로 - LOO +8.13%·CI[+0.632,+0.936] 0 미포함, ΔE00 9.634→8.850) |
+| `brands/leica/raw_learned.py` | Experimental - `apply_leica_raw_learned` (5바디 통합 256bin 학습 LUT, 파라메트릭 대비 +12.56% 개선 - 실측 톤커브 조사에서 파라메트릭 모양 자체가 안 맞는 걸 발견하고 만든 데이터 기반 버전) |
+| `brands/phaseone/look.py` | Phase One(Capture One 기본 렌더링) 색감 근사 - `apply_phaseone_look()` |
+| `brands/pentax/look.py` | Pentax 색감 근사 - `apply_pentax_look()` |
+| `brands/ricoh_gr/look.py` | Ricoh GR 색감 근사 - `apply_ricoh_gr_look()` |
+| `brands/canon/look.py` | Canon 색감 근사(EOS R5/R6/R8/R3/R 5바디 population) - `apply_canon_look()`. `apply_canon_raw_look`도 이 파일에 있음(Experimental, raw+jpeg 143쌍(R6 Mark III 99+R1 44) 매트릭스+톤+채도 ΔE00 직접 피팅, LOO +26.48%·CI 0 미포함, ΔE00<10 목표는 구조적 바닥 확인돼 실패) |
+| `brands/canon/r6iii_raw.py` | Experimental - `apply_canon_r6iii_raw_look` (Canon EOS R6 Mark III 전용, `apply_canon_raw_look()`의 바디별 분해, raw+jpeg 95쌍, 풀링 대비 LOO +1.96%·CI[+0.195,+0.487] 0 미포함 - 작지만 실재) |
+| `brands/canon/r1_raw.py` | Experimental - `apply_canon_r1_raw_look` (Canon EOS R1 전용, 같은 바디별 분해, raw+jpeg 44쌍, 풀링 대비 LOO +8.49%·CI[+0.542,+1.806] 0 미포함) |
+| `brands/nikon/look.py` | Nikon 색감 근사(Z6/Z6 II/D780 3바디 population - Z9/D850 갤러리는 EXIF 빠진 자리표시자 이미지뿐이라 제외) - `apply_nikon_look()` |
+| `brands/sony/look.py` | Sony 색감 근사(A7/A7R/A7S/A7 III/A7 IV 5바디 population, 바디당 23장) - `apply_sony_look()` |
+| `brands/sony/raw.py` | Experimental - `apply_sony_raw_look` (raw+jpeg 288쌍 ΔE00 직접 그리드서치+LOO, toe=0.02/ss=0.82/wp=1.0/clip=2.0에 5/5 폴드 만장일치 수렴, 원본 픽셀 재확인 +2.56%·CI 0 미포함) |
+| `brands/sony/raw_matrix.py` | Experimental - `apply_sony_raw_matrix_look` (`apply_sony_raw_look`에 Canon 방식(3x3 매트릭스+채도/색조 LUT)을 얹은 버전, 같은 raw+jpeg 288쌍, 톤커브는 재탐색 없이 그대로 - LOO +9.11%·CI[+0.980,+1.480] 0 미포함) |
+| `brands/sony/a7v.py` | Experimental - `apply_sony_a7v_look` (Sony a7 V 전용, raw+jpeg 58쌍 기반 첫 raw 캘리브레이션, ΔE00 직접 그리드서치로 +0.53% 개선) |
+| `brands/sony/a7rvi.py` | Experimental - `apply_sony_a7rvi_look` (Sony a7R VI 전용, raw+jpeg 40쌍, ΔE00 직접 그리드서치로 +0.57% 개선 - CI 하한이 0에 가까워 근거 약함) |
+| `brands/sony/a7v_learned.py` | Experimental - `apply_sony_a7v_learned` (256bin 학습 LUT, 파라메트릭 대비 +11.10% 개선) |
+| `brands/sony/a7rvi_learned.py` | Experimental - `apply_sony_a7rvi_learned` (256bin 학습 LUT, 파라메트릭 대비 +9.12% 개선) |
+| `brands/panasonic/look.py` | Panasonic(Lumix) 색감 근사(GH5/GH6/G9 MFT + S5/S1 풀프레임 5바디 population, n=120) - `apply_panasonic_look()` |
+| `brands/olympus/look.py` | Olympus(현 OM System) 색감 근사(OM-1/OM-5/E-M1 Mark III/E-M1X/PEN-F 5바디 population, n=122) - `apply_olympus_look()` |
+| `brands/sigma/look.py` | Sigma 색감 근사(Bayer fp/fp L + Foveon sd Quattro/dp2 Quattro/SD1 Merrill 5바디 population, n=83) - `apply_sigma_look()` |
+| `brands/sigma/raw.py` | Experimental - `apply_sigma_raw_look` (raw+jpeg 83쌍 ΔE00 직접 그리드서치+LOO, toe=0.02/ss=0.82/wp=1.0/clip=3.0에 5/5 폴드 만장일치 수렴, 원본 픽셀 재확인 +5.82%·CI 0 미포함) |
+| `brands/sigma/raw_matrix.py` | Experimental - `apply_sigma_raw_matrix_look` (`apply_sigma_raw_look`에 매트릭스+채도/색조 LUT 추가, 같은 83쌍, 톤커브는 그대로 - LOO +9.16%·CI[+0.760,+1.888] 0 미포함) |
+| `brands/sigma/bf.py` | Experimental - `apply_sigma_bf_look` (Sigma BF 전용, raw+jpeg 51쌍, ΔE00 직접 그리드서치로 +0.53% 개선 - 이 세션에서 가장 근거 약한 채택, CI 하한 +0.007) |
+| `brands/sigma/fpl.py` | Experimental - `apply_sigma_fpl_look` (Sigma fp L 전용, raw+jpeg 32쌍, ΔE00 직접 그리드서치로 +0.55% 개선, CI[+0.038,+0.124]) |
+| `brands/sigma/bf_learned.py` | Experimental - `apply_sigma_bf_learned` (256bin 학습 LUT, 파라메트릭 대비 **+38.52% 개선 - 이 세션 전체에서 가장 큰 개선폭**) |
+| `brands/sigma/fpl_learned.py` | Experimental - `apply_sigma_fpl_learned` (256bin 학습 LUT, 파라메트릭 대비 +17.01% 개선) |
 | `core/curve.py` | 톤커브 수학 (`film_curve`/`s_curve`/`apply_highlight_rolloff`/`shadow_lift`) - 여러 브랜드 모듈이 공유 |
 | `core/lut.py` | LUT 적용 헬퍼 |
 | `core/engine.py` | population-fit 브랜드(leica/phaseone/pentax/ricoh_gr 및 이후 추가된 나머지 population-fit 브랜드 전부) 공용 엔진 - raw 기준선 없이 population 타깃을 `film_curve`에 직접 대입하는 동일 구조라 하나로 합침 |
@@ -113,7 +114,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/evaluate_leica_de00_grid.py` | Leica SL3-P/Q3 43 raw+jpeg 페어로 ΔE00(CIEDE2000)을 직접 목적함수로 삼은 그리드서치 - 두 바디를 따로 처리(센서/렌즈가 달라 같은 커브를 가정할 근거 없음) |
 | `tools/evaluate_new_body_de00_grid.py` | 신규 바디(Canon EOS R6 Mark III, Sony a7R VI, Hasselblad X1D-50c 등) 전용 ΔE00 그리드서치 + LOO - manifest/raw_dir/모델 필터/baseline을 CLI로 받는 범용판(`evaluate_sony_a7v_de00_grid.py`/`evaluate_x2dii_de00_grid.py`와 로직 동일) |
 | `tools/evaluate_sony_a7v_de00.py` | `apply_sony_a7v_look()`의 실제 ΔE00 - 기존 population-fit(`apply_sony_look`)과 58쌍 전체에서 페어드 비교 |
-| `tools/evaluate_sony_a7v_de00_grid.py` | Sony a7V 그리드서치를 ΔE00(CIEDE2000) 자체를 목적함수로 재실행 - b2/w995 percentile RMSE 기준 그리드서치가 RMSE는 이기고 ΔE00은 졌던 문제(`brands/sony_a7v.py` 정정 이력)를 바로잡음 |
+| `tools/evaluate_sony_a7v_de00_grid.py` | Sony a7V 그리드서치를 ΔE00(CIEDE2000) 자체를 목적함수로 재실행 - b2/w995 percentile RMSE 기준 그리드서치가 RMSE는 이기고 ΔE00은 졌던 문제(`brands/sony/a7v.py` 정정 이력)를 바로잡음 |
 | `tools/evaluate_sony_a7v_grid_search.py` | Sony a7V(ILCE-7M5) 75쌍 raw+jpeg 페어로 첫 그리드서치 - Hasselblad와 동일 방법론(중립 렌더링 베이스라인 vs 카메라 JPEG 타깃), `apply_sony_look()`은 건드리지 않음 |
 | `tools/evaluate_exposure_gamma_x2dii.py` | main과 candidate(로컬 v13) 두 `apply_hncs` 파라미터 후보를 X2D II 41장 포함 dpreview 클린 95쌍으로 직접 맞대결(쟁점: exposure_gamma/toe_lift) |
 | `tools/evaluate_x2dii_generation_loo.py` | X2D II 전용 파라미터가 풀링 기본값 대비 유의미한지 65쌍 세대별 방법론을 X2D II 41쌍에 적용해 확인 |
@@ -128,7 +129,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/render_x2dii_comparison.py` | `apply_hncs_x2dii()`/콤보A가 실제 이미지에서 어떻게 보이는지 원본 JPG/`apply_hncs`/`apply_hncs_x2dii`/콤보A 네 개를 나란히 렌더링 |
 | `tools/evaluate_full_pixel_de00_confirm.py` | 그리드서치/LOO 단계에서 저해상도로 계산했던 모든 확정 raw+jpeg 함수의 ΔE00을 원본 해상도로 재확인(다운샘플 왜곡 여부 검증, shipped `apply_*`만 대상) |
 | `tools/evaluate_native_pixel_confirm.py` | `evaluate_new_body_de00_grid.py`/`evaluate_hasselblad_body_de00_grid.py`가 저해상도로 고른 최적 콤보를 원본 해상도로 재대결 |
-| `tools/evaluate_fuji_preset_de00.py` | 후지 필름시뮬레이션 프리셋(`brands/fuji.py`)을 raw+jpeg 페어로 직접 검증 - toe/shoulder/wp 그리드서치가 아니라 손튜닝 파라미터를 쓰는 기존 프리셋이 raw 무가공 대비 실제로 ΔE00을 줄이는지만 측정(Nostalgic Neg가 오히려 raw보다 못하다는 걸 이걸로 발견) |
+| `tools/evaluate_fuji_preset_de00.py` | 후지 필름시뮬레이션 프리셋(`brands/fuji/look.py`)을 raw+jpeg 페어로 직접 검증 - toe/shoulder/wp 그리드서치가 아니라 손튜닝 파라미터를 쓰는 기존 프리셋이 raw 무가공 대비 실제로 ΔE00을 줄이는지만 측정(Nostalgic Neg가 오히려 raw보다 못하다는 걸 이걸로 발견) |
 | `tools/evaluate_empirical_tone_curve.py` | 실제 카메라 JPEG의 raw_L->target_L 매핑을 픽셀에서 직접 뽑아(bin별 가중평균), 채택된 `toe_lift/shoulder_start/white_point` 파라메트릭 곡선이 실측과 얼마나 맞는지 RMSE로 측정 - 라이카/후지 Provia "동일 파라미터"가 우연이었음을 이걸로 발견 |
 | `tools/evaluate_learned_lut.py` | 파라메트릭 대신 256bin 학습 LUT(페어별 bin 집계 캐시 후 LOO/k-fold, `--n-folds`로 조절)을 LOO로 검증 - RMSE가 높게 나온 브랜드(Sigma/Sony/후지 신규 프리셋)에서 실제 ΔE00이 줄어드는지 확인, 6개 함수(`brands/*_learned.py`) 신설의 근거 |
 | `tools/fit_final_lut.py` | `evaluate_learned_lut.py`가 LOO로 검증한 학습 LUT을 홀드아웃 없이 전체 표본으로 재학습해서 `_LEARNED_LUT` 배열 형태로 출력 - 최종 shipped 함수에 굽는 용도 |
@@ -164,7 +165,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/experiment_leica_sl3p_upscale_chart.py` | 위 SL3-P 챠트 파이프라인의 5-fold CV ΔE00 floor(12.7314)가 챠트가 프레임의 ~16%뿐인 저해상도 때문인지 테스트 - 검출된 quad를 3배 업스케일링 후 서브픽셀 정밀도로 재샘플링해도 무변화(12.7317, 부트스트랩 CI 없이 단일 비교) - 데이터 구조적 한계라는 결론에 한 항목 추가 |
 | `tools/experiment_leica_sl3p_denoise_expnorm.py` | 같은 floor에 대해 두 가설 추가 테스트 - ①가우시안 블러 디노이즈(고ISO 노이즈 억제, 무변화 12.7302) ②이미지별 노출 정규화(공통 매트릭스가 ISO별 게인 편차를 흡수 못한다는 가설, 페어드 부트스트랩 CI [-0.258,+1.700]로 0 포함해 판정 보류) - 둘 다 floor를 통계적으로 못 줄임 |
 | `tools/build_devicelink_icc_for_look.py` | 아무 `brands/*.py` `apply_*()` 룩이든 캡처원 DeviceLink ICC(`.icc`)로 굽는 범용 CLI - `core.lut_export.bake_lut_from_function()`(굽기, .cube와 동일 로직 재사용)+`core.icc_export.write_icc_devicelink_look_from_lut()`(파일 포맷만 변환)만 조합, 새 로직 없음. `hasselblad_hncs_look.icc`/`fuji_provia_look.icc` 예시로 발급 |
-| `tools/build_all_capture_one_look_iccs.py` | 위 CLI의 일괄판(2026-09-04) - 캡처원 프로필이 2개뿐이던 것을 메워 **52장** 발급(`profiles/looks/`), 건너뜀 2(`apply_hncs`/`apply_provia`, 이미 다른 경로로 배포), 실패 0. 룩 목록은 `tests/test_brands.py`의 `BRAND_LOOKS` 자동 발견 **+ `FUJI_COLOR_PRESETS`** - `BRAND_LOOKS`가 `brands/fuji.py`를 통째로 제외해서 초판이 후지 프리셋 13개를 빠뜨렸던 것을 정정. 항등 검사 + 충실도 측정(LUT 경유 vs 직접 호출 ΔBGR을 룩 효과와 비교)을 붙여 `faithful` 플래그로 리포트 - 충실 22/오차>효과 30(CLAHE 등 적응형 연산의 LUT 구조적 한계, 기배포 `fuji_provia_look.icc`도 동일). **주의(2026-09-05)**: 이 22/30은 64x64 난수 이미지에 최근접 보간으로 잰 값이고, 실사용 조건(실사진+삼선형)에서는 54개 전부 오차<효과다 - `hybrid_engine/EVALUATION.md`의 '배포 리포트의 충실도 판정은 난수 이미지 탓' 절 |
+| `tools/build_all_capture_one_look_iccs.py` | 위 CLI의 일괄판(2026-09-04) - 캡처원 프로필이 2개뿐이던 것을 메워 **52장** 발급(`profiles/looks/`), 건너뜀 2(`apply_hncs`/`apply_provia`, 이미 다른 경로로 배포), 실패 0. 룩 목록은 `tests/test_brands.py`의 `BRAND_LOOKS` 자동 발견 **+ `FUJI_COLOR_PRESETS`** - `BRAND_LOOKS`가 `brands/fuji/look.py`를 통째로 제외해서 초판이 후지 프리셋 13개를 빠뜨렸던 것을 정정. 항등 검사 + 충실도 측정(LUT 경유 vs 직접 호출 ΔBGR을 룩 효과와 비교)을 붙여 `faithful` 플래그로 리포트 - 충실 22/오차>효과 30(CLAHE 등 적응형 연산의 LUT 구조적 한계, 기배포 `fuji_provia_look.icc`도 동일). **주의(2026-09-05)**: 이 22/30은 64x64 난수 이미지에 최근접 보간으로 잰 값이고, 실사용 조건(실사진+삼선형)에서는 54개 전부 오차<효과다 - `hybrid_engine/EVALUATION.md`의 '배포 리포트의 충실도 판정은 난수 이미지 탓' 절 |
 | `tools/fit_brand_native_matrix_for_icc.py` | 챠트 실측 없는 브랜드(Sony/Sigma/Leica/Fuji)용 ICC - `decode_raw_native()`(WB/매트릭스 우회, ICC가 요구하는 진짜 native 공간) 기준으로 3x3 매트릭스를 새로 피팅(카메라 JPEG 근사 타깃, `brands/*_raw_matrix.py`와는 다른 입력공간이라 재사용 불가했음) + 5-fold LOO + `<brand>_generic_jpeg_approx.icc` 자동 발급. 무보정 대비 Sony +39.19%/Sigma +42.33%/Leica +45.04%/Fuji +42.18%(2026-09-04 추가, 새 스키마 매니페스트에서 `filename_raw` KeyError로 죽던 것 수정) |
 | `tools/validate_dpreview_chart_brand.py` | dpreview 스튜디오씬 공용 챠트 DB(브랜드 무관 REST API, `wp-json/wayfinder-image-compare/v1/widgets/<id>/frontend`)에서 받은 임의 브랜드 RAW를 `fit_leica_sl3p_studio_chart.py`와 같은 방법론(유채색 18패치 3x 가중, 5-fold CV)으로 검증만 함(DCP/ICC 미발급) - Sony a7 V/a7R VI/Fujifilm X-E5에 처음 적용 |
 | `tools/evaluate_dcp_weighted_patches.py` | X2D II DCP 챠트 매트릭스(LOO ΔE00 2.83)를 유채색 패치 가중 최소자승으로 재검증한 결과 LOO 2.7179까지 개선(-4.9%, 3.5x~5x 구간 평평한 신호) - `refit_dcp_weighted_chroma.py`로 배포 |
@@ -205,12 +206,12 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/audit_repo_integrity.py` | 저장소 무결성 일괄 점검 - (1) `tools/`·`brands/`·`core/`의 모든 `*.py`가 양쪽 `project_structure`에 등재됐는지 (2) `docs/*.md` ↔ `.en.md` 짝 (3) 두 문서의 표 행 수 일치 (4) 코드가 문자열로 참조하는 `assets/**` 실존 (5) 프로필 JSON 파싱 (6) DCP·ICC 헤더를 순수 파이썬으로 직접 확인(DCP 매직 `0x4352`, ICC 크기 필드·`acsp`·태그 테이블 - 2026-09-05 추가) (7) ICC·DCP `exiftool -validate`. 이상 시 종료코드 1. (6)이 (7)과 따로 있는 이유는 exiftool이 **DCP 매직이 틀린 파일에도 `Validate: OK`를 내기** 때문이다 - 2026-08-31에 Lightroom이 프로필을 못 읽던 그 버그가 (7)만으로는 다시 통과한다. exiftool이 없는 환경에서는 (7)만 건너뛰고 마지막 줄에 그 사실을 적는다(전에는 traceback으로 죽어서 이상 유무를 알 수 없었다). 2026-09-04에 임시 스크립트로 하나씩 돌리던 걸 파일로 고정(그때 `exiftool -validate -s3`가 정상일 때 `OK`만 출력하는 걸 "출력 있으면 경고"로 잘못 짜서 정상 13개를 전부 경고로 셌던 실수도 여기 반영) |
 | `tools/evaluate_fuji_pairing_fix_impact.py` | 위 정정이 룩 측정치를 얼마나 바꿨는지 재서 **재보정이 필요한지 판단할 근거**를 만든다(재보정 실행은 배포 결정이라 안 함). 틀린 짝이 싣고 있던 오차가 컸다 - `DSCF9422` 30.6299→11.6207 등 7프레임 전부 정정 후 감소(7승 0패). 모드 평균 이동은 Classic Negative **+1.0532**(47쌍 중 4쌍 오염) / Classic Chrome +0.4132 / Nostalgic Neg +0.1490. 바뀐 프레임이 모드당 1~4개라 부트스트랩 CI는 의미 없어 안 냄 |
 | `tools/fix_fuji_manifest_pairing.py` | 위 검증 결과를 매니페스트에 반영(8행 수정 + 고아 1행 제거). 영향 필름모드는 Classic Negative 4/Classic Chrome 1/Nostalgic Neg 2로 Provia는 없어 `fuji_generic_jpeg_approx.icc`(Provia 필터, n=119)는 무관. 프로필은 건드리지 않음 |
-| `tools/recalibrate_fuji_classic_negative.py` | 위 정정 후 사용자 승인(2026-09-04)으로 `apply_classic_negative` 4개 상수를 GFX50S II 47쌍에 재보정 - 3패스 좌표하강 + 5-fold 교차검증. 결과는 15.2250→8.6978(+42.87%, 46승1패, 부트스트랩 95% CI [+5.7623,+7.2889])로 사전에 못 박은 기준을 통과했으나 **4개 파라미터가 전부 격자 경계**(sat_mult 0.45 하한/contrast_n 1.0 하한/black_lift 0.12 상한/white_point 1.18 상한)라 채택하지 않았다 - 아래 두 진단 참고. `brands/fuji.py`는 수정하지 않는다 |
+| `tools/recalibrate_fuji_classic_negative.py` | 위 정정 후 사용자 승인(2026-09-04)으로 `apply_classic_negative` 4개 상수를 GFX50S II 47쌍에 재보정 - 3패스 좌표하강 + 5-fold 교차검증. 결과는 15.2250→8.6978(+42.87%, 46승1패, 부트스트랩 95% CI [+5.7623,+7.2889])로 사전에 못 박은 기준을 통과했으나 **4개 파라미터가 전부 격자 경계**(sat_mult 0.45 하한/contrast_n 1.0 하한/black_lift 0.12 상한/white_point 1.18 상한)라 채택하지 않았다 - 아래 두 진단 참고. `brands/fuji/look.py`는 수정하지 않는다 |
 | `tools/refit_borrowed_population_fit_params.py` | 핫셀블라드에서 차용한 population-fit `shoulder_start`/`clahe_clip`을 각 브랜드의 raw+jpeg 페어로 LOO 재적합. Leica n=15는 8.1163→8.0432(CI [+0.0023,+0.1956])로 우세하지만 shoulder 상한 경계라 범위 재확인 필요, Sony n=22는 16.5606→16.3775(CI [-0.1048,+0.4567])로 판정 보류. 양성 대조(일부러 틀린 기준선)도 별도 JSON으로 검출 확인. `brands/*.py`는 수정하지 않는다 |
 | `tools/generate_hsv_golden_fixture.py` | 테스트용 OpenCV HSV 왕복 골든 fixture 생성기 - 결정론적 입력으로 7개 플랫폼 민감 룩의 기준 출력을 `tests/fixtures/hsv_golden_outputs.npz`에 재생성하며, 픽셀별 1 LSB 허용 회귀 테스트와 함께 사용 |
 | `tools/diagnose_fuji_neutral_render_offset.py` | 위의 경계 탈출 원인 진단 - 룩을 아예 안 씌운 `load_neutral_render()` 출력과 카메라 JPEG의 전역 통계를 페어별로 비교. Lab L 중앙값 **+74.851**(47/47, 부트스트랩 95% CI [+68.851,+80.191]), HSV S **−19.490**(0/47, CI [−22.964,−16.162]) - 다섯 지표 전부 CI가 0을 배제하는 계통 편향. `tools/calibrate.py:130`의 `no_auto_bright=True`("무가공 베이스라인")가 원인이라 룩 4개 노브가 전역 레벨 맞추기에 소모되고 있었다 |
 | `tools/diagnose_fuji_autobright_vs_look.py` | 위 격차가 auto-bright로 메워지는지 확인 - `apply_classic_negative` 현행 상수를 고정한 채 RAW 렌더만 auto-bright 켠 버전으로 교체. 15.2787→11.4546(+25.03%, 36승11패, 부호검정 p=0.000346, 부트스트랩 95% CI [+2.5116,+5.2239])로 재보정의 +42.87% 중 큰 부분(+25.03%p)을 설명한다. 다만 +17.84%p가 남으므로 이 진단만으로 재보정 이득 전부를 렌더 노출이라고 단정할 수는 없다 |
-| `tools/evaluate_fuji_classic_negative_v2_grid.py` | 위 진단을 토대로 확인한 후보 - Classic Negative를 같은 세트로 적합한 형제 룩들(`apply_provia`/`apply_classic_chrome_v2`/`apply_nostalgic_neg_v3`)이 전부 수렴한 계열(CLAHE + `core.curve.film_curve`)에 채도 축을 붙여 재적합. 5-fold 홀드아웃 15.2787→12.3201(**+19.36%**, 46승1패, 부호검정 p<0.0001, 부트스트랩 95% CI [+2.5039,+3.4143])로 사전 기준 통과. 전체표본 상수 `toe_lift=0.0/shoulder_start=0.82/white_point=1.0/sat_mult=0.20`, in-sample ΔE00 10.8968. 네 축 모두 5/5 폴드 만장일치지만 격자 경계에 붙어 추가 검증이 필요하며, `brands/fuji.py`는 수정하지 않는다 - v2 추가는 배포 결정 |
+| `tools/evaluate_fuji_classic_negative_v2_grid.py` | 위 진단을 토대로 확인한 후보 - Classic Negative를 같은 세트로 적합한 형제 룩들(`apply_provia`/`apply_classic_chrome_v2`/`apply_nostalgic_neg_v3`)이 전부 수렴한 계열(CLAHE + `core.curve.film_curve`)에 채도 축을 붙여 재적합. 5-fold 홀드아웃 15.2787→12.3201(**+19.36%**, 46승1패, 부호검정 p<0.0001, 부트스트랩 95% CI [+2.5039,+3.4143])로 사전 기준 통과. 전체표본 상수 `toe_lift=0.0/shoulder_start=0.82/white_point=1.0/sat_mult=0.20`, in-sample ΔE00 10.8968. 네 축 모두 5/5 폴드 만장일치지만 격자 경계에 붙어 추가 검증이 필요하며, `brands/fuji/look.py`는 수정하지 않는다 - v2 추가는 배포 결정 |
 | `tools/probe_fuji_classic_negative_v2_boundary.py` | v2 최적값 네 축을 하나씩 경계 밖까지 훑는다. `toe_lift`는 하한 밖으로 갈수록 10.9014→10.9306으로 단조 악화해 진짜 최적점이지만, `shoulder_start`(0.999까지 10.8777), `white_point`(1.20까지 10.8443), `sat_mult`(0.15에서 10.8897)는 경계 밖 개선 신호를 보인다. 노출 보정·과도한 desaturation 가능성이 있어 v2 배포 전에 범위 확장 재적합과 auto-bright 통제를 선행한다 |
 | `tools/diagnose_neutral_render_offset_by_brand.py` | 위 편향이 후지 고유인지 전 브랜드 공통인지 확인 - raw가 디스크에 남은 네 세트에서 같은 다섯 지표를 잰다. **밝기는 공통**: `lab_L_mean`/`lab_L_median`/`white_p995`가 다섯 세트(후지 47 + 핫셀 55·145 + 소니 22 + 라이카 15 = 284쌍) 전부 부호 일치 + 부트스트랩 95% CI 0 배제. **과채도는 공통 아님**: `hsv_S_mean`이 후지 −19.490·핫셀 −11.886/−9.227은 유의하나 소니 +1.565(CI [−3.556,+6.450])·라이카 −2.750(CI [−5.948,+0.541])은 판정 보류. 그래서 Classic Negative의 `sat_mult`만 유독 하한으로 달아났다. 저장소의 population fit ΔE00 절대값은 전부 "무가공 렌더 기준"이라는 단서가 붙는다는 뜻(룩 간 상대비교는 유효) |
 | `tools/audit_raw_decodability.py` | 위 진단 중 소니 62쌍 중 40개가 디코드 실패하는 걸 발견해서 만든 전 세트 점검 CLI - `rawpy.imread()` 열기만 하므로 빠르다. 손상이 아니라 디코더 한계였다: 실패 40개는 전부 `Sony Compressed RAW 2`(손실), 정상 22개는 전부 `Sony Lossless Compressed RAW 2`로 LibRaw 0.22.1이 a7 V 손실 압축 ARW를 미지원. 나머지 8개 세트(후지 309·핫셀 212·라이카 15)는 실패 0. 대부분의 `evaluate_*.py`가 디코드 실패를 조용히 건너뛰므로 실효 표본이 매니페스트 행 수와 다를 수 있다는 게 요점. 이상 시 종료코드 1 |

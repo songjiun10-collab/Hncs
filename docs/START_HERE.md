@@ -26,7 +26,7 @@
 
 | 하려는 일 | 먼저 읽을 것 |
 |---|---|
-| 새 브랜드 추가 | [docs/methodology.md](methodology.md) + [brands/CLAUDE.md](../brands/CLAUDE.md) + 기존 population-fit 브랜드 파일 하나(예: `brands/nikon.py`)를 템플릿으로 복사 |
+| 새 브랜드 추가 | [docs/methodology.md](methodology.md) + [brands/CLAUDE.md](../brands/CLAUDE.md) + 기존 population-fit 브랜드 파일 하나(예: `brands/nikon/look.py`)를 템플릿으로 복사 |
 | 연구/실험 스크립트 작성·실행 | [tools/CLAUDE.md](../tools/CLAUDE.md) - `evaluate_*.py` 컨벤션(standalone, 통계는 `summarize()`) |
 | 통계 판정 방식(유의성/CI) 이해 | [hybrid_engine/CLAUDE.md](../hybrid_engine/CLAUDE.md)의 "Statistics — non-negotiable" |
 | GUI 탭 추가/수정 | [gui/CLAUDE.md](../gui/CLAUDE.md) |
@@ -37,4 +37,4 @@
 
 ## 절대 규칙 (요약)
 
-전체 목록은 루트 [CLAUDE.md](../CLAUDE.md)의 "## Never" 참고. 가장 중요한 것: `brands/hasselblad.py`의 `apply_hncs()`와 다른 shipped `apply_*` 함수, `hybrid_engine/assets/profiles/*.json`/`*.dcp`는 연구 스크립트가 자동으로 덮어쓰지 않는다.
+전체 목록은 루트 [CLAUDE.md](../CLAUDE.md)의 "## Never" 참고. 가장 중요한 것: `brands/hasselblad/look.py`의 `apply_hncs()`와 다른 shipped `apply_*` 함수, `hybrid_engine/assets/profiles/*.json`/`*.dcp`는 연구 스크립트가 자동으로 덮어쓰지 않는다.

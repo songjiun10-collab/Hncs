@@ -54,6 +54,23 @@ NOT_BILINGUAL = {"CLAUDE.md"}
 ASSET_REF = re.compile(r"[\"']([^\"']*assets/[^\"']+\.(?:json|dcp|icc|npy|cube))[\"']")
 
 
+def _code_files(root):
+    """root 바로 아래의 *.py와, 한 단계 하위 패키지 디렉토리 안의 *.py를
+    root 기준 상대경로로 돌려준다. brands/를 브랜드별 패키지로 묶은 뒤
+    (brands/hasselblad/look.py 등) os.listdir만으로는 브랜드 파일이 하나도
+    안 잡혀 이 등재 검사가 통째로 무력화되던 걸 고친 것 - 검사 대상이 0개면
+    조용히 전부 통과한다."""
+    out = []
+    for name in os.listdir(root):
+        path = os.path.join(root, name)
+        if name.endswith(".py") and name != "__init__.py":
+            out.append(name)
+        elif os.path.isdir(path) and not name.startswith((".", "__")):
+            out.extend(f"{name}/{sub}" for sub in os.listdir(path)
+                       if sub.endswith(".py") and sub != "__init__.py")
+    return out
+
+
 def check_registration():
     with open(os.path.join(DOCS, "project_structure.md"), encoding="utf-8") as f:
         ko = f.read()
@@ -61,8 +78,7 @@ def check_registration():
         en = f.read()
     problems = []
     for d in CODE_DIRS:
-        files = sorted(f for f in os.listdir(os.path.join(BASE, d))
-                       if f.endswith(".py") and f != "__init__.py")
+        files = sorted(_code_files(os.path.join(BASE, d)))
         for f in files:
             if f"{d}/{f}" not in ko:
                 problems.append(f"project_structure.md 미등재: {d}/{f}")

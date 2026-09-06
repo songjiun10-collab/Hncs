@@ -1,4 +1,4 @@
-"""브랜드 Look 미리보기 탭 - brands/*.py의 apply_*()를 이미지 하나에
+"""브랜드 Look 미리보기 탭 - brands/<브랜드>/*.py의 apply_*()를 이미지 하나에
 직접 적용해서 Before/After로 보여준다."""
 import ast
 import glob
@@ -17,7 +17,7 @@ _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 
 
 def list_shipped_looks():
-    """brands/*.py에서 apply_*() 함수 목록을 ast로 스캔한다(video_frame
+    """brands/<브랜드>/*.py에서 apply_*() 함수 목록을 ast로 스캔한다(video_frame
     변형 제외) - .claude/skills/run-hncs/driver.py의 shipped_looks()와
     같은 방식, 별도 레지스트리를 새로 두지 않는다.
 
@@ -30,10 +30,12 @@ def list_shipped_looks():
     15개가 통째로 드롭다운에서 빠져있었다 - 대입식(`ast.Assign`)도 같이
     스캔하도록 수정."""
     out = []
-    for path in sorted(glob.glob(os.path.join(_ROOT, "brands", "*.py"))):
-        module = "brands." + os.path.basename(path)[:-3]
-        if module.endswith("__init__"):
+    for path in sorted(glob.glob(os.path.join(_ROOT, "brands", "*", "*.py"))):
+        brand = os.path.basename(os.path.dirname(path))
+        stem = os.path.basename(path)[:-3]
+        if stem == "__init__":
             continue
+        module = f"brands.{brand}.{stem}"
         with open(path, encoding="utf-8") as f:
             tree = ast.parse(f.read())
         for node in tree.body:
