@@ -57,12 +57,17 @@ import sys
 
 from _hook_common import (allow, allow_with_override, bash_override, deny,
                            is_subagent_call, require_decision_or_deny,
-                           sentinel_override, strip_prose_heredocs)
+                           sentinel_override, strip_prose_heredocs, unwrap_eval)
 
 HOOK_NAME = "protect_never_touch"
 SEVERITY = "CRITICAL"
 
-BRAND_FILE_RE = re.compile(r"(^|/)brands/[^/]+\.py$")
+# 2026-09-06: brands/*.py(평평) -> brands/<브랜드>/*.py(브랜드별 패키지)로
+# 재편하면서 `brands/[^/]+\.py$`가 새 경로를 못 잡게 됐다 - 실측으로
+# `echo x > brands/hasselblad/look.py`와 apply_hncs() 본문 Edit이 둘 다
+# allow로 통과하는, 이 훅이 통째로 무력화된 상태였다. 한 단계 하위
+# 디렉토리를 선택적으로 허용해 리팩터 이전과 같은 파일 집합을 다시 덮는다.
+BRAND_FILE_RE = re.compile(r"(^|/)brands/(?:[^/]+/)?[^/]+\.py$")
 PROFILE_ASSET_RE = re.compile(r"(^|/)hybrid_engine/assets/profiles/[^/]+\.(json|dcp)$")
 
 # Bash coverage: only flags a write-shaped command whose *destination*
@@ -70,7 +75,7 @@ PROFILE_ASSET_RE = re.compile(r"(^|/)hybrid_engine/assets/profiles/[^/]+\.(json|
 # path last = destination) is flagged, `cp brands/hasselblad.py /tmp/ref.py`
 # (protected path first = source, just reading it out for reference) is not.
 _PROTECTED_PATH = (
-    r"(?:(?:[\w./-]*/)?brands/[^/\s\"'>]+\.py|"
+    r"(?:(?:[\w./-]*/)?brands/(?:[^/\s\"'>]+/)?[^/\s\"'>]+\.py|"
     r"(?:[\w./-]*/)?hybrid_engine/assets/profiles/[^/\s\"'>]+\.(?:json|dcp))"
 )
 _REDIRECT_TARGET_RE = re.compile(r">{1,2}\s*[\"']?(" + _PROTECTED_PATH + r")")
@@ -156,7 +161,7 @@ def bash_write_target(command):
     """Returns the matched protected-path string if `command` looks like it
     writes to a protected path, else None. Coarser than the Edit/Write path
     below (file-level, not function-level - see module docstring)."""
-    command = strip_prose_heredocs(command)
+    command = unwrap_eval(strip_prose_heredocs(command))
     for rx in (_REDIRECT_TARGET_RE, _SED_INPLACE_TARGET_RE, _TEE_TARGET_RE,
                _CP_MV_DEST_RE, _PY_WRITE_OPEN_RE):
         m = rx.search(command)

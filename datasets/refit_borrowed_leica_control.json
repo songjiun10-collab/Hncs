@@ -1,0 +1,181 @@
+{
+  "purpose": "핫셀블라드에서 차용한 shoulder_start/clahe_clip을 그 브랜드 자신의 raw+jpeg 페어로 재적합",
+  "criterion": "LOO 홀드아웃 페어드 부트스트랩 95% CI 20000회 고정 시드가 0을 배제하고 재적합이 우세할 때만 교체 권고",
+  "brand": "brands.leica",
+  "sets": [
+    "datasets/leica/contributed/dpreview-sl3p-2026-08"
+  ],
+  "current_constants": {
+    "toe_lift": 0.036078431372549014,
+    "shoulder_start": 0.5,
+    "white_point": 0.9011764705882354,
+    "clahe_clip": 4.0
+  },
+  "n_pairs": 15,
+  "images": [
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/1633761829.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/1592318743.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/1866884009.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/0898680087.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/8094119849.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/8711424676.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/5213562272.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/5085414487.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/3544389594.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/4426621972.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/3067995653.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/3028450257.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/2941721302.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/2423999171.dng",
+    "datasets/leica/contributed/dpreview-sl3p-2026-08/4842734642.dng"
+  ],
+  "grid": {
+    "shoulder_start": [
+      0.5,
+      0.58,
+      0.66,
+      0.7,
+      0.74,
+      0.78,
+      0.82,
+      0.86,
+      0.9,
+      0.94,
+      0.97,
+      0.99,
+      0.995,
+      0.999
+    ],
+    "clahe_clip": [
+      0.4,
+      0.6,
+      0.8,
+      1.0,
+      1.25,
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      4.0
+    ]
+  },
+  "loo_picks": [
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ],
+    [
+      0.999,
+      1.25
+    ]
+  ],
+  "loo_unanimous": true,
+  "full_sample_combo": [
+    0.999,
+    1.25
+  ],
+  "params_on_grid_edge": [
+    "shoulder_start"
+  ],
+  "delta_e_current": [
+    12.297304524889844,
+    13.031910908601157,
+    7.87171479080679,
+    9.714519306640028,
+    9.123449434688034,
+    7.69231969469063,
+    9.989531657150993,
+    9.649538712709315,
+    11.268471663185299,
+    12.062990235576821,
+    13.78368420323904,
+    8.817368347877537,
+    11.455144889354884,
+    6.746683244621426,
+    8.572470879439132
+  ],
+  "delta_e_refit": [
+    5.905280763440532,
+    12.912174396357333,
+    7.146628216405784,
+    6.359521597395653,
+    6.527622289814872,
+    5.463636981605219,
+    9.375540241336132,
+    5.9454210997315515,
+    10.158638191570057,
+    10.779375912664932,
+    14.287639453655826,
+    5.171642338062429,
+    9.857066078051815,
+    4.844425095077132,
+    5.913224446105575
+  ],
+  "stats": {
+    "mean_base": 10.138473499564729,
+    "mean_new": 8.043189140084989,
+    "n": 15,
+    "wins": 14,
+    "losses": 1,
+    "p_value": 0.0009765625,
+    "ci_lo": 1.2862859157278224,
+    "ci_hi": 2.9960431091330575,
+    "inconclusive": false,
+    "verdict": "재적합 우세"
+  },
+  "criterion_passed": true,
+  "is_positive_control": true,
+  "modifies_shipped_code": false
+}

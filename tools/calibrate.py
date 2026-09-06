@@ -77,7 +77,8 @@ def download(url, path):
 def collect_pairs():
     """raw_url+jpeg_url이 둘 다 있는 행만 (TIFF는 이미 렌더링된 결과물이라
     raw가 아니므로 제외)."""
-    rows = list(csv.DictReader(open(CSV_PATH, encoding='utf-8-sig')))
+    with open(CSV_PATH, encoding='utf-8-sig', newline='') as handle:
+        rows = list(csv.DictReader(handle))
     return [r for r in rows if r.get('raw_url', '').strip() and r.get('jpeg_url', '').strip()
             and not r['raw_url'].lower().endswith('.tif')]
 
@@ -85,24 +86,37 @@ def collect_pairs():
 def collect_local_pairs():
     """datasets/hasselblad/contributed/<세트>/manifest.csv의 로컬 raw+jpeg
     페어 수집 (tools.verify_contributed_pairs 통과 전제 - 여기선 파일 존재만
-    재확인). 공식 샘플(collect_pairs, 원격 URL)과 별개 출처라 함수를 분리."""
+    재확인). 공식 샘플(collect_pairs, 원격 URL)과 별개 출처라 함수를 분리.
+
+    filename_raw가 이미 다른 세트에서 나온 적 있으면 스킵한다 - dpreview
+    파일명은 사실상 랜덤 10자리라 세트 간 동일 파일명은 우연이 아니라 같은
+    사진의 중복 수집(2026-08, local-work-2026-08 165장 중 109장이
+    x1d-x2d100c-restore-2026-08와 byte-identical로 확인됨 - "owner personal
+    library"라 적힌 manifest도 실제로는 dpreview 재수집이었던 사례,
+    local-mixed-2026-07과 같은 패턴). 먼저 나온 세트(정렬 순서)가 우선."""
     base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                          "datasets", "hasselblad", "contributed")
     pairs = []
     if not os.path.isdir(base):
         return pairs
+    seen_raw_filenames = set()
     for set_name in sorted(os.listdir(base)):
         manifest = os.path.join(base, set_name, "manifest.csv")
         if not os.path.exists(manifest):
             continue
-        for row in csv.DictReader(open(manifest, encoding='utf-8-sig')):
-            raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
-            jpeg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
-            if os.path.exists(raw_path) and os.path.exists(jpeg_path):
-                pairs.append(dict(
-                    filename=f"{set_name}__{os.path.splitext(row['filename_raw'])[0]}",
-                    raw_path=raw_path, jpeg_path=jpeg_path,
-                    generation=_generation_for(row["camera"])))
+        with open(manifest, encoding='utf-8-sig', newline='') as handle:
+            for row in csv.DictReader(handle):
+                if row["filename_raw"] in seen_raw_filenames:
+                    continue
+                raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
+                jpeg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
+                if os.path.exists(raw_path) and os.path.exists(jpeg_path):
+                    seen_raw_filenames.add(row["filename_raw"])
+                    pairs.append(dict(
+                        filename=f"{set_name}__{os.path.splitext(row['filename_raw'])[0]}",
+                        raw_path=raw_path, jpeg_path=jpeg_path,
+                        generation=_generation_for(row["camera"]),
+                        scene_type=row.get("scene_type", "")))
     return pairs
 
 

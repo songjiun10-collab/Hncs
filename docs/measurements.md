@@ -1217,6 +1217,37 @@ toe_lift=0.02, shoulder_start=0.58, white_point=0.95`로 갱신.
 오히려 큰 개선(+12.99%)이 나올 수도 있다 - 크기가 아니라 목적함수
 자체가 핵심이다. 재현: `python3 -m tools.evaluate_x2dii_de00_grid`.
 
+### shoulder_start x clahe_clip 합동 재검증 - 이미 최적값이었음 확인 (2026-08)
+
+위 그리드서치는 exposure_gamma/toe_lift/shoulder_start/white_point
+4개만 훑었다 - `clahe_clip`(=1.25)은 `apply_hncs()`(main)의 기본값을
+그대로 물려받은 채 한 번도 변수로 넣어본 적이 없었다(사용자 지적).
+`shoulder_start`와 `clahe_clip` 사이에 상호작용이 있는지 확인하려고
+`tools/evaluate_x2dii_clahe_shoulder_grid.py`(신규 - exposure_gamma=0.6/
+toe_lift=0.02/white_point=0.95는 고정, shoulder_start 7값 x clahe_clip
+6값=42콤보)로 같은 X2D II 70쌍에 합동 재그리드서치를 돌렸다.
+
+**데이터 소스 참고**: `evaluate_x2dii_de00_grid.py`가 쓰던
+`~/Documents/raw pair`(이후 `~/local-work`로 이동 기록됨)가 이 세션엔
+로컬에 없었지만, 같은 manifest(`dpreview_raw_jpeg_pairs_clean.csv`)의
+124개 파일이 전부 `datasets/hasselblad/contributed/*/raw|jpeg/`에 이미
+있는 걸 확인하고(124/124 매치) 그쪽에서 읽어 재현했다.
+
+**결과 - 승부가 안 됐다, 이미 최적값**:
+
+| | ΔE00 |
+|---|---|
+| 42콤보 LOO 그리드서치 vs apply_hncs(main) | 12.281 -> 10.542 (+14.16%, p<0.0001) |
+| 42콤보 LOO 그리드서치 vs **현재** apply_hncs_x2dii(ss=0.58, clip=1.25) | 10.484 -> 10.542 (**-0.56%, 승/패=0/12, p=0.0005, CI [-0.099,-0.024] 0 미포함**) |
+
+70폴드 중 **58개(83%)가 정확히 현재값(shoulder_start=0.58,
+clahe_clip=1.25)을 그대로 선택**했고, 나머지 12폴드가 이웃값(0.5/0.66)을
+골라 LOO 평균을 오히려 갉아먹었다 - 다수결로도 안정성으로도 현재값이
+이미 이긴다. **결론: clahe_clip=1.25/shoulder_start=0.58는 미검증
+차용값이 아니라 실제로 이 2D 그리드의 결합 최적점이었다** - 코드 변경
+없음(`apply_hncs_x2dii()` 그대로 유지). 재현: `python3 -m
+tools.evaluate_x2dii_clahe_shoulder_grid`.
+
 ### apply_hncs_x1d50c 신설 - Hasselblad X1D-50c 전용 (2026-08)
 
 로컬 raw+jpeg 라이브러리에 X1D-50c 페어 20장이 새로 추가돼서(Adobe 편집
@@ -1673,3 +1704,272 @@ Provia GFX50S II 통합, `fuji_provia_learned.py` 등)는 이 오염된
 (연구 단계) 급하지 않음. 나머지 브랜드는 2-4개 수준이라 이미 발표된
 승/패 판정을 뒤집을 정도는 아닐 가능성이 높지만 별도로 재확인
 예정.
+
+## clahe_clip - 브랜드 전체 shoulder_start 합동 재검증 (2026-08)
+
+X2D II에서 확인한 대로(위 "shoulder_start x clahe_clip 합동 재검증"
+절), raw+jpeg로 직접 캘리브레이션된 바디별 `apply_*` 함수 대부분이
+`clahe_clip=1.25`를 population-fit 기본값에서 그대로 차용했을 뿐 한
+번도 그리드서치 변수로 넣은 적이 없었다. 사용자 지시("브랜드 전체")로
+raw+jpeg 데이터가 로컬에 있는 나머지 9개 바디 전부를 같은 방법으로
+재검증했다(`tools/evaluate_all_brands_clahe_shoulder_grid.py`, 신규 -
+exposure_gamma/toe_lift/white_point는 각 바디 기존 확정값 고정,
+shoulder_start 7값 x clahe_clip 6값=42콤보, 200px 선택/400px LOO 확정).
+데이터는 `datasets/<brand>/contributed/*/`에서 읽음(`~/local-work`/
+`~/Documents/raw pair` 둘 다 이번 세션엔 로컬에 없었음 - 같은 파일이
+contributed 세트에 이미 있는 걸 확인하고 대체).
+
+| 바디 | n | 현재 shipped 대비 개선폭 | 부호검정 p | CI | 판정 |
+|---|---|---|---|---|---|
+| Hasselblad X1D-50c | 20 | -3.32% | 0.5034 | [-0.617,+0.011] | 보류 |
+| Sony a7V | 58* | +1.26% | 0.2370 | [+0.067,+0.345] | 보류(CI만 0 제외, 부호검정 안 유의 - 근거 약함) |
+| Sony a7R VI | 40 | +0.77% | 0.1539 | [-0.041,+0.300] | 보류 |
+| Leica SL3-P | 41 | +0.67% | 0.2110 | [-0.193,+0.294] | 보류 |
+| Leica Q3 43 | 44 | +0.00% | - | - | 이미 최적값(44/44 만장일치) |
+| Leica SL2 | 54 | +0.00% | - | - | 이미 최적값(54/54 만장일치) |
+| Leica M10 | 32 | **-4.48%** | 0.0078 | [-0.580,-0.142] | **현재값이 더 낫다 - 손대지 말 것** |
+| Fuji GFX100RF | 38 | **+6.96%** | 0.0139 | [+0.520,+1.366] | **채택** |
+| Fuji X-T30 III | 20 | +3.32% | 0.2632 | [-0.480,+1.076] | 보류(GFX100RF와 방향은 같으나 표본 작아 단독 불충분) |
+| Sigma BF | 82 | **+7.04%** | 0.0012 | [+0.670,+1.551] | **채택** |
+
+*Sony a7V는 manifest 75개 중 17개(`.arw`)가 "Unsupported file format or
+not RAW file"로 디코드 실패해서 58개만 사용 - 원인 미조사, 별도 확인
+필요.
+
+**채택 2건**:
+- **`brands/fuji.py`의 `apply_provia()`**: `clahe_clip` 1.25->3.0
+  (`shoulder_start`=0.82 불변). GFX100RF 38/38 폴드 만장일치.
+  X-T30 III(n=20)는 단독으로 유의하진 않지만 같은 방향(clip=3.0 계열이
+  14/20)이라 모순은 아님 - 표본이 더 큰 GFX100RF 값을 그대로 공유
+  함수에 반영(기존 shoulder_start=0.82 채택 때와 같은 방식).
+- **`brands/sigma_bf.py`의 `apply_sigma_bf_look`**: `_CLAHE_CLIP`
+  1.25->3.0 (`toe_lift`/`shoulder_start`/`white_point` 불변). 82/82
+  폴드 만장일치, 이 바디의 원래 원본 픽셀 검증(+0.53%, CI 하한 +0.007로
+  거의 0에 붙어있던 이 세션 최약체 근거)보다 훨씬 견고한 신호.
+
+**나머지는 손대지 않음**: X1D-50c/Sony 2종/Leica SL3-P는 CI가 0을
+포함해 보류. Leica Q3 43/SL2는 이미 정확히 최적값이었다(X2D II와 같은
+패턴 - "미검증 차용값"이 실은 최적값인 경우가 드물지 않다는 뜻). **Leica
+M10은 유일하게 역방향 신호** - 그리드서치가 오히려 현재값보다 유의하게
+나쁜 조합을 고른다(p=0.0078, CI가 0을 안 낀 채 완전히 음수) - 이 바디는
+그리드서치보다 원래 확정 과정(원본 픽셀 재확인 포함)이 더 신뢰도 높았던
+것으로 보임, 절대 이 재검증 결과로 덮어쓰면 안 됨.
+
+재현: `python3 -m tools.evaluate_all_brands_clahe_shoulder_grid`
+(~450쌍, 약 25분).
+
+## /goal "다른 전체 브랜드 평균 ΔE00→10미만" - 목표 미달, 구조적 한계로 판정 (2026-08)
+
+사용자가 `/goal`로 설정한 "다른(하셀블라드 외) 전체 브랜드 평균
+ΔE00<10"을 이 절이 다룬다. **결론부터: 달성 못 함 - 현재 기법으로는
+구조적으로 도달 불가능**하다는 게 opus 에스컬레이션(아래)까지 거친
+최종 판정이다. 시도한 것과 근거를 전부 기록한다.
+
+**1) 현재 상태 서베이** (`tools/measure_all_brand_baselines.py`, 800px,
+각 바디의 현재 shipped 함수 그대로):
+
+| 그룹 | n | ΔE00 |
+|---|---|---|
+| Canon(generic) | - | 23.012 |
+| Sony a7R VI(전용) | - | 17.318 |
+| Sony a7V(전용) | - | 16.652 |
+| Sigma(generic) | - | 16.250 |
+| Sigma BF(전용) | - | 15.990 |
+| Sony(generic) | - | 14.378 |
+| Fuji GFX100RF(전용) | - | 13.917 |
+| Fuji(generic) | - | 13.074 |
+| Leica Q3 43(전용) | - | 11.144 |
+| Leica(generic) | - | 10.398 |
+| Leica SL2(전용) | - | 9.731 |
+| Leica SL3-P(전용) | - | 8.975 |
+| Leica M10(전용) | - | 8.509 |
+
+13개 중 10개가 10 이상. Olympus/Panasonic/Pentax/PhaseOne/Ricoh GR은
+로컬 raw+jpeg 캘리브레이션 데이터가 아예 0장이라 측정 자체가 불가능.
+
+**2) 톤커브 4파라미터 그리드서치만으로는 어림없음** - Canon(가장
+나쁘고 전용 튜닝 자체가 없었음)에 ΔE00 직접 목적함수 그리드서치+LOO
+(`tools/fit_population_body_de00_grid.py`, toe_lift x shoulder_start x
+white_point x clahe_clip 252콤보): 23.109→22.041, **+4.62%뿐**(통계는
+견고, p<0.0001).
+
+**3) 매트릭스 추가 - 도움되지만 한참 부족**: raw 네이티브 화이트밸런스
+선형 RGB에 3x3 컬러매트릭스를 최소자승으로 새로 피팅(hncs_structural과
+같은 방법, `tools/fit_body_matrix_plus_tone_de00.py`)하고 그 위에 톤커브
+적용: Canon 19.964(톤만)→17.478(매트릭스+톤), **+12.45%**(p=0.0006) -
+채도/색조 LUT까지 추가(`--chroma`)해도 17.242로 겨우 +1.3%p 더 - 매트릭스
++톤+채도 다 합쳐도 **17.2대에서 정체**.
+
+**같은 실험을 "Leica(generic, 244쌍 - 실은 77%가 이미 전용튜닝된
+SL3-P/SL2/Q343/M10)"에 돌리면 정반대**: 매트릭스가 오히려 나쁨
+(12.558→13.684, **-8.97%**, p<0.0001, CI 완전히 음수) - Hasselblad
+`hncs_structural` 재검증에서 이미 확인된 "풀링된 다양한 데이터에 전역
+매트릭스를 피팅하면 오히려 해롭다"는 패턴이 여기서도 반복.
+
+**4) ISO/노출/인물 분해로도 못 좁힘** (`tools/breakdown_by_exposure_iso.py`,
+Canon 매트릭스+톤+채도 고정 파이프라인 기준): ISO 구간(저/중/고/초고)
+14.6~19.0, 노출보정 구간(언더/중립/오버) 14.4~19.7 - **어느 구간도 10에
+가깝지 않다**. 인물 사진만(OpenCV Haar cascade로 얼굴 검출, 143장 중
+27장) 따로 봐도 매트릭스+톤+채도 16.626(개선 자체가 CI 0 포함, 보류) -
+역시 10 근처도 아님. **오차가 특정 조건에 몰려있지 않고 전 구간에
+고르게 퍼져있다 - 파라미터로 깎을 수 있는 "편향"이 아니라 구조적
+"바닥"이라는 뜻**.
+
+**5) 저해상도 그리드서치가 낙관적으로 왜곡한다는 걸 재확인**: Leica
+generic 톤커브만 그리드서치(400px)는 9.966→9.634로 **이미 10 미만**을
+보고했다 - 유망해 보였지만, SL2-S(43쌍) 단독으로 같은 400px 그리드가
+10.587→10.277을 냈던 걸 원본 픽셀(max_dim=3000)로 재확인하니
+**11.935→11.824로 밀렸다**(위 X2D II CLAHE 해상도 편향 절과 같은
+현상 - `tileGridSize=(8,8)` 고정 CLAHE가 저해상도에서 유리하게
+왜곡됨). **이 세션의 저해상도(200~400px) 그리드서치 결과는 전부
+낙관 편향이 섞여 있다고 보고 원본 픽셀 재확인 없이는 인용하면 안 된다.**
+
+**6) opus 에스컬레이션 - 최종 판정**: `/goal`의 애매함/난도는
+가장 강한 모델 티어로 에스컬레이션하라는 이 프로젝트 원칙에 따라
+opus에게 전체 증거를 넘겨 판단을 물었다. 판정: **구조적으로 도달
+불가능**.
+- 이 프로젝트에서 가장 공들여 튜닝된 아티팩트(`apply_hncs_x2dii()`,
+  441콤보 그리드+LOO+70쌍+원본 픽셀 확인)조차 원본 픽셀 기준 약
+  11.7 - 목표(10 미만)를 못 넘는다. 하물며 갓 시작한 브랜드들이
+  평균으로 이걸 이기길 기대하는 건 무리.
+- 필요한 감소폭은 13개 그룹 평균 기준 **-27.5%**인데, 이번에 찾은
+  최선의 기법(매트릭스+톤+채도)이 가장 개선 여지가 컸던 Canon에서도
+  **+12.45%**뿐이고 Leica에서는 오히려 마이너스 - 평균 -27.5%를
+  낼 방법이 없다.
+- 매트릭스(색)+톤(밝기/대비)+채도/색조까지 다 넣어도 안 줄어드는
+  잔차는 데모자이크/샤프닝/노이즈리덕션 불일치, 렌즈보정 유무,
+  장면 적응형 JPEG 처리(DRO/ALO 등) 같은 **정적 전역 함수로는 원리상
+  못 잡는 영역** - 이 프로젝트가 아는 유일한 해법(세대/바디별 분기,
+  조건부 파라미터)은 Hasselblad 하나에만도 여러 세션·수백 쌍이
+  들었다.
+- Olympus/Panasonic/Pentax/PhaseOne/Ricoh GR 데이터 수집은 **역효과** -
+  이 프로젝트의 모든 "첫 측정" 베이스라인이 13~23에서 시작했으므로,
+  다섯 그룹을 더 추가하면 평균이 더 나빠질 뿐이다.
+
+**opus 권고에 따라 실행한 것**: "이미 10 미만"이라던 SL2/SL3-P/M10을
+원본 픽셀(max_dim=3000)로 재확인(`tools/confirm_leica_raw_look_extension.py --already10`,
+30분 타임박스 - 실제로는 143쌍 전부 약 10분에 끝남):
+
+| 바디 | n | apply_leica_look(main) | apply_leica_raw_look(전용) | 판정 |
+|---|---|---|---|---|
+| SL3-P | 41 | 9.821 | **9.590** | 10 미만 유지 |
+| M10 | 32 | 9.562 | **9.415** | 10 미만 유지 |
+| SL2 | 55 | 10.714 | **10.511** | **10 미만 실패** (800px 서베이의 9.731은 낙관 편향) |
+
+3개 중 2개(SL3-P/M10)만 원본 픽셀에서도 진짜 10 미만 - SL2는 겨우
+못 넘는다(10.5). SL2-S(11.824, 위 "독립 재확인" 절)까지 포함하면
+Leica 전용 튜닝 5바디 중 **3/5만 10 미만**, 나머지(SL2/SL2-S)는 근접이지
+달성이 아니다. SL2-S는 채택 유지(원래 이전 세션에서 이미 채택돼
+있었고 통계적으로 견고 - `brands/leica_raw.py` docstring 참고, 다만
+10 미만은 아님을 명시). CL은 근거 없어 기각.
+
+**결론**: 목표는 노력 부족이 아니라 방법론의 근본적 한계로 미달.
+사용자에게 재타겟(예: "각 전용 함수가 자기 generic 대비 원본 픽셀
+5% 이상 개선" 같은 상대적 목표, 또는 "Hasselblad 11.7 바닥까지 좁히기")
+또는 세대/장면 조건부 분기라는 멀티세션급 프로젝트 승인을 요청한다.
+
+재현: `python3 -m tools.fit_population_body_de00_grid canon`,
+`... fit_body_matrix_plus_tone_de00 canon --chroma`,
+`... breakdown_by_exposure_iso canon`,
+`... confirm_leica_raw_look_extension`.
+
+## Hasselblad ISO/노출/인물별 분해 - 세대 효과의 착시로 판명 (2026-09)
+
+사용자 지시("노출별,iso별로,인물사진별로 나누어서 하셀도 돌려") - Canon
+때와 같은 진단을 Hasselblad에도 적용. 단, Hasselblad는 전용 매트릭스
+피팅 파이프라인이 없어서 새 파라미터 없이 **세대별 실제 배포
+함수**(X2D II 100C만 `apply_hncs_x2dii()`, 나머지 전부
+`apply_hncs()`)를 그대로 적용해 `datasets/hasselblad/contributed/`
+전체(챠트 제외 368쌍, dedup 반영, 367쌍 디코드 성공)를 ISO/노출(EV)/
+인물 여부로 분해했다(`tools/breakdown_hasselblad_by_exposure_iso_portrait.py`
+신설).
+
+**전체 평균 ΔE00=10.290** (세대별 실제 배포 함수 기준, in-sample 진단).
+
+**세대별**(안 좋은 순):
+
+| 세대 | n | 평균 ΔE00 | 표준편차 |
+|---|---|---|---|
+| X1D | 121 | 13.410 | 6.876 |
+| X1D II 50C | 38 | 11.795 | 6.124 |
+| X2D II 100C | 74 | 10.421 | **2.265** |
+| Hasselblad X1D-50c | 20 | 9.654 | 5.826 |
+| X2D 100C | 82 | 6.783 | 3.524 |
+| CFV 100C/907X | 32 | 5.783 | 2.956 |
+
+**의외의 발견**: `apply_hncs()`(main)는 원래 X1D raw+jpeg 13쌍으로
+만들어진 함수인데, 지금 가장 큰 풀(368쌍)에서 **X1D가 세대 중
+제일 나쁘다**(13.410, 표준편차도 가장 큼). 나중에 population이
+늘어난 CFV 100C/907X(5.783)/X2D 100C(6.783)가 오히려 훨씬 잘 맞는다 -
+main 함수가 원 소스 세대보다 나중에 추가된 세대에 더 잘 맞는 역설적
+상황. `apply_hncs_x2dii()`(전용 튜닝)는 평균 자체는 중간(10.421)이지만
+**표준편차가 전 세대 중 가장 작다**(2.265) - 전용 캘리브레이션이
+평균보다 일관성(예측가능성)을 개선한다는 걸 보여주는 사례.
+
+**ISO/노출/인물별로는 뚜렷한 독립 신호가 없다** - 안 좋아 보이는
+버킷(저ISO<=200: 10.784, EV unknown: 12.061)은 실은 X1D 계열이
+그 버킷에 몰려있어서 생기는 **세대 효과의 착시(confound)**다. 인물
+사진(80장)은 오히려 비인물(287장)보다 근소하게 낫다(9.715 vs
+10.450) - 인물이라서 더 어렵다는 근거 없음. 최악 10장도 전부
+X1D/X1D II 50C/X1D-50c에 몰려있어(X2D II·X2D 100C·CFV는 0장) 같은
+결론을 뒷받침한다.
+
+**결론**: ISO/노출/인물 축으로 Hasselblad 오차를 줄일 여지는 없다 -
+진짜 레버는 세대(이미 알려진 축)뿐이고, 그중에서도 X1D가 새롭게
+확인된 약점이다. `apply_hncs()`/`apply_hncs_x2dii()` 둘 다 이 조사로
+바뀌지 않음(진단만).
+
+재현: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
+(368쌍, 3코어 병렬 디코드 기준 약 9분).
+
+## apply_hncs_x1d 신설 - X1D 전용, 121/121 폴드 전원일치 +18.35% (2026-09)
+
+위 세대별 분해가 X1D를 최악 세대로 확인한 데 대해 사용자가 지시("애초에
+그러면 X1D만 사용하는 필터 하나 더 만들어") - X2D II/X1D-50c와 같은
+방법으로 X1D 전용 함수를 만든다. `tools/evaluate_x1d_de00_grid.py`(신설,
+`evaluate_x2dii_de00_grid.py`와 동일 방법론 - exposure_gamma 포함
+441콤보 ΔE00 직접 그리드서치, 저해상도 200px로 폴드별 콤보 선택 후
+**3000px(원본 픽셀)로 최종 완전 LOO 평가** - 별도 원본 픽셀 재확인
+단계가 필요 없음, 평가 자체가 이미 원본 픽셀)를
+`collect_local_pairs()`의 X1D 121쌍(dedup 반영, 챠트 제외)에 적용:
+
+**결과**: `apply_hncs()`(main) 14.013 -> LOO 최적화 11.442,
+**+18.35%**, 승/패=102/19, 부호검정 p<0.0001, 부트스트랩 95% CI
+[+2.164, +2.974](0 미포함) - **121/121 폴드 전원일치**로
+`exposure_gamma=0.6, toe_lift=0.0, shoulder_start=0.82, white_point=1.0`에
+수렴. 이 세션 다른 어떤 바디 실험보다 표본이 크면서도 완전 만장일치인
+드문 경우 - X2D II(58/70)/X1D-50c(20/20, 표본 작음)보다 신뢰도가 높다.
+
+`clahe_clip`은 이 그리드에 없어 main 기본값(1.25) 그대로 - X2D II/
+X1D-50c와 같은 관례.
+
+**배포**: `brands/hasselblad_x1d.py`에 `apply_hncs_x1d()` 신설,
+`apply_hncs()`(main)는 안 건드림. 이제 Hasselblad 6세대 중
+X1D/X1D-50c/X2D II 3세대가 전용 함수를 갖는다. 나머지 3세대 중
+X2D 100C(6.783)/CFV 100C/907X(5.783)는 이미 main이 잘 맞지만,
+**X1D II 50C(11.795, 세대 중 2위로 나쁨)는 여전히 전용 함수 없이
+방치된 실제 갭**이다 - 다음 후보로 남겨둠.
+
+재현: `python3 -m tools.evaluate_x1d_de00_grid` (121쌍, 순차 디코드
+기준 약 15~20분).
+
+## apply_hncs_x1dii50c 신설 - X1D II 50C 전용, 38/38 폴드 전원일치 +9.63% (2026-09)
+
+X1D 다음으로 2위로 나쁜(11.795) X1D II 50C도 사용자 지시("만들어")로
+같은 방법(`tools/evaluate_x1dii50c_de00_grid.py`, `evaluate_x1d_de00_grid.py`
+복사판) 적용 - `collect_local_pairs()`의 X1D II 50C 38쌍(dedup 반영,
+챠트 제외):
+
+**결과**: `apply_hncs()`(main) 12.286 -> LOO 최적화 11.102, **+9.63%**,
+승/패=34/4, 부호검정 p<0.0001, 부트스트랩 95% CI [+0.886, +1.482](0
+미포함) - **38/38 폴드 전원일치**로
+`exposure_gamma=0.7, toe_lift=0.02, shoulder_start=0.82, white_point=1.0`에
+수렴.
+
+**배포**: `brands/hasselblad_x1dii50c.py`에 `apply_hncs_x1dii50c()`
+신설. 이제 Hasselblad 6세대 중 4세대(X1D/X1D-50c/X1D II 50C/X2D II
+100C)가 전용 함수를 갖고, 나머지 2세대(X2D 100C/CFV 100C/907X)는
+전용 함수 없이 main을 그대로 쓰지만 그걸로 이미 충분히 낮음
+(6.783/5.783) - **6세대 전부 처리 완료**.
+
+재현: `python3 -m tools.evaluate_x1dii50c_de00_grid` (38쌍, 몇 분).

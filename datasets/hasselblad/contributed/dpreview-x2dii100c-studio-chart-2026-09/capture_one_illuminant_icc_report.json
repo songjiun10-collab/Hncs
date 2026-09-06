@@ -1,0 +1,98 @@
+{
+  "purpose": "Capture One Base Characteristics - 조명별 ICC 2장",
+  "why": "ICC v4 matrix/TRC는 슬롯 하나 + D50 PCS 고정이라 dual-illuminant를 한 파일에 못 담는다. 단일 매트릭스로 두 조명을 합치면(combined 25장) 무채색이 깨진다 - 자기 데이터에서도 크로마 9.8444(kmichels 매트릭스는 자기 데이터에서 1.3279). 조명별 파일 분리가 단일 파일 포맷에서 두 조명을 표현하는 유일한 방법.",
+  "shipped_generic_icc_untouched": "hybrid_engine/assets/profiles/hasselblad_x2dii_chart.icc (kmichels n=9 기준, 무변경)",
+  "rejected_alternative": {
+    "what": "범용 ICC를 combined 25장 D50 매트릭스로 교체",
+    "script": "tools/regenerate_x2dii_icc_v2_combined.py",
+    "why_rejected": "발급 전 게이트에서 막힘 - 무채색 6패치 크로마 평균 기존 9.9393 vs 신규 9.9871. 양성 대조로 지표 타당성 확인 (각 매트릭스를 자기 피팅 데이터에 적용: kmichels 1.3279, combined 9.8444)."
+  },
+  "inherited_validation": {
+    "n": 25,
+    "global_burst_fair_mean": 15.832453211597024,
+    "real_interpolation_mean": 8.427546328280359,
+    "paired_diff_mean": 7.404906883316666,
+    "bootstrap_ci95": [
+      5.550903013712454,
+      9.279368839886569
+    ],
+    "wins": 25,
+    "losses": 0
+  },
+  "limitation": "24패치 전체 실측 샘플이 커밋돼 있지 않아(무채색 6패치 + 그룹 평균 무채색만) 전체 ΔE00 재비교는 RAW 없이 불가능하다. dpreview RAW는 현재 Cloudflare 차단으로 재확보 불가. 이 게이트는 무채색 축에 한정된 검증이다.",
+  "user_approval": "2026-09-04 '캡처원용도 다 만들어'",
+  "variants": [
+    {
+      "file": "hybrid_engine/assets/profiles/hasselblad_x2dii_chart_daylight.icc",
+      "description": "HNCS X2D II Chart Colorimetric (daylight/D65)",
+      "illuminant": "daylight",
+      "illuminant_xy": [
+        0.3127,
+        0.329
+      ],
+      "n_images_fit": 9,
+      "matrix_source": "dual_illuminant_report_v2_illuminant_referenced.json -> color_matrix_1",
+      "adaptation": "Von Kries / Bradford, 자기 조명 -> D50 (ICC PCS)",
+      "matrix_native_to_xyz_d50": [
+        [
+          4.8168501532798125,
+          2.0390885676149995,
+          0.16677877648344433
+        ],
+        [
+          0.36551872792610324,
+          1.9014890721092776,
+          -0.3581483781918002
+        ],
+        [
+          -0.02353911214856641,
+          -0.78571788557739,
+          2.7273400436152926
+        ]
+      ],
+      "neutral_chroma_this_profile": 1.3255513753930679,
+      "neutral_chroma_shipped_generic_icc": 40.45155614272439,
+      "neutral_native_to_xyz_normalized": [
+        0.9719634385702105,
+        1.0,
+        0.8263416886020024
+      ]
+    },
+    {
+      "file": "hybrid_engine/assets/profiles/hasselblad_x2dii_chart_tungsten.icc",
+      "description": "HNCS X2D II Chart Colorimetric (tungsten/StdA)",
+      "illuminant": "tungsten",
+      "illuminant_xy": [
+        0.44758,
+        0.40745
+      ],
+      "n_images_fit": 7,
+      "matrix_source": "dual_illuminant_report_v2_illuminant_referenced.json -> color_matrix_2",
+      "adaptation": "Von Kries / Bradford, 자기 조명 -> D50 (ICC PCS)",
+      "matrix_native_to_xyz_d50": [
+        [
+          3.812061705181708,
+          1.315215708073391,
+          0.5161906694103657
+        ],
+        [
+          0.6577107954718423,
+          3.006149777263392,
+          -1.4788805476350768
+        ],
+        [
+          1.3985341553669777,
+          -0.3355753847429155,
+          12.689875252478897
+        ]
+      ],
+      "neutral_chroma_this_profile": 1.2373379202377348,
+      "neutral_chroma_shipped_generic_icc": 48.77081993482892,
+      "neutral_native_to_xyz_normalized": [
+        0.957223293406329,
+        1.0,
+        0.8229820939274387
+      ]
+    }
+  ]
+}

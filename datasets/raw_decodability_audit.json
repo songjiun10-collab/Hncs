@@ -1,0 +1,300 @@
+{
+  "rawpy_version": "0.27.0",
+  "libraw_version": [
+    0,
+    22,
+    1
+  ],
+  "sets": [
+    {
+      "set": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw",
+      "n_ok": 63,
+      "n_failed": 0,
+      "failures": []
+    },
+    {
+      "set": "datasets/fuji/contributed/local-work-2026-08/raw",
+      "n_ok": 246,
+      "n_failed": 0,
+      "failures": []
+    },
+    {
+      "set": "datasets/hasselblad/contributed/dpreview-cfv907x-2026-08/raw",
+      "n_ok": 3,
+      "n_failed": 0,
+      "failures": []
+    },
+    {
+      "set": "datasets/hasselblad/contributed/kmichels-x2dii-2026-07/raw",
+      "n_ok": 9,
+      "n_failed": 0,
+      "failures": []
+    },
+    {
+      "set": "datasets/hasselblad/contributed/x1d-x2d100c-restore-2026-08/raw",
+      "n_ok": 55,
+      "n_failed": 0,
+      "failures": []
+    },
+    {
+      "set": "datasets/hasselblad/contributed/xcd-lenses-2026-08/raw",
+      "n_ok": 145,
+      "n_failed": 0,
+      "failures": []
+    },
+    {
+      "set": "datasets/leica/contributed/dpreview-sl3p-2026-08/raw",
+      "n_ok": 15,
+      "n_failed": 0,
+      "failures": []
+    },
+    {
+      "set": "datasets/sony/contributed/dpreview-a7v-preprod-2026-08/raw",
+      "n_ok": 22,
+      "n_failed": 40,
+      "failures": [
+        {
+          "filename": "0029821973.arw",
+          "size_bytes": 16691200,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "0227006412.arw",
+          "size_bytes": 22470656,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "0400667819.arw",
+          "size_bytes": 20762624,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "0556382380.arw",
+          "size_bytes": 17887232,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "1320450861.arw",
+          "size_bytes": 26165248,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "1476109663.arw",
+          "size_bytes": 16125952,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "2030627499.arw",
+          "size_bytes": 17469440,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "2271553121.arw",
+          "size_bytes": 21266432,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "2358605065.arw",
+          "size_bytes": 21614592,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "2659103946.arw",
+          "size_bytes": 16437248,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "2820934527.arw",
+          "size_bytes": 18001920,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "3018675120.arw",
+          "size_bytes": 17305600,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "3069253897.arw",
+          "size_bytes": 20123648,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "3098681404.arw",
+          "size_bytes": 21630976,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "3112599573.arw",
+          "size_bytes": 20582400,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "3560181386.arw",
+          "size_bytes": 22089728,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "3766706021.arw",
+          "size_bytes": 16662528,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "3801391823.arw",
+          "size_bytes": 18051072,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "4201671889.arw",
+          "size_bytes": 19578880,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "4368784718.arw",
+          "size_bytes": 20365312,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "4377627678.arw",
+          "size_bytes": 36237312,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "4419734541.arw",
+          "size_bytes": 24735744,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "4983128075.arw",
+          "size_bytes": 19865600,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "5035352318.arw",
+          "size_bytes": 33611776,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "5060218177.arw",
+          "size_bytes": 15495168,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "5121966619.arw",
+          "size_bytes": 17993728,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "5421006922.arw",
+          "size_bytes": 17321984,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "5664792785.arw",
+          "size_bytes": 17670144,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "6368631640.arw",
+          "size_bytes": 21209088,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "6832315059.arw",
+          "size_bytes": 19959808,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "7056815545.arw",
+          "size_bytes": 28684288,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "7176945754.arw",
+          "size_bytes": 18034688,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "7910164297.arw",
+          "size_bytes": 19288064,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "7964552451.arw",
+          "size_bytes": 25411584,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "8414657448.arw",
+          "size_bytes": 18034688,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "8781299045.arw",
+          "size_bytes": 28434432,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "9218571104.arw",
+          "size_bytes": 22183936,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "9592797027.arw",
+          "size_bytes": 22564864,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "9735286314.arw",
+          "size_bytes": 29806592,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        },
+        {
+          "filename": "9739618100.arw",
+          "size_bytes": 20144128,
+          "error": "LibRawFileUnsupportedError: b'Unsupported file format or not RAW file'",
+          "raw_subtype": "Sony Compressed RAW 2 / NeXt or Sony ARW Compressed 2 / ARW"
+        }
+      ]
+    }
+  ],
+  "total_failed": 40
+}

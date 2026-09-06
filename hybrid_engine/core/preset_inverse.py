@@ -3,7 +3,7 @@
 
 메타메리즘 문제(core/color_matrix.py 참고) 때문에 물리적으로 완벽한
 카메라 무관 색공간은 못 만든다는 한계를, 이 프로젝트가 이미 실측으로
-확보해둔 자산으로 우회한다: `brands/*.py`의 population-fit 브랜드
+확보해둔 자산으로 우회한다: `brands/<브랜드>/*.py`의 population-fit 브랜드
 10종(hasselblad + 9개)은 전부 `core.curve.film_curve`(toe+linear mid+
 smoothstep shoulder, 단조함수)에 브랜드별 실측 toe_lift/white_point를
 대입하는 동일 구조라, **닫힌 형태로 역산이 가능하다.**
@@ -73,7 +73,7 @@ TARGET_FUNCS.update({
 
 def curve_params(brand):
     """brand의 apply_* 함수 기본 파라미터(toe_lift/shoulder_start/
-    white_point)를 함수 시그니처에서 직접 읽어온다 - brands/*.py의 실측값을
+    white_point)를 함수 시그니처에서 직접 읽어온다 - brands/<브랜드>/*.py의 실측값을
     이 파일에 중복 기록하지 않고 항상 최신값을 그대로 참조하기 위함."""
     import inspect
     if brand not in BRAND_FUNCS:
