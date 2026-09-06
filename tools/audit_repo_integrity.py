@@ -51,7 +51,11 @@ PROFILES = os.path.join(BASE, "hybrid_engine", "assets", "profiles")
 CODE_DIRS = ["tools", "brands", "core"]
 # 영역 규칙 파일이지 번역 대상 문서가 아니다.
 NOT_BILINGUAL = {"CLAUDE.md"}
-ASSET_REF = re.compile(r"[\"']([^\"']*assets/[^\"']+\.(?:json|dcp|icc|npy|cube))[\"']")
+# 접두부에 공백을 허용하면 따옴표 안의 *명령 문자열*까지 경로로 잡힌다 -
+# tests/test_hooks_never_touch_bash.py의 "printf x > hybrid_engine/assets/
+# profiles/hasselblad_x2dii_chart.dcp"가 통째로 캡처돼 실재하는 파일을
+# "참조 대상 없음"으로 오탐했다(2026-09-06). 경로로 쓸 수 있는 문자만 받는다.
+ASSET_REF = re.compile(r"[\"']([^\"'\s]*assets/[^\"'\s]+\.(?:json|dcp|icc|npy|cube))[\"']")
 
 
 def _code_files(root):
