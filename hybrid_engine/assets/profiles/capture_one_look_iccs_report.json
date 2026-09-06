@@ -15,7 +15,7 @@
   },
   "issued": [
     {
-      "module": "brands.canon",
+      "module": "brands.canon.look",
       "func": "apply_canon_look",
       "file": "hybrid_engine/assets/profiles/looks/canon_canon_look.icc",
       "description": "HNCS canon canon look look",
@@ -27,7 +27,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.canon",
+      "module": "brands.canon.look",
       "func": "apply_canon_raw_look",
       "file": "hybrid_engine/assets/profiles/looks/canon_canon_raw_look.icc",
       "description": "HNCS canon canon raw look look",
@@ -39,7 +39,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.canon_r1_raw",
+      "module": "brands.canon.r1_raw",
       "func": "apply_canon_r1_raw_look",
       "file": "hybrid_engine/assets/profiles/looks/canon_r1_raw_canon_r1_raw_look.icc",
       "description": "HNCS canon r1 raw canon r1 raw look look",
@@ -51,7 +51,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.canon_r6iii_raw",
+      "module": "brands.canon.r6iii_raw",
       "func": "apply_canon_r6iii_raw_look",
       "file": "hybrid_engine/assets/profiles/looks/canon_r6iii_raw_canon_r6iii_raw_look.icc",
       "description": "HNCS canon r6iii raw canon r6iii raw look look",
@@ -63,7 +63,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.fuji_provia_learned",
+      "module": "brands.fuji.provia_learned",
       "func": "apply_provia_learned",
       "file": "hybrid_engine/assets/profiles/looks/fuji_provia_learned_provia_learned.icc",
       "description": "HNCS fuji provia learned provia learned look",
@@ -75,7 +75,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.fuji_provia_matrix",
+      "module": "brands.fuji.provia_matrix",
       "func": "apply_fuji_provia_matrix_look",
       "file": "hybrid_engine/assets/profiles/looks/fuji_provia_matrix_fuji_provia_matrix_look.icc",
       "description": "HNCS fuji provia matrix fuji provia matrix look look",
@@ -87,19 +87,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.hasselblad",
-      "func": "apply_hncs_video_frame",
-      "file": "hybrid_engine/assets/profiles/looks/hasselblad_hncs_video_frame.icc",
-      "description": "HNCS hasselblad hncs video frame look",
-      "lut_size": 33,
-      "max_deviation_from_identity": 1.0,
-      "lut_vs_direct_mean_abs_bgr": 2.06,
-      "look_effect_mean_abs_bgr": 15.5,
-      "faithful": true,
-      "file_kb": 107.2
-    },
-    {
-      "module": "brands.hasselblad_day",
+      "module": "brands.hasselblad.day",
       "func": "apply_hasselblad_day",
       "file": "hybrid_engine/assets/profiles/looks/hasselblad_day_hasselblad_day.icc",
       "description": "HNCS hasselblad day hasselblad day look",
@@ -111,7 +99,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.hasselblad_learned",
+      "module": "brands.hasselblad.learned",
       "func": "apply_hncs_learned",
       "file": "hybrid_engine/assets/profiles/looks/hasselblad_learned_hncs_learned.icc",
       "description": "HNCS hasselblad learned hncs learned look",
@@ -123,7 +111,19 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.hasselblad_night",
+      "module": "brands.hasselblad.look",
+      "func": "apply_hncs_video_frame",
+      "file": "hybrid_engine/assets/profiles/looks/hasselblad_hncs_video_frame.icc",
+      "description": "HNCS hasselblad hncs video frame look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 2.06,
+      "look_effect_mean_abs_bgr": 15.5,
+      "faithful": true,
+      "file_kb": 107.2
+    },
+    {
+      "module": "brands.hasselblad.night",
       "func": "apply_hasselblad_night",
       "file": "hybrid_engine/assets/profiles/looks/hasselblad_night_hasselblad_night.icc",
       "description": "HNCS hasselblad night hasselblad night look",
@@ -135,7 +135,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.hasselblad_x1d",
+      "module": "brands.hasselblad.x1d",
       "func": "apply_hncs_x1d",
       "file": "hybrid_engine/assets/profiles/looks/hasselblad_x1d_hncs_x1d.icc",
       "description": "HNCS hasselblad x1d hncs x1d look",
@@ -147,7 +147,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.hasselblad_x1d50c",
+      "module": "brands.hasselblad.x1d50c",
       "func": "apply_hncs_x1d50c",
       "file": "hybrid_engine/assets/profiles/looks/hasselblad_x1d50c_hncs_x1d50c.icc",
       "description": "HNCS hasselblad x1d50c hncs x1d50c look",
@@ -159,7 +159,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.hasselblad_x1dii50c",
+      "module": "brands.hasselblad.x1dii50c",
       "func": "apply_hncs_x1dii50c",
       "file": "hybrid_engine/assets/profiles/looks/hasselblad_x1dii50c_hncs_x1dii50c.icc",
       "description": "HNCS hasselblad x1dii50c hncs x1dii50c look",
@@ -171,7 +171,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.hasselblad_x2dii",
+      "module": "brands.hasselblad.x2dii",
       "func": "apply_hncs_x2dii",
       "file": "hybrid_engine/assets/profiles/looks/hasselblad_x2dii_hncs_x2dii.icc",
       "description": "HNCS hasselblad x2dii hncs x2dii look",
@@ -183,7 +183,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.leica",
+      "module": "brands.leica.look",
       "func": "apply_leica_look",
       "file": "hybrid_engine/assets/profiles/looks/leica_leica_look.icc",
       "description": "HNCS leica leica look look",
@@ -195,7 +195,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.leica_raw",
+      "module": "brands.leica.raw",
       "func": "apply_leica_raw_look",
       "file": "hybrid_engine/assets/profiles/looks/leica_raw_leica_raw_look.icc",
       "description": "HNCS leica raw leica raw look look",
@@ -207,7 +207,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.leica_raw_learned",
+      "module": "brands.leica.raw_learned",
       "func": "apply_leica_raw_learned",
       "file": "hybrid_engine/assets/profiles/looks/leica_raw_learned_leica_raw_learned.icc",
       "description": "HNCS leica raw learned leica raw learned look",
@@ -219,7 +219,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.leica_raw_matrix",
+      "module": "brands.leica.raw_matrix",
       "func": "apply_leica_raw_matrix_look",
       "file": "hybrid_engine/assets/profiles/looks/leica_raw_matrix_leica_raw_matrix_look.icc",
       "description": "HNCS leica raw matrix leica raw matrix look look",
@@ -231,7 +231,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.nikon",
+      "module": "brands.nikon.look",
       "func": "apply_nikon_look",
       "file": "hybrid_engine/assets/profiles/looks/nikon_nikon_look.icc",
       "description": "HNCS nikon nikon look look",
@@ -243,7 +243,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.olympus",
+      "module": "brands.olympus.look",
       "func": "apply_olympus_look",
       "file": "hybrid_engine/assets/profiles/looks/olympus_olympus_look.icc",
       "description": "HNCS olympus olympus look look",
@@ -255,7 +255,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.panasonic",
+      "module": "brands.panasonic.look",
       "func": "apply_panasonic_look",
       "file": "hybrid_engine/assets/profiles/looks/panasonic_panasonic_look.icc",
       "description": "HNCS panasonic panasonic look look",
@@ -267,7 +267,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.pentax",
+      "module": "brands.pentax.look",
       "func": "apply_pentax_look",
       "file": "hybrid_engine/assets/profiles/looks/pentax_pentax_look.icc",
       "description": "HNCS pentax pentax look look",
@@ -279,7 +279,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.phaseone",
+      "module": "brands.phaseone.look",
       "func": "apply_phaseone_look",
       "file": "hybrid_engine/assets/profiles/looks/phaseone_phaseone_look.icc",
       "description": "HNCS phaseone phaseone look look",
@@ -291,7 +291,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.ricoh_gr",
+      "module": "brands.ricoh_gr.look",
       "func": "apply_ricoh_gr_look",
       "file": "hybrid_engine/assets/profiles/looks/ricoh_gr_ricoh_gr_look.icc",
       "description": "HNCS ricoh gr ricoh gr look look",
@@ -303,19 +303,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.sigma",
-      "func": "apply_sigma_look",
-      "file": "hybrid_engine/assets/profiles/looks/sigma_sigma_look.icc",
-      "description": "HNCS sigma sigma look look",
-      "lut_size": 33,
-      "max_deviation_from_identity": 1.0,
-      "lut_vs_direct_mean_abs_bgr": 19.05,
-      "look_effect_mean_abs_bgr": 15.83,
-      "faithful": false,
-      "file_kb": 107.1
-    },
-    {
-      "module": "brands.sigma_bf",
+      "module": "brands.sigma.bf",
       "func": "apply_sigma_bf_look",
       "file": "hybrid_engine/assets/profiles/looks/sigma_bf_sigma_bf_look.icc",
       "description": "HNCS sigma bf sigma bf look look",
@@ -327,7 +315,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.sigma_bf_learned",
+      "module": "brands.sigma.bf_learned",
       "func": "apply_sigma_bf_learned",
       "file": "hybrid_engine/assets/profiles/looks/sigma_bf_learned_sigma_bf_learned.icc",
       "description": "HNCS sigma bf learned sigma bf learned look",
@@ -339,7 +327,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.sigma_fpl",
+      "module": "brands.sigma.fpl",
       "func": "apply_sigma_fpl_look",
       "file": "hybrid_engine/assets/profiles/looks/sigma_fpl_sigma_fpl_look.icc",
       "description": "HNCS sigma fpl sigma fpl look look",
@@ -351,7 +339,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.sigma_fpl_learned",
+      "module": "brands.sigma.fpl_learned",
       "func": "apply_sigma_fpl_learned",
       "file": "hybrid_engine/assets/profiles/looks/sigma_fpl_learned_sigma_fpl_learned.icc",
       "description": "HNCS sigma fpl learned sigma fpl learned look",
@@ -363,7 +351,19 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.sigma_raw",
+      "module": "brands.sigma.look",
+      "func": "apply_sigma_look",
+      "file": "hybrid_engine/assets/profiles/looks/sigma_sigma_look.icc",
+      "description": "HNCS sigma sigma look look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 19.05,
+      "look_effect_mean_abs_bgr": 15.83,
+      "faithful": false,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.sigma.raw",
       "func": "apply_sigma_raw_look",
       "file": "hybrid_engine/assets/profiles/looks/sigma_raw_sigma_raw_look.icc",
       "description": "HNCS sigma raw sigma raw look look",
@@ -375,7 +375,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.sigma_raw_matrix",
+      "module": "brands.sigma.raw_matrix",
       "func": "apply_sigma_raw_matrix_look",
       "file": "hybrid_engine/assets/profiles/looks/sigma_raw_matrix_sigma_raw_matrix_look.icc",
       "description": "HNCS sigma raw matrix sigma raw matrix look look",
@@ -387,19 +387,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.sony",
-      "func": "apply_sony_look",
-      "file": "hybrid_engine/assets/profiles/looks/sony_sony_look.icc",
-      "description": "HNCS sony sony look look",
-      "lut_size": 33,
-      "max_deviation_from_identity": 1.0,
-      "lut_vs_direct_mean_abs_bgr": 19.04,
-      "look_effect_mean_abs_bgr": 15.83,
-      "faithful": false,
-      "file_kb": 107.1
-    },
-    {
-      "module": "brands.sony_a7rvi",
+      "module": "brands.sony.a7rvi",
       "func": "apply_sony_a7rvi_look",
       "file": "hybrid_engine/assets/profiles/looks/sony_a7rvi_sony_a7rvi_look.icc",
       "description": "HNCS sony a7rvi sony a7rvi look look",
@@ -411,7 +399,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.sony_a7rvi_learned",
+      "module": "brands.sony.a7rvi_learned",
       "func": "apply_sony_a7rvi_learned",
       "file": "hybrid_engine/assets/profiles/looks/sony_a7rvi_learned_sony_a7rvi_learned.icc",
       "description": "HNCS sony a7rvi learned sony a7rvi learned look",
@@ -423,7 +411,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.sony_a7rvi_learned",
+      "module": "brands.sony.a7rvi_learned",
       "func": "apply_sony_a7rvi_learned_v2",
       "file": "hybrid_engine/assets/profiles/looks/sony_a7rvi_learned_sony_a7rvi_learned_v2.icc",
       "description": "HNCS sony a7rvi learned sony a7rvi learned v2 look",
@@ -435,7 +423,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.sony_a7v",
+      "module": "brands.sony.a7v",
       "func": "apply_sony_a7v_look",
       "file": "hybrid_engine/assets/profiles/looks/sony_a7v_sony_a7v_look.icc",
       "description": "HNCS sony a7v sony a7v look look",
@@ -447,7 +435,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.sony_a7v_learned",
+      "module": "brands.sony.a7v_learned",
       "func": "apply_sony_a7v_learned",
       "file": "hybrid_engine/assets/profiles/looks/sony_a7v_learned_sony_a7v_learned.icc",
       "description": "HNCS sony a7v learned sony a7v learned look",
@@ -459,7 +447,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.sony_a7v_learned",
+      "module": "brands.sony.a7v_learned",
       "func": "apply_sony_a7v_learned_v2",
       "file": "hybrid_engine/assets/profiles/looks/sony_a7v_learned_sony_a7v_learned_v2.icc",
       "description": "HNCS sony a7v learned sony a7v learned v2 look",
@@ -471,7 +459,19 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.sony_raw",
+      "module": "brands.sony.look",
+      "func": "apply_sony_look",
+      "file": "hybrid_engine/assets/profiles/looks/sony_sony_look.icc",
+      "description": "HNCS sony sony look look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 19.04,
+      "look_effect_mean_abs_bgr": 15.83,
+      "faithful": false,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.sony.raw",
       "func": "apply_sony_raw_look",
       "file": "hybrid_engine/assets/profiles/looks/sony_raw_sony_raw_look.icc",
       "description": "HNCS sony raw sony raw look look",
@@ -483,7 +483,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.sony_raw_matrix",
+      "module": "brands.sony.raw_matrix",
       "func": "apply_sony_raw_matrix_look",
       "file": "hybrid_engine/assets/profiles/looks/sony_raw_matrix_sony_raw_matrix_look.icc",
       "description": "HNCS sony raw matrix sony raw matrix look look",
@@ -495,7 +495,7 @@
       "file_kb": 107.2
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_astia",
       "file": "hybrid_engine/assets/profiles/looks/fuji_astia.icc",
       "description": "HNCS fuji astia look",
@@ -507,7 +507,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_pro_neg_std",
       "file": "hybrid_engine/assets/profiles/looks/fuji_pro_neg_std.icc",
       "description": "HNCS fuji pro neg std look",
@@ -519,7 +519,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_pro_neg_hi",
       "file": "hybrid_engine/assets/profiles/looks/fuji_pro_neg_hi.icc",
       "description": "HNCS fuji pro neg hi look",
@@ -531,7 +531,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_eterna_cinema",
       "file": "hybrid_engine/assets/profiles/looks/fuji_eterna_cinema.icc",
       "description": "HNCS fuji eterna cinema look",
@@ -543,7 +543,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_eterna_bleach_bypass",
       "file": "hybrid_engine/assets/profiles/looks/fuji_eterna_bleach_bypass.icc",
       "description": "HNCS fuji eterna bleach bypass look",
@@ -555,7 +555,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_nostalgic_neg",
       "file": "hybrid_engine/assets/profiles/looks/fuji_nostalgic_neg.icc",
       "description": "HNCS fuji nostalgic neg look",
@@ -567,7 +567,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_reala_ace",
       "file": "hybrid_engine/assets/profiles/looks/fuji_reala_ace.icc",
       "description": "HNCS fuji reala ace look",
@@ -579,7 +579,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_classic_negative",
       "file": "hybrid_engine/assets/profiles/looks/fuji_classic_negative.icc",
       "description": "HNCS fuji classic negative look",
@@ -591,7 +591,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_classic_chrome",
       "file": "hybrid_engine/assets/profiles/looks/fuji_classic_chrome.icc",
       "description": "HNCS fuji classic chrome look",
@@ -603,7 +603,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_nostalgic_neg_v2",
       "file": "hybrid_engine/assets/profiles/looks/fuji_nostalgic_neg_v2.icc",
       "description": "HNCS fuji nostalgic neg v2 look",
@@ -615,7 +615,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_classic_chrome_v2",
       "file": "hybrid_engine/assets/profiles/looks/fuji_classic_chrome_v2.icc",
       "description": "HNCS fuji classic chrome v2 look",
@@ -627,7 +627,7 @@
       "file_kb": 107.1
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_nostalgic_neg_v3",
       "file": "hybrid_engine/assets/profiles/looks/fuji_nostalgic_neg_v3.icc",
       "description": "HNCS fuji nostalgic neg v3 look",
@@ -641,13 +641,13 @@
   ],
   "skipped": [
     {
-      "module": "brands.hasselblad",
+      "module": "brands.hasselblad.look",
       "func": "apply_hncs",
       "reason": "이미 다른 경로로 배포됨",
       "existing": "hybrid_engine/assets/profiles/hasselblad_hncs_look.icc"
     },
     {
-      "module": "brands.fuji",
+      "module": "brands.fuji.look",
       "func": "apply_provia",
       "reason": "이미 다른 경로로 배포됨",
       "existing": "hybrid_engine/assets/profiles/fuji_provia_look.icc"

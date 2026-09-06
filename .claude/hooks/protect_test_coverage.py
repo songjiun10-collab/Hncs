@@ -48,8 +48,14 @@ _STMT_START = r"(?:^|&&|\|\||;|\n|\||\(|`|\bdo\b|\bthen\b|\belse\b)\s*"
 _HEREDOC_RE = re.compile(r"<<-?\s*[\"']?(\w+)[\"']?.*?\n.*?^\1\b", re.DOTALL | re.MULTILINE)
 _COMMIT_RE = re.compile(_STMT_START + r"git\s+commit\b")
 
+# 2026-09-06: brands/를 브랜드별 패키지로 옮기면서(brands/hasselblad.py ->
+# brands/hasselblad/look.py) brands가 tools|core와 같은 가지에 묶여 있던
+# `[^/]+\.py$`에 더는 걸리지 않게 됐다 - 브랜드 파일을 고치고 테스트 없이
+# 커밋해도 이 훅이 못 잡는 상태였다. brands만 가지를 분리해 한 단계 하위
+# 디렉토리를 허용하고, tools/core는 원래 동작 그대로 둔다.
 _COVERAGE_EXPECTED_DIR_RE = re.compile(
-    r"^(?:tools|brands|core)/[^/]+\.py$|"
+    r"^(?:tools|core)/[^/]+\.py$|"
+    r"^brands/(?:[^/]+/)?[^/]+\.py$|"
     r"^hybrid_engine/(?!research/)[^/]+\.py$"
 )
 _CALIBRATE_PROFILE_COPY_RE = re.compile(
