@@ -21,7 +21,7 @@ import numpy as np
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from brands.fuji import apply_provia
-from brands.sigma_bf import apply_sigma_bf_look
+from brands.sigma.bf import apply_sigma_bf_look
 from core.validation import is_image_array_usable
 from tools.calibrate import load_neutral_render
 from tools.evaluate_expanded_clahe_shoulder_refit import collect_contributed_pairs, _exif_film_mode
