@@ -57,7 +57,10 @@ from _hook_common import (allow, allow_with_medium_approval, deny, medium_approv
 HOOK_NAME = "protect_generated_files"
 SEVERITY = "MEDIUM"
 
-_LEARNED_LUT_FILE_RE = re.compile(r"(^|/)brands/[^/]*_learned\.py$")
+# 2026-09-06: brands/ 브랜드별 패키지화로 `brands/[^/]*_learned\.py$`가
+# brands/sony/a7v_learned.py 등을 못 잡게 됐다 - 학습 LUT 6개가 통째로
+# 보호 밖이었다. 한 단계 하위 디렉토리를 선택적으로 허용해 되돌린다.
+_LEARNED_LUT_FILE_RE = re.compile(r"(^|/)brands/(?:[^/]+/)?[^/]*_learned\.py$")
 _LUT_ASSIGN_NAME_RE = re.compile(r"^_LEARNED_LUT\w*$")
 
 
