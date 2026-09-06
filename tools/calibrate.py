@@ -77,7 +77,8 @@ def download(url, path):
 def collect_pairs():
     """raw_url+jpeg_url이 둘 다 있는 행만 (TIFF는 이미 렌더링된 결과물이라
     raw가 아니므로 제외)."""
-    rows = list(csv.DictReader(open(CSV_PATH, encoding='utf-8-sig')))
+    with open(CSV_PATH, encoding='utf-8-sig', newline='') as handle:
+        rows = list(csv.DictReader(handle))
     return [r for r in rows if r.get('raw_url', '').strip() and r.get('jpeg_url', '').strip()
             and not r['raw_url'].lower().endswith('.tif')]
 
@@ -103,18 +104,19 @@ def collect_local_pairs():
         manifest = os.path.join(base, set_name, "manifest.csv")
         if not os.path.exists(manifest):
             continue
-        for row in csv.DictReader(open(manifest, encoding='utf-8-sig')):
-            if row["filename_raw"] in seen_raw_filenames:
-                continue
-            raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
-            jpeg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
-            if os.path.exists(raw_path) and os.path.exists(jpeg_path):
-                seen_raw_filenames.add(row["filename_raw"])
-                pairs.append(dict(
-                    filename=f"{set_name}__{os.path.splitext(row['filename_raw'])[0]}",
-                    raw_path=raw_path, jpeg_path=jpeg_path,
-                    generation=_generation_for(row["camera"]),
-                    scene_type=row.get("scene_type", "")))
+        with open(manifest, encoding='utf-8-sig', newline='') as handle:
+            for row in csv.DictReader(handle):
+                if row["filename_raw"] in seen_raw_filenames:
+                    continue
+                raw_path = os.path.join(base, set_name, "raw", row["filename_raw"])
+                jpeg_path = os.path.join(base, set_name, "jpeg", row["filename_jpeg"])
+                if os.path.exists(raw_path) and os.path.exists(jpeg_path):
+                    seen_raw_filenames.add(row["filename_raw"])
+                    pairs.append(dict(
+                        filename=f"{set_name}__{os.path.splitext(row['filename_raw'])[0]}",
+                        raw_path=raw_path, jpeg_path=jpeg_path,
+                        generation=_generation_for(row["camera"]),
+                        scene_type=row.get("scene_type", "")))
     return pairs
 
 

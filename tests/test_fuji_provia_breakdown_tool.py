@@ -34,8 +34,9 @@ class TestFujiCameraManifestMapping(unittest.TestCase):
                 m = os.path.join(tmp, set_name, "manifest.csv")
                 if not os.path.exists(m):
                     continue
-                for row in csv.DictReader(open(m, encoding="utf-8-sig")):
-                    name_to_camera.setdefault(row["filename_raw"], row.get("camera", "?"))
+                with open(m, encoding="utf-8-sig", newline="") as handle:
+                    for row in csv.DictReader(handle):
+                        name_to_camera.setdefault(row["filename_raw"], row.get("camera", "?"))
 
             self.assertEqual(name_to_camera["a.RAF"], "GFX100RF")
 
