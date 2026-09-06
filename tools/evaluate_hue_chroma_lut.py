@@ -26,7 +26,7 @@ O(n) 뺄셈)으로 처리한다.
       --manifest datasets/hasselblad/dpreview_raw_jpeg_pairs_clean.csv \
       --raw-dir "/Users/songjiun/local-work" \
       --model "X2D II 100C" \
-      --tone-fn brands.hasselblad_x2dii.apply_hncs_x2dii
+      --tone-fn brands.hasselblad.x2dii.apply_hncs_x2dii
 """
 import argparse
 import csv

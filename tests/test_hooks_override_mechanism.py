@@ -25,13 +25,13 @@ class TestBashOverrideParsing(unittest.TestCase):
         self.hc = _hook_common
 
     def test_matching_rule_and_reason_returns_reason(self):
-        cmd = 'echo x >> brands/hasselblad.py  # HNCS-OVERRIDE: protect_never_touch: 사용자 승인, 리팩토링'
+        cmd = 'echo x >> brands/hasselblad/look.py  # HNCS-OVERRIDE: protect_never_touch: 사용자 승인, 리팩토링'
         self.assertEqual(
             self.hc.bash_override("protect_never_touch", cmd),
             "사용자 승인, 리팩토링")
 
     def test_wrong_rule_name_returns_none(self):
-        cmd = 'echo x >> brands/hasselblad.py  # HNCS-OVERRIDE: some_other_rule: 사유'
+        cmd = 'echo x >> brands/hasselblad/look.py  # HNCS-OVERRIDE: some_other_rule: 사유'
         self.assertIsNone(self.hc.bash_override("protect_never_touch", cmd))
 
     def test_empty_reason_returns_none(self):
@@ -152,13 +152,13 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
 
     def test_bash_write_without_override_denied(self):
         decision = self._run_hook(
-            "Bash", {"command": "sed -i 's/x/y/' brands/hasselblad.py"})
+            "Bash", {"command": "sed -i 's/x/y/' brands/hasselblad/look.py"})
         self.assertEqual(decision, "deny")
 
     def test_bash_write_with_valid_override_allowed(self):
-        cmd = ("sed -i 's/x/y/' brands/hasselblad.py"
+        cmd = ("sed -i 's/x/y/' brands/hasselblad/look.py"
                "  # HNCS-OVERRIDE: protect_never_touch: 테스트 승인 사유")
-        self._write_decision_record("brands/hasselblad.py")
+        self._write_decision_record("brands/hasselblad/look.py")
         decision = self._run_hook("Bash", {"command": cmd})
         self.assertEqual(decision, "allow")
         audit_path = os.path.join(self._tmpdir, "override_audit.jsonl")
@@ -173,27 +173,27 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
     def test_bash_write_with_override_but_no_decision_record_denied(self):
         """2026-08-16 필수 게이트: 유효한 override가 있어도 decision
         record 없으면 무조건 deny."""
-        cmd = ("sed -i 's/x/y/' brands/hasselblad.py"
+        cmd = ("sed -i 's/x/y/' brands/hasselblad/look.py"
                "  # HNCS-OVERRIDE: protect_never_touch: 테스트 승인 사유")
         decision = self._run_hook("Bash", {"command": cmd})
         self.assertEqual(decision, "deny")
 
     def test_bash_write_with_wrong_rule_override_still_denied(self):
-        cmd = ("sed -i 's/x/y/' brands/hasselblad.py"
+        cmd = ("sed -i 's/x/y/' brands/hasselblad/look.py"
                "  # HNCS-OVERRIDE: some_other_rule: 사유")
         decision = self._run_hook("Bash", {"command": cmd})
         self.assertEqual(decision, "deny")
 
     def test_edit_without_sentinel_denied(self):
         decision = self._run_hook("Edit", {
-            "file_path": "brands/sony_a7rvi_learned.py",
+            "file_path": "brands/sony/a7rvi_learned.py",
             "old_string": "def apply_sony_a7rvi_learned(img_bgr, clahe_clip=1.25):",
             "new_string": "def apply_sony_a7rvi_learned(img_bgr, clahe_clip=2.0):",
         })
         self.assertEqual(decision, "deny")
 
     def test_edit_with_valid_sentinel_allowed_and_consumed(self):
-        target = "brands/sony_a7rvi_learned.py"
+        target = "brands/sony/a7rvi_learned.py"
         sys.path.insert(0, _HOOKS_DIR)
         sys.modules.pop("_hook_common", None)
         os.environ["HNCS_HOOK_OVERRIDE_SENTINEL"] = self._env["HNCS_HOOK_OVERRIDE_SENTINEL"]
@@ -221,7 +221,7 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
     def test_edit_with_sentinel_but_no_decision_record_denied(self):
         """2026-08-16 필수 게이트: 유효한 sentinel override가 있어도
         decision record 없으면 무조건 deny."""
-        target = "brands/sony_a7rvi_learned.py"
+        target = "brands/sony/a7rvi_learned.py"
         sys.path.insert(0, _HOOKS_DIR)
         sys.modules.pop("_hook_common", None)
         os.environ["HNCS_HOOK_OVERRIDE_SENTINEL"] = self._env["HNCS_HOOK_OVERRIDE_SENTINEL"]
@@ -247,7 +247,7 @@ class TestProtectNeverTouchOverrideEndToEnd(unittest.TestCase):
         """CRITICAL 등급: 서브에이전트발 호출은 sentinel override조차 안
         받는다(2026-08-15) - self-servable 문제가 가장 치명적인 등급이라
         서브에이전트 경로 자체를 override 불가로 막았다."""
-        target = "brands/sony_a7rvi_learned.py"
+        target = "brands/sony/a7rvi_learned.py"
         sys.path.insert(0, _HOOKS_DIR)
         sys.modules.pop("_hook_common", None)
         os.environ["HNCS_HOOK_OVERRIDE_SENTINEL"] = self._env["HNCS_HOOK_OVERRIDE_SENTINEL"]

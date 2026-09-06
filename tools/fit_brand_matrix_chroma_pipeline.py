@@ -44,9 +44,9 @@ HUE_SHIFT_GRID = np.linspace(-10.0, 10.0, 15)
 # 상수를 그대로 가져옴 - 재탐색 안 함. film_mode_filter는 Fuji처럼 필름모드별로
 # 다른 JPEG 렌더링이 나오는 브랜드용(EXIF FilmMode 직접 읽음) - 없으면 None.
 BRAND_CONFIG = {
-    "sony": ("brands.sony_raw", "apply_sony_raw_look", 0.02, 0.82, 1.0, 2.0, None),
-    "sigma": ("brands.sigma_raw", "apply_sigma_raw_look", 0.02, 0.82, 1.0, 3.0, None),
-    "leica": ("brands.leica_raw", "apply_leica_raw_look", 0.0, 0.82, 1.0, 1.25, None),
+    "sony": ("brands.sony.raw", "apply_sony_raw_look", 0.02, 0.82, 1.0, 2.0, None),
+    "sigma": ("brands.sigma.raw", "apply_sigma_raw_look", 0.02, 0.82, 1.0, 3.0, None),
+    "leica": ("brands.leica.raw", "apply_leica_raw_look", 0.0, 0.82, 1.0, 1.25, None),
     "fuji": ("brands.fuji", "apply_provia", 0.0, 0.82, 1.0, 3.0, "F0/Standard (Provia)"),
 }
 

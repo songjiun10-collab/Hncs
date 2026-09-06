@@ -25,18 +25,18 @@ import numpy as np
 
 _BRANDS_DIR = pathlib.Path(__file__).resolve().parent.parent / "brands"
 
-# fuji.py는 필름 시뮬레이션 프리셋이 여러 개고 아래 TestFujiPresets가
+# fuji/look.py는 필름 시뮬레이션 프리셋이 여러 개고 아래 TestFujiPresets가
 # 이미 자체 동적 완전성 검사(test_all_documented_presets_covered)를
 # 갖고 있어 여기서 다시 훑지 않는다.
-_EXCLUDED_MODULES = {"fuji"}
+_EXCLUDED_MODULES = {"fuji.look"}
 
 # 브랜드 모듈 네임스페이스에 들어와 있지만 "브랜드 룩"이 아니라 다른
 # 모듈에서 그대로 가져다 쓰는 범용 헬퍼라 이름이 우연히 apply_*로
-# 시작하는 것들. (모듈 stem, 함수명) -> 제외 사유.
+# 시작하는 것들. (brands 기준 모듈 경로, 함수명) -> 제외 사유.
 _SKIP_NON_LOOK_HELPERS = {
-    ("hasselblad_day", "apply_highlight_rolloff"):
+    ("hasselblad.day", "apply_highlight_rolloff"):
         "core.curve.apply_highlight_rolloff를 그대로 import해서 내부적으로만 "
-        "쓰는 범용 헬퍼 - 브랜드 룩이 아님(brands/fuji.py가 apply_highlight_"
+        "쓰는 범용 헬퍼 - 브랜드 룩이 아님(brands/fuji/look.py가 apply_highlight_"
         "rolloff/apply_lut을 제외하는 것과 같은 이유).",
     **{
         (mod_stem, "apply_learned_lut_look"):
@@ -44,40 +44,49 @@ _SKIP_NON_LOOK_HELPERS = {
             "쓰는 범용 헬퍼(lut 인자가 필수라 img 하나로는 못 부름) - 브랜드 "
             "룩이 아님. 각 모듈 자체의 apply_*_learned(_v2) 래퍼가 실제 룩."
         for mod_stem in (
-            "fuji_provia_learned", "hasselblad_learned", "leica_raw_learned",
-            "sigma_bf_learned", "sigma_fpl_learned", "sony_a7rvi_learned",
-            "sony_a7v_learned",
+            "fuji.provia_learned", "hasselblad.learned", "leica.raw_learned",
+            "sigma.bf_learned", "sigma.fpl_learned", "sony.a7rvi_learned",
+            "sony.a7v_learned",
         )
     },
 }
 
 
 def _discover_brand_looks():
-    """brands/*.py(fuji.py 제외)를 순회해 공개 apply_* 콜러블을 모두
-    모은다. 함수 def(`def apply_x(...)`)뿐 아니라 sigma_bf.py/sigma_fpl.py/
-    sony_a7rvi.py처럼 팩토리 호출로 만든 `apply_x = make_population_fit_
-    look(...)` 형태의 모듈 레벨 할당도 잡는다(vars(mod)로 모듈 네임스페이스를
-    직접 훑으므로 정의 방식과 무관)."""
+    """brands/<브랜드>/*.py(fuji/look.py 제외)를 순회해 공개 apply_*
+    콜러블을 모두 모은다. 함수 def(`def apply_x(...)`)뿐 아니라
+    sigma/bf.py/sigma/fpl.py/sony/a7rvi.py처럼 팩토리 호출로 만든
+    `apply_x = make_population_fit_look(...)` 형태의 모듈 레벨 할당도
+    잡는다(vars(mod)로 모듈 네임스페이스를 직접 훑으므로 정의 방식과 무관).
+
+    브랜드 패키지의 `__init__.py`는 건너뛰고 실제 구현 모듈만 훑는다 -
+    `__init__`은 같은 함수를 재수출할 뿐이라 같이 훑으면 전부 두 번씩
+    검사하게 된다."""
     found = []
-    for path in sorted(_BRANDS_DIR.glob("*.py")):
-        mod_stem = path.stem
-        if mod_stem == "__init__" or mod_stem in _EXCLUDED_MODULES:
+    for brand_dir in sorted(p for p in _BRANDS_DIR.iterdir() if p.is_dir()):
+        if not (brand_dir / "__init__.py").exists():
             continue
-        mod_name = f"brands.{mod_stem}"
-        mod = importlib.import_module(mod_name)
-        for name in sorted(vars(mod)):
-            if not name.startswith("apply_"):
+        for path in sorted(brand_dir.glob("*.py")):
+            if path.stem == "__init__":
                 continue
-            if (mod_stem, name) in _SKIP_NON_LOOK_HELPERS:
+            rel = f"{brand_dir.name}.{path.stem}"
+            if rel in _EXCLUDED_MODULES:
                 continue
-            obj = getattr(mod, name)
-            if not callable(obj):
-                continue
-            found.append((mod_name, name))
+            mod_name = f"brands.{rel}"
+            mod = importlib.import_module(mod_name)
+            for name in sorted(vars(mod)):
+                if not name.startswith("apply_"):
+                    continue
+                if (rel, name) in _SKIP_NON_LOOK_HELPERS:
+                    continue
+                obj = getattr(mod, name)
+                if not callable(obj):
+                    continue
+                found.append((mod_name, name))
     return found
 
 
-# (모듈 경로, 함수명) - brands/*.py(fuji.py 제외)에서 자동 발견.
+# (모듈 경로, 함수명) - brands/<브랜드>/*.py(fuji/look.py 제외)에서 자동 발견.
 BRAND_LOOKS = _discover_brand_looks()
 
 # fuji.py는 필름 시뮬레이션 프리셋이 여러 개라 따로 나열. apply_acros/
@@ -146,7 +155,10 @@ class TestBrandLooksPreserveShapeAndDtype(unittest.TestCase):
 class TestFujiPresets(unittest.TestCase):
     def setUp(self):
         self.img = make_test_image()
-        import brands.fuji as fuji
+        # 패키지(brands.fuji)가 아니라 프리셋 구현 모듈을 본다 - 패키지
+        # __init__은 provia_learned/provia_matrix 변형까지 재수출해서
+        # "필름 시뮬레이션 프리셋 목록"과 범위가 달라진다.
+        import brands.fuji.look as fuji
         self.fuji = fuji
 
     def test_color_presets_preserve_shape_and_dtype(self):

@@ -49,7 +49,7 @@ def default_source(cv2):
 
 
 def shipped_looks():
-    """brands/*.py의 사진용 apply_* 함수 목록 (video_frame 변형 제외).
+    """brands/<브랜드>/*.py의 사진용 apply_* 함수 목록 (video_frame 변형 제외).
     반환: [(모듈경로, 함수명), ...]
 
     **정정(2026-08)**: `def apply_*`만 잡고 population-fit 브랜드의
@@ -57,10 +57,12 @@ def shipped_looks():
     놓쳤었다(gui/tabs/brand_preview.py의 list_shipped_looks()에서 같은
     버그 발견 - 15개 브랜드 함수 누락) - 대입식도 같이 스캔하도록 수정."""
     out = []
-    for f in sorted(glob.glob(os.path.join(ROOT, "brands/*.py"))):
-        mod = "brands." + os.path.basename(f)[:-3]
-        if mod.endswith("__init__"):
+    for f in sorted(glob.glob(os.path.join(ROOT, "brands/*/*.py"))):
+        brand = os.path.basename(os.path.dirname(f))
+        stem = os.path.basename(f)[:-3]
+        if stem == "__init__":
             continue
+        mod = f"brands.{brand}.{stem}"
         with open(f, encoding="utf-8") as handle:
             source = handle.read()
         for n in ast.parse(source).body:

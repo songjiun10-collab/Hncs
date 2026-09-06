@@ -26,7 +26,7 @@ code/methodology content lives in each directory's `CLAUDE.md` and in
 
 | Goal | Read first |
 |---|---|
-| Add a new brand | [docs/methodology.en.md](methodology.en.md) + [brands/CLAUDE.md](../brands/CLAUDE.md) + copy an existing population-fit brand file (e.g. `brands/nikon.py`) as a template |
+| Add a new brand | [docs/methodology.en.md](methodology.en.md) + [brands/CLAUDE.md](../brands/CLAUDE.md) + copy an existing population-fit brand file (e.g. `brands/nikon/look.py`) as a template |
 | Write/run a research experiment | [tools/CLAUDE.md](../tools/CLAUDE.md) - `evaluate_*.py` conventions (standalone, statistics via `summarize()`) |
 | Understand the significance/CI verdict rules | [hybrid_engine/CLAUDE.md](../hybrid_engine/CLAUDE.md)'s "Statistics — non-negotiable" |
 | Add/change a GUI tab | [gui/CLAUDE.md](../gui/CLAUDE.md) |
@@ -37,4 +37,4 @@ code/methodology content lives in each directory's `CLAUDE.md` and in
 
 ## Absolute rules (summary)
 
-Full list in the root [CLAUDE.md](../CLAUDE.md)'s "## Never" section. The most important one: `apply_hncs()` in `brands/hasselblad.py`, every other shipped `apply_*`, and `hybrid_engine/assets/profiles/*.json`/`*.dcp` never get auto-overwritten by a research script.
+Full list in the root [CLAUDE.md](../CLAUDE.md)'s "## Never" section. The most important one: `apply_hncs()` in `brands/hasselblad/look.py`, every other shipped `apply_*`, and `hybrid_engine/assets/profiles/*.json`/`*.dcp` never get auto-overwritten by a research script.
