@@ -43,14 +43,19 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 쓰인 것과 같은 raw+jpeg 라이브러리)에 적용한 결과. 사진 속 인물은
 뒷모습/옆모습만 나와 특정할 수 없음.*
 
-![HNCS 프리셋 데모 - 사진 한 장에 apply_* 44개(+원본) 전부 적용](docs/images/preset_demo.jpg)
+![HNCS 프리셋 데모 - 사진 한 장에 apply_* 56개(+원본) 전부 적용](docs/images/preset_demo.jpg)
 
-*동일한 소스 사진(Fuji GFX50S II로 찍은 서울 이태원 거리 스냅샷,
-`DSCF9556.RAF` - Classic Chrome/Nostalgic Neg 등 이 세션 캘리브레이션에
-쓰인 것과 같은 raw+jpeg 라이브러리에서 고른 실제 사진, 특정 인물 클로즈업이
-아니라 일반 거리 스냅샷) 한 장에 `brands/<브랜드>/*.py`의 사진용 `apply_*` 룩
-44개(+원본)를 그대로 돌린 결과. `tools/build_readme_demo.py`로 생성 -
-새 룩이 추가될 때마다 재실행하면 됨.*
+*위와 같은 서울 횡단보도 스냅샷(`DSCF9447.RAF`) 한 장에 `brands/<브랜드>/*.py`의
+사진용 `apply_*` 룩 56개(+원본)를 그대로 돌린 결과. 이전 버전들이 쓰던 원래
+소스 `DSCF9556.RAF`(서울 이태원 거리 스냅샷)는 `999_FUJI` 기여 라이브러리에
+있는데 이게 gitignore 대상이라 모든 체크아웃에 있는 게 아니라서, 이번
+재생성은 대신 횡단보도 사진을 재사용했다. 특정 인물 클로즈업 아님.
+`tools/build_readme_demo.py`로 생성 - **손으로 재실행해야** 하고 자동이
+아니다. 이 개수 자체가 마지막 실재생성(317f3bd, 44개) 이후 이미 두 번 벌어졌다
+(55로, 이번 스윕에서 무관한 GUI 탭 드리프트를 고치다 우연히 잡음 -> 56으로,
+그 수정을 푸시하기도 전에 커밋 하나 사이로 또) -
+`python3 .claude/skills/run-hncs/driver.py env`의 "배포 룩 N개" 줄이
+현재값을 대조할 살아있는 기준이다.*
 
 ## 지원 브랜드
 

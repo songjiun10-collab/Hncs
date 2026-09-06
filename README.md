@@ -44,14 +44,20 @@ raw+jpeg library used for this session's Classic Chrome/Nostalgic Neg
 calibration. The person in frame is seen from behind/the side only, not
 identifiable.*
 
-![HNCS preset demo - 44 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
+![HNCS preset demo - 56 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
-*All 44 photo-mode `apply_*` looks from `brands/<brand>/*.py` (+ the original) run
-on the same source photo (a street snapshot from Itaewon, Seoul, shot on a
-Fuji GFX50S II - `DSCF9556.RAF`, from the same raw+jpeg library used for
-this session's Classic Chrome/Nostalgic Neg calibration, not a close-up of
-any specific person). Built with `tools/build_readme_demo.py`, which
-re-runs automatically as new looks ship.*
+*All 56 photo-mode `apply_*` looks from `brands/<brand>/*.py` (+ the original) run
+on the same Seoul street-crossing snapshot as above (`DSCF9447.RAF`) - the
+original `DSCF9556.RAF` Itaewon source used for earlier versions of this
+grid lives in the `999_FUJI` contributed library, which is git-ignored and
+not present in every checkout, so this regeneration reuses the crossing
+photo instead. Not a close-up of any specific person. Built with
+`tools/build_readme_demo.py`, which has to be **re-run by hand** whenever
+a look ships - this exact count has already drifted from the last real regeneration
+(44, at commit 317f3bd) twice - once to 55, caught only while fixing an
+unrelated GUI-tab drift in this same sweep, then to 56 a commit later
+before that fix was even pushed. `python3 .claude/skills/run-hncs/driver.py env`'s "배포 룩 N개" line
+is the live count to check against.*
 
 ## Supported Brands
 
