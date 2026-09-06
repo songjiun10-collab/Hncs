@@ -1,0 +1,69 @@
+{
+  "brand": "ricoh_gr_griv",
+  "camera": "Ricoh GR IV",
+  "n_images": 24,
+  "n_failed_detect": 0,
+  "images": [
+    "014a5386d86d41fdac980a69a7572339.dng",
+    "12ba06b015884ea2813f0f836749eea9.dng",
+    "147549a33a274ea780cd141f8880ca63.dng",
+    "1e993520e7444322a1f229bb64d4d59a.dng",
+    "3a0df16d6120442c812ae25138b65576.dng",
+    "3af632058d5646a793ebb81bfd145c78.dng",
+    "3c2c6b17c52c4349b9fea3862a575175.dng",
+    "4d4ef5b3bfdd42b1bb34293647f83cef.dng",
+    "667f9ff8954b4f71b99106e8c58f81e1.dng",
+    "6b366f919f224becba8d87e6a7761a88.dng",
+    "7a8ba1f6aaa044368d4460a3c7daa054.dng",
+    "7fbc17ddc2584b8ebd47a005ada51853.dng",
+    "8998e3299f7343c9ba1d4a59b5c6e639.dng",
+    "a158be855ebd4f29b2350167fd290ba7.dng",
+    "a814567387c640748a2710bef77b4350.dng",
+    "aa53b20448b942e8aaae8777ede21e15.dng",
+    "c24d41588cfb41a9bf36ec27ae5d09e5.dng",
+    "c5646970b0044f149e1b0fb7c2f54b01.dng",
+    "c905babbfc5f4fdb97baa204d47a0ac5.dng",
+    "d38a472571df4ce4a4a6e6f7c536566a.dng",
+    "dc1c8c1034da43fbae502ff084b10975.dng",
+    "e74a28d41cd04475b3f5af44dcecb496.dng",
+    "eea69f1d1cce4657a11a4d8889533a2f.dng",
+    "f54be4b3231047ef92e3ad69bdf3b193.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "chart_matrix_in_sample": [
+    [
+      1.853478504589327,
+      0.7900645999699731,
+      0.44381412532307446
+    ],
+    [
+      0.6894611199703177,
+      1.548702516363913,
+      -0.05589750635555187
+    ],
+    [
+      -0.13551357308297302,
+      -0.7367949244996526,
+      1.665768419173855
+    ]
+  ],
+  "chart_matrix_in_sample_delta_e_mean": 12.957423715508325,
+  "dcp_color_matrix_1": [
+    [
+      0.6914270139397778,
+      -0.31074451669346187,
+      -0.08119810411452735
+    ],
+    [
+      -0.44751502413883953,
+      0.857301763814009,
+      0.34279148400267434
+    ],
+    [
+      -0.19923540721646701,
+      0.11156042732448654,
+      0.6334602352675647
+    ]
+  ],
+  "_comment": "tools/fit_dpreview_studio_chart.py - tools/fit_leica_sl3p_studio_chart.py(2026-09-02)의 일반화판. 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승, ridge=0.1, 전체 표본으로 최종 매트릭스 피팅. 이 브랜드의 챠트 보정 유의성(부트스트랩 95% CI)은 같은 폴더의 chart_validation_report.json(validate_dpreview_chart_brand.py, k-fold CV)에서 별도로 검증됨 - 이 리포트는 CV가 아니라 발급용 in-sample 피팅. 실기기 UniqueCameraModel 미확인 - 'Ricoh GR IV'는 EXIF Model 문자열."
+}

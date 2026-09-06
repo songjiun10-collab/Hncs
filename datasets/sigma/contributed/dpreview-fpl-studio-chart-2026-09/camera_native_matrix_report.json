@@ -1,0 +1,67 @@
+{
+  "brand": "sigma_fpl",
+  "camera": "Sigma fp L",
+  "n_images": 22,
+  "n_failed_detect": 0,
+  "images": [
+    "06d74b23c2c2431f8ab29fdd53a69674.dng",
+    "09c669bdc4c7477784a7f1e851b6e1fb.dng",
+    "0d39d3ef37584a1b9f4b179439d7a910.dng",
+    "102cfbfa1a7b4e2c99789f25d69a14f4.dng",
+    "141d474e43a049708f5421740b7ea5c0.dng",
+    "28e71f419eec4281bb498da32c81beb1.dng",
+    "33eb078ede7b4086b4667c9cf1b2a123.dng",
+    "3712ac59d4f84b23b11dde8a29a3ca30.dng",
+    "3e04bbd311c24386b2dbacdf24950bdc.dng",
+    "50506bc314e44ef78339b4efd145295b.dng",
+    "5581a4e1f3f644e29030fc20d8195fa9.dng",
+    "79f19943bc404c63b0cf561215a5ee6a.dng",
+    "815cc7eadda9406da038fca87e4ba173.dng",
+    "89fcf8587671419c8714c93b3cad8aa5.dng",
+    "8bcb107f5e614c65ba591ff9083e0c35.dng",
+    "9194fc7dc0b84eb19ac3c5c9ac232e37.dng",
+    "a93e7cd494674ebaa382f6bd1e899987.dng",
+    "ac86c30649c44de2a2c3b4dafffee3c5.dng",
+    "b60b5dd5b44e4f878ce4ab3a3d16f82e.dng",
+    "c3899abbc78a4495b5c588aae68ecb1c.dng",
+    "d81f69135f304afab32b9c82df5f6008.dng",
+    "e22b2633dc5c40c290b53f08242eda0c.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "chart_matrix_in_sample": [
+    [
+      3.0173261222664025,
+      1.4431461973031616,
+      0.6629707410668528
+    ],
+    [
+      1.389594981835876,
+      2.90110295349366,
+      0.1613629390590755
+    ],
+    [
+      -0.26138954101594497,
+      -1.246495593494882,
+      2.895910314316757
+    ]
+  ],
+  "chart_matrix_in_sample_delta_e_mean": 11.820038708301054,
+  "dcp_color_matrix_1": [
+    [
+      0.4424556587014547,
+      -0.2091453148078561,
+      -0.05008629964924615
+    ],
+    [
+      -0.2574563849467815,
+      0.45833459880995586,
+      0.17404394361878064
+    ],
+    [
+      -0.08694718055983533,
+      0.02234150902137055,
+      0.34708309299459117
+    ]
+  ],
+  "_comment": "tools/fit_dpreview_studio_chart.py - tools/fit_leica_sl3p_studio_chart.py(2026-09-02)의 일반화판. 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승, ridge=0.1, 전체 표본으로 최종 매트릭스 피팅. 이 브랜드의 챠트 보정 유의성(부트스트랩 95% CI)은 같은 폴더의 chart_validation_report.json(validate_dpreview_chart_brand.py, k-fold CV)에서 별도로 검증됨 - 이 리포트는 CV가 아니라 발급용 in-sample 피팅. 실기기 UniqueCameraModel 미확인 - 'Sigma fp L'는 EXIF Model 문자열."
+}
