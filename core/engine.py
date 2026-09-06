@@ -9,7 +9,7 @@ apply_hncs와 동일한 원칙(hue/채도 무조작)을 raw 검증 없이 그대
 것 - 각 브랜드 모듈 docstring에 명시된 미검증 한계.
 
 shoulder_start/clahe_clip 브랜드별 추정 시도(2026-07,
-`tools/highlight_rolloff_signal.py`): 각 브랜드의 population 풀링 L
+`tools/research/highlight_rolloff_signal.py`): 각 브랜드의 population 풀링 L
 히스토그램(`datasets/<brand>/joint_distribution.npz`)에서 하이라이트
 rolloff 완만함을 재는 지표(90th~99.5th percentile L값 폭, 250~255
 클리핑 비율)를 계산해보니 브랜드 간 값 자체는 꽤 벌어짐(rolloff_width
@@ -68,7 +68,7 @@ def apply_learned_lut_look(img_bgr, lut, clahe_clip=1.25):
 def make_population_fit_look(toe_lift, shoulder_start, white_point, clahe_clip):
     """apply_population_fit_look()에 브랜드별 상수를 고정한 apply_*_look()
     함수를 만들어 반환한다. functools.partial이 아니라 진짜 def 클로저를
-    쓰는 이유: hybrid_engine/core/preset_inverse.py와 tools/video_engine.py가
+    쓰는 이유: hybrid_engine/core/preset_inverse.py와 tools/cli/video_engine.py가
     inspect.signature(func).parameters["toe_lift"].default 형태로 이
     함수의 기본값을 직접 읽어가므로(브랜드 상수를 이중 기록하지 않기
     위해), 그 두 소비자가 지금과 동일하게 동작하려면 실제 함수

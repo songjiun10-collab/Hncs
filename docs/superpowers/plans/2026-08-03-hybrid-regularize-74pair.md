@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `tools/calibrate.py`의 `regularize` 모드(v11 파라메트릭 ↔ v12
+**Goal:** `tools/fit/calibrate.py`의 `regularize` 모드(v11 파라메트릭 ↔ v12
 학습 LUT 하이브리드)를 74쌍(공식 13 + local-mixed-2026-07 61, 4세대)으로
 재실행하고, 최적 λ가 순수 v11/v12 대비 통계적으로 유의미한지 검정한다.
 
@@ -10,7 +10,7 @@
 `_resolve_pairs()`(이미 공식+로컬 병합 지원) 기반으로 바꾸고, 페어별
 `(counts, sums)`를 한 번만 계산해 전체 합에서 held-out 분을 빼는
 방식으로 LOO를 재작성한다(재계산 없이 O(256)로 폴드 처리 - 병렬화
-불필요). 유의성 검정은 `tools/evaluate_hncs_blend.py`의 부호검정/
+불필요). 유의성 검정은 `tools/research/evaluate_hncs_blend.py`의 부호검정/
 부트스트랩CI/drop-one 코드를 복사해 붙인다.
 
 **Tech Stack:** Python, numpy, rawpy, cv2. 신규 의존성 없음.
@@ -22,7 +22,7 @@
 - ΔE(CIEDE2000) 기반이 아니라 이 파일의 기존 관례(b2/w995 percentile
   RMSE)를 그대로 따른다 - `tools/evaluate_*.py`의 ΔE 관례를 여기 섞지
   않는다.
-- 통계 함수는 `tools/evaluate_hncs_blend.py`에서 복사(import 아님) -
+- 통계 함수는 `tools/research/evaluate_hncs_blend.py`에서 복사(import 아님) -
   `tools/CLAUDE.md`: "Standalone. Never import from a sibling
   evaluate_*.py — copy the loader instead."
 - 뺄셈 기반 LOO가 기존 재계산 방식과 **수학적으로 동일한 결과**를
@@ -36,7 +36,7 @@
 ### Task 1: 로컬 페어 세대 라벨 + `_resolve_pairs()`에 `generation` 필드 추가
 
 **Files:**
-- Modify: `tools/calibrate.py` (`collect_local_pairs()` 약 L57-77,
+- Modify: `tools/fit/calibrate.py` (`collect_local_pairs()` 약 L57-77,
   `_resolve_pairs()` 약 L209-225)
 - Test: `tests/test_calibrate.py` (신규 파일)
 
@@ -59,7 +59,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.calibrate import _generation_for
+from tools.fit.calibrate import _generation_for
 
 
 class TestGenerationFor(unittest.TestCase):
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 Run: `python3 -m unittest tests.test_calibrate -v`
 Expected: FAIL - `ImportError: cannot import name '_generation_for'`
 
-- [ ] **Step 3: `tools/calibrate.py`에 `_generation_for` 추가 + `collect_local_pairs()`/`_resolve_pairs()` 수정**
+- [ ] **Step 3: `tools/fit/calibrate.py`에 `_generation_for` 추가 + `collect_local_pairs()`/`_resolve_pairs()` 수정**
 
 `import rawpy` 아래, `sys.path.insert` 위/아래 상관없이 모듈 상단부에
 추가(다른 모듈 상수들 근처, `CACHE_DIR`/`CSV_PATH` 정의 다음 줄부터):
@@ -113,7 +113,7 @@ def _generation_for(camera):
 ```python
 def collect_local_pairs():
     """datasets/hasselblad/contributed/<세트>/manifest.csv의 로컬 raw+jpeg
-    페어 수집 (tools.verify_contributed_pairs 통과 전제 - 여기선 파일 존재만
+    페어 수집 (tools.data.verify_contributed_pairs 통과 전제 - 여기선 파일 존재만
     재확인). 공식 샘플(collect_pairs, 원격 URL)과 별개 출처라 함수를 분리."""
     base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
                          "datasets", "hasselblad", "contributed")
@@ -176,7 +176,7 @@ Expected: 기존 535개 + 신규 5개 = 540개 전부 PASS (calibrate.py를 쓰�
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add tools/calibrate.py tests/test_calibrate.py
+git add tools/fit/calibrate.py tests/test_calibrate.py
 git commit -m "Add camera-generation labeling to calibrate.py pair loaders"
 ```
 
@@ -185,7 +185,7 @@ git commit -m "Add camera-generation labeling to calibrate.py pair loaders"
 ### Task 2: `_pair_counts_sums` + `_build_lut_from_counts` (뺄셈 LOO의 기반)
 
 **Files:**
-- Modify: `tools/calibrate.py` (`_build_lut` 약 L372-380)
+- Modify: `tools/fit/calibrate.py` (`_build_lut` 약 L372-380)
 - Test: `tests/test_calibrate.py`
 
 **Interfaces:**
@@ -206,7 +206,7 @@ import numpy as np
 
 class TestPairCountsSums(unittest.TestCase):
     def test_matches_manual_bincount(self):
-        from tools.calibrate import _pair_counts_sums
+        from tools.fit.calibrate import _pair_counts_sums
         neutral_l = np.array([10, 10, 20, 250], dtype=np.int64)
         target_l = np.array([12.0, 14.0, 22.0, 240.0], dtype=np.float64)
         counts, sums = _pair_counts_sums(neutral_l, target_l)
@@ -224,7 +224,7 @@ class TestPairCountsSums(unittest.TestCase):
 
 class TestBuildLutFromCounts(unittest.TestCase):
     def test_lambda_zero_is_pure_empirical_mean(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.zeros(256, dtype=np.float64)
         sums = np.zeros(256, dtype=np.float64)
         counts[100] = 4
@@ -234,7 +234,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
         self.assertAlmostEqual(lut[100], 150.0, places=4)
 
     def test_huge_lambda_converges_to_prior(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.zeros(256, dtype=np.float64)
         sums = np.zeros(256, dtype=np.float64)
         counts[100] = 4
@@ -244,7 +244,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
         self.assertAlmostEqual(lut[100], 100.0, places=1)
 
     def test_empty_bin_falls_back_to_prior(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.zeros(256, dtype=np.float64)
         sums = np.zeros(256, dtype=np.float64)
         prior = np.arange(256, dtype=np.float32)
@@ -252,7 +252,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
         self.assertAlmostEqual(lut[50], 50.0, places=4)
 
     def test_monotonic_nondecreasing(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.array([0, 5, 0, 3] + [0] * 252, dtype=np.float64)
         sums = np.array([0, 5 * 200.0, 0, 3 * 10.0] + [0.0] * 252, dtype=np.float64)
         prior = np.arange(256, dtype=np.float32)
@@ -265,7 +265,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
 Run: `python3 -m unittest tests.test_calibrate -v`
 Expected: FAIL - `ImportError: cannot import name '_pair_counts_sums'`
 
-- [ ] **Step 3: `tools/calibrate.py`에서 `_build_lut`를 아래로 교체**
+- [ ] **Step 3: `tools/fit/calibrate.py`에서 `_build_lut`를 아래로 교체**
 
 기존 `_build_lut(neutral_l, target_l, prior, lam)` 함수 전체를 삭제하고
 그 자리에:
@@ -296,14 +296,14 @@ Expected: PASS (Task 1의 5개 + 이번 9개 = 14개)
 - [ ] **Step 5: 커밋**
 
 ```bash
-git add tools/calibrate.py tests/test_calibrate.py
+git add tools/fit/calibrate.py tests/test_calibrate.py
 git commit -m "Replace _build_lut with counts/sums-based _build_lut_from_counts"
 ```
 
 (주의: 이 시점에서 `run_regularize()`는 아직 옛 `_build_lut`를 호출하고
 있어 깨진 상태다 - Task 3에서 바로 고친다. 커밋 전 `python3 -m
 unittest discover -s tests`는 통과하지만(단위 테스트가 `run_regularize()`를
-호출하지 않으므로), `python3 -m tools.calibrate regularize`를 지금
+호출하지 않으므로), `python3 -m tools.fit.calibrate regularize`를 지금
 실행하면 `NameError`가 난다는 걸 다음 태스크 시작 전에 인지할 것.)
 
 ---
@@ -311,7 +311,7 @@ unittest discover -s tests`는 통과하지만(단위 테스트가 `run_regulari
 ### Task 3: `_collect_pair_pixels()` 74쌍화 + `run_regularize()` 뺄셈 기반 LOO
 
 **Files:**
-- Modify: `tools/calibrate.py` (`_collect_pair_pixels()` 약 L340-370,
+- Modify: `tools/fit/calibrate.py` (`_collect_pair_pixels()` 약 L340-370,
   `run_regularize()` 약 L383-421)
 - Test: `tests/test_calibrate.py`
 
@@ -333,7 +333,7 @@ unittest discover -s tests`는 통과하지만(단위 테스트가 `run_regulari
 ```python
 class TestSubtractionLooMatchesRecompute(unittest.TestCase):
     def test_subtraction_equals_full_recompute(self):
-        from tools.calibrate import _pair_counts_sums, _build_lut_from_counts
+        from tools.fit.calibrate import _pair_counts_sums, _build_lut_from_counts
 
         rng = np.random.default_rng(42)
         pairs = []
@@ -484,7 +484,7 @@ Expected: 전부 PASS (이 태스크는 새 단위 테스트를 추가하지 않
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add tools/calibrate.py
+git add tools/fit/calibrate.py
 git commit -m "Rewrite run_regularize() as subtraction-based LOO over 74 pairs"
 ```
 
@@ -493,14 +493,14 @@ git commit -m "Rewrite run_regularize() as subtraction-based LOO over 74 pairs"
 ### Task 4: 유의성 검정 (부호검정 + 부트스트랩 CI + drop-one) 이식
 
 **Files:**
-- Modify: `tools/calibrate.py` (`run_regularize()` 끝부분)
+- Modify: `tools/fit/calibrate.py` (`run_regularize()` 끝부분)
 - Test: `tests/test_calibrate.py`
 
 **Interfaces:**
 - Consumes: Task 3의 `per_fold_by_lambda: dict[float, list[(name, generation, sqrt_e)]]`
 - Produces: `summarize(per_fold, n_bootstrap=20000, seed=0) -> dict`,
   `print_summary(s, label_a, label_b)`, `_sign_test_p(wins, losses) -> float`
-  (전부 `tools/evaluate_hncs_blend.py`에서 그대로 복사 - 시그니처 동일).
+  (전부 `tools/research/evaluate_hncs_blend.py`에서 그대로 복사 - 시그니처 동일).
   `run_regularize()`가 최적 λ vs λ=0, 최적 λ vs λ=1e9 비교를 출력하고
   반환값에 두 `summary` dict를 추가.
 
@@ -511,22 +511,22 @@ git commit -m "Rewrite run_regularize() as subtraction-based LOO over 74 pairs"
 ```python
 class TestSignTestP(unittest.TestCase):
     def test_no_pairs_is_p_one(self):
-        from tools.calibrate import _sign_test_p
+        from tools.fit.calibrate import _sign_test_p
         self.assertEqual(_sign_test_p(0, 0), 1.0)
 
     def test_even_split_is_p_one(self):
-        from tools.calibrate import _sign_test_p
+        from tools.fit.calibrate import _sign_test_p
         self.assertAlmostEqual(_sign_test_p(5, 5), 1.0)
 
     def test_all_wins_is_significant(self):
-        from tools.calibrate import _sign_test_p
+        from tools.fit.calibrate import _sign_test_p
         p = _sign_test_p(10, 0)
         self.assertLess(p, 0.05)
 
 
 class TestSummarizeShape(unittest.TestCase):
     def test_returns_expected_keys(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         per_fold = [(f"pair{i}", 10.0, 9.0) for i in range(20)]
         s = summarize(per_fold)
         expected_keys = {
@@ -542,7 +542,7 @@ class TestSummarizeShape(unittest.TestCase):
         self.assertAlmostEqual(s["mean_b"], 9.0)
 
     def test_identical_values_is_inconclusive(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         per_fold = [(f"pair{i}", 10.0, 10.0) for i in range(20)]
         s = summarize(per_fold)
         self.assertTrue(s["inconclusive"])
@@ -554,7 +554,7 @@ class TestSummarizeShape(unittest.TestCase):
 Run: `python3 -m unittest tests.test_calibrate -v`
 Expected: FAIL - `ImportError: cannot import name '_sign_test_p'`
 
-- [ ] **Step 3: `tools/calibrate.py`에 `_sign_test_p`/`summarize`/`print_summary` 복사 이식**
+- [ ] **Step 3: `tools/fit/calibrate.py`에 `_sign_test_p`/`summarize`/`print_summary` 복사 이식**
 
 파일 상단 `import csv` 옆에 `import math` 추가:
 
@@ -567,7 +567,7 @@ import urllib.request
 ```
 
 `run_regularize()` 함수 **앞**에 (즉 Task 2/3에서 만든 헬퍼들 다음,
-`run_regularize()` 정의 전) 추가 - `tools/evaluate_hncs_blend.py`의
+`run_regularize()` 정의 전) 추가 - `tools/research/evaluate_hncs_blend.py`의
 코드를 그대로 복사하되 "ΔE (CIEDE2000...)" 표현만 이 파일의 실제
 지표(percentile 기반 오차)에 맞게 "오차"로 바꿈:
 
@@ -704,7 +704,7 @@ Expected: 전부 PASS
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add tools/calibrate.py tests/test_calibrate.py
+git add tools/fit/calibrate.py tests/test_calibrate.py
 git commit -m "Add sign-test/bootstrap-CI/drop-one significance testing to regularize mode"
 ```
 
@@ -713,7 +713,7 @@ git commit -m "Add sign-test/bootstrap-CI/drop-one significance testing to regul
 ### Task 5: 세대별 오차 분해 표 출력
 
 **Files:**
-- Modify: `tools/calibrate.py` (`run_regularize()` 끝부분)
+- Modify: `tools/fit/calibrate.py` (`run_regularize()` 끝부분)
 - Test: `tests/test_calibrate.py`
 
 **Interfaces:**
@@ -727,7 +727,7 @@ git commit -m "Add sign-test/bootstrap-CI/drop-one significance testing to regul
 ```python
 class TestGenerationBreakdown(unittest.TestCase):
     def test_groups_and_computes_rmse(self):
-        from tools.calibrate import _generation_breakdown
+        from tools.fit.calibrate import _generation_breakdown
         fold = [
             ("a", "X1D", 3.0),
             ("b", "X1D", 5.0),
@@ -741,7 +741,7 @@ class TestGenerationBreakdown(unittest.TestCase):
         self.assertAlmostEqual(by_gen["X2D 100C"][1], 4.0)
 
     def test_sorted_by_generation_name(self):
-        from tools.calibrate import _generation_breakdown
+        from tools.fit.calibrate import _generation_breakdown
         fold = [("a", "X2D 100C", 1.0), ("b", "CFV 100C/907X", 1.0)]
         result = _generation_breakdown(fold)
         gens = [gen for gen, _, _ in result]
@@ -753,7 +753,7 @@ class TestGenerationBreakdown(unittest.TestCase):
 Run: `python3 -m unittest tests.test_calibrate -v`
 Expected: FAIL - `ImportError: cannot import name '_generation_breakdown'`
 
-- [ ] **Step 3: `tools/calibrate.py`에 `_generation_breakdown` 추가**
+- [ ] **Step 3: `tools/fit/calibrate.py`에 `_generation_breakdown` 추가**
 
 `print_summary` 함수 다음, `run_regularize()` 함수 앞에 추가:
 
@@ -791,7 +791,7 @@ Expected: 전부 PASS
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add tools/calibrate.py tests/test_calibrate.py
+git add tools/fit/calibrate.py tests/test_calibrate.py
 git commit -m "Add per-generation RMSE breakdown to regularize mode output"
 ```
 
@@ -800,7 +800,7 @@ git commit -m "Add per-generation RMSE breakdown to regularize mode output"
 ### Task 6: 실제 74쌍 실행 + 결과 기록 (코드 태스크 아님 - 실행/문서화)
 
 **Files:**
-- Run: `tools/calibrate.py` (`regularize` 모드)
+- Run: `tools/fit/calibrate.py` (`regularize` 모드)
 - Modify: `brands/hasselblad_learned.py` (docstring)
 - Modify: `docs/measurements.md`, `docs/measurements.en.md`
 
@@ -815,7 +815,7 @@ git commit -m "Add per-generation RMSE breakdown to regularize mode output"
 `tools/CLAUDE.md`의 "Long runs" 컨벤션 그대로:
 
 ```bash
-nohup python3 -m tools.calibrate regularize > /tmp/calibrate_regularize_74pair.log 2>&1 &
+nohup python3 -m tools.fit.calibrate regularize > /tmp/calibrate_regularize_74pair.log 2>&1 &
 ```
 
 `Monitor`로 `ΔE=|판정:|lambda|Traceback|Error|Killed|OOM` 패턴 감시
@@ -848,9 +848,9 @@ nohup python3 -m tools.calibrate regularize > /tmp/calibrate_regularize_74pair.l
 정규화 실험(X1D 10장, lambda=0 최적)을 74쌍으로 재실행. [실제 로그의
 9개 lambda RMSE 표, 최적 lambda, 최적 λ vs λ=0/λ=1e9 유의성 검정
 결과(부호검정 p, 부트스트랩 CI, 판정)를 verbatim으로 기록]. 세대별
-분해: [세대별 RMSE 표]. `tools/calibrate.py`의 `_pair_counts_sums`/
+분해: [세대별 RMSE 표]. `tools/fit/calibrate.py`의 `_pair_counts_sums`/
 `_build_lut_from_counts`(뺄셈 기반 LOO)로 재현 가능:
-`python3 -m tools.calibrate regularize`.
+`python3 -m tools.fit.calibrate regularize`.
 ```
 
 (위 텍스트의 대괄호 부분은 Step 1의 실제 실행 결과 숫자로 채운다 -
@@ -864,7 +864,7 @@ nohup python3 -m tools.calibrate regularize > /tmp/calibrate_regularize_74pair.l
 
 ```
 **하이브리드(regularize) 재검증(2026-08)**: 위 두 버전(v11/v12) 재검증과
-같은 74쌍으로 `tools/calibrate.py regularize` 모드(v11↔v12 ridge
+같은 74쌍으로 `tools/fit/calibrate.py regularize` 모드(v11↔v12 ridge
 하이브리드)도 재실행. 최적 lambda=[값], LOO RMSE=[값] - [파라메트릭/
 학습LUT 대비 유의성 검정 결과 요약, 판정 그대로 인용].
 

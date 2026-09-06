@@ -17,9 +17,9 @@ Chrome/Pro Neg Std 등) 프리셋이 여러 개 있어서, 핫셀블라드와 �
 검증 방법을 씀: mirrorlesscomparison.com 리뷰 갤러리에서 진짜
 미편집 SOOC JPEG를 모으고, exiftool로 읽은 실제 Film Mode 태그별로
 population 통계를 비교해서 각 프리셋이 실측과 같은 방향으로 채도/톤을
-움직이는지 확인 (`tools/analyze.py fuji_film_modes`).
+움직이는지 확인 (`tools/cli/analyze.py fuji_film_modes`).
 
-- raw+jpeg 같은 사진 페어를 노려봤지만(`tools/download.py fuji-pairs`),
+- raw+jpeg 같은 사진 페어를 노려봤지만(`tools/cli/download.py fuji-pairs`),
   이 사이트의 "RAW samples"와 "SOOC JPG samples" 폴더는 애초에 같은
   촬영을 짝지어 올린 게 아니라 그냥 각각 다른 사진들이었음 - 10개
   카메라, RAW 57장+JPEG 40장을 받았는데 EXIF 촬영시각이 정확히 일치하는
@@ -125,7 +125,7 @@ imaging-resource.com 리뷰 갤러리(GR III + GR IIIx)에서 population 통계
   -f8.0 등, 같은 장면 반복 촬영 6장)이 섞여 population을 왜곡 - Phase
   One의 ISO 차트와 같은 종류 문제. 파일명 정규식(`-f\d`)으로 걸러내고
   재계산(영향은 작았음: 채도 87.7→84.9, 표본 비중이 15%로 ISO 테스트
-  30%보다 적었기 때문). `tools/analyze.py`의 스킵 패턴에 반영해서 다음
+  30%보다 적었기 때문). `tools/cli/analyze.py`의 스킵 패턴에 반영해서 다음
   실행부터는 자동 제외
 - population 통계(n=34, f값 테스트 제외): 블랙p2=10.3, 화이트p99.5=243.9,
   채도=84.9

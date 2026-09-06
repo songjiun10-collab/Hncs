@@ -2,7 +2,7 @@
 
 ## 배경 / 문제
 
-`tools/video_engine.py`(v1, `docs/superpowers/specs/2026-07-26-video-engine-design.md`)는
+`tools/cli/video_engine.py`(v1, `docs/superpowers/specs/2026-07-26-video-engine-design.md`)는
 `cv2.VideoCapture`/`cv2.VideoWriter`만 써서 비디오를 프레임 단위로 처리한다.
 이 환경에 오디오 트랙을 다룰 도구가 전혀 없어서(v1 설계 단계 확인 사항)
 입력의 오디오는 출력에서 완전히 사라진다 - v1의 명시된 한계였다.
@@ -33,7 +33,7 @@
 
 ## 목표
 
-1. `tools/video_engine.py`의 출력 비디오에 입력의 오디오 트랙을
+1. `tools/cli/video_engine.py`의 출력 비디오에 입력의 오디오 트랙을
    보존한다(입력에 오디오가 없으면 출력도 무음 - 에러 아님).
 2. 오디오 보존을 CLI의 **기본 동작**으로 만든다(opt-in 플래그 없음,
    v1 설계 결정 - 사용자 확인 완료).
@@ -78,7 +78,7 @@
 
 ### 모듈 구조
 
-`tools/video_engine.py`에 함수 2개 추가(기존 `process_video()`/`main()`은
+`tools/cli/video_engine.py`에 함수 2개 추가(기존 `process_video()`/`main()`은
 시그니처 변경 없이 그대로 둔다는 것에 주의 - `main()`의 **내부 호출 대상만**
 바뀐다):
 
@@ -121,7 +121,7 @@ def process_video_with_audio(input_path, output_path, brand_name, progress_every
 args.brand)` 호출로 바꾼다(다른 부분은 무변경). CLI 사용법 자체는
 바뀌지 않는다(`--brand` 인자만 그대로, 새 플래그 없음).
 
-`requirements.txt`에 `imageio-ffmpeg` 한 줄 추가. `tools/video_engine.py`의
+`requirements.txt`에 `imageio-ffmpeg` 한 줄 추가. `tools/cli/video_engine.py`의
 현재 import는 `argparse`/`inspect`/`sys`/`cv2`/10개 브랜드 함수/
 `apply_population_fit_look_video_frame`뿐이다(`os`/`tempfile`/`subprocess`/
 `shutil`이 전부 없음 - v1은 임시 파일을 안 썼다). 이 스펙 구현 시
@@ -149,12 +149,12 @@ v1(`2026-07-26-video-engine-design.md`)이 "오디오 미보존"을 명시적
 문구를 담고 있고, 이 스펙 구현 시 전부 고쳐야 한다(README/docstring
 일반론이 아니라 구체적으로 이 5곳):
 
-- `tools/video_engine.py` 모듈 docstring - "오디오 트랙은 보존하지
+- `tools/cli/video_engine.py` 모듈 docstring - "오디오 트랙은 보존하지
   않는다"는 문장을 새 기본 동작에 맞게 수정.
 - `README.md`의 "Video engine" 섹션 - "Known limitations"의 오디오
   미보존 항목 제거(또는 "첫 번째 트랙만, 재인코딩 없이 그대로"로 수정).
 - `README.ko.md`의 대응 섹션 - 동일하게 수정.
-- `docs/project_structure.md`의 `tools/video_engine.py` 테이블 행 -
+- `docs/project_structure.md`의 `tools/cli/video_engine.py` 테이블 행 -
   "오디오 미보존" 문구 제거/수정.
 - `docs/project_structure.en.md`의 대응 행 - 동일하게 수정.
 
@@ -199,4 +199,4 @@ v1(`2026-07-26-video-engine-design.md`)이 "오디오 미보존"을 명시적
 - **VFR(가변 프레임레이트) 동기화는 v1과 동일하게 미검증** - v1 비디오
   엔진 스펙의 기존 한계를 그대로 상속.
 - **`imageio-ffmpeg`가 새 하드 의존성으로 추가됨** - 이 패키지가 없으면
-  `tools/video_engine.py`를 아예 쓸 수 없다(이전엔 `cv2`만으로 충분했음).
+  `tools/cli/video_engine.py`를 아예 쓸 수 없다(이전엔 `cv2`만으로 충분했음).

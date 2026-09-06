@@ -4,7 +4,7 @@
 
 **Goal:** 임의의 새 사진 한 장을 넣으면 `core/brand_classifier.py`의 10개 브랜드 centroid와의 거리로 순위를 매겨 보여주는 "재미용" CLI 기능(+선택적 자기완결적 HTML 리포트)을 추가한다.
 
-**Architecture:** 새 사진에서 tone/color/gamut 시그니처를 계산하는 `core/photo_signature.py`(신규), 그 벡터를 852장 훈련 풀 기준 centroid까지 거리 순위 매기는 `core/brand_classifier.py`의 신규 함수 `rank_brands_by_distance()`, 이 둘을 엮는 `tools/classify_brand.py`의 새 `predict` 서브커맨드. 전부 Python 단일 소스 - 클라이언트사이드 JS 재구현 없음.
+**Architecture:** 새 사진에서 tone/color/gamut 시그니처를 계산하는 `core/photo_signature.py`(신규), 그 벡터를 852장 훈련 풀 기준 centroid까지 거리 순위 매기는 `core/brand_classifier.py`의 신규 함수 `rank_brands_by_distance()`, 이 둘을 엮는 `tools/cli/classify_brand.py`의 새 `predict` 서브커맨드. 전부 Python 단일 소스 - 클라이언트사이드 JS 재구현 없음.
 
 **Tech Stack:** 기존 의존성(`opencv-python`, `numpy`)만 사용, 새 의존성 없음.
 
@@ -15,7 +15,7 @@
 - **가짜 확률/퍼센트를 절대 표시하지 않는다** - 순위와 거리(숫자)만. 콘솔 출력과 HTML 리포트 양쪽에 "실측 정확도 19.6%(다수결 baseline 14.6%) - 순위는 참고용" 경고를 항상 포함.
 - `hue_mean`은 기존 population 시그니처 데이터와 같은 단위(OpenCV 원본 H 채널, 0~179, 실제 색상각의 절반)로 계산해야 한다 - `datasets/*/color_signature.json`의 실측값이 전부 이 범위(관측된 최댓값 179) 안에 있음을 확인했음(설계 스펙 작성 시점엔 놓쳤던 디테일 - 원형평균은 실제 0~360도 단위로 계산한 뒤 다시 절반으로 접어 저장 단위에 맞춰야 함).
 - 이미 승인/테스트 완료된 `nearest_centroid_loo()`/`confusion_matrix()`/`classification_report()`/`extract_features()`/`standardize()`의 기존 시그니처와 동작은 바꾸지 않는다 - `rank_brands_by_distance()`는 별도 신규 함수로 추가.
-- `tools/classify_brand.py`의 기존 동작(`python3 -m tools.classify_brand [--features ...] [--csv ...]`, 서브커맨드 없이 실행하면 기존 LOO 리포트)은 그대로 유지해야 한다(하위호환) - `predict`는 추가되는 서브커맨드일 뿐.
+- `tools/cli/classify_brand.py`의 기존 동작(`python3 -m tools.cli.classify_brand [--features ...] [--csv ...]`, 서브커맨드 없이 실행하면 기존 LOO 리포트)은 그대로 유지해야 한다(하위호환) - `predict`는 추가되는 서브커맨드일 뿐.
 - HTML 리포트는 외부 CDN/폰트 의존 없이 완전히 자기완결적이어야 한다(사진은 base64 data URI로 내장).
 - 테스트는 `unittest.TestCase` 스타일(프로젝트 관례, pytest 미사용).
 - README.md/README.ko.md, docs/project_structure.md/.en.md 전부 갱신(이중언어 동시 유지 관례).
@@ -135,7 +135,7 @@ Expected: `ModuleNotFoundError: No module named 'core.photo_signature'`
 ```python
 """임의의 사진 한 장에서 datasets/*/{tone,color,gamut}_signature.json과
 같은 필드로 시그니처를 계산한다 - "재미용" 브랜드 예측기
-(tools/classify_brand.py predict)의 입력 전처리 단계.
+(tools/cli/classify_brand.py predict)의 입력 전처리 단계.
 
 texture 필드는 계산하지 않는다 - 브랜드별 sharpening/micro_contrast
 계산 공식이 원본 스크립트 유실로 서로 달라져 있다는 게 이미 문서화된
@@ -290,17 +290,17 @@ git commit -m "Add rank_brands_by_distance(): distance-ranked centroid compariso
 
 ---
 
-### Task 3: `tools/classify_brand.py`에 `predict` 서브커맨드 추가
+### Task 3: `tools/cli/classify_brand.py`에 `predict` 서브커맨드 추가
 
 **Files:**
-- Modify: `tools/classify_brand.py`
+- Modify: `tools/cli/classify_brand.py`
 
 **Interfaces:**
 - Consumes: `core.photo_signature.compute_signature`, `core.brand_classifier.{BRANDS, load_signatures, extract_features, rank_brands_by_distance}` (그리고 기존 `nearest_centroid_loo`/`confusion_matrix`/`classification_report`).
 
 - [ ] **Step 1: 기존 로딩 로직을 공유 헬퍼로 리팩터링**
 
-`tools/classify_brand.py`의 현재 `run()` 함수(전체 파일 앞부분은 그대로 두고 이 함수만 교체):
+`tools/cli/classify_brand.py`의 현재 `run()` 함수(전체 파일 앞부분은 그대로 두고 이 함수만 교체):
 
 ```python
 def load_all_features(feature_set):
@@ -332,15 +332,15 @@ def run(feature_set):
 
 - [ ] **Step 2: 리팩터링이 기존 동작을 안 바꿨는지 확인**
 
-Run: `python3 -m tools.classify_brand`
+Run: `python3 -m tools.cli.classify_brand`
 Expected: 콘솔에 `overall accuracy: 0.196`, `macro accuracy (balanced): 0.232`가 그대로 출력됨(리팩터 전과 동일한 숫자 - 순수 리팩터라 결과가 바뀌면 안 됨).
 
-Run: `python3 -m tools.classify_brand --features all`
+Run: `python3 -m tools.cli.classify_brand --features all`
 Expected: `overall accuracy: 0.498`, `macro accuracy (balanced): 0.490` 그대로 출력.
 
 - [ ] **Step 3: import 추가 및 predict 관련 함수 작성**
 
-`tools/classify_brand.py` 상단 import 블록을 다음으로 교체:
+`tools/cli/classify_brand.py` 상단 import 블록을 다음으로 교체:
 
 ```python
 """브랜드 시그니처 판별기 CLI - 10개 브랜드(ricoh_gr은 hue_median/hue_mean
@@ -498,7 +498,7 @@ footer{{margin-top:40px;font-family:var(--mono);font-size:.62rem;color:var(--dim
       <div class="blist">{rows}</div>
     </div>
   </div>
-  <footer>tools/classify_brand.py predict &middot; Set A(tone+color+gamut)만 사용, texture 미지원<br>
+  <footer>tools/cli/classify_brand.py predict &middot; Set A(tone+color+gamut)만 사용, texture 미지원<br>
   10개 브랜드 852장 population 시그니처 기준 leave-one-out nearest-centroid</footer>
 </div>
 </body></html>"""
@@ -508,7 +508,7 @@ footer{{margin-top:40px;font-family:var(--mono);font-size:.62rem;color:var(--dim
 
 - [ ] **Step 4: `main()`을 서브커맨드 지원하도록 교체**
 
-`tools/classify_brand.py`의 기존 `main()` 함수를 다음으로 교체(기존 `--features`/`--csv` 동작은 그대로 유지, `predict` 서브커맨드만 추가):
+`tools/cli/classify_brand.py`의 기존 `main()` 함수를 다음으로 교체(기존 `--features`/`--csv` 동작은 그대로 유지, `predict` 서브커맨드만 추가):
 
 ```python
 def main():
@@ -547,19 +547,19 @@ def main():
 
 - [ ] **Step 5: 수동 스모크테스트 (실제 이미지)**
 
-Run: `python3 -m tools.classify_brand predict docs/images/before_after_hncs.jpg`
+Run: `python3 -m tools.cli.classify_brand predict docs/images/before_after_hncs.jpg`
 Expected: 예외 없이 정확도 경고 문구, 1위 브랜드, 10개 브랜드 순위표(거리 오름차순)가 출력됨.
 
-Run: `python3 -m tools.classify_brand predict docs/images/before_after_hncs.jpg --html /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/predict_demo.html`
+Run: `python3 -m tools.cli.classify_brand predict docs/images/before_after_hncs.jpg --html /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/predict_demo.html`
 Expected: 콘솔 출력 + `predict_demo.html` 생성 확인. 파일을 열어서(`grep`으로) 다음이 전부 들어있는지 확인: `<img src="data:image/jpeg;base64,...`(내장 사진), `class="warn"`(정확도 경고 배너), `class="corner c-tl"`(코너 브래킷 프레임 - 총 4개), `class="bitem active"`(1위 브랜드 하이라이트), `class="bitem"`가 정확히 10개(순위 10행). 외부 `<link>`/`http`/`https` 참조가 전혀 없는지도 확인(자기완결적 요구사항 - `grep -c "http" predict_demo.html`가 0이어야 함, base64 데이터 URI 자체는 `data:image/`로 시작하니 걸리지 않음).
 
-Run (기존 report 모드가 여전히 정상 동작하는지 최종 재확인): `python3 -m tools.classify_brand --csv /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/report_check.csv`
+Run (기존 report 모드가 여전히 정상 동작하는지 최종 재확인): `python3 -m tools.cli.classify_brand --csv /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/report_check.csv`
 Expected: 기존과 동일하게 정상 동작, CSV 생성.
 
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add tools/classify_brand.py
+git add tools/cli/classify_brand.py
 git commit -m "Add 'predict' subcommand: rank a new photo against the 10 brand centroids by distance"
 ```
 
@@ -587,8 +587,8 @@ Sony")은 절대 표시하지 않고 거리 순위만 보여주며, 콘솔/HTML 
 양쪽에 이 정확도 숫자를 항상 같이 출력한다.
 
 ```
-python3 -m tools.classify_brand predict photo.jpg
-python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진을 base64로 내장한 자기완결적 정적 HTML
+python3 -m tools.cli.classify_brand predict photo.jpg
+python3 -m tools.cli.classify_brand predict photo.jpg --html result.html  # 사진을 base64로 내장한 자기완결적 정적 HTML
 ```
 ```
 
@@ -600,8 +600,8 @@ python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진�
 **And for fun**: a `predict` subcommand built on top of the same validated tool - feed it any photo and it ranks which of the 10 brands' centroids it lands closest to, by distance. Texture is left out (Set A only, tone+color+gamut) - the same caveat as above, since texture's per-brand formulas can't be reconstructed for a new photo. Since measured accuracy is only 19.6%, it never shows a fabricated confidence number (no "87% Sony") - just the distance ranking, with that accuracy figure always printed alongside both the console and HTML output.
 
 ```
-python3 -m tools.classify_brand predict photo.jpg
-python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-contained static HTML with the photo embedded as base64
+python3 -m tools.cli.classify_brand predict photo.jpg
+python3 -m tools.cli.classify_brand predict photo.jpg --html result.html  # self-contained static HTML with the photo embedded as base64
 ```
 ```
 
@@ -613,10 +613,10 @@ python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-con
 | `core/photo_signature.py` | "재미용" 예측기의 입력 전처리 - 임의의 새 사진에서 tone/color/gamut 시그니처 필드를 계산(`compute_signature`). texture는 브랜드별 계산 공식 유실로 제외. 원본 계산 스크립트를 복원한 게 아니라 methodology 필드 기반 근사 재구현(설계 근거: `docs/superpowers/specs/2026-07-25-brand-predict-fun-design.md`) |
 ```
 
-`docs/project_structure.md`의 `tools/classify_brand.py` 행을 다음으로 교체:
+`docs/project_structure.md`의 `tools/cli/classify_brand.py` 행을 다음으로 교체:
 
 ```markdown
-| `tools/classify_brand.py` | 브랜드 시그니처 판별기 CLI - `python3 -m tools.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]`(기본, LOO 리포트) / `python3 -m tools.classify_brand predict photo.jpg [--html out.html]`(재미용, 새 사진 브랜드 순위) |
+| `tools/cli/classify_brand.py` | 브랜드 시그니처 판별기 CLI - `python3 -m tools.cli.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]`(기본, LOO 리포트) / `python3 -m tools.cli.classify_brand predict photo.jpg [--html out.html]`(재미용, 새 사진 브랜드 순위) |
 ```
 
 `docs/project_structure.en.md`의 `core/brand_classifier.py` 행 다음에 추가:
@@ -625,10 +625,10 @@ python3 -m tools.classify_brand predict photo.jpg --html result.html  # self-con
 | `core/photo_signature.py` | Input preprocessing for the "for fun" predictor - computes tone/color/gamut signature fields for an arbitrary new photo (`compute_signature`). Texture is excluded (per-brand formulas were lost). An approximate reimplementation from the methodology fields, not a restoration of the original scripts (design rationale: `docs/superpowers/specs/2026-07-25-brand-predict-fun-design.md`) |
 ```
 
-`docs/project_structure.en.md`의 `tools/classify_brand.py` 행을 다음으로 교체:
+`docs/project_structure.en.md`의 `tools/cli/classify_brand.py` 행을 다음으로 교체:
 
 ```markdown
-| `tools/classify_brand.py` | Brand-signature classifier CLI - `python3 -m tools.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]` (default, LOO report) / `python3 -m tools.classify_brand predict photo.jpg [--html out.html]` (for fun - rank a new photo against the brands) |
+| `tools/cli/classify_brand.py` | Brand-signature classifier CLI - `python3 -m tools.cli.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]` (default, LOO report) / `python3 -m tools.cli.classify_brand predict photo.jpg [--html out.html]` (for fun - rank a new photo against the brands) |
 ```
 
 - [ ] **Step 4: 전체 테스트 스위트 확인**

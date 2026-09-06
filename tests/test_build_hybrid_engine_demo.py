@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tools.build_hybrid_engine_demo import BAR_H, _load_profile, _resize_max_dim, build_before_after
+from tools.demo.build_hybrid_engine_demo import BAR_H, _load_profile, _resize_max_dim, build_before_after
 
 
 class TestLoadProfile(unittest.TestCase):

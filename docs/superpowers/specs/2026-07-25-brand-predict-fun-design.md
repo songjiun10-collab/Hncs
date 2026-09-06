@@ -2,7 +2,7 @@
 
 ## 배경 / 문제
 
-`core/brand_classifier.py`/`tools/classify_brand.py`(2026-07-24 스펙/구현)는
+`core/brand_classifier.py`/`tools/cli/classify_brand.py`(2026-07-24 스펙/구현)는
 연구용 검증 도구로, 이미 계산된 852장(10개 브랜드)의 population 시그니처
 데이터만 갖고 leave-one-out 교차검증으로 "이 데이터가 브랜드를 구별할
 결정력이 있는가"를 확인했다. 그 스펙의 "범위 밖" 섹션에서 명시적으로
@@ -130,11 +130,11 @@ def rank_brands_by_distance(query_vector, train_X, train_y):
 `standardize()`(이미 테스트/승인됨)를 그대로 재사용. `nearest_centroid_loo()`는
 전혀 수정하지 않음 - 별도 함수로 추가만 함.
 
-### 3. `tools/classify_brand.py`에 `predict` 서브커맨드 추가
+### 3. `tools/cli/classify_brand.py`에 `predict` 서브커맨드 추가
 
 ```
-python3 -m tools.classify_brand predict photo.jpg
-python3 -m tools.classify_brand predict photo.jpg --html result.html
+python3 -m tools.cli.classify_brand predict photo.jpg
+python3 -m tools.cli.classify_brand predict photo.jpg --html result.html
 ```
 
 동작:

@@ -10,8 +10,8 @@ apply_sony_a7rvi_look - Experimental. Sony a7R VI(ILCE-7RM6) 전용
 libraw 0.22.1이 지원 안 해서 디코드 자체가 안 됨 - 애초에 후보에서
 제외), `apply_sony_look()`(main) 대비 ΔE00을 직접 목적함수로
 그리드서치+LOO를 X2D II/X1D-50c와 동일 방식으로 돌렸다
-(`tools/evaluate_new_body_de00_grid.py` - 저해상도(200px) 폴드별 콤보
-선택, 400px 확정, 이어서 `tools/evaluate_native_pixel_confirm.py`로
+(`tools/fit/evaluate_new_body_de00_grid.py` - 저해상도(200px) 폴드별 콤보
+선택, 400px 확정, 이어서 `tools/fit/evaluate_native_pixel_confirm.py`로
 원본 해상도(max_dim=3000) 재확인).
 
 | 검증 단계 | 개선폭 | 승/패 | 부호검정 p | 부트스트랩 95% CI |
@@ -28,7 +28,7 @@ libraw 0.22.1이 지원 안 해서 디코드 자체가 안 됨 - 애초에 후�
 +0.52~0.83%와 비슷한 규모) - CI가 0을 벗어나긴 하지만 하한이
 +0.007~0.021로 0에 가깝다. 통계적으로는 유의하지만 효과 크기가 작다는
 점은 감안할 것. 표본 40장도 X2D II(70장)보다 작음 - 페어가 더 추가되면
-재검증 권장. 재현: `python3 -m tools.evaluate_new_body_de00_grid --label
+재검증 권장. 재현: `python3 -m tools.fit.evaluate_new_body_de00_grid --label
 "Sony a7R VI (ILCE-7RM6)" --manifest datasets/sony/sony_new_pairs.csv
 --raw-dir "/Users/songjiun/local-work" --model "ILCE-7RM6" --baseline
 brands.sony.apply_sony_look`.

@@ -75,7 +75,7 @@ DCP 프로파일 등)는 rawpy 출력에 맞춰 피팅돼 있어서, 디코더�
    약 1e-6 ΔE 수준 잡음이 낌 - 정정 후에야 발견).
 
 이번 실험은 **비교를 신뢰하기 전에 노이즈 크기부터 먼저 잰다**:
-`tools/evaluate_darktable_vs_rawpy.py`가 실제 16쌍 비교를 돌리기 전에,
+`tools/research/evaluate_darktable_vs_rawpy.py`가 실제 16쌍 비교를 돌리기 전에,
 대표 파일 1장(핫셀블라드 1장, Fuji 1장)을 각 백엔드로 두 번씩
 디코드해서 "같은 입력을 반복 디코드했을 때 얼마나 다른가"(재현성
 노이즈 바닥)를 먼저 측정하고 출력한다 - 이후 rawpy vs darktable의
@@ -112,7 +112,7 @@ def decode_raw_darktable(raw_path):
 
     subprocess+임시파일 기반이라 decode_raw()보다 훨씬 느리다(파일당
     10초 이상) - 프로덕션 경로가 아니라
-    tools/evaluate_darktable_vs_rawpy.py 전용이다."""
+    tools/research/evaluate_darktable_vs_rawpy.py 전용이다."""
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = os.path.join(tmpdir, "out.tif")
         result = subprocess.run(
@@ -139,15 +139,15 @@ def decode_raw_darktable(raw_path):
 `hybrid_engine/utils/io.py` 상단에 새로 필요하다(`os`, `cv2`, `numpy`는
 이미 있음).
 
-### 2. `tools/evaluate_darktable_vs_rawpy.py` (신규)
+### 2. `tools/research/evaluate_darktable_vs_rawpy.py` (신규)
 
 - 핫셀블라드 13쌍(`datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv`의
   `jpeg_url` 컬럼 basename으로 `raw_calib_cache/{name}.jpg.3FR`/`.fff`
   (raw)와 `raw_calib_cache/{name}.jpg.target.jpg`(target) 위치 - 기존
-  `tools/evaluate_hncs_structural.py`의 `_pair_names()`/`_raw_path_for()`/
+  `tools/research/evaluate_hncs_structural.py`의 `_pair_names()`/`_raw_path_for()`/
   `_target_path_for()`와 정확히 같은 규칙, 이 스크립트 안에 독립적으로
   재구현한다) + Fuji 3쌍(`fuji_pairs_manifest.csv`,
-  `tools/evaluate_fuji_demosaic.py`의 `load_pairs()`와 같은 파싱 규칙)
+  `tools/fuji/evaluate_fuji_demosaic.py`의 `load_pairs()`와 같은 파싱 규칙)
   총 16쌍을 합쳐서 순회한다.
 - 대표 파일(핫셀블라드 1개, Fuji 1개)로 반복-디코드 노이즈 바닥을
   먼저 측정하고 출력한다.
@@ -184,9 +184,9 @@ def decode_raw_darktable(raw_path):
 - `decode_raw_darktable()`은 darktable-cli+실제 RAW 파일 의존적이라
   이 프로젝트의 기존 관례대로(`decode_raw()`처럼) 커밋되는 자동화
   단위테스트 없이 수동 실행으로 검증하고 보고서에 결과를 남긴다.
-- `tools/evaluate_darktable_vs_rawpy.py`의 CSV/manifest 파싱 같은
-  순수 로직만 단위 테스트(`tools/evaluate_hncs_structural.py`/
-  `tools/evaluate_fuji_demosaic.py`와 동일 패턴 - 실제 raw+jpeg 페어
+- `tools/research/evaluate_darktable_vs_rawpy.py`의 CSV/manifest 파싱 같은
+  순수 로직만 단위 테스트(`tools/research/evaluate_hncs_structural.py`/
+  `tools/fuji/evaluate_fuji_demosaic.py`와 동일 패턴 - 실제 raw+jpeg 페어
   경로 리스트는 임시 파일로 테스트, 진짜 `raw_calib_cache/`/
   `fuji_pairs_manifest.csv`는 안 건드림).
 

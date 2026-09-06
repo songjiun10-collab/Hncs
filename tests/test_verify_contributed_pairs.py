@@ -7,7 +7,7 @@ import unittest
 import cv2
 import numpy as np
 
-from tools.verify_contributed_pairs import verify_row, _model_matches, _parse_exif_datetime
+from tools.data.verify_contributed_pairs import verify_row, _model_matches, _parse_exif_datetime
 
 
 def _write_tagged_image(path, make="Hasselblad", model="X2D II 100C",

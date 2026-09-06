@@ -1,7 +1,7 @@
 """
 후지필름 스타일 필름 시뮬레이션 프리셋 10종.
 
-Astia/Pro Neg Std는 실측 검증됨(tools/analyze.py fuji_film_modes 모드,
+Astia/Pro Neg Std는 실측 검증됨(tools/cli/analyze.py fuji_film_modes 모드,
 mirrorlesscomparison.com 리뷰 갤러리의 RAW+SOOC JPEG에서 실제 Film Mode
 태그(exiftool)별 population 비교) - 나머지는 대응하는 실측 라벨을 못
 구해서(Eterna/Nostalgic Neg/Reala Ace/Acros 등은 이 사이트 표본에
@@ -40,7 +40,7 @@ Provia 102장/Classic Negative 28장/Bleach Bypass 7장/Classic Chrome 2장.
   피팅, RMSE=5.7
 - Classic Chrome은 2장뿐이라 피팅 근거 부족, 추가 안 함
 
-동일장면 비교차트 검증(2026-07, `tools/fuji_chart_calibrate.py`): 위
+동일장면 비교차트 검증(2026-07, `tools/fuji/fuji_chart_calibrate.py`): 위
 population 방식(서로 다른 사진들을 필름모드별로 모아 통계 비교)은
 장면/노출 편향이 섞이는 한계가 있는데, 사용자가 리뷰 블로그/영상에서
 직접 찾아 공유해준 "동일 장면을 여러 필름모드로 나란히 보여주는" 비교차트
@@ -116,10 +116,10 @@ DCP LookTable은 Adobe가 카메라 JPEG 엔진과 별개로 만드는 "Look" �
 들어오면서 다시 시도했다 - 이번엔 EXIF DateTimeOriginal이 실제로
 일치하는 진짜 같은 촬영 페어. 두 바디 JPEG 전부 FilmMode가
 "F0/Standard (Provia)"였는데, 이 파일엔 Provia 프리셋이 아예 없었어서
-raw 신호로 직접 새로 그리드서치(`tools/evaluate_new_body_de00_grid.py`
+raw 신호로 직접 새로 그리드서치(`tools/fit/evaluate_new_body_de00_grid.py`
 - baseline 없이 가공 없는 중립 렌더 자체를 기준으로 삼는
 `--baseline-identity`, 저해상도 선택 -> 400px 확정 ->
-`tools/evaluate_native_pixel_confirm.py`로 원본 픽셀(max_dim=3000)
+`tools/fit/evaluate_native_pixel_confirm.py`로 원본 픽셀(max_dim=3000)
 재확인)했다.
 
 | 바디 | n | 개선폭(LOO) | 개선폭(원본 픽셀) | 부호검정 p | 부트스트랩 95% CI(픽셀) |
@@ -135,7 +135,7 @@ white_point=1.0`, X-T30 III `toe_lift=0.02, shoulder_start=0.82,
 white_point=1.0`로 사실상 같다 - `apply_leica_raw_look`의 4바디 수렴값과
 동일해서(brands/leica_raw.py 이력 참고) 우연이라 보기 어려움. 표본이
 더 작은 X-T30 III(n=20) 대신 GFX100RF(n=38) 값을 기본값으로 채택. 재현:
-`python3 -m tools.evaluate_new_body_de00_grid --label "Fuji GFX100RF
+`python3 -m tools.fit.evaluate_new_body_de00_grid --label "Fuji GFX100RF
 Provia" --manifest datasets/fuji/fuji_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --model GFX100RF --baseline-identity`.
 
@@ -320,7 +320,7 @@ def apply_nostalgic_neg(img_bgr):
     틀렸음**: GFX50S II Nostalgic Neg raw+jpeg 27쌍에 이 함수를 그대로
     적용해 ΔE00을 재보고 실측했더니, **가공 없는 raw 원본이 이 함수보다도
     ΔE00이 더 낮았다**(개선폭 -2.13%, 부트스트랩 95% CI [-0.936, -0.133],
-    0을 포함하지 않는 음수 - `tools/evaluate_fuji_preset_de00.py`). n=1
+    0을 포함하지 않는 음수 - `tools/fuji/evaluate_fuji_preset_de00.py`). n=1
     비교차트 기반 수작업 튜닝(앰버 틴트 가산)이 실제 카메라 JPEG와
     반대 방향이었다는 뜻. `apply_nostalgic_neg_v2()`(아래, raw+jpeg
     기반 재도출)로 대체 권장 - 이 함수 자체는 과거 기록 보존 목적으로
@@ -433,7 +433,7 @@ def apply_classic_negative_v2(img_bgr, toe_lift=0.0, shoulder_start=0.94,
     (`sat_mult`/`contrast_n`/`black_lift`/`white_point`)를 GFX50S II
     47쌍으로 그대로 재보정하면 사전에 정한 채택 기준(부트스트랩 95% CI가
     0을 배제하고 신규 우세)은 통과하지만(+42.87%, CI [+5.7623,+7.2889]),
-    네 상수가 전부 격자 경계로 달아난다 - `tools/calibrate.py`의
+    네 상수가 전부 격자 경계로 달아난다 - `tools/fit/calibrate.py`의
     `no_auto_bright=True`("무가공 렌더" 기준) 때문에 생기는 전역 밝기
     격차(Lab L 중앙값 +74.851, 47/47쌍, CI가 0 배제)를 룩 파라미터가
     메우고 있었다(`hybrid_engine/EVALUATION.md` "Classic Negative
@@ -459,7 +459,7 @@ def apply_classic_negative_v2(img_bgr, toe_lift=0.0, shoulder_start=0.94,
     `toe_lift=0.0`(하한 밖에서 단조 악화하는 진짜 최적점)과
     `white_point=1.0`(1.20까지 밀어도 이득 -0.48%인, `WHITE_POINTS`를
     노출 보정 탈출구로 넓히지 않기로 한 설계상 상한)뿐 - 둘 다 진짜
-    경계지 격자 인공물이 아니다. 재현: `tools/evaluate_fuji_classic_negative_v2_grid.py`,
+    경계지 격자 인공물이 아니다. 재현: `tools/fuji/evaluate_fuji_classic_negative_v2_grid.py`,
     `hybrid_engine/EVALUATION.md` "Classic Negative 재보정" 절 4~6항.
 
     기존 `apply_classic_negative()`는 `brands/CLAUDE.md`대로 그대로 두고
@@ -483,7 +483,7 @@ def apply_classic_negative_v2(img_bgr, toe_lift=0.0, shoulder_start=0.94,
 
 
 # ==========================================
-# 10. PRO Neg. Hi 비디오 전용 변형 (CLAHE 생략) - tools/video_engine.py가 사용
+# 10. PRO Neg. Hi 비디오 전용 변형 (CLAHE 생략) - tools/cli/video_engine.py가 사용
 # ==========================================
 def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
     """apply_pro_neg_hi()의 비디오 전용 변형 - CLAHE(프레임별 적응형
@@ -507,7 +507,7 @@ def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
 # ==========================================
 # 11. Provia/Standard (기본 필름모드) - raw+jpeg 페어 실측 검증됨(2026-08, GFX100RF n=38/X-T30 III n=20)
 # clahe_clip=3.0은 2026-08 shoulder_start x clahe_clip 합동 재검증
-# (tools/evaluate_all_brands_clahe_shoulder_grid.py, GFX100RF n=38, +6.96%,
+# (tools/fit/evaluate_all_brands_clahe_shoulder_grid.py, GFX100RF n=38, +6.96%,
 # p=0.0139, CI [+0.520,+1.366] 0 미포함, 38/38 만장일치)으로 1.25에서
 # 갱신 - docs/measurements.md 참고.
 # 갱신(2026-08, 표본 확장 + 원본 픽셀 재확인): GFX100RF 표본이 dpreview
@@ -516,9 +516,9 @@ def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
 # 이미 최적). CLAHE가 해상도에 민감하다는 별도 발견(hncs_structural
 # 재검증) 이후 원본 픽셀(max_dim=3000)로도 clip=1.25 vs 3.0 직접
 # 재대결 - +4.30%, 60승29패, p=0.0013, CI [+0.381,+0.926] 0 미포함,
-# clip=3.0 우세 확정(tools/evaluate_clahe_clip_native_confirm.py).
+# clip=3.0 우세 확정(tools/fit/evaluate_clahe_clip_native_confirm.py).
 # 바디별 분해 재확인(2026-09-02, Canon/Sony 조사와 같은 질문):
-# tools/breakdown_fuji_provia_by_camera_body.py로 GFX100RF(89)/X-T30
+# tools/fuji/breakdown_fuji_provia_by_camera_body.py로 GFX100RF(89)/X-T30
 # III(20)/GFX50S II(10) 세 바디에 지금 함수를 그대로 돌려봄. GFX100RF
 # 평균 ΔE00=13.910은 위 이력대로 이미 자기 89쌍으로 셀프튜닝된 상태라
 # 더 짜낼 여지가 없고, X-T30 III(9.513)는 오히려 유의미하게 더
@@ -552,7 +552,7 @@ def apply_classic_chrome(img_bgr, toe_lift=0.0, shoulder_start=0.70, white_point
     """이 파일에 대응 프리셋이 아예 없던 필름모드 - GFX50S II Classic
     Chrome raw+jpeg 43쌍(디코드 성공 39쌍)으로 `apply_provia`와 같은
     방식(무가공 raw 대비 ΔE00 직접 그리드서치+LOO,
-    `tools/evaluate_new_body_de00_grid.py --baseline-identity`)으로
+    `tools/fit/evaluate_new_body_de00_grid.py --baseline-identity`)으로
     처음부터 새로 만들었다.
 
     개선폭 +5.60%, 30승9패, 부호검정 p=0.0011, 부트스트랩 95% CI
@@ -564,7 +564,7 @@ def apply_classic_chrome(img_bgr, toe_lift=0.0, shoulder_start=0.70, white_point
     재확인 필요.
 
     **정정(2026-08, 코드리뷰로 발견)**: 이 폴드 3분할 자체가 데이터
-    오염 때문이었다 - `tools/build_local_manifest.py`의 페어 매칭
+    오염 때문이었다 - `tools/data/build_local_manifest.py`의 페어 매칭
     버그(비단조/비결정적 매칭, 별도 커밋으로 수정)로
     `datasets/fuji/fuji_new_pairs.csv`의 GFX50S II Classic Chrome
     43쌍 중 상당수가 버스트 촬영 구간에서 엉뚱한 jpeg와 짝지어져
@@ -590,10 +590,10 @@ def apply_classic_chrome(img_bgr, toe_lift=0.0, shoulder_start=0.70, white_point
 # 12b. Classic Chrome v2 - 페어 매칭 버그 수정 후 재도출(2026-08, GFX50S II n=42)
 # ==========================================
 def apply_classic_chrome_v2(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
-    """`apply_classic_chrome()`(위)의 정정판. `tools/build_local_manifest.py`
+    """`apply_classic_chrome()`(위)의 정정판. `tools/data/build_local_manifest.py`
     페어 매칭 버그 수정 후 `datasets/fuji/fuji_new_pairs.csv`를
     재생성(GFX50S II Classic Chrome 46쌍, 디코드 성공 42쌍)하고 같은
-    방식(`tools/evaluate_new_body_de00_grid.py --baseline-identity`)으로
+    방식(`tools/fit/evaluate_new_body_de00_grid.py --baseline-identity`)으로
     처음부터 재그리드서치했다.
 
     개선폭 +22.54%(구버전 +5.60%보다 훨씬 큼), 37승5패, 부호검정
@@ -605,7 +605,7 @@ def apply_classic_chrome_v2(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_po
     그리드 해상도 우연이었던 전례가 있어서(docs/measurements.md) 이것도
     같은 카메라의 진짜 공통 커브인지 그리드 우연인지는 아직 별도로
     검증 안 됨, 과대해석 자제. 재현: `python3 -m
-    tools.evaluate_new_body_de00_grid --label "Fuji GFX50S II Classic
+    tools.fit.evaluate_new_body_de00_grid --label "Fuji GFX50S II Classic
     Chrome" --manifest <film_mode=="Classic Chrome" 행> --raw-dir
     "/Users/songjiun/local-work" --baseline-identity`."""
     img = ensure_uint8(img_bgr)
@@ -655,14 +655,14 @@ def apply_nostalgic_neg_v2(img_bgr, toe_lift=0.036, shoulder_start=0.82, white_p
     white_point=0.85`로 수렴(나머지 2폴드는 toe_lift=0.09만 다름) -
     기존 앰버 틴트/하이라이트 압축 방식과 전혀 다른 파라미터 공간이라
     실측이 실제로 다른 방향을 가리키고 있었다는 뜻. 재현:
-    `python3 -m tools.evaluate_new_body_de00_grid --label
+    `python3 -m tools.fit.evaluate_new_body_de00_grid --label
     "Fuji GFX50S II Nostalgic Neg" --manifest
     /tmp/fuji_nostalgic_neg.csv --raw-dir "/Users/songjiun/local-work"
     --baseline-identity`(매니페스트는 `datasets/fuji/fuji_new_pairs.csv`의
     film_mode=="Nostalgic Neg" 행).
 
     **정정(2026-08, 코드리뷰로 발견)**: 이 27쌍도 Classic Chrome과 같은
-    `tools/build_local_manifest.py` 페어 매칭 버그(별도 커밋으로 수정)에
+    `tools/data/build_local_manifest.py` 페어 매칭 버그(별도 커밋으로 수정)에
     오염돼 있었다. 데이터셋을 고쳐서 재검증한 결과는
     `apply_nostalgic_neg_v3()`(아래) - 이 함수는 그대로 두고 나란히
     둔다."""
@@ -685,10 +685,10 @@ def apply_nostalgic_neg_v2(img_bgr, toe_lift=0.036, shoulder_start=0.82, white_p
 # 13b. Nostalgic Neg v3 - 페어 매칭 버그 수정 후 재도출(2026-08, GFX50S II n=28)
 # ==========================================
 def apply_nostalgic_neg_v3(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
-    """`apply_nostalgic_neg_v2()`(위)의 정정판. `tools/build_local_manifest.py`
+    """`apply_nostalgic_neg_v2()`(위)의 정정판. `tools/data/build_local_manifest.py`
     페어 매칭 버그 수정 후 `datasets/fuji/fuji_new_pairs.csv`를
     재생성(GFX50S II Nostalgic Neg 28쌍, 전부 디코드 성공)하고 같은
-    방식(`tools/evaluate_new_body_de00_grid.py --baseline-identity`)으로
+    방식(`tools/fit/evaluate_new_body_de00_grid.py --baseline-identity`)으로
     처음부터 재그리드서치했다.
 
     개선폭 +18.14%(v2의 +6.13%보다 훨씬 큼), **28승0패 만장일치**,
@@ -698,7 +698,7 @@ def apply_nostalgic_neg_v3(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_poi
     아티팩트였다는 뜻. `apply_classic_chrome_v2()`/`apply_provia`
     (GFX100RF)와 우연히 완전히 같은 파라미터로 수렴했다 - 과대해석
     자제 사유는 `apply_classic_chrome_v2()` docstring 참고. 재현:
-    `python3 -m tools.evaluate_new_body_de00_grid --label "Fuji GFX50S
+    `python3 -m tools.fit.evaluate_new_body_de00_grid --label "Fuji GFX50S
     II Nostalgic Neg" --manifest <film_mode=="Nostalgic Neg" 행>
     --raw-dir "/Users/songjiun/local-work" --baseline-identity`."""
     img = ensure_uint8(img_bgr)

@@ -101,7 +101,7 @@ def _sign_test_p(wins, losses):
 
 def summarize(label_a, des_a, label_b, des_b, n_bootstrap=20000, seed=0):
     """페어드 비교 - des_b가 des_a보다 작으면(=더 좋으면) 양수 improvement.
-    tools/evaluate_wb_pipeline_variants.py의 summarize()와 같은 통계
+    tools/research/evaluate_wb_pipeline_variants.py의 summarize()와 같은 통계
     (부트스트랩 CI, 부호검정) - evaluate_*.py는 형제 스크립트를 import하지
     않는 컨벤션이라 복붙 (hybrid_engine/CLAUDE.md)."""
     a = np.asarray(des_a, dtype=np.float64)

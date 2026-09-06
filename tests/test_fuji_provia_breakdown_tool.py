@@ -1,4 +1,4 @@
-"""`tools/breakdown_fuji_provia_by_camera_body.py`의 순수 부분(manifest
+"""`tools/fuji/breakdown_fuji_provia_by_camera_body.py`의 순수 부분(manifest
 camera 컬럼 매핑)만 검증 - RAW 디코드는 CI에 데이터가 없어서
 (tests/CLAUDE.md) 제외. `tests/test_sony_a1ii_breakdown_tools.py`의
 같은 패턴을 Fuji manifest 스키마로 반복."""

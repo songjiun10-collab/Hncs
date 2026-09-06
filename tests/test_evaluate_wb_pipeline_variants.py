@@ -4,9 +4,9 @@
 검증할 수 있다(tools/CLAUDE.md의 TestSummarizeRecordedRun 관례)."""
 import unittest
 
-from tools.evaluate_wb_pipeline_variants import summarize
+from tools.research.evaluate_wb_pipeline_variants import summarize
 
-# python3 -m tools.evaluate_wb_pipeline_variants 실행 결과 그대로(2026-08,
+# python3 -m tools.research.evaluate_wb_pipeline_variants 실행 결과 그대로(2026-08,
 # raw_calib_cache 공식 13쌍) - leave-one-out ΔE00, 페어 순서는
 # _find_pairs()의 정렬 순서(파일명 알파벳순)와 동일.
 _RECORDED_A = [

@@ -3,7 +3,7 @@ Canon 색감 근사 - population 통계 기반 1차 버전
 
 imaging-resource.com 카메라 리뷰 갤러리(EOS R5/R6/R8/R3/R, 풀프레임
 미러리스 5개 바디)에서 미편집 SOOC JPEG를 모아 population 통계를 냈다
-(analyze 스크립트는 tools/analyze.py의 BRAND_CONFIGS를 건드리지 않고
+(analyze 스크립트는 tools/cli/analyze.py의 BRAND_CONFIGS를 건드리지 않고
 독립 스크립트로 실행 - Sony/Nikon 브랜드 작업과 동시에 진행 중이라
 공용 딕셔너리 충돌을 피하려고 분리함, 로직 자체는
 run_imaging_resource_brand()와 동일). EXIF Make="Canon", Software에
@@ -106,10 +106,10 @@ def apply_canon_raw_look(img_bgr):
     페어 없음)과 달리 raw+jpeg 143쌍(로컬 라이브러리, local-work-2026-08 등)
     으로 3x3 컬러매트릭스 + 톤커브 + 채도/색조 LUT을 ΔE00 직접 목적함수로
     피팅한 첫 Canon 전용 함수 (2026-08, `/goal` "다른 브랜드 ΔE00<10"
-    조사 중 신설 - `tools/fit_body_matrix_plus_tone_de00.py`로 톤커브만은
+    조사 중 신설 - `tools/fit/fit_body_matrix_plus_tone_de00.py`로 톤커브만은
     +4.62%뿐임을 먼저 확인하고 매트릭스가 필요하다는 걸 검증한 뒤,
-    `tools/fit_canon_deployable_pipeline.py`로 `apply_canon_look()`이
-    실제로 받는 입력 공간(`tools.calibrate.load_neutral_render()`와
+    `tools/fit/fit_canon_deployable_pipeline.py`로 `apply_canon_look()`이
+    실제로 받는 입력 공간(`tools.fit.calibrate.load_neutral_render()`와
     동일한 libraw use_camera_wb=True/gamma=(2.222,4.5) 8비트 디코드)
     기준으로 최종 파라미터를 다시 피팅).
 
@@ -130,7 +130,7 @@ def apply_canon_raw_look(img_bgr):
     (raw 순수 선형 입력에 적용하면 안 맞음 - 처음 이 실험을 raw 네이티브
     선형 공간으로 피팅했다가 이 불일치를 발견하고 다시 피팅한 이력 있음).
 
-    재현: `python3 -m tools.fit_canon_deployable_pipeline --loo`
+    재현: `python3 -m tools.fit.fit_canon_deployable_pipeline --loo`
     (~30분, 3코어 병렬 디코드)."""
     img = ensure_uint8(img_bgr)
     linear = colour.cctf_decoding(img[:, :, ::-1].astype(np.float64) / 255.0, function="sRGB")

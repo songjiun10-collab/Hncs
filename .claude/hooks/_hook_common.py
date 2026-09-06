@@ -98,7 +98,7 @@ sentinel로 "넘겨받은 값 그대로 써라" vs "네가 알아서 조회해�
 LOW(`protect_agent_model_naming.py`)는 이 게이트 대상이 아님 - LOW의
 "마찰 없음" 설계는 별개로 이미 확정된 결정이라 안 뒤집었다. 전체 설계와
 알려진 한계는 `.claude/hooks/README.md`의 "Decision Record" 섹션, 신규
-도구는 `tools/eval_hook_judgments.py`.
+도구는 `tools/maintenance/eval_hook_judgments.py`.
 
 **정정(같은 날, must훅 - "처음부터 다 만들자 pre tool use 말고" /
 "MCP 툴 스키마 강제")**: `require_decision_or_deny()`의 deny 메시지가
@@ -157,7 +157,7 @@ CI, PR #10)에서 바로 걸림 - 로컬에서 스위트를 못 돌리고 여러
 `human_judgment`는 의도적으로 여기 안 들어간다 - 2026-08-19 브레인스토밍
 결정대로 이건 액션 *이후* 사람이 결과를 보고 매기는 값이라, 에이전트가
 액션 *직전*에 self-report하는 이 함수의 나머지 필드와 성격이 다르다
-(`tools/eval_hook_judgments.py`의 출력 스키마 쪽 - phase 2, 이 함수
+(`tools/maintenance/eval_hook_judgments.py`의 출력 스키마 쪽 - phase 2, 이 함수
 범위 아님). `_decision_payload()`는 기존 4개 필드와 동일하게 "값이
 있을 때만 로그 항목에 붙인다" 원칙을 따른다 - 안 쓰면 기존
 `violations_log.jsonl`/`override_audit.jsonl` 항목 모양이 한 글자도

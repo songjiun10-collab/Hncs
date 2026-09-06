@@ -1,4 +1,4 @@
-"""tools/eval_hook_judgments.py 테스트 - decision_kind별 outcome 분류
+"""tools/maintenance/eval_hook_judgments.py 테스트 - decision_kind별 outcome 분류
 (deny->blocked, ask->ask_unknown, 나머지는 git log 기반 revert 탐지),
 min-N 게이트가 표본 부족일 때 rate/verdict를 절대 안 내는지, 실제 임시
 git repo에서 revert 탐지가 진짜로 동작하는지, CLI가 learning_data.jsonl
@@ -15,7 +15,7 @@ import unittest
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
-from tools import eval_hook_judgments as ehj
+from tools.maintenance import eval_hook_judgments as ehj
 
 
 def _entry(hook, severity, decision_kind, self_severity, confidence,
@@ -244,7 +244,7 @@ class TestCLISmoke(unittest.TestCase):
 
     def test_cli_writes_one_learning_data_record(self):
         result = subprocess.run(
-            [sys.executable, "-m", "tools.eval_hook_judgments",
+            [sys.executable, "-m", "tools.maintenance.eval_hook_judgments",
              "--violations-log", self._violations,
              "--override-audit-log", self._audit,
              "--json-out", self._learning],
@@ -260,7 +260,7 @@ class TestCLISmoke(unittest.TestCase):
 
     def test_no_record_flag_skips_learning_data(self):
         result = subprocess.run(
-            [sys.executable, "-m", "tools.eval_hook_judgments",
+            [sys.executable, "-m", "tools.maintenance.eval_hook_judgments",
              "--violations-log", self._violations,
              "--override-audit-log", self._audit,
              "--json-out", self._learning, "--no-record"],

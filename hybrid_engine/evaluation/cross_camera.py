@@ -13,7 +13,7 @@
      서로 얼마나 가까운지(소스 간 표준편차) - 작을수록 "소스가 뭐든
      타깃 정체성으로 잘 수렴한다"는 신호
   2. **지문 소거(fingerprint erasure)**: 변환 전/후로 소스 간 노이즈
-     시그니처(tools.iso_noise.estimate_noise_sigma) 분산이 줄어드는지 -
+     시그니처(tools.research.iso_noise.estimate_noise_sigma) 분산이 줄어드는지 -
      안 줄면 톤/색만 바뀌고 카메라 고유 렌더링 특성은 안 지워진 것
 
 **데이터 제약(정직하게 명시)**: 이 환경엔 실제 RAW가 Fuji(raw_calib_cache_fuji/)
@@ -57,7 +57,7 @@ from hybrid_engine.core.preset_inverse import BRAND_FUNCS, convert_between_brand
 from hybrid_engine.pipeline.engine import HybridCameraEngine
 from hybrid_engine.utils.io import decode_raw
 from core.stats import image_stats
-from tools.iso_noise import estimate_noise_sigma
+from tools.research.iso_noise import estimate_noise_sigma
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _FUJI_RAW_GLOB = os.path.join(_REPO_ROOT, "raw_calib_cache_fuji", "*", "raw", "*.RAF")

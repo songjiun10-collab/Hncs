@@ -26,7 +26,7 @@ from hybrid_engine.calibrate_profile import _resize_max_dim, CALIB_MAX_DIM
 from hybrid_engine.core import color_matrix
 from hybrid_engine.recalibrate import MIN_CV_IMPROVEMENT_PCT, decide_and_maybe_write
 from hybrid_engine.utils.io import decode_raw, load_image_linear
-from tools.calibrate import collect_local_pairs
+from tools.fit.calibrate import collect_local_pairs
 
 
 def _load_all():

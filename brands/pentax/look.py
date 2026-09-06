@@ -2,7 +2,7 @@
 Pentax(리코이미징) 색감 근사 - population 통계 기반 1차 버전
 
 imaging-resource.com 카메라 리뷰 갤러리(645Z 중형포맷 + K-1 풀프레임)에서
-미편집 SOOC JPEG 40장을 모아 population 통계를 냈다 (tools/analyze.py
+미편집 SOOC JPEG 40장을 모아 population 통계를 냈다 (tools/cli/analyze.py
 pentax 모드). EXIF Make="RICOH IMAGING COMPANY, LTD.", Software가 카메라
 펌웨어 버전 문자열("PENTAX 645Z Ver. 1.00" 등)인 것으로 진짜 SOOC 확인.
 DNG 페어는 라이카/Phase One 때와 마찬가지로 이 사이트에서 못 찾아서

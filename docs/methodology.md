@@ -17,8 +17,8 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
 
 **그래서 이제부터 모든 population 분석은 `core/validation.py`의
 `is_image_usable()`(행 단위 표준편차로 손상 여부 판정)을 통과한
-이미지만 쓴다.** `tools/analyze.py`의 모든 다운로드 경로(핫셀블라드
-공식 CDN + imaging-resource.com 4개 브랜드)와 `tools/download.py`의
+이미지만 쓴다.** `tools/cli/analyze.py`의 모든 다운로드 경로(핫셀블라드
+공식 CDN + imaging-resource.com 4개 브랜드)와 `tools/cli/download.py`의
 후지 Google Drive 다운로드 경로(`download_fuji_pairs()`) 전부에 이미
 적용돼 있어 앞으로 새로 스크레이핑하는 이미지는 자동으로 걸러진다.
 
@@ -37,7 +37,7 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
 
 **핫셀블라드 X2D 100C 갤러리 후속 조사(2026-07) - 최종 결론: 사용 불가.**
 위에서 "72% 손상"이라고만 언급하고 후속 결론을 안 남겼던 게 있어서
-`tools.analyze`의 `run_imaging_resource_brand()`로 실제로 돌려봤다.
+`tools.cli.analyze`의 `run_imaging_resource_brand()`로 실제로 돌려봤다.
 편집본("-MOD") 페어를 제외한 비-MOD 후보 45장 전부를 원본/scaled 두
 버전 다 시도했지만 44장이 "Premature end of JPEG file"로 손상, 나머지
 1장은 EXIF 기대 렌더러 불일치 - **생존 0장**. curl과 python urllib
@@ -45,7 +45,7 @@ imaging-resource.com의 media CDN이 여러 카메라 리뷰 갤러리에서 원
 있음을 확인해서 우리 다운로드 파이프라인 버그가 아니라 imaging-resource.com
 CDN에 저장된 파일 자체의 손상임을 재확인했다(Phase One XF 100MP 갤러리
 100% 손상 사례와 같은 성격). Phase One XT 때처럼 `BRAND_CONFIGS`에는
-넣지 않고 `tools/analyze.py` 주석으로만 시도 기록을 남김 - 핫셀블라드는
+넣지 않고 `tools/cli/analyze.py` 주석으로만 시도 기록을 남김 - 핫셀블라드는
 여전히 `cdn.hasselblad.com` 공식 124장 단일 소스가 최선이다.
 
 ## 브랜드 함수 QA 검증 (2026-07)

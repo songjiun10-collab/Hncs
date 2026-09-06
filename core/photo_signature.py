@@ -1,6 +1,6 @@
 """임의의 사진 한 장에서 datasets/*/{tone,color,gamut}_signature.json과
 같은 필드로 시그니처를 계산한다 - "재미용" 브랜드 예측기
-(tools/classify_brand.py predict)의 입력 전처리 단계.
+(tools/cli/classify_brand.py predict)의 입력 전처리 단계.
 
 texture 필드는 계산하지 않는다 - 브랜드별 sharpening/micro_contrast
 계산 공식이 원본 스크립트 유실로 서로 달라져 있다는 게 이미 문서화된

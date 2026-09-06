@@ -12,7 +12,7 @@ DNG는 Dropbox 폴더인데 JS 렌더링이라 목록을 못 긁음 - Google Dri
 노출 안 됨, imaging-resource.com 갤러리도 M9/X Vario/SL2 외에 추가로
 찾은 슬러그가 전부 무효였음).
 
-대신 imaging-resource.com의 카메라 리뷰 갤러리(tools/analyze.py leica
+대신 imaging-resource.com의 카메라 리뷰 갤러리(tools/cli/analyze.py leica
 모드)에서 진짜 미편집 SOOC JPEG 45장(M9/X Vario/SL2, 각 15장, EXIF로
 편집 여부 확인)을 모아 population 통계만 냈다 - 핫셀블라드 v8/v9와 같은
 급("이미 그레이딩된 결과물의 통계"), raw 대비 진짜 전/후 피팅(v10~v12급)은

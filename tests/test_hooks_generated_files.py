@@ -61,7 +61,7 @@ class TestLutArrayRanges(unittest.TestCase):
 
     def test_is_learned_brand_file_rejects_non_learned(self):
         self.assertFalse(hook.is_learned_brand_file("brands/sony_a7rvi.py"))
-        self.assertFalse(hook.is_learned_brand_file("tools/fit_final_lut.py"))
+        self.assertFalse(hook.is_learned_brand_file("tools/fit/fit_final_lut.py"))
 
 
 class TestParseFailureFailsClosed(unittest.TestCase):

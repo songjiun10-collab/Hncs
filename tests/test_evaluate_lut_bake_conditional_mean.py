@@ -3,14 +3,14 @@
 테스트. 실험을 다시 안 돌려도(54개 룩 x 13장, 약 15분) 문서의 통계를
 검증할 수 있다 - `tests/CLAUDE.md`의 `TestSummarizeRecordedRun` 패턴.
 
-기록은 `tools/evaluate_lut_bake_conditional_mean.py` 실행 출력을 문서 표와
+기록은 `tools/research/evaluate_lut_bake_conditional_mean.py` 실행 출력을 문서 표와
 같은 4자리로 전사한 것이고, 단언은 그 표가 실제로 뒷받침하는 정밀도까지만
 건다. 이 실험은 **가설이 기각된** 기록이다 - 조건부 평균이 현재 방식보다
 나빴고, 부트스트랩 CI가 음의 방향에서 0을 제외한다.
 """
 import unittest
 
-from tools.evaluate_lut_bake_conditional_mean import summarize
+from tools.research.evaluate_lut_bake_conditional_mean import summarize
 
 # (룩, 현재 방식 ΔE00, 조건부 평균 ΔE00) - held-out 6장 평균, 2026-09-05 실행
 _RECORDED_RUN = [

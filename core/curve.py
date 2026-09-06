@@ -14,7 +14,7 @@ def film_curve(x, toe_lift=0.001, shoulder_start=0.78, white_point=1.0):
 
     white_point 기본값은 apply_hncs의 v11 채택값(1.0, brands/hasselblad.py
     참고)과 맞춰뒀다 - 모든 실제 호출부(hasselblad.py/core/engine.py/
-    tools/calibrate.py)는 항상 명시적으로 값을 넘기므로 이 기본값에
+    tools/fit/calibrate.py)는 항상 명시적으로 값을 넘기므로 이 기본값에
     의존하지 않지만, 향후 새 호출부가 생략했을 때 구버전 값(0.90)이
     조용히 쓰이는 걸 방지하기 위해 최신값으로 맞춰둠.
     """

@@ -21,7 +21,7 @@ method="CIE 2000")`를 인자 없이 호출해 (1,1,1)이 암묵적으로 쓰인
 이 글 작성 시점에 `mean_delta_e()`/`delta_e_map()`을 직접 쓰는 곳은
 7개 파일(`hybrid_engine/main.py`, `evaluation/metrics.py`,
 `calibrate_profile.py`, `tests/test_hybrid_engine.py`,
-`tools/evaluate_hncs_blend.py`, `evaluate_fuji_demosaic.py`,
+`tools/research/evaluate_hncs_blend.py`, `evaluate_fuji_demosaic.py`,
 `evaluate_darktable_vs_rawpy.py`) - `evaluate_hncs_structural.py`/
 `evaluate_chromatic_aberration.py`는 이후 다른 세션이 `skimage` 기반으로
 재작성해서 더 이상 이 함수를 안 쓴다(아래 "재검증 범위" 절 참고).

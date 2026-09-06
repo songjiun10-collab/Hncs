@@ -1,4 +1,4 @@
-"""tools/fit_final_lut.py의 _build_lut() 최소 표본 수 가드 테스트 -
+"""tools/fit/fit_final_lut.py의 _build_lut() 최소 표본 수 가드 테스트 -
 표본이 적은 bin(노이즈 지배)이 그대로 튀어나오지 않고 표본 0개인 bin과
 동일하게 보간 대체되는지 확인한다. 실제 raw+jpeg 이미지 없이도 순수
 numpy 배열만으로 검증 가능(tests/CLAUDE.md "unit-test the pure parts")."""
@@ -6,7 +6,7 @@ import unittest
 
 import numpy as np
 
-from tools.fit_final_lut import MIN_BIN_SAMPLES, N_BINS, _build_lut
+from tools.fit.fit_final_lut import MIN_BIN_SAMPLES, N_BINS, _build_lut
 
 
 class TestBuildLut(unittest.TestCase):

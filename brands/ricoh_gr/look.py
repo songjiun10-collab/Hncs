@@ -2,7 +2,7 @@
 Ricoh GR 색감 근사 - population 통계 기반 1차 버전
 
 imaging-resource.com 카메라 리뷰 갤러리(GR III + GR IIIx)에서 미편집
-SOOC JPEG를 모았다 (tools/analyze.py ricoh_gr 모드). EXIF Make="RICOH
+SOOC JPEG를 모았다 (tools/cli/analyze.py ricoh_gr 모드). EXIF Make="RICOH
 IMAGING COMPANY, LTD.", Software="RICOH GR III Ver. 1.00" 등 카메라
 펌웨어 버전 문자열로 진짜 SOOC 확인 - pentax.py와 같은 회사/같은 EXIF
 패턴.
@@ -10,7 +10,7 @@ IMAGING COMPANY, LTD.", Software="RICOH GR III Ver. 1.00" 등 카메라
 1차 수집(n=40)에서 GR IIIx 쪽에 조리개 브라케팅 테스트샷(-f2.8/-f4.0/
 -f8.0 등, 같은 장면을 조리개만 바꿔 반복 촬영, 총 6장)이 섞여 있었음 -
 Phase One의 ISO 차트와 같은 종류의 문제라 파일명 정규식으로 걸러내고
-재계산 (tools/analyze.py의 스킵 패턴에도 반영해서 다음 실행부터는
+재계산 (tools/cli/analyze.py의 스킵 패턴에도 반영해서 다음 실행부터는
 자동으로 빠짐). 영향은 Phase One 때보다 작았음(채도 87.7 -> 84.9,
 표본 비중이 15%로 ISO 테스트의 30%보다 적었기 때문).
 

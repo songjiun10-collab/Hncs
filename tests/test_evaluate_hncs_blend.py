@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_hncs_blend import (
+from tools.research.evaluate_hncs_blend import (
     HARD_CLUSTER_DE, _resize_max_dim, _sign_test_p, load_pairs, summarize,
 )
 
@@ -74,7 +74,7 @@ class TestHardClusterDeConstant(unittest.TestCase):
         self.assertEqual(len(HARD_CLUSTER_DE), 74)
 
     def test_matches_documented_value_for_one_official_pair(self):
-        # tools/evaluate_hncs_structural.py 2026-08 74쌍 재실행 결과
+        # tools/research/evaluate_hncs_structural.py 2026-08 74쌍 재실행 결과
         self.assertAlmostEqual(HARD_CLUSTER_DE["x1d-II-sample-09.jpg"], 17.884)
 
     def test_matches_documented_value_for_one_local_pair(self):

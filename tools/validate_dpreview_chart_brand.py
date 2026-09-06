@@ -2,13 +2,13 @@
 dpreview 스튜디오씬 공용 챠트 데이터베이스(`hybrid_engine/EVALUATION.md`
 "dpreview 스튜디오씬 비교위젯" 절 참고)에서 받은 브랜드별 실챠트 RAW로
 챠트 기반 컬러매트릭스 검증만 한다(DCP/ICC는 발급하지 않음 - 그건
-`tools/fit_leica_sl3p_studio_chart.py`류의 별도 스크립트+사용자 승인이
+`tools/dpreview/fit_leica_sl3p_studio_chart.py`류의 별도 스크립트+사용자 승인이
 필요한 단계).
 
-방법론은 Leica SL3-P 챠트 작업(`tools/fit_leica_sl3p_studio_chart.py`)과
+방법론은 Leica SL3-P 챠트 작업(`tools/dpreview/fit_leica_sl3p_studio_chart.py`)과
 동일: 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승
 (`raw_baseline.fit_color_matrix(weights=...)`), k=min(n,5)-fold
-교차검증. `tools/validate_chart_pipeline_on_external_camera.py`처럼
+교차검증. `tools/dpreview/validate_chart_pipeline_on_external_camera.py`처럼
 ΔE00과 패치별 XYZ RMSE를 항상 같이 내고, 부트스트랩 95% CI(paired diff,
 20000회, 고정시드)도 표본 크기와 무관하게 항상 계산한다
 (`hybrid_engine/CLAUDE.md` 통계 규칙).
@@ -20,7 +20,6 @@ dpreview 스튜디오씬 공용 챠트 데이터베이스(`hybrid_engine/EVALUAT
 
 결과는 <RAW 폴더>/../chart_validation_report.json 에 저장된다(DCP/ICC 없음).
 """
-import glob
 import json
 import os
 import sys
@@ -35,6 +34,21 @@ from hybrid_engine.utils.io import decode_raw_native
 _RAW_EXTS = ("ARW", "CR2", "NEF", "RAF", "ORF", "RW2", "3FR", "DNG")
 _MAX_FOLDS = 5
 CHROMA_WEIGHT = 3.0
+
+
+def _find_raw_paths(data_dir, ext=None):
+    exts_to_try = [ext] if ext else list(_RAW_EXTS)
+    for candidate in exts_to_try:
+        suffix = f".{candidate}".lower()
+        raw_paths = sorted(
+            os.path.join(data_dir, name)
+            for name in os.listdir(data_dir)
+            if name.lower().endswith(suffix)
+            and os.path.isfile(os.path.join(data_dir, name))
+        )
+        if raw_paths:
+            return raw_paths
+    return []
 
 
 def _mean_de(samples_xyz, reference):
@@ -53,11 +67,7 @@ def main():
     reference = chart_baseline.reference_patches_xyz_d50()
 
     exts_to_try = [ext] if ext else list(_RAW_EXTS)
-    raw_paths = []
-    for e in exts_to_try:
-        raw_paths = sorted(glob.glob(os.path.join(data_dir, f"*.{e}")))
-        if raw_paths:
-            break
+    raw_paths = _find_raw_paths(data_dir, ext)
     if not raw_paths:
         print(f"{data_dir}에 지원 RAW 확장자({', '.join(exts_to_try)}) 없음")
         return

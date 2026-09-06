@@ -19,10 +19,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import numpy as np
 
-from tools import diagnose_fuji_autobright_vs_look as ab
-from tools import diagnose_fuji_neutral_render_offset as neutral
-from tools import evaluate_fuji_classic_negative_v2_grid as v2
-from tools import probe_fuji_classic_negative_v2_boundary as boundary
+from tools.fuji import diagnose_fuji_autobright_vs_look as ab
+from tools.fuji import diagnose_fuji_neutral_render_offset as neutral
+from tools.fuji import evaluate_fuji_classic_negative_v2_grid as v2
+from tools.fuji import probe_fuji_classic_negative_v2_boundary as boundary
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SET_DIR = os.path.join(BASE, "datasets", "fuji", "contributed", "local-work-2026-08")

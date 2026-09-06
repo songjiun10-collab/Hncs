@@ -1,4 +1,4 @@
-"""`tools/dcp_export_huesatmap_experimental.py`(core/dcp_export.py 격리
+"""`tools/x2dii/dcp_export_huesatmap_experimental.py`(core/dcp_export.py 격리
 사본 + HueSatMap 태그) 라운드트립 검증. RAW 디코드 없이 순수 구조
 테스트라 일반 스위트에서 돈다."""
 import os
@@ -10,7 +10,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.dcp_export_huesatmap_experimental import (
+from tools.x2dii.dcp_export_huesatmap_experimental import (
     write_dcp, read_dcp,
     TAG_COLOR_MATRIX_1, TAG_PROFILE_HUE_SAT_MAP_DIMS,
     TAG_PROFILE_HUE_SAT_MAP_DATA_1, TAG_PROFILE_HUE_SAT_MAP_ENCODING,

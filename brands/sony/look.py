@@ -2,7 +2,7 @@
 Sony 색감 근사 - population 통계 기반 1차 버전
 
 imaging-resource.com 카메라 리뷰 갤러리 5개 바디(A7/A7R/A7S/A7 III/A7 IV)에서
-미편집 SOOC JPEG를 모았다 (tools/analyze.py의 BRAND_CONFIGS 구조를 그대로
+미편집 SOOC JPEG를 모았다 (tools/cli/analyze.py의 BRAND_CONFIGS 구조를 그대로
 따르되, Canon/Nikon 작업과의 동시편집 충돌을 피하려고 별도 스크립트로 수집).
 EXIF Make에 "sony" 포함, Software에 Photoshop/Lightroom/Capture One/
 Camera Raw 없는 것으로 진짜 SOOC 확인 - leica.py/pentax.py/ricoh_gr.py와

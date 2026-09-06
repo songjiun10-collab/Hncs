@@ -1,4 +1,4 @@
-"""RAW -> Log 컬러스페이스 탭 - tools.raw_pipeline을 그대로 subprocess로
+"""RAW -> Log 컬러스페이스 탭 - tools.cli.raw_pipeline을 그대로 subprocess로
 실행한다."""
 import os
 import subprocess
@@ -20,7 +20,7 @@ AUTO_EXPOSE_MODES = ["없음", "average", "highlight_safe", "matrix"]
 def build_raw_pipeline_command(input_path, output_path, log_space, exposure=0.0,
                                 auto_expose_mode="없음", python_exe=None):
     python_exe = python_exe or sys.executable
-    cmd = [python_exe, "-m", "tools.raw_pipeline", input_path, output_path,
+    cmd = [python_exe, "-m", "tools.cli.raw_pipeline", input_path, output_path,
            "--log-space", log_space]
     if exposure:
         cmd += ["--exposure", str(exposure)]

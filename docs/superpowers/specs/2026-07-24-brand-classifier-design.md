@@ -111,7 +111,7 @@ pentax/phaseone/ricoh_gr/sigma/sony, 총 933장)에 대해 이미 픽셀 단위
   feature_set)`(전체 LOO 루프, confusion matrix 반환) - numpy만 사용,
   기존 `core/stats.py`/`core/validation.py`와 같은 스타일(순수 함수,
   부작용 없음).
-- `tools/classify_brand.py`: CLI. `python3 -m tools.classify_brand
+- `tools/cli/classify_brand.py`: CLI. `python3 -m tools.cli.classify_brand
   --features tone_color_gamut` (Set A, 기본값) 또는 `--features all`
   (Set B) - confusion matrix + 지표를 콘솔에 표로 출력. `--csv PATH`로
   confusion matrix를 파일로도 저장 가능(선택적 플래그).
@@ -119,7 +119,7 @@ pentax/phaseone/ricoh_gr/sigma/sony, 총 933장)에 대해 이미 픽셀 단위
 ### 6. 문서화
 
 README.md/README.ko.md에 짧은 절 추가(다른 실험적/연구용 도구, 예:
-`tools/highlight_rolloff_signal.py`와 비슷한 톤 - "이런 걸 해봤고 결과는
+`tools/research/highlight_rolloff_signal.py`와 비슷한 톤 - "이런 걸 해봤고 결과는
 이렇다"). Set A/B confusion matrix 핵심 수치와 얇은 표본 브랜드에 대한
 해석 주의사항 포함. `docs/project_structure.md`/`.en.md`에 두 파일 행 추가.
 
@@ -140,7 +140,7 @@ README.md/README.ko.md에 짧은 절 추가(다른 실험적/연구용 도구, �
   포함되지 않는지 확인(제외 목록이 실수로 깨지는 걸 방지).
 - 4개 시그니처 파일의 파일셋이 불일치하는 합성 케이스에서 조인이 올바르게
   경고를 내고 교집합만 쓰는지 확인.
-- `python3 -m tools.classify_brand`가 실제 `datasets/`로 end-to-end 실행돼
+- `python3 -m tools.cli.classify_brand`가 실제 `datasets/`로 end-to-end 실행돼
   에러 없이 confusion matrix를 출력하는지는 수동 스모크테스트로 확인
   (다른 `tools/*.py` CLI들과 동일한 관례 - 실데이터 기반 실행은 자동화된
   unit test 범위 밖).

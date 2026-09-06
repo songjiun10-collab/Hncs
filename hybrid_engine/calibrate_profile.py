@@ -3,7 +3,7 @@
 
 V0.1의 `assets/profiles/hasselblad.json`은 "미검증 seed"였다 - 이 스크립트는
 `raw_calib_cache/`에 이미 캐시된 핫셀블라드 raw+jpeg 페어(원래 HNCS 프로젝트의
-`tools/calibrate.py`가 쓰던 것과 동일한 소스)로 `utils/evaluate.py`의
+`tools/fit/calibrate.py`가 쓰던 것과 동일한 소스)로 `utils/evaluate.py`의
 CIEDE2000 ΔE 루프를 실제로 돌려서 파라미터를 좌표하강으로 탐색한다.
 
 계산량 때문에 원본 해상도(최대 1억화소급) 그대로 쓰지 않고, 캘리브레이션
@@ -32,7 +32,7 @@ CALIB_MAX_DIM = 250  # 캘리브레이션 전용 축소 해상도 - 최종 profi
 
 
 def _find_pairs():
-    """**정정(2026-09-01)**: `tools.calibrate._resolve_pairs()`는 공식
+    """**정정(2026-09-01)**: `tools.fit.calibrate._resolve_pairs()`는 공식
     13쌍 중 9쌍(B0000994/B0001395/x1d-II-sample-01·02·06·09/
     x1d-xcd45-01·03·04)이 타깃 JPEG Software EXIF에 Adobe Photoshop/
     Lightroom Classic이 찍힌 편집본임을 확인하고
@@ -43,12 +43,12 @@ def _find_pairs():
     `hybrid_engine/EVALUATION.md` "공식 13쌍 잔차 L-채널 보정 시도" 절의
     2026-09-01 추가 정정 참고, `hybrid_engine/verify_l_channel_residual.py`가
     Software EXIF로 실증). 목록을 중복 관리하지 않고
-    `tools.calibrate._CONTAMINATED_OFFICIAL_PAIRS`를 그대로 재사용한다 -
+    `tools.fit.calibrate._CONTAMINATED_OFFICIAL_PAIRS`를 그대로 재사용한다 -
     두 파이프라인이 같은 "공식 13쌍" 소스를 갖다 쓰므로 기준도 하나여야
     한다. **주의**: 이 필터는 `_find_pairs()`가 반환하는 페어 목록만
     바꾼다 - `hasselblad.json`(Never 규칙 대상) 자체는 이 커밋으로
     재보정되지 않는다, 별도의 명시적 승인이 필요하다."""
-    from tools.calibrate import _CONTAMINATED_OFFICIAL_PAIRS
+    from tools.fit.calibrate import _CONTAMINATED_OFFICIAL_PAIRS
     raw_paths = sorted(glob.glob(os.path.join(CACHE_DIR, "*.3FR")) +
                         glob.glob(os.path.join(CACHE_DIR, "*.fff")))
     pairs = []
@@ -1172,7 +1172,7 @@ def _sign_test_p(wins, losses):
 
 def summarize(label_a, des_a, label_b, des_b, n_bootstrap=20000, seed=0):
     """페어드 비교 - des_b가 des_a보다 작으면(=더 좋으면) 양수 improvement.
-    tools/evaluate_wb_pipeline_variants.py의 summarize()와 같은 통계
+    tools/research/evaluate_wb_pipeline_variants.py의 summarize()와 같은 통계
     (부트스트랩 CI, 부호검정). 2026-08에 calibrate_profile_{canon,fuji,
     leica,nikon,sigma,sony}.py 6개 파일에 문자 그대로 복사돼있던 걸
     코드 리뷰로 발견해서 여기로 합쳤다 - 이 함수는 브랜드별 로더

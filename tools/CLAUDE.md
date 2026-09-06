@@ -70,10 +70,10 @@ raw ext) - scriptable via `opencli browser main eval`. JPG URLs
 `opencli browser main open <raw_url>` (navigate), which triggers a real
 Chrome download to `~/Downloads` (needs Files-and-Folders TCC permission
 granted to the Claude app itself, not Terminal - restart the app after
-granting). `tools/download_xcd_lens_gallery.py` and
-`tools/download_x1d_x2d100c_restore.py` (2026-08) are worked examples of
+granting). `tools/dpreview/download_xcd_lens_gallery.py` and
+`tools/dpreview/download_x1d_x2d100c_restore.py` (2026-08) are worked examples of
 this whole pipeline (link CSV -> curl+browser download -> manifest.csv).
-`tools/split_local_pool.py` (2026-08) does the inverse: given a folder
+`tools/data/split_local_pool.py` (2026-08) does the inverse: given a folder
 with several brands' raw+jpeg mixed together, matches pairs once
 globally then routes each into the right `datasets/<brand>/contributed/`
 by the raw file's EXIF Make.

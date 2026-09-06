@@ -8,7 +8,7 @@ brands/sigma.py)을 raw+jpeg 실측으로 다시 튜닝한 변형. `leica_raw.py
 `shoulder_start=0.78`/`clahe_clip=1.25`는 population-fit 공통 관례대로
 핫셀블라드 값을 검증 없이 차용한 것이었다. `datasets/sigma/contributed/`의
 83쌍(전량 디코드 성공, Sigma BF/fp L 등 전용 함수가 있는 바디 포함
-풀링)에 `tools/fit_population_body_de00_grid.py sigma`로 ΔE00 직접
+풀링)에 `tools/fit/fit_population_body_de00_grid.py sigma`로 ΔE00 직접
 목적함수 그리드서치(252콤보) + 5-fold LOO:
 
 | 단계 | ΔE00 | 개선폭 | 부호검정 p | 부트스트랩 95% CI |
@@ -29,8 +29,8 @@ p=0.86, CI[-1.390,+0.302]) 기각·삭제됐다(이 세션 앞부분 기록) - �
 매트릭스 없는 순수 톤커브를, fp L 단독이 아니라 Sigma 전체 83쌍
 풀링으로 다시 물은 별개 실험이고, 여기서는 신호가 있었다.
 
-재현: `python3 -m tools.fit_population_body_de00_grid sigma` (200/400px),
-`python3 -m tools.evaluate_population_raw_look_native_confirm sigma 0.02 0.82 1.0 3.0`
+재현: `python3 -m tools.fit.fit_population_body_de00_grid sigma` (200/400px),
+`python3 -m tools.fit.evaluate_population_raw_look_native_confirm sigma 0.02 0.82 1.0 3.0`
 (원본 픽셀 재확인).
 """
 from core.engine import make_population_fit_look

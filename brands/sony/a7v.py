@@ -4,7 +4,7 @@ apply_sony_a7v_look - Experimental. Sony a7 V(ILCE-7M5) 전용
 캘리브레이션. brands/sony.py는 population-fit(raw 기준선 없음, 카메라
 JPEG population 통계를 직접 film_curve 파라미터로 대입)뿐이었는데, 처음
 확보한 a7 V raw(.ARW)+jpeg 75쌍으로 Hasselblad와 동일 방법론(그레이딩 전
-중립 렌더링 -> 베이스라인, 카메라 JPEG -> 타깃, `tools.calibrate`의
+중립 렌더링 -> 베이스라인, 카메라 JPEG -> 타깃, `tools.fit.calibrate`의
 b2/w995 percentile RMSE 그리드서치 + LOO)을 적용했다.
 
 `apply_sony_look()`은 이 실험으로 손대지 않는다(brands/CLAUDE.md 원칙) -
@@ -38,10 +38,10 @@ exposure_gamma 같은 전역 노출 리프트 단계는 아직 없음(Hasselblad
 apply_hncs의 v10 단계에 해당 - white_point를 1.35까지 밀어올린 것 자체가
 비슷한 역할을 우회적으로 하고 있을 가능성이 있지만 별도 파라미터로
 분리해서 검증한 적은 없음). 재현: `python3 -m
-tools.evaluate_sony_a7v_grid_search`.
+tools.fit.evaluate_sony_a7v_grid_search`.
 
 **정정(2026-08, white_point=1.35 기각 - RMSE와 ΔE00이 정반대로 나옴)**:
-위 white_point=1.35 채택 직후 `tools/evaluate_sony_a7v_de00.py`(신규)로
+위 white_point=1.35 채택 직후 `tools/fit/evaluate_sony_a7v_de00.py`(신규)로
 실제 ΔE00을 재보니 `apply_sony_look`(기존) 대비 **오히려 유의하게
 나빴다** - 평균 ΔE00 16.366(기존) -> 16.534(신규), 개선폭 -1.02%,
 5승53패, 부호검정 p<0.0001, 부트스트랩 95% CI [-0.203, -0.126](0
@@ -62,7 +62,7 @@ drop-one 30.3~32.5%(안정). ΔE00 재확인 결과는 아래 별도 절 참고.
 기존보다 유의하게 나빴다(16.550 vs 기존 16.366, 개선폭 -1.12%, 4승54패,
 p<0.0001, CI [-0.223,-0.147]) - white_point 값 자체가 아니라 **b2/w995
 percentile RMSE를 목적함수로 쓰는 그리드서치 방식 자체**가 ΔE00과 방향이
-안 맞는 구조적 문제였다는 뜻. `tools/evaluate_sony_a7v_de00_grid.py`
+안 맞는 구조적 문제였다는 뜻. `tools/fit/evaluate_sony_a7v_de00_grid.py`
 (신규)로 ΔE00(CIEDE2000)을 직접 목적함수로 삼아 140콤보 그리드를
 재검색(저해상도 200px로 그리드 선택, 고해상도 400px로 최종 평가) -
 LOO 결과 `toe_lift=0.06, shoulder_start=0.82, white_point=1.0`
@@ -71,7 +71,7 @@ LOO 결과 `toe_lift=0.06, shoulder_start=0.82, white_point=1.0`
 0 미포함). RMSE 그리드서치가 냈던 31~53%대 "개선"은 전부 목적함수
 자체의 결함이었고, ΔE00 기준 진짜 개선 여력은 1% 미만이라는 게 최종
 결론 - 최종 채택값을 이걸로 갱신했다. 재현: `python3 -m
-tools.evaluate_sony_a7v_de00_grid`.
+tools.fit.evaluate_sony_a7v_de00_grid`.
 """
 from core.engine import make_population_fit_look
 

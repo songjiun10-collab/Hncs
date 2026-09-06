@@ -2,10 +2,24 @@
 RMSE helpers (no RAW/cv2 dependency, runs under default python3) plus an
 import smoke test."""
 import unittest
+import os
+import tempfile
 
 import numpy as np
 
-from tools.validate_dpreview_chart_brand import _mean_de, _rmse_xyz
+from tools.validate_dpreview_chart_brand import _find_raw_paths, _mean_de, _rmse_xyz
+
+
+class TestFindRawPaths(unittest.TestCase):
+    def test_extension_matching_is_case_insensitive(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            open(os.path.join(tmp, "a.rw2"), "wb").close()
+            open(os.path.join(tmp, "b.RW2"), "wb").close()
+            open(os.path.join(tmp, "c.Rw2"), "wb").close()
+            self.assertEqual(
+                [os.path.basename(p) for p in _find_raw_paths(tmp, "RW2")],
+                ["a.rw2", "b.RW2", "c.Rw2"],
+            )
 
 
 class TestMeanDe(unittest.TestCase):

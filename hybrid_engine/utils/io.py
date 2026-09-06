@@ -22,14 +22,14 @@ def decode_raw(raw_path, demosaic_algorithm=None, chromatic_aberration=None, hal
     demosaic_algorithm: None(기본값)이면 rawpy 기본 데모자이크를 쓰고
     기존 호출부와 100% 동일하게 동작한다. rawpy.DemosaicAlgorithm 값을
     넘기면 raw.postprocess()에 그대로 전달된다(예: X-Trans용 DHT 비교
-    실험 - tools/evaluate_fuji_demosaic.py 참고). AMAZE는 이 프로젝트가
+    실험 - tools/fuji/evaluate_fuji_demosaic.py 참고). AMAZE는 이 프로젝트가
     쓰는 LibRaw 빌드에 GPL3 데모자이크 팩이 없어 런타임 에러가 난다.
 
     chromatic_aberration: None(기본값)이면 색수차 보정 없이 기존과
     100% 동일하게 동작한다(rawpy 기본값 (1.0, 1.0)과 결과가 바이트
     단위로 동일함을 실측 확인). (red_scale, blue_scale) 튜플을 넘기면
     raw.postprocess()에 그대로 전달돼 R/B 채널을 스케일링해서 렌즈
-    색수차를 보정한다(tools/evaluate_chromatic_aberration.py 참고).
+    색수차를 보정한다(tools/research/evaluate_chromatic_aberration.py 참고).
 
     half_size: True면 데모자이크를 건너뛰고 2x2 Bayer 블록을 그대로
     묶어 절반 해상도로 뽑는다(LibRaw half_size) - 디코드 시간과 메모리가
@@ -139,7 +139,7 @@ def load_image_linear(path, resize_to=None):
 
 def decode_raw_darktable(raw_path):
     """RAW -> Linear RGB, darktable-cli 경유(연구용 전용 -
-    decode_raw()를 대체하지 않는다, tools/evaluate_darktable_vs_rawpy.py
+    decode_raw()를 대체하지 않는다, tools/research/evaluate_darktable_vs_rawpy.py
     전용). float64 [0, ~) 범위, shape (H, W, 3), RGB 순서,
     decode_raw()와 같은 sRGB(Rec.709) 프라이머리 기준 선형광 값이지만
     데모자이크/카메라 매트릭스/화이트밸런스를 rawpy(LibRaw)가 아니라
@@ -159,7 +159,7 @@ def decode_raw_darktable(raw_path):
     개만 실제로 렌더링해서, 나머지 스트라이프가 전부 새까맣게 나온다
     (에러도 안 나고 종료 코드도 0 - 조용히 잘못된 결과를 냄, 실측
     확인: 이 컨테이너의 4코어에서 OMP_NUM_THREADS=1이면 이미지의
-    75%가 검게 잘림). tools/evaluate_darktable_vs_rawpy.py는 rawpy의
+    75%가 검게 잘림). tools/research/evaluate_darktable_vs_rawpy.py는 rawpy의
     X-Trans 논디터미니즘 때문에 자기 프로세스 환경에
     OMP_NUM_THREADS=1을 설정하는데, 그게 부모→자식으로 그대로
     전달되면서 처음 실제로 벌어진 문제였다 - 그래서 이 함수는 호출자의
@@ -172,7 +172,7 @@ def decode_raw_darktable(raw_path):
 
     subprocess+임시파일 기반이라 decode_raw()보다 훨씬 느리다(파일당
     10초 이상) - 프로덕션 경로가 아니라
-    tools/evaluate_darktable_vs_rawpy.py 전용이다."""
+    tools/research/evaluate_darktable_vs_rawpy.py 전용이다."""
     env = os.environ.copy()
     env.pop("OMP_NUM_THREADS", None)
     env.pop("OMP_THREAD_LIMIT", None)

@@ -52,7 +52,7 @@ original `DSCF9556.RAF` Itaewon source used for earlier versions of this
 grid lives in the `999_FUJI` contributed library, which is git-ignored and
 not present in every checkout, so this regeneration reuses the crossing
 photo instead. Not a close-up of any specific person. Built with
-`tools/build_readme_demo.py`, which has to be **re-run by hand** whenever
+`tools/demo/build_readme_demo.py`, which has to be **re-run by hand** whenever
 a look ships - this exact count has already drifted from the last real regeneration
 (44, at commit 317f3bd) twice - once to 55, caught only while fixing an
 unrelated GUI-tab drift in this same sweep, then to 56 a commit later
@@ -130,7 +130,7 @@ needed, just open it.
 - [x] GitHub Actions CI (runs automatically on every push/PR)
 - [x] Population-statistics reproducibility audit tooling
 - [x] RAW -> Log colorspace (F-Log2/S-Log3/V-Log/etc.) + `.cube` LUT
-      pipeline (`tools/raw_pipeline.py`, separate from the brand engine)
+      pipeline (`tools/cli/raw_pipeline.py`, separate from the brand engine)
 - [x] EXIF-driven cross-camera color conversion engine V0.1
       (`hybrid_engine/`, supports both RAW and JPEG input, brand tone-curve
       inversion + a ΔE evaluation loop)

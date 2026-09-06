@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `tools/video_engine.py`가 출력 비디오에 입력의 오디오 트랙을 기본으로 보존하게 만든다 - `imageio-ffmpeg`가 제공하는 정적 ffmpeg 바이너리로 색보정된 무음 비디오에 원본 오디오를 무손실 remux하는 후처리 단계를 추가한다.
+**Goal:** `tools/cli/video_engine.py`가 출력 비디오에 입력의 오디오 트랙을 기본으로 보존하게 만든다 - `imageio-ffmpeg`가 제공하는 정적 ffmpeg 바이너리로 색보정된 무음 비디오에 원본 오디오를 무손실 remux하는 후처리 단계를 추가한다.
 
 **Architecture:** 이미 리뷰를 통과한 `process_video()`(cv2 기반 프레임 처리, 오디오 없음)는 한 줄도 건드리지 않는다. 새 함수 `mux_audio()`가 ffmpeg subprocess로 무손실 스트림 복사(`-c:v copy -c:a copy`) remux를 수행하고, 새 함수 `process_video_with_audio()`가 `process_video()` → 임시 파일 → `mux_audio()` 순서로 오케스트레이션한다. `main()`은 이제 `process_video_with_audio()`를 기본으로 호출한다(opt-out 플래그 없음).
 
@@ -10,18 +10,18 @@
 
 ## Global Constraints
 
-- **`process_video()`(`tools/video_engine.py`, 기존 함수)는 수정 금지.** 이미 최종 리뷰(Opus)를 통과한 코드 - 새 기능은 그 위에 얹는 순수 추가로만 구현한다.
+- **`process_video()`(`tools/cli/video_engine.py`, 기존 함수)는 수정 금지.** 이미 최종 리뷰(Opus)를 통과한 코드 - 새 기능은 그 위에 얹는 순수 추가로만 구현한다.
 - **오디오는 항상 보존을 시도한다(입력에 있으면) - opt-out 플래그(`--no-audio` 등)는 만들지 않는다.** v1은 이 스펙에서 opt-in/opt-out 둘 다 없이 단일 기본 동작으로 확정됐다(사용자 확인 완료).
 - **ffmpeg는 오직 `imageio_ffmpeg.get_ffmpeg_exe()`가 반환하는 번들 바이너리만 쓴다** - 시스템 `ffmpeg`(PATH 검색 등)에 의존하지 않는다.
 - **오디오 재인코딩 금지** - `-c:v copy -c:a copy`(스트림 복사)만 쓴다. 볼륨 정규화, 코덱 변환 등 일절 안 함.
 - **오디오 매핑은 `-map 0:v:0 -map 1:a:0?`(비디오는 필수, 오디오는 선택)만 쓴다** - `?`가 없으면 오디오 없는 입력에서 ffmpeg가 에러를 낸다(설계 단계에서 실측 확인). 첫 번째 오디오 트랙(`1:a:0`)만 다룬다 - 다중 트랙 선택 로직은 만들지 않는다.
 - **`requirements.txt`에 `imageio-ffmpeg` 한 줄만 추가** - 다른 오디오/비디오 라이브러리(`moviepy`, `ffmpeg-python`, `av` 등)는 도입하지 않는다.
 - **다음 6곳의 "오디오 미보존" 관련 문구를 전부 새 기본 동작에 맞게 고친다**(스펙이 지목한 5곳 + 구현 단계에서 추가로 발견된 1곳):
-  1. `tools/video_engine.py` 모듈 docstring
-  2. `tools/video_engine.py`의 `main()` 함수 안 `argparse.ArgumentParser(description=...)` 문자열 (스펙엔 명시 안 됐지만 동일한 "오디오 미보존" 주장을 담고 있어 이 계획에서 추가로 포함)
+  1. `tools/cli/video_engine.py` 모듈 docstring
+  2. `tools/cli/video_engine.py`의 `main()` 함수 안 `argparse.ArgumentParser(description=...)` 문자열 (스펙엔 명시 안 됐지만 동일한 "오디오 미보존" 주장을 담고 있어 이 계획에서 추가로 포함)
   3. `README.md`의 "Video engine" 섹션 "Known limitations"
   4. `README.ko.md`의 대응 섹션 "알려진 한계"
-  5. `docs/project_structure.md`의 `tools/video_engine.py` 테이블 행
+  5. `docs/project_structure.md`의 `tools/cli/video_engine.py` 테이블 행
   6. `docs/project_structure.en.md`의 대응 행
 - **`process_video()` 자체의 docstring은 유지하되 한 문장만 추가** - "오디오 트랙은 보존하지 않는다"는 문장은 그 함수 자체에 대해선 여전히 사실이므로 지우지 않고, "(오디오는 `process_video_with_audio()`가 별도로 처리)"를 덧붙인다.
 - 테스트는 `unittest.TestCase` 스타일(프로젝트 관례, pytest 미사용).
@@ -34,7 +34,7 @@
 
 **Files:**
 - Modify: `requirements.txt` (끝에 `imageio-ffmpeg` 한 줄 추가)
-- Modify: `tools/video_engine.py` (import 4개 추가 + `mux_audio()` 함수 추가 - `process_video()`/`main()`은 이 태스크에서 변경 없음)
+- Modify: `tools/cli/video_engine.py` (import 4개 추가 + `mux_audio()` 함수 추가 - `process_video()`/`main()`은 이 태스크에서 변경 없음)
 - Test: `tests/test_video_engine.py` (기존 파일에 추가)
 
 **Interfaces:**
@@ -89,10 +89,10 @@ import cv2
 import imageio_ffmpeg
 import numpy as np
 
-from tools.video_engine import SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video
+from tools.cli.video_engine import SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video
 ```
 
-(마지막 줄의 `from tools.video_engine import ...`가 기존엔 `mux_audio` 없이 3개였던 것에 `mux_audio`를 추가한 것 - 나머지 기존 import는 그대로 유지.)
+(마지막 줄의 `from tools.cli.video_engine import ...`가 기존엔 `mux_audio` 없이 3개였던 것에 `mux_audio`를 추가한 것 - 나머지 기존 import는 그대로 유지.)
 
 기존 `_make_synthetic_video()` 헬퍼 함수 **바로 다음**에 새 헬퍼 3개 추가:
 
@@ -188,11 +188,11 @@ class TestMuxAudio(unittest.TestCase):
 - [ ] **Step 4: 테스트 실패 확인**
 
 Run: `python3 -m unittest tests.test_video_engine -v`
-Expected: `ImportError: cannot import name 'mux_audio' from 'tools.video_engine'` 로 FAIL
+Expected: `ImportError: cannot import name 'mux_audio' from 'tools.cli.video_engine'` 로 FAIL
 
 - [ ] **Step 5: 최소 구현 작성**
 
-`tools/video_engine.py` 상단 import 블록(`import argparse` / `import inspect` / `import sys` 다음, `import cv2` 앞)에 추가:
+`tools/cli/video_engine.py` 상단 import 블록(`import argparse` / `import inspect` / `import sys` 다음, `import cv2` 앞)에 추가:
 
 ```python
 import argparse
@@ -242,7 +242,7 @@ Expected: 전부 PASS, 총 390개(기존 386 + 4)
 - [ ] **Step 8: 커밋**
 
 ```bash
-git add requirements.txt tools/video_engine.py tests/test_video_engine.py
+git add requirements.txt tools/cli/video_engine.py tests/test_video_engine.py
 git commit -m "Add mux_audio(): lossless ffmpeg remux via imageio-ffmpeg"
 ```
 
@@ -251,7 +251,7 @@ git commit -m "Add mux_audio(): lossless ffmpeg remux via imageio-ffmpeg"
 ### Task 2: `process_video_with_audio()` + CLI를 오디오 보존 기본값으로 전환
 
 **Files:**
-- Modify: `tools/video_engine.py` (import 5개 추가 + `process_video_with_audio()` 함수 추가 + `main()`이 이 함수를 호출하도록 변경 + `process_video()` docstring 한 문장 추가)
+- Modify: `tools/cli/video_engine.py` (import 5개 추가 + `process_video_with_audio()` 함수 추가 + `main()`이 이 함수를 호출하도록 변경 + `process_video()` docstring 한 문장 추가)
 - Test: `tests/test_video_engine.py` (기존 파일에 추가)
 
 **Interfaces:**
@@ -262,11 +262,11 @@ git commit -m "Add mux_audio(): lossless ffmpeg remux via imageio-ffmpeg"
 
 `tests/test_video_engine.py`의 import 줄을 갱신 - 기존:
 ```python
-from tools.video_engine import SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video
+from tools.cli.video_engine import SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video
 ```
 다음으로 교체:
 ```python
-from tools.video_engine import (
+from tools.cli.video_engine import (
     SUPPORTED_BRANDS, brand_video_params, mux_audio, process_video,
     process_video_with_audio,
 )
@@ -347,11 +347,11 @@ class TestProcessVideoWithAudio(unittest.TestCase):
 - [ ] **Step 2: 테스트 실패 확인**
 
 Run: `python3 -m unittest tests.test_video_engine -v`
-Expected: `ImportError: cannot import name 'process_video_with_audio' from 'tools.video_engine'` 로 FAIL
+Expected: `ImportError: cannot import name 'process_video_with_audio' from 'tools.cli.video_engine'` 로 FAIL
 
 - [ ] **Step 3: 최소 구현 작성**
 
-`tools/video_engine.py` 상단 import 블록에 4개 추가(Task 1에서 `import subprocess`/`import imageio_ffmpeg`는 이미 추가돼 있음 - 이번엔 `os`/`shutil`/`tempfile` 추가):
+`tools/cli/video_engine.py` 상단 import 블록에 4개 추가(Task 1에서 `import subprocess`/`import imageio_ffmpeg`는 이미 추가돼 있음 - 이번엔 `os`/`shutil`/`tempfile` 추가):
 
 ```python
 import argparse
@@ -429,7 +429,7 @@ python3 -c "
 from tests.test_video_engine import _make_synthetic_video_with_audio
 _make_synthetic_video_with_audio('/tmp/smoke_input_audio.mp4', duration=2, fps=24)
 "
-python3 -m tools.video_engine /tmp/smoke_input_audio.mp4 /tmp/smoke_output_audio.mp4 --brand sigma
+python3 -m tools.cli.video_engine /tmp/smoke_input_audio.mp4 /tmp/smoke_output_audio.mp4 --brand sigma
 python3 -c "
 from tests.test_video_engine import _has_audio_stream
 print('has audio:', _has_audio_stream('/tmp/smoke_output_audio.mp4'))
@@ -446,7 +446,7 @@ Expected: 전부 PASS, 총 396개(기존 390 + 6)
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add tools/video_engine.py tests/test_video_engine.py
+git add tools/cli/video_engine.py tests/test_video_engine.py
 git commit -m "Wire process_video_with_audio() as the CLI's default entry point"
 ```
 
@@ -455,16 +455,16 @@ git commit -m "Wire process_video_with_audio() as the CLI's default entry point"
 ### Task 3: 문서화(6곳) + 전체 테스트 스위트 확인 + 푸시
 
 **Files:**
-- Modify: `tools/video_engine.py` (모듈 docstring + `main()`의 `description=` 문자열)
+- Modify: `tools/cli/video_engine.py` (모듈 docstring + `main()`의 `description=` 문자열)
 - Modify: `README.md`
 - Modify: `README.ko.md`
 - Modify: `docs/project_structure.md`
 - Modify: `docs/project_structure.en.md`
 
 **Interfaces:**
-- Consumes: Task 1/2에서 만든 `mux_audio`/`process_video_with_audio` (이름만 문서에 인용, 코드 변경 없음 - `tools/video_engine.py`의 docstring/description 문자열 2곳만 예외)
+- Consumes: Task 1/2에서 만든 `mux_audio`/`process_video_with_audio` (이름만 문서에 인용, 코드 변경 없음 - `tools/cli/video_engine.py`의 docstring/description 문자열 2곳만 예외)
 
-- [ ] **Step 1: `tools/video_engine.py` 모듈 docstring 수정**
+- [ ] **Step 1: `tools/cli/video_engine.py` 모듈 docstring 수정**
 
 현재(파일 맨 위, 1~24번째 줄 부근):
 ```python
@@ -490,7 +490,7 @@ Fujifilm(프리셋마다 CLAHE 사용이 제각각)과 Hasselblad(별도 파이�
 mux 도구가 없다(cv2가 FFmpeg를 내장 빌드했지만 파이썬에서 오디오
 스트림을 다루는 경로는 별도로 없음).
 
-  python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+  python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon
 """
 ```
 
@@ -545,24 +545,24 @@ imageio-ffmpeg(정적 ffmpeg 바이너리를 pip로 받아옴)로 색보정된 �
 
 현재(56번째 줄):
 ```
-| `tools/video_engine.py` | 비디오 파일(mp4)에 population-fit 브랜드 룩(10개: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony) 프레임 단위 적용 CLI - `python3 -m tools.video_engine input.mp4 output.mp4 --brand canon` (오디오 미보존, CLAHE 생략 - 사진 모드와 동일 출력 아님) |
+| `tools/cli/video_engine.py` | 비디오 파일(mp4)에 population-fit 브랜드 룩(10개: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony) 프레임 단위 적용 CLI - `python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon` (오디오 미보존, CLAHE 생략 - 사진 모드와 동일 출력 아님) |
 ```
 
 다음으로 교체:
 ```
-| `tools/video_engine.py` | 비디오 파일(mp4)에 population-fit 브랜드 룩(10개: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony) 프레임 단위 적용 CLI - `python3 -m tools.video_engine input.mp4 output.mp4 --brand canon` (오디오 기본 보존 - imageio-ffmpeg 무손실 remux, CLAHE 생략 - 사진 모드와 동일 출력 아님) |
+| `tools/cli/video_engine.py` | 비디오 파일(mp4)에 population-fit 브랜드 룩(10개: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony) 프레임 단위 적용 CLI - `python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon` (오디오 기본 보존 - imageio-ffmpeg 무손실 remux, CLAHE 생략 - 사진 모드와 동일 출력 아님) |
 ```
 
 - [ ] **Step 6: `docs/project_structure.en.md` 대응 행 수정**
 
 현재(56번째 줄):
 ```
-| `tools/video_engine.py` | Applies a population-fit brand look to a video file (mp4) frame-by-frame, CLI - `python3 -m tools.video_engine input.mp4 output.mp4 --brand canon` (10 brands: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony; audio not preserved; skips CLAHE - not identical output to photo mode) |
+| `tools/cli/video_engine.py` | Applies a population-fit brand look to a video file (mp4) frame-by-frame, CLI - `python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon` (10 brands: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony; audio not preserved; skips CLAHE - not identical output to photo mode) |
 ```
 
 다음으로 교체:
 ```
-| `tools/video_engine.py` | Applies a population-fit brand look to a video file (mp4) frame-by-frame, CLI - `python3 -m tools.video_engine input.mp4 output.mp4 --brand canon` (10 brands: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony; audio preserved by default via imageio-ffmpeg lossless remux; skips CLAHE - not identical output to photo mode) |
+| `tools/cli/video_engine.py` | Applies a population-fit brand look to a video file (mp4) frame-by-frame, CLI - `python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon` (10 brands: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony; audio preserved by default via imageio-ffmpeg lossless remux; skips CLAHE - not identical output to photo mode) |
 ```
 
 - [ ] **Step 7: 전체 테스트 스위트 실행**
@@ -573,7 +573,7 @@ Expected: 전부 PASS, 396개(Task 1/2에서 늘어난 개수 그대로 - 이 �
 - [ ] **Step 8: 커밋 + 푸시**
 
 ```bash
-git add tools/video_engine.py README.md README.ko.md docs/project_structure.md docs/project_structure.en.md
+git add tools/cli/video_engine.py README.md README.ko.md docs/project_structure.md docs/project_structure.en.md
 git commit -m "Document audio-preservation as video_engine's new default behavior"
 git push -u origin claude/unknown-character-0x48vp
 ```

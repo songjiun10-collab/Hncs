@@ -2,7 +2,7 @@
 공식 raw+jpeg 페어 리스트에 더해주는 공용 헬퍼. evaluate_hncs_structural.py,
 evaluate_chromatic_aberration.py, evaluate_hncs_blend.py 세 스크립트 모두
 "공식 13쌍만 쓰던 load_pairs()"에 이 함수로 로컬 페어를 얹어 확장한다
-(2026-08, 당시 local-mixed-2026-07 기여분 61쌍 기준 74쌍). tools/calibrate.py의
+(2026-08, 당시 local-mixed-2026-07 기여분 61쌍 기준 74쌍). tools/fit/calibrate.py의
 collect_local_pairs()를 그대로 재사용하므로 파일 존재 확인 로직이
 중복되지 않는다.
 
@@ -18,7 +18,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from tools.calibrate import collect_local_pairs
+from tools.fit.calibrate import collect_local_pairs
 
 
 def load_local_pairs():

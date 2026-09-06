@@ -4,7 +4,7 @@
 
 **Goal:** Determine, with full LOO cross-validation and significance testing, whether rawpy's `chromatic_aberration` decode-stage parameter reduces ΔE against real camera JPEGs for the 13 real Hasselblad raw+jpeg pairs already on disk — a genuinely new axis (decode stage) none of this session's 20+ prior tuning experiments (all post-decode) have touched.
 
-**Architecture:** Add an optional `chromatic_aberration` parameter to the existing `decode_raw()` utility (default `None` preserves current behavior for every existing call site, mirroring the `demosaic_algorithm` parameter already added for the Fuji demosaic experiment). Then a standalone research script grid-searches `(red_scale, blue_scale)` over a 9x9 grid with leave-one-out cross-validation across the 13 pairs, reusing this project's established `summarize()`/`_sign_test_p()` significance-testing pattern (`tools/evaluate_hncs_structural.py`, `tools/evaluate_darktable_vs_rawpy.py`).
+**Architecture:** Add an optional `chromatic_aberration` parameter to the existing `decode_raw()` utility (default `None` preserves current behavior for every existing call site, mirroring the `demosaic_algorithm` parameter already added for the Fuji demosaic experiment). Then a standalone research script grid-searches `(red_scale, blue_scale)` over a 9x9 grid with leave-one-out cross-validation across the 13 pairs, reusing this project's established `summarize()`/`_sign_test_p()` significance-testing pattern (`tools/research/evaluate_hncs_structural.py`, `tools/research/evaluate_darktable_vs_rawpy.py`).
 
 **Tech Stack:** Python 3, `rawpy` (already a dependency), `colour-science` (via `hybrid_engine.utils.evaluate`), `numpy`, `opencv-python` (`cv2`), `unittest`.
 
@@ -12,15 +12,15 @@
 
 - `brands/hasselblad.py`'s `apply_hncs()` must NEVER be modified.
 - `hybrid_engine/assets/profiles/hasselblad.json` and any `.dcp` calibration artifact must NEVER be touched by this experiment.
-- `decode_raw(path)` and `decode_raw(path, demosaic_algorithm=...)` (all existing call sites, e.g. `hybrid_engine/main.py`, `hybrid_engine/evaluation/fidelity.py`, `hybrid_engine/calibrate_profile.py`, `hybrid_engine/utils/evaluate.py`, `tools/evaluate_hncs_structural.py`, `tools/evaluate_fuji_demosaic.py`, etc.) must see **zero behavior change** — the new `chromatic_aberration` parameter must default to `None` and only affect `raw.postprocess()`'s kwargs when explicitly set.
+- `decode_raw(path)` and `decode_raw(path, demosaic_algorithm=...)` (all existing call sites, e.g. `hybrid_engine/main.py`, `hybrid_engine/evaluation/fidelity.py`, `hybrid_engine/calibrate_profile.py`, `hybrid_engine/utils/evaluate.py`, `tools/research/evaluate_hncs_structural.py`, `tools/fuji/evaluate_fuji_demosaic.py`, etc.) must see **zero behavior change** — the new `chromatic_aberration` parameter must default to `None` and only affect `raw.postprocess()`'s kwargs when explicitly set.
 - Grid: `red_scale` and `blue_scale` each range over `[0.98, 0.985, 0.99, 0.995, 1.0, 1.005, 1.01, 1.015, 1.02]` (9 values, 0.005 step), full 9x9=81 cross product, per the approved spec (`docs/superpowers/specs/2026-07-31-chromatic-aberration-correction-design.md`).
 - Dataset: the 13 Hasselblad raw+jpeg pairs only (`datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` + `raw_calib_cache/`, both already present on this container's local disk, `raw_calib_cache/` is git-ignored). No Fuji pairs in this experiment.
 - **Measured decode cost (verified live in this environment, not estimated):** a single `chromatic_aberration`-parameterized `decode_raw()` call takes ~19.6s the first time a given RAW file is read (cold OS page cache) and ~2-4.6s on subsequent calls against the same file (warm cache, confirmed `(1.0, 1.0)` produces a byte-identical decode to omitting the kwarg entirely — verified with `np.array_equal`). Caching decoded+downsampled results by `(pair_name, red_scale, blue_scale)` and reusing them across all 13 LOO folds (each fold's grid search only needs the training pairs' already-cached values) keeps total real decode work at exactly 13 pairs x 81 grid points = 1053 decodes, no more, regardless of fold count. Measured total runtime for the full real run: **~60-70 minutes** (13 cold reads + 1040 warm reads). This MUST run as a background process (`run_in_background` or equivalent) — do not attempt to run it synchronously and wait.
-- Downsample decoded+target images to `DOWNSAMPLE_MAX_DIM = 512` (long edge) immediately after each decode, before caching or computing ΔE — same pattern as `tools/evaluate_hncs_structural.py`/`tools/evaluate_darktable_vs_rawpy.py`. This does not meaningfully distort the result because chromatic aberration correction is a global per-channel scale operation, not spatially localized detail.
+- Downsample decoded+target images to `DOWNSAMPLE_MAX_DIM = 512` (long edge) immediately after each decode, before caching or computing ΔE — same pattern as `tools/research/evaluate_hncs_structural.py`/`tools/research/evaluate_darktable_vs_rawpy.py`. This does not meaningfully distort the result because chromatic aberration correction is a global per-channel scale operation, not spatially localized detail.
 - ΔE measurement: `hybrid_engine.utils.evaluate.mean_delta_e` (CIEDE2000, this project's standard metric) exclusively.
 - Never declare a winner from a raw mean-difference alone. Report the full `summarize()` output (paired t-test, sign test via `math.comb`, bootstrap 95% CI, drop-one sensitivity) and treat a 95% CI that straddles zero as "판정 보류" (inconclusive) — this project's established rule after 3 prior false "decisive" conclusions this session.
 - Record the result in `hybrid_engine/EVALUATION.md` honestly whether it wins, loses, or is inconclusive.
-- `raw_calib_cache/` and `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` paths and file-naming convention (`{jpeg_basename}.{raw_ext}` for the RAW, `{jpeg_basename}.target.jpg` for the target) are exactly as used in `tools/evaluate_hncs_structural.py` — reuse that same lookup logic (`_pair_names()`, `_raw_path_for()`, `_target_path_for()`), copied into the new standalone script per this project's established convention of not cross-importing between `tools/evaluate_*.py` research scripts.
+- `raw_calib_cache/` and `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` paths and file-naming convention (`{jpeg_basename}.{raw_ext}` for the RAW, `{jpeg_basename}.target.jpg` for the target) are exactly as used in `tools/research/evaluate_hncs_structural.py` — reuse that same lookup logic (`_pair_names()`, `_raw_path_for()`, `_target_path_for()`), copied into the new standalone script per this project's established convention of not cross-importing between `tools/evaluate_*.py` research scripts.
 
 ---
 
@@ -106,14 +106,14 @@ def decode_raw(raw_path, demosaic_algorithm=None, chromatic_aberration=None):
     demosaic_algorithm: None(기본값)이면 rawpy 기본 데모자이크를 쓰고
     기존 호출부와 100% 동일하게 동작한다. rawpy.DemosaicAlgorithm 값을
     넘기면 raw.postprocess()에 그대로 전달된다(예: X-Trans용 DHT 비교
-    실험 - tools/evaluate_fuji_demosaic.py 참고). AMAZE는 이 프로젝트가
+    실험 - tools/fuji/evaluate_fuji_demosaic.py 참고). AMAZE는 이 프로젝트가
     쓰는 LibRaw 빌드에 GPL3 데모자이크 팩이 없어 런타임 에러가 난다.
 
     chromatic_aberration: None(기본값)이면 색수차 보정 없이 기존과
     100% 동일하게 동작한다(rawpy 기본값 (1.0, 1.0)과 결과가 바이트
     단위로 동일함을 실측 확인). (red_scale, blue_scale) 튜플을 넘기면
     raw.postprocess()에 그대로 전달돼 R/B 채널을 스케일링해서 렌즈
-    색수차를 보정한다(tools/evaluate_chromatic_aberration.py 참고)."""
+    색수차를 보정한다(tools/research/evaluate_chromatic_aberration.py 참고)."""
     kwargs = dict(
         use_camera_wb=True,
         no_auto_bright=True,
@@ -149,16 +149,16 @@ git commit -m "Add optional chromatic_aberration parameter to decode_raw()"
 
 ---
 
-### Task 2: `tools/evaluate_chromatic_aberration.py` — grid search + LOO CV + real run + documentation
+### Task 2: `tools/research/evaluate_chromatic_aberration.py` — grid search + LOO CV + real run + documentation
 
 **Files:**
-- Create: `tools/evaluate_chromatic_aberration.py`
+- Create: `tools/research/evaluate_chromatic_aberration.py`
 - Test: `tests/test_evaluate_chromatic_aberration.py`
 - Modify: `hybrid_engine/EVALUATION.md` (append new section at the end)
 
 **Interfaces:**
 - Consumes: `decode_raw(raw_path, chromatic_aberration=(red_scale, blue_scale))` from Task 1; `hybrid_engine.utils.io.load_image_linear`; `hybrid_engine.utils.evaluate.mean_delta_e`.
-- Produces: `load_pairs()`, `grid_search(train_pairs)`, `run_loocv()`, `summarize(per_fold)`, `_sign_test_p(wins, losses)`, `print_summary(s)`, `_resize_max_dim(img, max_dim)` — all pure/standalone functions in `tools/evaluate_chromatic_aberration.py`, importable by the test file.
+- Produces: `load_pairs()`, `grid_search(train_pairs)`, `run_loocv()`, `summarize(per_fold)`, `_sign_test_p(wins, losses)`, `print_summary(s)`, `_resize_max_dim(img, max_dim)` — all pure/standalone functions in `tools/research/evaluate_chromatic_aberration.py`, importable by the test file.
 
 - [ ] **Step 1: Write the failing portable unit tests**
 
@@ -172,7 +172,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_chromatic_aberration import (
+from tools.research.evaluate_chromatic_aberration import (
     _resize_max_dim, _sign_test_p, load_pairs, summarize,
 )
 
@@ -270,9 +270,9 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `python3 -m unittest tests.test_evaluate_chromatic_aberration -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'tools.evaluate_chromatic_aberration'`.
+Expected: FAIL with `ModuleNotFoundError: No module named 'tools.research.evaluate_chromatic_aberration'`.
 
-- [ ] **Step 3: Implement `tools/evaluate_chromatic_aberration.py`**
+- [ ] **Step 3: Implement `tools/research/evaluate_chromatic_aberration.py`**
 
 ```python
 """rawpy postprocess()의 chromatic_aberration=(red_scale, blue_scale)
@@ -280,7 +280,7 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'tools.evaluate_chroma
 leave-one-out 교차검증으로 확인한다. 설계 근거:
 docs/superpowers/specs/2026-07-31-chromatic-aberration-correction-design.md
 
-  python3 -m tools.evaluate_chromatic_aberration
+  python3 -m tools.research.evaluate_chromatic_aberration
 
 이번 세션에서 처음으로 "디코드 단계"(그 이전 20여 회의 모든 실험은
 디코드 이후 그레이월드/톤커브/LUT/공간연산만 조정)를 건드리는 실험이다.
@@ -519,7 +519,7 @@ Expected: all tests PASS.
 - [ ] **Step 5: Commit the script and portable tests**
 
 ```bash
-git add tools/evaluate_chromatic_aberration.py tests/test_evaluate_chromatic_aberration.py
+git add tools/research/evaluate_chromatic_aberration.py tests/test_evaluate_chromatic_aberration.py
 git commit -m "Add chromatic aberration correction evaluation script (LOO CV + significance tests)"
 ```
 
@@ -528,7 +528,7 @@ git commit -m "Add chromatic aberration correction evaluation script (LOO CV + s
 This takes ~60-70 minutes (measured decode cost, see Global Constraints). Run it in the background and capture output to a log file:
 
 ```bash
-nohup python3 -m tools.evaluate_chromatic_aberration > /tmp/ca_eval_output.log 2>&1 &
+nohup python3 -m tools.research.evaluate_chromatic_aberration > /tmp/ca_eval_output.log 2>&1 &
 ```
 
 Poll periodically (e.g. `tail -20 /tmp/ca_eval_output.log`) until the process completes and `판정:` appears in the output. Do not block synchronously waiting — if your turn ends while this is still running, the next turn should check `/tmp/ca_eval_output.log` for completion before re-running (re-running from scratch wastes ~60 minutes; the decode cache is in-process only, not persisted to disk, so a genuinely interrupted run must restart from Step 6, not resume).

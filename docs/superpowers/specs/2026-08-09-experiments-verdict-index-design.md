@@ -2,7 +2,7 @@
 
 > Sub-project 3 of 4 in the "레포 전체 대규모 리팩토링" initiative
 > (maintainability + readability). Sub-project 4 (splitting
-> `tools/calibrate.py`) is the last one.
+> `tools/fit/calibrate.py`) is the last one.
 
 ## Problem
 

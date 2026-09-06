@@ -1,5 +1,5 @@
-"""tools/evaluate_learned_lut.py의 _build_lut() 최소 표본 수 가드 테스트 -
-tools/fit_final_lut.py와 동일한 가드/버그였던 부분(tools/CLAUDE.md 관례상
+"""tools/fit/evaluate_learned_lut.py의 _build_lut() 최소 표본 수 가드 테스트 -
+tools/fit/fit_final_lut.py와 동일한 가드/버그였던 부분(tools/CLAUDE.md 관례상
 evaluate_*.py끼리 서로 import 안 하고 로직을 각자 복사 유지하므로 테스트도
 따로 둔다). 실제 raw+jpeg 이미지 없이 순수 numpy 배열만으로 검증
 가능(tests/CLAUDE.md "unit-test the pure parts")."""
@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_learned_lut import MIN_BIN_SAMPLES, N_BINS, _build_lut
+from tools.fit.evaluate_learned_lut import MIN_BIN_SAMPLES, N_BINS, _build_lut
 
 
 class TestBuildLut(unittest.TestCase):

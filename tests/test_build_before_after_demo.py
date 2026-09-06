@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tools.build_before_after_demo import BAR_H, build_before_after
+from tools.demo.build_before_after_demo import BAR_H, build_before_after
 
 
 class TestBuildBeforeAfter(unittest.TestCase):

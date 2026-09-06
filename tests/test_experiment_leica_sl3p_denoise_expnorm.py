@@ -1,4 +1,4 @@
-"""`tools/experiment_leica_sl3p_denoise_expnorm.py`의 순수 로직 테스트 -
+"""`tools/dpreview/experiment_leica_sl3p_denoise_expnorm.py`의 순수 로직 테스트 -
 디노이즈/노출정규화 실험이 쓰는 통계 헬퍼(`_sign_test_p`, `summarize`,
 `_exposure_normalize`)와, 합성 챠트 이미지로 `detect_and_sample_denoised()`를
 검증한다(CI에 이미지 데이터 없음, `tests/CLAUDE.md`)."""
@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from hybrid_engine.core import chart_baseline
 from tests.test_chart_baseline import _synthetic_chart_linear
-from tools.experiment_leica_sl3p_denoise_expnorm import (
+from tools.dpreview.experiment_leica_sl3p_denoise_expnorm import (
     detect_and_sample_denoised, _mean_de, _sign_test_p, _exposure_normalize, summarize,
 )
 

@@ -11,12 +11,12 @@ The shipped artifact. Everything here is load-bearing for users.
   research scripts touch it under no circumstances.
 - Uniform signature: BGR `np.ndarray` in, same-shape `np.ndarray` out,
   first arg is the image and every other arg has a default.
-  `tools/video_engine.py` and `hybrid_engine/` rely on this.
+  `tools/cli/video_engine.py` and `hybrid_engine/` rely on this.
 - **Two deliberate exceptions**: `apply_acros` and `apply_monochrome` in
   `fuji/look.py` return a 2D single-channel array, not 3-channel BGR. That's
   intended for monochrome film simulations and pinned by
   `tests/test_brands.py::test_mono_presets_return_single_channel`;
-  `tools/export_lut.py` excludes them from `.cube` export for the same
+  `tools/cli/export_lut.py` excludes them from `.cube` export for the same
   reason. Anything tiling or compositing `apply_*` output has to
   `cv2.cvtColor(out, cv2.COLOR_GRAY2BGR)` first.
 

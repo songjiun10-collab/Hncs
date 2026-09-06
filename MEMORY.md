@@ -20,7 +20,7 @@ entries below; don't rewrite old ones.
   preview/hybrid convert/lens correction/RAW-Log/upscale), AI
   super-resolution (`core/upscale.py`, Real-ESRGAN via PyTorch or ONNX),
   SD-card deleted-photo recovery (`core/sdcard_undelete.py` +
-  `core/sdcard_carve.py`, `tools/recover_sdcard.py`), PQ/HLG HDR output
+  `core/sdcard_carve.py`, `tools/data/recover_sdcard.py`), PQ/HLG HDR output
   alongside the Log pipeline, White Patch/Shades-of-Gray AWB modes in
   `raw_pipeline`, and a v11 hybrid-engine recalibration on 65 pairs. None
   of this was reviewed by this session — treat `docs/project_structure.md`
@@ -30,7 +30,7 @@ entries below; don't rewrite old ones.
   imaging-resource.com galleries.
 - Sigma (12th brand) is fully shipped: 5 bodies (Bayer fp/fp L + Foveon
   sd Quattro/dp2 Quattro/SD1 Merrill), n=83, `datasets/sigma/` pixel
-  signatures present, in `tools/classify_brand.py`'s 10-brand LOO
+  signatures present, in `tools/cli/classify_brand.py`'s 10-brand LOO
   discriminability check.
 - `apply_acros`/`apply_monochrome` (Fuji) are the only `apply_*`
   functions that return 2D single-channel output, not 3-channel BGR —
@@ -46,7 +46,7 @@ entries below; don't rewrite old ones.
   contributed/local-mixed-2026-07/` (CFV 100C/907X 30, X2D 100C 24, X1D
   II 50C 6, X1D 1). Another session used it to re-run the HNCS
   illuminant-blend experiment at 74 pairs (13 official + 61 contributed):
-  `tools/evaluate_hncs_blend.py`, recorded in `hybrid_engine/
+  `tools/research/evaluate_hncs_blend.py`, recorded in `hybrid_engine/
   EVALUATION.md`. Result flipped from the 13-pair "inconclusive" verdict
   — both RB and CCT blending now beat hard-cluster classification by
   +1.8%, statistically significant but close to the boundary (RB sign
@@ -63,7 +63,7 @@ entries below; don't rewrite old ones.
   `exiftool` + 3 needing committed `.dcp`/`.icc`/`transicc`. CI installs
   `libimage-exiftool-perl`, so all 12 run there
   (`.github/workflows/tests.yml`).
-- `tools/audit_repo_integrity.py` no longer dies on a machine without
+- `tools/maintenance/audit_repo_integrity.py` no longer dies on a machine without
   `exiftool` — it skips only that check and says so on the last line, so
   "이상 없음" never over-claims the verified scope. It also gained a
   pure-Python header check (`dcp_header_problems` /

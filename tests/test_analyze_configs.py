@@ -8,8 +8,8 @@ from unittest.mock import patch
 import cv2
 import numpy as np
 
-from tools.analyze import BRAND_CONFIGS, _check_genuine_bytes
-from tools.download import list_gallery_images
+from tools.cli.analyze import BRAND_CONFIGS, _check_genuine_bytes
+from tools.cli.download import list_gallery_images
 
 
 def _gallery_html(filenames):
@@ -29,7 +29,7 @@ class TestBrandConfigFilters(unittest.TestCase):
     def _filtered(self, brand, filenames):
         cfg = BRAND_CONFIGS[brand]
         html = _gallery_html(filenames)
-        with patch("tools.download.ir_fetch", return_value=html):
+        with patch("tools.cli.download.ir_fetch", return_value=html):
             return list_gallery_images("http://example.com/gallery",
                                         cfg["skip_keywords"], cfg["skip_patterns"])
 

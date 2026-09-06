@@ -9,7 +9,7 @@ import unittest
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from tools.build_local_manifest import RAW_EXT, _match_pairs, drop_failed
+from tools.data.build_local_manifest import RAW_EXT, _match_pairs, drop_failed
 
 
 class TestRawExt(unittest.TestCase):
@@ -155,8 +155,8 @@ class TestDropFailedDoesNotDeleteFiles(unittest.TestCase):
     사라진다(리뷰에서 지적된 데이터 유실 위험). rejected/로 옮겨서
     복구 가능해야 한다.
 
-    verify_row()는 실제로는 tools.verify_contributed_pairs를 통해
-    tools.analyze -> tools.download -> gdown으로 이어지는 무거운 의존성
+    verify_row()는 실제로는 tools.data.verify_contributed_pairs를 통해
+    tools.cli.analyze -> tools.cli.download -> gdown으로 이어지는 무거운 의존성
     체인을 끌고 오는데, 이 샌드박스엔 gdown이 없다(tests/CLAUDE.md
     "CI has no image data"). drop_failed()는 이 모듈을 함수 안에서
     지연 import하므로, sys.modules에 가짜 모듈을 미리 심어두면 실제
@@ -164,7 +164,7 @@ class TestDropFailedDoesNotDeleteFiles(unittest.TestCase):
 
     def setUp(self):
         self._sys_modules_patch = patch.dict(sys.modules, {
-            "tools.verify_contributed_pairs": types.SimpleNamespace(
+            "tools.data.verify_contributed_pairs": types.SimpleNamespace(
                 verify_row=_fake_verify_row),
         })
         self._sys_modules_patch.start()

@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from tools.build_hybrid_engine_demo_more import BAR_H, ROW_PAD, build_grid, build_row
+from tools.demo.build_hybrid_engine_demo_more import BAR_H, ROW_PAD, build_grid, build_row
 
 
 class TestBuildRow(unittest.TestCase):
@@ -27,8 +27,8 @@ class TestBuildGrid(unittest.TestCase):
             return rng.integers(0, 255, (60, 90, 3), dtype=np.uint8)
 
         pairs = [("a.RAF", "a.jpg"), ("b.RAF", "b.jpg"), ("c.RAF", "c.jpg")]
-        with patch("tools.build_hybrid_engine_demo_more.render_with_profile", side_effect=fake_render), \
-             patch("tools.build_hybrid_engine_demo_more._load_bgr_exif_corrected", side_effect=fake_load):
+        with patch("tools.demo.build_hybrid_engine_demo_more.render_with_profile", side_effect=fake_render), \
+             patch("tools.demo.build_hybrid_engine_demo_more._load_bgr_exif_corrected", side_effect=fake_load):
             grid = build_grid(pairs)
 
         # 모든 행이 같은 너비(HALF_WIDTH*2)로 정규화되므로 검은 여백 없이 쌓인다.

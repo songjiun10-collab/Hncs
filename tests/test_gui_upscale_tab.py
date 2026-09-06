@@ -16,7 +16,7 @@ class TestBuildUpscaleCommand(unittest.TestCase):
     def test_minimal_command(self):
         cmd = build_upscale_command("in.jpg", "out.png", "4", "onnx", python_exe="python3")
         self.assertEqual(
-            cmd, ["python3", "-m", "tools.upscale", "in.jpg", "out.png",
+            cmd, ["python3", "-m", "tools.cli.upscale", "in.jpg", "out.png",
                   "--scale", "4", "--engine", "onnx"])
 
     def test_pytorch_engine_passed_through(self):

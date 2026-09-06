@@ -7,7 +7,7 @@ from gui.widgets.image_view import (
     RAW_EXTS, image_and_raw_filetypes, image_filetypes, prepare_for_display,
     quick_raw_preview, raw_filetypes,
 )
-from tools.lens_correction import _RAW_EXTS
+from tools.cli.lens_correction import _RAW_EXTS
 
 
 class TestPrepareForDisplay(unittest.TestCase):
