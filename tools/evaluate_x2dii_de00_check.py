@@ -15,7 +15,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from brands.hasselblad_x2dii import apply_hncs_x2dii
+from brands.hasselblad.x2dii import apply_hncs_x2dii
 from tools.calibrate import load_neutral_render, gray_stats
 
 RAW_DIR = "/Users/songjiun/Documents/raw pair"
