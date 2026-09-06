@@ -257,7 +257,8 @@ def download_fuji_pairs():
     (전역 후보를 델타 오름차순으로 그리디 배정하는 1:1 deterministic
     매처)를 공통 함수로 그대로 재사용하도록 변경 - 두 경로가 이제 같은
     매칭기를 쓴다."""
-    rows = list(csv.DictReader(open(FUJI_LINKS_CSV, encoding="utf-8-sig")))
+    with open(FUJI_LINKS_CSV, encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle))
     manifest = []
 
     for r in rows:
