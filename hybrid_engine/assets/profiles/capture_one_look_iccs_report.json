@@ -7,10 +7,10 @@
   "user_approval": "2026-09-04 '캡처원용도 다 만들어'",
   "fidelity_metric": "랜덤 BGR 이미지(64x64, seed 0)를 LUT 경유와 룩 직접 호출로 각각 통과시킨 결과의 평균 절대오차(ΔBGR)를, 그 룩이 원본 대비 만드는 변화량(효과)과 비교. faithful=false는 오차가 효과보다 커서 그 프로필이 룩을 충실히 전달하지 못한다는 뜻 - CLAHE 등 적응형 연산이 강한 룩에서 발생하며 LUT 포맷의 구조적 한계다.",
   "counts": {
-    "issued": 52,
+    "issued": 53,
     "skipped": 2,
     "failed": 0,
-    "faithful": 22,
+    "faithful": 23,
     "not_faithful": 30
   },
   "issued": [
@@ -587,6 +587,18 @@
       "max_deviation_from_identity": 1.0,
       "lut_vs_direct_mean_abs_bgr": 1.83,
       "look_effect_mean_abs_bgr": 37.6,
+      "faithful": true,
+      "file_kb": 107.1
+    },
+    {
+      "module": "brands.fuji.look",
+      "func": "apply_classic_negative_v2",
+      "file": "hybrid_engine/assets/profiles/looks/fuji_classic_negative_v2.icc",
+      "description": "HNCS fuji classic negative v2 look",
+      "lut_size": 33,
+      "max_deviation_from_identity": 1.0,
+      "lut_vs_direct_mean_abs_bgr": 20.87,
+      "look_effect_mean_abs_bgr": 54.83,
       "faithful": true,
       "file_kb": 107.1
     },
