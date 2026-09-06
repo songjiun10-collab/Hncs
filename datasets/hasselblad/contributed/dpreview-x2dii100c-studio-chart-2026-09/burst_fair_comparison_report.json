@@ -1,0 +1,14 @@
+{
+  "global_burst_fair_mean": 15.832453211597024,
+  "dual_mean": 9.126073230763119,
+  "paired_diff_mean": 6.706379980833906,
+  "bootstrap_ci95": [
+    4.552669734192847,
+    8.85259713485917
+  ],
+  "wins": 25,
+  "losses": 0,
+  "n": 25,
+  "improvement_pct": 42.358438652587246,
+  "note": "kmichels 9장의 global 점수만 dpreview단독학습(burst 리키지 없음)으로 교체, group1/2 16장은 기존 25-fold CV 유지"
+}

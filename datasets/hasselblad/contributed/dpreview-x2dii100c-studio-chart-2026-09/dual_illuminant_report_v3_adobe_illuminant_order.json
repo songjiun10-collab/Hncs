@@ -1,0 +1,135 @@
+{
+  "camera_model": "Hasselblad X2D II 100C",
+  "supersedes": "dual_illuminant_report_v2_illuminant_referenced.json",
+  "change": "매트릭스 값 변경 없음. CalibrationIlluminant 슬롯 순서만 Adobe 관례(1=저온 StdA/17, 2=고온 D65/21)로 스왑 - v2는 1=D65/21, 2=StdA/17로 온도 내림차순이었다.",
+  "why": "RawTherapee rtengine/dcp.cc의 매트릭스 보간 경로(findXyztoCamera 1690-1697행, makeXyzCam 1820-1827행)가 temperature_1 < temperature_2 정렬을 검증 없이 전제해, 온도 내림차순 DCP에서는 wbtemp <= temperature_1 분기에 모든 정상 촬영이 걸려 무조건 ColorMatrix1로 스냅됐다. Adobe DNG SDK dng_color_spec.cpp(183-208행)는 역순이면 스스로 스왑하므로 ACR/Lightroom은 v2에서도 정상이었을 것으로 예상(레퍼런스 코드 기준). 근본원인 조사는 EVALUATION.md 2026-09-04 절 참고.",
+  "matrices_unchanged_from_v2": true,
+  "swap_invariance_check": {
+    "note": "core/dcp_interpolate.py는 슬롯 스왑에 불변 - g는 1-g로 뒤집히지만 최종 보간 매트릭스는 동일하다. 따라서 v2의 25장 held-out end-to-end 검증(CI=[+5.5509,+9.2794], 25/0)이 v3에 그대로 승계된다.",
+    "per_group": {
+      "group1_daylight_like": {
+        "g_v2_toward_slot1_d65": 0.9915574550306926,
+        "g_v3_toward_slot1_stda": 0.008442544969307433,
+        "g_sum_should_be_1": 1.0,
+        "final_matrix_max_abs_diff": 0.0
+      },
+      "group2_tungsten_like": {
+        "g_v2_toward_slot1_d65": 0.0175767460796826,
+        "g_v3_toward_slot1_stda": 0.9824232539203174,
+        "g_sum_should_be_1": 1.0,
+        "final_matrix_max_abs_diff": 8.881784197001252e-16
+      }
+    }
+  },
+  "slot_1": {
+    "calibration_illuminant": 17,
+    "illuminant_name": "Standard Light A",
+    "cct_k": 2856.0,
+    "source": "v2 dcp_color_matrix_2 (group2 tungsten-like fit)",
+    "reference_illuminant_xy": [
+      0.44758,
+      0.40745
+    ],
+    "measured_native_neutral_g_normalized": [
+      0.6451373068317159,
+      1.0,
+      0.33303672486903185
+    ]
+  },
+  "slot_2": {
+    "calibration_illuminant": 21,
+    "illuminant_name": "D65",
+    "cct_k": 6504.0,
+    "source": "v2 dcp_color_matrix_1 (group1 daylight-like fit)",
+    "reference_illuminant_xy": [
+      0.3127,
+      0.329
+    ],
+    "measured_native_neutral_g_normalized": [
+      0.3345404513869923,
+      1.0,
+      0.7218269266771231
+    ]
+  },
+  "color_matrix_1": [
+    [
+      4.461228848079132,
+      1.6462673352884483,
+      0.1792340611166575
+    ],
+    [
+      1.211135417682522,
+      2.9177715329402654,
+      -0.5397441970363778
+    ],
+    [
+      -0.020846477803487036,
+      -0.7197874862896356,
+      5.263383157357966
+    ]
+  ],
+  "color_matrix_2": [
+    [
+      4.566216484599251,
+      1.9265040981276056,
+      0.23934284829606156
+    ],
+    [
+      0.28277875313544587,
+      1.9025238002602063,
+      -0.5109076287541597
+    ],
+    [
+      0.16805825607992622,
+      -0.7355179005404537,
+      3.643813757688329
+    ]
+  ],
+  "dcp_color_matrix_1": [
+    [
+      0.2665477526923934,
+      -0.11331230816375207,
+      -0.014440179895043734
+    ],
+    [
+      -0.15659231293154194,
+      0.4181915215842041,
+      0.05656905777736792
+    ],
+    [
+      -0.0251348276282982,
+      0.04674291512439977,
+      0.19628458766273518
+    ]
+  ],
+  "dcp_color_matrix_2": [
+    [
+      0.23702467687896983,
+      -0.04035286826146894,
+      -0.019077322665566013
+    ],
+    [
+      -0.2601319792512587,
+      0.6000291395419304,
+      0.13311588682026432
+    ],
+    [
+      -0.05204260880867813,
+      0.08678205208105744,
+      0.29435531400757997
+    ]
+  ],
+  "inherited_validation_from_v2": {
+    "n": 25,
+    "global_burst_fair_mean": 15.832453211597024,
+    "real_interpolation_mean": 8.427546328280359,
+    "paired_diff_mean": 7.404906883316666,
+    "bootstrap_ci95": [
+      5.550903013712454,
+      9.279368839886569
+    ],
+    "wins": 25,
+    "losses": 0
+  },
+  "note": "사용자 승인(2026-09-04, 근본원인 조사 보고 후 '새로 발급 ㄱㄱ')으로 배포. 승인 범위는 태그 순서 스왑 - 재캘리브레이션 아님. v2/v1 리포트는 기록으로 그대로 남아있다."
+}

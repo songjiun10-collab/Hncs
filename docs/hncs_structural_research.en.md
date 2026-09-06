@@ -263,3 +263,259 @@ applies.
 
 Reproduce: `python3 -m tools.evaluate_hncs_structural` (94 pairs × 1024
 combos × 5-fold, ~1 hour).
+
+## Revalidation 2 (2026-08, local pool of 364 pairs, 6 generations) - finally settled, direction reversed
+
+On the user's instruction ("the sample got bigger too, should be
+feasible now"), this was re-verified against the full local Hasselblad
+raw+jpeg pool gathered via `tools.calibrate.collect_local_pairs()`
+(post-dedup-fix) this session - almost 4x the previous 94 pairs (6
+generations: X1D 121, X2D 100C 82, X2D II 100C 74, X1D II 50C 38, CFV
+100C/907X 29, X1D-50c 20) (`tools/evaluate_hncs_structural_full_pool.py`,
+new - `/Users/songjiun/Documents/raw pair` wasn't present locally this
+session, so only the loader was swapped for one reading from
+`datasets/hasselblad/contributed/*/`; everything else is the same
+methodology. The chroma grid was reduced 1024 -> 256 to keep total
+compute roughly constant against the larger sample, and since decode was
+the bottleneck, all pairs were pre-decoded with a 3-worker
+multiprocessing pool before the fold loop ran). Cluster split: cluster_a
+354 vs. cluster_b 10.
+
+**Result: this time the CI clears 0 entirely - and the direction
+reversed.**
+
+| Comparison | Improvement | Wins/losses | Sign-test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| Hard cluster vs. `apply_hncs()` | **-10.91%** (10.004 -> 11.095) | 128/236 | <0.0001 | [-1.349,-0.849] | **apply_hncs wins** |
+| Blend vs. `apply_hncs()` | **-11.46%** (10.004 -> 11.150) | 127/237 | <0.0001 | [-1.404,-0.904] | **apply_hncs wins** |
+| Blend vs. hard cluster | -0.50% (11.095 -> 11.150) | 124/240 | <0.0001 | [-0.077,-0.033] | Hard cluster narrowly wins |
+
+13 pairs (+4.1%, CI [-15.8%,+22.9%]) -> 94 pairs (+3.81%, CI
+[-0.306,+1.075], direction stayed positive) -> **364 pairs (-10.91%, CI
+[-1.349,-0.849], direction flipped negative)**. The CI narrowing as the
+sample grew was expected; the sign flipping partway through that
+narrowing was not - **the "weak but positive" signal at 13/94 pairs
+wasn't a real effect, it was small-sample noise.** The likely
+explanation: as diversity grew to 6 generations, the per-cluster
+matrix/chroma LUT became easier to overfit to a specific generation/
+lighting combination rather than a trait shared across a generation
+(cluster_b still being only 10 pairs is part of this too - a matrix
+fit to a "handful" cluster doesn't generalize to the majority cluster).
+
+**Settled**: even mirroring HNCS's real "per-illuminant matrix + chroma
+LUT" structure (approximated here as a 2-cluster split on the
+AsShotNeutral R/B ratio) fails to beat `apply_hncs()`'s simple 3-stage
+approximation (global exposure / CLAHE / film curve) - it loses to it,
+significantly. This revalidation doesn't change `apply_hncs()` either
+(it was always the protected baseline here). This experiment lineage
+(`hybrid_engine/research/hncs_structural.py` +
+`tools/evaluate_hncs_structural*.py`) is effectively closed by this
+result - there's now enough margin (sign test p<0.0001, CI far from 0)
+that a still-larger sample flipping the sign back is not a live concern.
+
+**What still doesn't change** in the "Limitations" section above: the
+ground truth is still the camera JPEG (not real HNCS output), this is
+still a fresh fit unrelated to Phocus's actual matrix/LUT values, and
+the 2-cluster split is still a reduction of the real 4-or-more-illuminant
+structure - none of that changes just because the sample grew.
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural_full_pool` (364
+pairs × 256 combos × 5-fold, ~15 minutes with 3-worker parallel decode).
+
+> **Correction (2026-08, user flagged "hey that's weird, verify it" ->
+> checked resolution)**: the result above was produced with decode
+> resolution lowered from 512/160 to 256/100 for speed.
+> `apply_hncs()` uses CLAHE (`tileGridSize=(8,8)`, fixed), and the actual
+> pixel count per tile changes with resolution - lower resolution biases
+> the result in `apply_hncs()`'s favor. The structural experiment (matrix
+> + chroma LUT + film curve, no CLAHE) has no such bias. Measured
+> directly on a 25-pair sample: `apply_hncs()`'s mean ΔE00 is 9.394 at
+> 256px vs. 9.646 at 512px (256px favors it by +2.6%) - this doesn't
+> account for the whole sign flip (-10.91%), but it's part of it.
+>
+> Clean numbers, re-verified at the original resolution (512/160):
+>
+> | Comparison | Improvement | Wins/losses | Sign-test p | Bootstrap 95% CI | Verdict |
+> |---|---|---|---|---|---|
+> | Hard cluster vs. `apply_hncs()` | **-7.42%** (10.485 -> 11.263) | 148/216 | 0.0004 | [-1.050,-0.526] | **apply_hncs wins** |
+> | Blend vs. `apply_hncs()` | **-7.97%** (10.485 -> 11.320) | 151/213 | 0.0014 | [-1.106,-0.583] | **apply_hncs wins** |
+> | Blend vs. hard cluster | -0.50% (11.263 -> 11.320) | 126/238 | <0.0001 | [-0.078,-0.036] | Hard cluster narrowly wins |
+>
+> The margin is narrower than the 256px numbers (-10.91%/-11.46% -
+> roughly 3.5 points of that was the resolution bias), but **the
+> direction and statistical significance (p<0.005, CI clearly away from
+> 0) hold** - "apply_hncs wins significantly at n=364" stands as the
+> conclusion. Treat this corrected (512/160) run as the final numbers and
+> the 256px ones as a biased draft. Reproduce: `python3 -m
+> tools.evaluate_hncs_structural_full_pool` (with DOWNSAMPLE_MAX_DIM=512,
+> GRID_DOWNSAMPLE_MAX_DIM=160, ~25 minutes with 3 workers).
+
+## Revalidation 3 (2026-08, KMeans 4-cluster) - still holds even closer to the real structure
+
+The "Limitations" section kept flagging the 2-cluster hard cut (R/B
+threshold 0.9) as a reduction of the real HNCS structure ("at least 4
+illuminants - Tungsten/Low Tungsten/Flash/Flash-Daylight, matrix
+selected by WB"). On the user's instruction ("make it match the real
+Hasselblad structure"), the cluster count was raised to 4
+(`tools/evaluate_hncs_structural_4cluster.py`, new) - instead of a
+manual threshold, AsShotNeutral's (log(R/G), log(B/G)) was standardized
+and clustered data-drivenly with KMeans(k=4) (fit once over all pairs,
+not per-fold - the same out-of-sample caveat as the 2-cluster version
+carries over). "Matrix selected by WB" reads as hard assignment, so the
+blend variant was dropped this round. Resolution: 512/160 (per the
+correction above). Cluster split: 157/140/57/10.
+
+**Result**:
+
+| Comparison | Improvement | Wins/losses | Sign-test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| 2-cluster hard | -7.42% | 148/216 | 0.0004 | [-1.050,-0.526] | apply_hncs wins (solid) |
+| **4-cluster (KMeans)** | **-5.26%** | 163/201 | **0.0523** | [-0.823,-0.302] | apply_hncs wins (CI excludes 0, sign test just misses the conventional 0.05 threshold) |
+
+Going from 2 to 4 clusters narrowed the gap (-7.42% -> -5.26%) - moving
+closer to the real structure consistently closes the distance to
+`apply_hncs()`, but **the sign never flips**. The 4-cluster CI still
+clears 0 (lower bound -0.823) and only the sign test (p=0.0523) just
+misses the conventional 0.05 cutoff, making this a somewhat weaker case
+than the 2-cluster one - but the 163/201 win/loss split still leans the
+same way, so the direction hasn't changed.
+
+**Conclusion**: mirroring more of the real HNCS structure by adding more
+clusters still doesn't beat `apply_hncs()` - the gap shrinks, it doesn't
+close. A minority cluster (cluster_2, 10 pairs) is still present even at
+k=4, so fully closing it might take a larger sample still, but two
+independent re-verifications (2-cluster and 4-cluster) both landing on
+`apply_hncs()` winning is already a consistent enough signal.
+`apply_hncs()` is unchanged by this experiment too.
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural_4cluster` (364
+pairs × 256 combos × 5-fold × 4 clusters, ~27 minutes with 3-worker
+parallel decode).
+
+## Re-verification 4 (2026-09-03, `tools/evaluate_hncs_structural.py` itself, at 390 pairs) - independent reproduction, conclusion unchanged
+
+**Honesty first**: only after starting to write this section did I
+discover that "Re-verification 2/3" above
+(`evaluate_hncs_structural_full_pool.py`/`_4cluster.py`, 2026-08-30)
+already existed. When given the instruction ("the data's grown too,
+can't we do it per the real structure now?"), I only checked
+`tools/evaluate_hncs_structural.py` itself (the original file, which
+still pointed at a local path that no longer exists on this machine
+and so couldn't even run this session) and never searched for sibling
+scripts - I should have read this document's own "Re-verification 2/3"
+first. As a result I spent roughly 2.3 hours (through a memory crisis -
+swap went 6→8→13GB, worker count dropped from 5 to 3, an unrelated app
+(Safari) made it worse) **independently reproducing an already-settled
+conclusion**. Wasteful, but since it's a genuinely different
+implementation (the original script itself, fixed, not a copy of
+`_full_pool`/`_4cluster`) on a different sample (390 pairs, one decode
+failure excluded down to 389 - overlapping with but not identical to
+`_full_pool`'s 364), it does carry value as independent external
+validation.
+
+**Methodology differences**: `_full_pool`/`_4cluster` cut the grid to
+256 combos, but this run kept the original file's 1024 combos as-is
+(I miscalculated the compute cost twice along the way - first
+forgetting worker parallelism entirely and estimating "under an hour,"
+then forgetting the 20x gap between 1024 and 256 combos and revising to
+"7-8 hours," before finally landing on the measured "~1.5h at 5
+workers / ~2.5-3h at 3 workers"). The 4-cluster split also differs:
+instead of KMeans fit once over the whole pool (`_4cluster.py`), this
+run uses **per-fold train-set R/B 25/50/75 percentile cuts**
+(recomputed per fold with no leakage - a stricter out-of-sample
+principle than `_4cluster.py`'s). And where `_full_pool`/`_4cluster`
+compared two separate runs against each other, this run does a
+**direct paired comparison between the 2-cluster and 4-cluster
+variants inside the same run on the same folds** - that's the one
+genuinely new piece of information this re-verification adds.
+
+Cluster distribution: 2-cluster split cluster_a 375 / cluster_b 14
+(similar ratio to `_full_pool`'s 354/10). 5-fold, 3 workers, total wall
+time about 2h16m (8151s, 5 folds scheduled across the pool - the first
+3 folds took 82 minutes, the remaining 2 finished 53 minutes after
+that).
+
+**Results** (n=389, mean `apply_hncs()` ΔE00 = 10.475):
+
+| Comparison | Improvement | Win/Loss | Sign-test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| 2-cluster hard vs `apply_hncs()` | -6.59% (10.475→11.165) | 167/222 | 0.0061 | [-0.944,-0.432] | **apply_hncs wins** |
+| 4-cluster (quantile) vs `apply_hncs()` | -5.48% (10.475→11.049) | 179/210 | 0.1281 | [-0.824,-0.317] | **apply_hncs wins** (CI excludes 0, sign-test p misses 0.05) |
+| Blend vs `apply_hncs()` | -6.74% (10.475→11.181) | 162/227 | 0.0011 | [-0.960,-0.447] | **apply_hncs wins** |
+| **4-cluster vs 2-cluster (direct paired)** | **+1.04%** (4-cluster better, 11.165→11.049) | 198/191 | 0.7610 | **[+0.036,+0.197]** (excludes 0) | 4-cluster narrowly wins |
+| Blend vs 2-cluster hard (direct paired) | -0.14% (blend slightly worse) | 157/232 | 0.0002 | [-0.039,+0.009] | inconclusive (CI includes 0) |
+
+**Compared with "Re-verification 2/3"**: the improvement margins
+(-6.59%/-5.48% vs -7.42%/-5.26%) line up within about ±1 point, and
+the direction/significance of the apply_hncs win is identical - the
+same conclusion emerging despite a different sample (389 vs 364 pairs)
+and a different 4-cluster method (quantile vs KMeans) is one more piece
+of evidence that this conclusion (structural mirroring loses to
+`apply_hncs()`) isn't an artifact of one particular implementation or
+sample. **The one place they disagree**: `_full_pool` found blend
+significantly worse than hard-cluster (-0.50%, CI [-0.078,-0.036],
+p<0.0001), while this run's direct paired comparison points the same
+direction (-0.14%) but comes back **inconclusive** (CI includes 0) -
+the 4x larger grid (1024 vs 256 combos) may have fit the blend anchors
+differently, and these two runs alone can't settle which is right
+(needs separate re-checking, out of this session's scope).
+
+**Newly confirmed**: going from 2 to 4 clusters is, for the first time,
+confirmed as a statistically real improvement in a direct paired
+comparison (CI excludes 0, +0.036 to +0.197) - though the margin is
+small (+1.04%) and nowhere near closing the gap with `apply_hncs()`
+(2-cluster -6.59%, 4-cluster -5.48%). This is the first time
+"Re-verification 3"'s observation that "the gap narrows as cluster
+count grows" has been directly tested within the same fold split.
+
+**The conclusion doesn't change**: `apply_hncs()` wins again. This
+experiment line has now reached the same conclusion three times across
+Re-verifications 2, 3, and this one - reproduced three times with
+different implementations, samples, and clustering methods, which
+moves it from "settled" to "settled and independently
+cross-validated." `apply_hncs()` remains unchanged by this experiment
+too (it was already protected).
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural` (390 pairs ×
+1024 combos × 5-fold, about 2h15m at 3 workers - with more memory
+headroom, raising the `N_WORKERS` cap to 5 runs faster, though in this
+session's environment 5 workers' combined pair_data cache (~1.6GB
+each) filled swap badly).
+
+## Resolving Re-verification 4's "one discrepancy" - grid size isn't the cause (2026-09-03)
+
+Re-verification 4 above left one question open: `_full_pool` found
+blend vs hard-cluster significantly favoring hard-cluster, while this
+run's direct paired comparison was inconclusive - grid size (1024 vs
+256 combos) and sample count (389 vs 364) differed simultaneously, so
+the cause couldn't be isolated. `tools/evaluate_hncs_structural_gridsize_ablation.py`
+answers this - it's 100% identical code to `evaluate_hncs_structural.py`
+for the loader/fold split (`load_pairs()`/`make_folds(seed=0)`,
+verified via `test_matches_original_script_fold_split`), with only
+`CHROMA_COMBOS` dropped from 1024 to 256 (matching `_full_pool`) to
+isolate that single variable (the unrelated 4-cluster branch was
+dropped too, to cut compute). 3 workers, 2107s (~35 minutes) (run-verified).
+
+**Result (n=389, 256 combos)**:
+
+| Comparison | Improvement | Wins/Losses | Sign test p | Bootstrap 95% CI | Verdict |
+|---|---|---|---|---|---|
+| 2-cluster hard vs `apply_hncs()` | -6.57% (10.475→11.163) | 167/222 | 0.0061 | [-0.942,-0.430] | apply_hncs wins |
+| Blend vs `apply_hncs()` | -6.71% (10.475→11.178) | 162/227 | 0.0011 | [-0.957,-0.444] | apply_hncs wins |
+| **Blend vs 2-cluster hard (direct paired)** | **-0.13%** | **157/232** | **0.0002** | **[-0.038,+0.009]** | **Inconclusive (CI includes 0)** |
+
+Essentially identical to the 1024-combo numbers to two decimal places
+(-6.59%/-6.74%/-0.14%, wins/losses 167/222 · 162/227 · 157/232 -
+**the win/loss counts are exactly the same regardless of grid size**,
+run-verified). **Dropping the grid 4x (1024 to 256) barely changes
+anything.** The hypothesis - that the 4x grid difference shifted the
+blend anchor fit enough to flip the conclusion - is **rejected**
+(run-verified): `fit_chroma_lut_grid()` converges to essentially the
+same optimum (sat_mult, hue_shift) at both grid sizes. The remaining
+candidate causes are the sample-count difference (389 vs 364 pairs) or
+some other undiscovered methodology gap (out of this session's scope -
+the next step, if revisited, would be re-running this script on
+`_full_pool`'s exact 364-pair subset to isolate sample count alone).
+
+Reproduce: `python3 -m tools.evaluate_hncs_structural_gridsize_ablation`
+(389 pairs × 256 combos × 5-fold, about 35 minutes at 3 workers).

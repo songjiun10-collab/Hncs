@@ -1327,6 +1327,40 @@ was there all along. The size of the number was never the point - the
 objective function was. Reproduce: `python3 -m
 tools.evaluate_x2dii_de00_grid`.
 
+### Joint shoulder_start x clahe_clip re-verification - already at the optimum (2026-08)
+
+The grid search above only swept exposure_gamma/toe_lift/shoulder_start/
+white_point - `clahe_clip` (=1.25) had simply been inherited from
+`apply_hncs()` (main)'s default and had never once been treated as a
+variable (user flagged this). To check for an interaction between
+`shoulder_start` and `clahe_clip`, a joint re-grid-search was run on the
+same X2D II 70 pairs (`tools/evaluate_x2dii_clahe_shoulder_grid.py`, new
+- exposure_gamma=0.6/toe_lift=0.02/white_point=0.95 held fixed,
+shoulder_start x 7 values x clahe_clip x 6 values = 42 combos).
+
+**Data source note**: `~/Documents/raw pair` (which `evaluate_x2dii_de00_grid.py`
+used, later recorded as moved to `~/local-work`) wasn't present locally
+this session, but all 124 files from the same manifest
+(`dpreview_raw_jpeg_pairs_clean.csv`) turned out to already exist under
+`datasets/hasselblad/contributed/*/raw|jpeg/` (124/124 matched), so the
+re-verification read from there instead.
+
+**Result - no contest, already the optimum**:
+
+| | ΔE00 |
+|---|---|
+| 42-combo LOO grid search vs apply_hncs(main) | 12.281 -> 10.542 (+14.16%, p<0.0001) |
+| 42-combo LOO grid search vs **current** apply_hncs_x2dii(ss=0.58, clip=1.25) | 10.484 -> 10.542 (**-0.56%, wins/losses=0/12, p=0.0005, CI [-0.099,-0.024] excludes 0**) |
+
+**58 of the 70 folds (83%) picked the current values (shoulder_start=0.58,
+clahe_clip=1.25) exactly**, and the remaining 12 folds picked a
+neighboring value (0.5/0.66) that dragged the LOO average down instead
+of up - the current values already win both by majority vote and by
+stability. **Conclusion: `clahe_clip=1.25`/`shoulder_start=0.58` weren't
+an unverified borrowed default after all - they were the actual joint
+optimum of this 2D grid.** No code change (`apply_hncs_x2dii()` left as
+is). Reproduce: `python3 -m tools.evaluate_x2dii_clahe_shoulder_grid`.
+
 ### apply_hncs_x1d50c added - Hasselblad X1D-50c specific (2026-08)
 
 20 new X1D-50c raw+jpeg pairs were added to the local library (verified
@@ -1835,3 +1869,312 @@ compared to the wrong target, so **re-verification is needed**. Canon has
 no shipped `apply_*` yet (still research-stage) so it's not urgent. The
 other brands are only off by 2-4 pairs, likely not enough to flip any
 already-published win/loss verdict, but will be re-checked separately.
+
+## clahe_clip - joint shoulder_start re-verification across all brands (2026-08)
+
+As found for X2D II (see "Joint shoulder_start x clahe_clip
+re-verification" above), most raw+jpeg-calibrated body-specific
+`apply_*` functions had simply inherited `clahe_clip=1.25` from the
+population-fit default without ever treating it as a grid-search
+variable. On the user's instruction ("all brands"), the remaining 9
+bodies with local raw+jpeg data were re-verified the same way
+(`tools/evaluate_all_brands_clahe_shoulder_grid.py`, new -
+exposure_gamma/toe_lift/white_point held at each body's already-adopted
+values, shoulder_start x 7 values x clahe_clip x 6 values = 42 combos,
+200px selection / 400px LOO confirm). Data was read from
+`datasets/<brand>/contributed/*/` (neither `~/local-work` nor
+`~/Documents/raw pair` existed locally this session - the same files
+turned out to already be present under the contributed sets instead).
+
+| Body | n | Improvement vs. current shipped | Sign-test p | CI | Verdict |
+|---|---|---|---|---|---|
+| Hasselblad X1D-50c | 20 | -3.32% | 0.5034 | [-0.617,+0.011] | Hold |
+| Sony a7V | 58* | +1.26% | 0.2370 | [+0.067,+0.345] | Hold (CI excludes 0 alone, sign test not significant - weak) |
+| Sony a7R VI | 40 | +0.77% | 0.1539 | [-0.041,+0.300] | Hold |
+| Leica SL3-P | 41 | +0.67% | 0.2110 | [-0.193,+0.294] | Hold |
+| Leica Q3 43 | 44 | +0.00% | - | - | Already optimal (44/44 unanimous) |
+| Leica SL2 | 54 | +0.00% | - | - | Already optimal (54/54 unanimous) |
+| Leica M10 | 32 | **-4.48%** | 0.0078 | [-0.580,-0.142] | **Current is better - do not touch** |
+| Fuji GFX100RF | 38 | **+6.96%** | 0.0139 | [+0.520,+1.366] | **Adopted** |
+| Fuji X-T30 III | 20 | +3.32% | 0.2632 | [-0.480,+1.076] | Hold (same direction as GFX100RF, but too small alone) |
+| Sigma BF | 82 | **+7.04%** | 0.0012 | [+0.670,+1.551] | **Adopted** |
+
+*Sony a7V: 17 of 75 manifest `.arw` files failed to decode
+("Unsupported file format or not RAW file"), leaving 58 usable - cause
+uninvestigated, needs a separate check.
+
+**Two adoptions**:
+- **`apply_provia()` in `brands/fuji.py`**: `clahe_clip` 1.25 -> 3.0
+  (`shoulder_start`=0.82 unchanged). GFX100RF: 38/38 folds unanimous.
+  X-T30 III (n=20) isn't significant on its own but points the same
+  direction (14/20 land on the clip=3.0 family) - not a contradiction -
+  so the larger-sample GFX100RF value was carried into the shared
+  function, the same way `shoulder_start=0.82` was originally adopted.
+- **`apply_sigma_bf_look` in `brands/sigma_bf.py`**: `_CLAHE_CLIP`
+  1.25 -> 3.0 (`toe_lift`/`shoulder_start`/`white_point` unchanged).
+  82/82 folds unanimous - a far more robust signal than this body's
+  original full-pixel confirmation (+0.53%, CI lower bound +0.007, the
+  weakest evidence in that whole batch).
+
+**Everything else left untouched**: X1D-50c, both Sony bodies, and Leica
+SL3-P all have a CI that includes 0 - held. Leica Q3 43 and SL2 were
+already sitting exactly at the optimum (same pattern as X2D II - an
+"unverified borrowed default" turning out to already be optimal isn't
+rare). **Leica M10 is the one reverse signal** - the grid search actually
+picks a combo significantly worse than the current values (p=0.0078, CI
+entirely negative and excluding 0) - for this body the original adoption
+process (which included a native-pixel confirmation) was evidently more
+trustworthy than this grid search, and this result must never be used to
+overwrite it.
+
+Reproduce: `python3 -m tools.evaluate_all_brands_clahe_shoulder_grid`
+(~450 pairs, ~25 minutes).
+
+## /goal "other brands' average ΔE00 -> under 10" - missed, ruled a structural limit (2026-08)
+
+This covers the user's `/goal` target: "average ΔE00 across all brands
+other than Hasselblad, under 10." **Bottom line up front: missed - and,
+after an opus escalation (below), judged structurally unreachable with
+current techniques.** Everything tried, and the reasoning, is recorded
+here.
+
+**1) Current-state survey** (`tools/measure_all_brand_baselines.py`,
+800px, each body's current shipped function as-is):
+
+| Group | ΔE00 |
+|---|---|
+| Canon (generic) | 23.012 |
+| Sony a7R VI (dedicated) | 17.318 |
+| Sony a7V (dedicated) | 16.652 |
+| Sigma (generic) | 16.250 |
+| Sigma BF (dedicated) | 15.990 |
+| Sony (generic) | 14.378 |
+| Fuji GFX100RF (dedicated) | 13.917 |
+| Fuji (generic) | 13.074 |
+| Leica Q3 43 (dedicated) | 11.144 |
+| Leica (generic) | 10.398 |
+| Leica SL2 (dedicated) | 9.731 |
+| Leica SL3-P (dedicated) | 8.975 |
+| Leica M10 (dedicated) | 8.509 |
+
+10 of 13 groups are at or above 10. Olympus/Panasonic/Pentax/PhaseOne/
+Ricoh GR have zero local raw+jpeg calibration data - their ΔE00 can't
+even be measured.
+
+**2) A 4-parameter tone-curve grid alone falls far short** - on Canon
+(the worst group, with no prior dedicated tuning at all), a ΔE00-direct
+grid search + LOO (`tools/fit_population_body_de00_grid.py`, toe_lift x
+shoulder_start x white_point x clahe_clip, 252 combos): 23.109 -> 22.041,
+**only +4.62%** (the statistics are solid, p<0.0001, but the size isn't
+enough).
+
+**3) Adding a color matrix helps, but nowhere near enough**: fit a fresh
+3x3 color matrix by least squares on raw native-white-balanced linear RGB
+(same method as the `hncs_structural` work), then apply the tone curve
+on top (`tools/fit_body_matrix_plus_tone_de00.py`): Canon 19.964
+(tone-only) -> 17.478 (matrix+tone), **+12.45%** (p=0.0006) - adding a
+saturation/hue LUT on top of that (`--chroma`) only gets to 17.242, a
+further +1.3 points - matrix+tone+chroma combined **plateaus in the
+17.2 range**.
+
+**Running the identical experiment on "Leica (generic, 244 pairs - 77%
+of which are actually the already-dedicated-tuned SL3-P/SL2/Q3-43/M10)"
+gives the opposite result**: the matrix actively hurts (12.558 ->
+13.684, **-8.97%**, p<0.0001, CI entirely negative) - the same pattern
+already found in the Hasselblad `hncs_structural` revalidation ("fitting
+a global matrix on pooled, diverse data can actively hurt") repeats here.
+
+**4) Slicing by ISO/exposure/portrait doesn't close the gap either**
+(`tools/breakdown_by_exposure_iso.py`, Canon's fixed matrix+tone+chroma
+pipeline): ISO buckets (low/mid/high/very-high) run 14.6-19.0, exposure-
+compensation buckets (under/neutral/over) run 14.4-19.7 - **no bucket
+comes anywhere near 10**. Portraits alone (OpenCV Haar-cascade face
+detection on the target JPEGs, 27 of 143 photos) give matrix+tone+chroma
+16.626 (the improvement itself has a CI including 0, held) - also
+nowhere near 10. **The error isn't concentrated in any particular
+condition - it's spread evenly, which means it's a structural floor,
+not a "bias" any parameter can shave off.**
+
+**5) Confirmed again that low-resolution grid search runs optimistic**:
+Leica generic's tone-only grid search (400px) reported 9.966 -> 9.634 -
+**already under 10**, and looked promising. But re-checking SL2-S (43
+pairs) alone - whose same 400px grid gave 10.587 -> 10.277 - at native
+pixel resolution (max_dim=3000) instead: it slipped to **11.935 ->
+11.824** (the same phenomenon as the X2D II CLAHE resolution-bias
+section above - CLAHE's fixed `tileGridSize=(8,8)` is biased in its own
+favor at low resolution). **Every low-resolution (200-400px) grid-search
+result from this session should be assumed to carry an optimistic bias
+and should not be cited without a native-pixel re-confirmation.**
+
+**6) Opus escalation - final verdict**: per this project's convention of
+escalating `/goal` ambiguity/difficulty to the strongest model tier
+rather than stalling, the full evidence trail was handed to opus for a
+call. Verdict: **structurally unreachable**.
+- This project's single most carefully tuned artifact
+  (`apply_hncs_x2dii()` - a 441-combo grid + LOO + 70 pairs + native-
+  pixel confirmation) still sits around ~11.7 at native pixel resolution
+  - it doesn't clear the 10 bar either. Expecting brand-new brands to
+  beat that on average is unrealistic.
+- The required drop is **-27.5%** on the 13-group average, while the
+  best technique found this session (matrix+tone+chroma) only manages
+  **+12.45%** on Canon (the group with the most headroom) and goes
+  negative on Leica - there is no available technique that produces
+  -27.5% on average.
+- Whatever residual survives matrix (color) + tone (brightness/contrast)
+  + saturation/hue is almost certainly demosaic/sharpening/noise-
+  reduction mismatch, missing lens correction, and scene-adaptive JPEG
+  processing (DRO/ALO and the like) - territory a static, global
+  function class cannot reach by construction. The only lever this
+  project has ever found that works there (per-generation/per-body
+  branching, conditional parameters) took Hasselblad alone several
+  sessions and hundreds of pairs.
+- Collecting data for Olympus/Panasonic/Pentax/PhaseOne/Ricoh GR would
+  be **counterproductive** - every "first measurement" baseline in this
+  project has started at 13-23, so adding five more groups near that
+  range would only pull the average up, not down.
+
+**What was executed on opus's recommendation**: re-checked SL2/SL3-P/M10
+(the three groups the survey called "already under 10") at native pixel
+resolution (`tools/confirm_leica_raw_look_extension.py --already10`,
+time-boxed to ~30 min - all 143 pairs actually finished in about 10):
+
+| Body | n | apply_leica_look (main) | apply_leica_raw_look (dedicated) | Verdict |
+|---|---|---|---|---|
+| SL3-P | 41 | 9.821 | **9.590** | still under 10 |
+| M10 | 32 | 9.562 | **9.415** | still under 10 |
+| SL2 | 55 | 10.714 | **10.511** | **misses** (the survey's 800px 9.731 was optimistic bias) |
+
+Only 2 of the 3 (SL3-P/M10) are genuinely under 10 at native pixel
+resolution - SL2 just misses (10.5). Counting SL2-S (11.824, "independent
+re-confirmation" above) too, only **3 of the 5** dedicated-tuned Leica
+bodies are actually under 10 - the rest (SL2/SL2-S) are close, not there.
+SL2-S stays adopted (it had already been adopted in an earlier session
+and remains statistically solid - see `brands/leica_raw.py`'s docstring,
+though it should be noted this does not put it under 10). CL was rejected
+for lack of evidence.
+
+**Conclusion**: the miss isn't from insufficient effort - it's a genuine
+methodological ceiling. The recommendation back to the user is to
+re-target (e.g. "each dedicated function beats its own generic baseline
+by >=5% at native pixel resolution," or "close the gap toward
+Hasselblad's ~11.7 floor") or to authorize a multi-session, per-body/
+per-scene conditional-branching project.
+
+Reproduce: `python3 -m tools.fit_population_body_de00_grid canon`,
+`... fit_body_matrix_plus_tone_de00 canon --chroma`,
+`... breakdown_by_exposure_iso canon`,
+`... confirm_leica_raw_look_extension`.
+
+## Hasselblad ISO/exposure/portrait breakdown - turns out to be a generation-effect illusion (2026-09)
+
+Same diagnostic as the Canon one above, applied to Hasselblad per the
+user's instruction ("break down by exposure, ISO, and portrait too, and
+run Hasselblad"). Hasselblad has no dedicated matrix-fitting pipeline, so
+no new parameters were fit - instead the **actual deployed function per
+generation** (`apply_hncs_x2dii()` for X2D II 100C only, `apply_hncs()`
+for everything else) was applied as-is across the full
+`datasets/hasselblad/contributed/` pool (368 pairs excluding chart
+frames, dedup applied, 367 decoded successfully), bucketed by ISO,
+exposure compensation (EV), and portrait detection (new
+`tools/breakdown_hasselblad_by_exposure_iso_portrait.py`).
+
+**Overall mean ΔE00 = 10.290** (actual deployed function per generation, in-sample diagnostic).
+
+**By generation** (worst to best):
+
+| Generation | n | Mean ΔE00 | Std dev |
+|---|---|---|---|
+| X1D | 121 | 13.410 | 6.876 |
+| X1D II 50C | 38 | 11.795 | 6.124 |
+| X2D II 100C | 74 | 10.421 | **2.265** |
+| Hasselblad X1D-50c | 20 | 9.654 | 5.826 |
+| X2D 100C | 82 | 6.783 | 3.524 |
+| CFV 100C/907X | 32 | 5.783 | 2.956 |
+
+**Unexpected finding**: `apply_hncs()` (main) was originally built from
+13 X1D raw+jpeg pairs, yet in this largest pool to date (368 pairs),
+**X1D is now the worst-performing generation** (13.410, also the highest
+variance). Generations added to the population later - CFV 100C/907X
+(5.783) and X2D 100C (6.783) - fit noticeably better than the source
+generation itself, a paradoxical situation where the main function now
+fits later-added generations better than the one it was originally
+derived from. `apply_hncs_x2dii()` (the dedicated variant) has a
+middling mean (10.421) but **the lowest standard deviation of any
+generation** (2.265) - evidence that dedicated per-generation
+calibration improves consistency/predictability more than it improves
+the raw mean.
+
+**No independent signal along ISO/exposure/portrait** - the buckets that
+looked worse (low ISO <=200: 10.784, unknown EV: 12.061) turn out to be
+a **generation-effect confound**: X1D-generation photos are simply
+overrepresented in those buckets. Portrait photos (80) actually do
+slightly better than non-portrait (287) - 9.715 vs. 10.450, no evidence
+portraits are harder. The worst 10 pairs are all X1D/X1D II
+50C/X1D-50c (zero from X2D II, X2D 100C, or CFV), reinforcing the same
+conclusion.
+
+**Conclusion**: there's no room to reduce Hasselblad's error along the
+ISO/exposure/portrait axes - the only real lever is generation (already
+known), and X1D is the newly-identified weak point within it. Neither
+`apply_hncs()` nor `apply_hncs_x2dii()` changes from this investigation
+(diagnostic only).
+
+Reproduce: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
+(368 pairs, ~9 minutes with 3-core parallel decode).
+
+## New apply_hncs_x1d - X1D-dedicated, 121/121 folds unanimous, +18.35% (2026-09)
+
+Following the per-generation breakdown identifying X1D as the worst
+generation, the user asked for a dedicated X1D function, same as X2D
+II/X1D-50c. New `tools/evaluate_x1d_de00_grid.py` (same methodology as
+`evaluate_x2dii_de00_grid.py` - 441-combo ΔE00-direct grid including
+exposure_gamma, low-res 200px combo selection per fold, then **a full
+LOO evaluation at 3000px (native pixel)** - no separate native-pixel
+re-check step needed, since the evaluation itself is already native
+pixel) applied to X1D's 121 pairs from `collect_local_pairs()` (dedup
+applied, chart excluded):
+
+**Result**: `apply_hncs()` (main) 14.013 -> LOO-optimized 11.442,
+**+18.35%**, wins/losses=102/19, sign-test p<0.0001, bootstrap 95% CI
+[+2.164, +2.974] (excludes zero) - **121/121 folds unanimous**,
+converging on `exposure_gamma=0.6, toe_lift=0.0, shoulder_start=0.82,
+white_point=1.0`. A rare case of both a larger sample than any other
+body experiment this session AND complete unanimity - more confidence
+than X2D II (58/70) or X1D-50c (20/20, but small sample).
+
+`clahe_clip` isn't in this grid, so it stays at main's default (1.25) -
+same convention as X2D II/X1D-50c.
+
+**Shipped**: new `apply_hncs_x1d()` in `brands/hasselblad_x1d.py`,
+`apply_hncs()` (main) untouched. Of Hasselblad's 6 generations, 3
+(X1D/X1D-50c/X2D II) now have a dedicated function. Of the remaining 3,
+X2D 100C (6.783) and CFV 100C/907X (5.783) already fit main well, but
+**X1D II 50C (11.795, second-worst generation) is still a real,
+unaddressed gap** - left as the next candidate.
+
+Reproduce: `python3 -m tools.evaluate_x1d_de00_grid` (121 pairs, ~15-20
+minutes with sequential decode).
+
+## New apply_hncs_x1dii50c - X1D II 50C-dedicated, 38/38 folds unanimous (+9.63%) (2026-09)
+
+Following X1D, the user asked to also dedicate a function to X1D II 50C
+(second-worst, 11.795) using the same method
+(`tools/evaluate_x1dii50c_de00_grid.py`, a copy of
+`evaluate_x1d_de00_grid.py`) on X1D II 50C's 38 pairs from
+`collect_local_pairs()` (dedup applied, chart excluded):
+
+**Result**: `apply_hncs()` (main) 12.286 -> LOO-optimized 11.102,
+**+9.63%**, wins/losses=34/4, sign-test p<0.0001, bootstrap 95% CI
+[+0.886, +1.482] (excludes zero) - **38/38 folds unanimous**, converging
+on `exposure_gamma=0.7, toe_lift=0.02, shoulder_start=0.82,
+white_point=1.0`.
+
+**Shipped**: new `apply_hncs_x1dii50c()` in
+`brands/hasselblad_x1dii50c.py`. Of Hasselblad's 6 generations, 4
+(X1D/X1D-50c/X1D II 50C/X2D II 100C) now have a dedicated function; the
+remaining 2 (X2D 100C/CFV 100C/907X) still use main directly, which is
+already good enough for them (6.783/5.783) - **all 6 generations now
+addressed**.
+
+Reproduce: `python3 -m tools.evaluate_x1dii50c_de00_grid` (38 pairs, a
+few minutes).

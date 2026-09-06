@@ -105,6 +105,41 @@ single render pipeline. That was the right scope: presets are a
 post-processing layer on top of HNCS, not part of the color-science
 layer itself.
 
+### 1-4. Hasselblad's engineering team confirms 1-1 officially
+
+**Source**: `what-hncs-actually-is` (blog, ~2026-09, URL supplied by
+the user) — unlike his earlier posts, the author here quotes a direct
+August 2026 official reply he received from Hasselblad's engineering
+team:
+
+> "Both Phocus and Phocus Mobile apply HNCS when processing RAW
+> images. HNCS takes effect during the intermediate stages of image
+> processing and is strongly linked to white balance parameters."
+
+This is the only claim in this entire section 1 that is **not
+reverse-engineering but a first-party source Hasselblad confirmed
+directly** — the "not officially confirmed" caveat this document keeps
+repeating in "Sources and reliability" no longer applies to this one
+fact (HNCS is a render-time stage strongly tied to WB). The official
+reply also confirms: HNCS runs during "intermediate stages," vignette
+correction and tone curves operate independently of it, and it sits
+inside the internal rendering engine ahead of the adjustments layer
+(consistent with 1-1's "render-time pipeline" claim; newly confirmed
+is the pipeline ordering — HNCS runs before the adjustments layer).
+
+Prompted by this official reply, the author **corrected his own
+earlier claim** that default Mac imports skip HNCS — they don't; the
+only visible difference was lens vignette correction.
+
+**Relation to this project**: `apply_hncs()` was already designed on
+the render-time-pipeline assumption (1-1), so this doesn't change any
+code directly — but the claim "HNCS is strongly tied to WB parameters"
+is now Hasselblad-confirmed rather than a reverse-engineering
+inference, and this document's confidence rating for that specific
+claim is upgraded accordingly. The specific numbers (4 illuminants,
+blending, section 1-2) are still forum-thread inference and this
+upgrade does not extend to them.
+
 ## 2. Measured Phocus vs. Capture One vs. Lightroom comparison
 
 **Source**: `phocus-capture-one-lightroom-raw-color-test` (blog, data
@@ -332,6 +367,9 @@ Phocus render (2026-08)" section.)
 ## 7. Reference list
 
 **Directly cited / analyzed in depth**:
+- Konrad Michels, "What HNCS Actually Is", blog.tonalphoto.com,
+  ~2026-09 — quotes Hasselblad engineering's official August 2026
+  reply (section 1-4)
 - Konrad Michels, "How HNCS Actually Works: Hasselblad's Color Science
   Explained", blog.tonalphoto.com, 2026-07-18
 - Konrad Michels, "Phocus, Capture One, or Lightroom for Hasselblad?
