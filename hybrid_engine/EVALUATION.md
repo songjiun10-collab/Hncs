@@ -4875,7 +4875,19 @@ fp L(위 표 n=20, `n_failed_detect: 0`)과 Ricoh GR IV(위 표 n=23,
 같은 경우) - 둘 다 위 CV CI가 정확히 이 발급 표본과 1:1 대응한다고
 주장하지는 않는다.
 
-각 브랜드 실행(`python3 -m tools.fit_dpreview_studio_chart <raw_dir> <brand> <camera> <ext>`)이 직접 출력한 in-sample ΔE00(부트스트랩 CI 없음 - 전체 표본을 다 써서 발급용으로 다시 피팅한 값이라 위 CV 수치와 직접 비교 불가, out-of-sample 유의성은 위 두 문단이 가리키는 CV 표로 이미 결정됨)과, 같은 값이 저장된 `camera_native_matrix_report.json`(`n_images`/`chart_matrix_in_sample_delta_e_mean` 필드) 경로 - DCP/ICC는 `hybrid_engine/assets/profiles/`에:
+> **정정(2026-09-06, 발급 표본 일치 가드 추가)**: 위 정정 당시 CI 리포트는
+> 재다운로드 전 파일명/검출 결과를 기준으로 작성돼 발급 표본과 3개 바디가
+> 달랐다. 현재 raw/ 폴더의 **실제 발급 표본 전체**를 다시
+> `validate_dpreview_chart_brand.py`로 검증하고 리포트를 갱신했다.
+> Panasonic은 n=20, ΔE00 28.904→12.342(+57.30%), CI=[+14.128,+19.027],
+> Sigma는 n=22, 30.548→12.329(+59.64%), CI=[+15.832,+20.699],
+> Ricoh는 n=24, 28.733→13.513(+52.97%), CI=[+12.255,+18.135]가 됐다.
+> Canon(n=22), Nikon(n=24), OM-3(n=22), Pentax(n=24)도 같은 raw/ 폴더로
+> 재검증했으며, 이제 7개 모두 `chart_validation_report.json`의 `images`
+> 집합과 발급 리포트의 `images` 집합이 일치한다. 발급 스크립트도 이 일치를
+> 확인하지 않으면 종료하도록 수정했다.
+
+각 브랜드 실행(`python3 -m tools.fit_dpreview_studio_chart <raw_dir> <brand> <camera> <ext> --unique-camera-model <Adobe 내부 코드명>`)이 직접 출력한 in-sample ΔE00(부트스트랩 CI 없음 - 전체 표본을 다 써서 발급용으로 다시 피팅한 값이라 위 CV 수치와 직접 비교 불가, out-of-sample 유의성은 위 두 문단이 가리키는 CV 표로 이미 결정됨)과, 같은 값이 저장된 `camera_native_matrix_report.json`(`n_images`/`chart_matrix_in_sample_delta_e_mean` 필드) 경로 - DCP/ICC는 `hybrid_engine/assets/profiles/`에:
 
 - Canon R6III: n=22, in-sample ΔE00=16.3517(CI 없음) → `canon_chart.dcp`/`.icc`, `datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/camera_native_matrix_report.json`
 - Nikon Z5II: n=24, in-sample ΔE00=11.0676(CI 없음) → `nikon_chart.dcp`/`.icc`, `datasets/nikon/contributed/dpreview-z5ii-studio-chart-2026-09/camera_native_matrix_report.json`
