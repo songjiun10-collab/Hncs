@@ -1,0 +1,67 @@
+{
+  "brand": "canon",
+  "camera": "Canon EOS R6 Mark III",
+  "n_images": 22,
+  "n_failed_detect": 0,
+  "images": [
+    "0b24276b00a143bea65d315c8f636f67.cr3",
+    "0e25853a127846fd8d948a75784b009f.cr3",
+    "249b89fe89fd43f3bea696f25ac7be37.cr3",
+    "27d827483093442aa1bff0557d936dc8.cr3",
+    "2c7cddf8c2bc4bdb99e24bb07d94df5b.cr3",
+    "2d6fbd4a3a674e3f9909186fa67a8e57.cr3",
+    "3a7474d88e2c4364bdff0af181029a98.cr3",
+    "4877fb7ab448496d8730cfaa1f80074e.cr3",
+    "4de401ab80c4444daf3ab247ab6d495f.cr3",
+    "642403fc0a9a429eb870b3a21cac17c9.cr3",
+    "67f40630697d449faa9d6dee19a00b64.cr3",
+    "7994f135d1084732902c2c2b1b2a92fb.cr3",
+    "8896e4d9c73841faa48cef3c8c2c8c73.cr3",
+    "a7e085bcc5004622b0b779700e078bdf.cr3",
+    "aa5393c376654fada8cbd1a5001fbaee.cr3",
+    "af8a3fbb5c1741b785bf4a1260c6a701.cr3",
+    "bba7cbccf654455b9e8a3e0c03dd5373.cr3",
+    "d070f7dfb35b4c0eb0366aba6de3da42.cr3",
+    "d3d5bc5df341404c97711042741aa2d9.cr3",
+    "df3f0510c96a46689bf5a3e84f26e387.cr3",
+    "edce94111a3e4150be0fd3f41b6e816c.cr3",
+    "f69b13201e9d45e7acabe952a90915e2.cr3"
+  ],
+  "chroma_patch_weight": 3.0,
+  "chart_matrix_in_sample": [
+    [
+      1.3293543112183324,
+      0.27946379666961585,
+      -0.818677052078343
+    ],
+    [
+      2.436299500897726,
+      3.679841622550585,
+      0.6849459650820877
+    ],
+    [
+      -2.7412171212717817,
+      -3.165078460819205,
+      1.2596385080824555
+    ]
+  ],
+  "chart_matrix_in_sample_delta_e_mean": 16.351690817109983,
+  "dcp_color_matrix_1": [
+    [
+      1.1901636866695546,
+      -0.8653420552422265,
+      0.4156919396846968
+    ],
+    [
+      0.39172273627011445,
+      -0.09965863034882955,
+      0.602053432184849
+    ],
+    [
+      0.5605185823740919,
+      -0.5082211300896312,
+      0.7366743527296312
+    ]
+  ],
+  "_comment": "tools/fit_dpreview_studio_chart.py - tools/fit_leica_sl3p_studio_chart.py(2026-09-02)의 일반화판. 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승, ridge=0.1, 전체 표본으로 최종 매트릭스 피팅. 이 브랜드의 챠트 보정 유의성(부트스트랩 95% CI)은 같은 폴더의 chart_validation_report.json(validate_dpreview_chart_brand.py, k-fold CV)에서 별도로 검증됨 - 이 리포트는 CV가 아니라 발급용 in-sample 피팅. 실기기 UniqueCameraModel 미확인 - 'Canon EOS R6 Mark III'는 EXIF Model 문자열."
+}

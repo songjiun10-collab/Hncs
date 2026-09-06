@@ -1,0 +1,69 @@
+{
+  "brand": "nikon",
+  "camera": "Nikon Z5II",
+  "n_images": 24,
+  "n_failed_detect": 0,
+  "images": [
+    "009545e86e9d45b4977df23df07f9545.nef",
+    "00e81692e9384459a7db7f394dbe0c78.nef",
+    "0584419642e847e1b78c3aceffa3396c.nef",
+    "0f1ba18fee694ff1956672b0de20af2f.nef",
+    "16abe839633848d983cd7dde7a779d4c.nef",
+    "37ac4541059a4d27a1b5e0aa228def6b.nef",
+    "474f3a92647d4ea3a3046e4e5e28dda1.nef",
+    "56827f1f568b4aff8d5a0b166d8939ac.nef",
+    "5b5a5dd116a748a89fcf323d7b7822cd.nef",
+    "64102eaebd28450f9dce38645ef99aa8.nef",
+    "72f75e92e9554336a3b08cd0c40af6cd.nef",
+    "78adfe943f034834ae9385a550e66f5e.nef",
+    "86d94d7d95b8438bacb410dc4586cbc5.nef",
+    "8be61c495ba240c9a7d91aadb5e0c6f5.nef",
+    "8c010a156bee4923b3e881f124e2356d.nef",
+    "90a0501f7e4f411494c8bbcb8249b6dc.nef",
+    "9e76b76df09b4eb9a4cb1c68e99b2c28.nef",
+    "a1fe67b4caf644cd8e9d8202326a3153.nef",
+    "a6fbc3853c8c431290b5e8e5fdaa0090.nef",
+    "ad6acbc0027743c2bd65e064271f638e.nef",
+    "e14d5f94f1bc4b19aeacda25e6489a79.nef",
+    "ead27333fd264996a22cc8634760b8c1.nef",
+    "ed9d6031f40b4e5782dcdb9830a5b71f.nef",
+    "f5f4ea0a88b04604b79432415e10c546.nef"
+  ],
+  "chroma_patch_weight": 3.0,
+  "chart_matrix_in_sample": [
+    [
+      2.582856651106547,
+      1.3316613265833597,
+      0.7123926816105249
+    ],
+    [
+      0.9430572577369493,
+      2.326381220736605,
+      -0.22453227793927974
+    ],
+    [
+      -0.11885016232944791,
+      -0.7936457949557799,
+      2.099338224393476
+    ]
+  ],
+  "chart_matrix_in_sample_delta_e_mean": 11.067568298383144,
+  "dcp_color_matrix_1": [
+    [
+      0.5105446012432504,
+      -0.21190430014975883,
+      -0.05120596898757351
+    ],
+    [
+      -0.3646538723815632,
+      0.5974818335136942,
+      0.20523123325136414
+    ],
+    [
+      -0.21225012578209104,
+      0.1358109076573538,
+      0.5156671665807941
+    ]
+  ],
+  "_comment": "tools/fit_dpreview_studio_chart.py - tools/fit_leica_sl3p_studio_chart.py(2026-09-02)의 일반화판. 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승, ridge=0.1, 전체 표본으로 최종 매트릭스 피팅. 이 브랜드의 챠트 보정 유의성(부트스트랩 95% CI)은 같은 폴더의 chart_validation_report.json(validate_dpreview_chart_brand.py, k-fold CV)에서 별도로 검증됨 - 이 리포트는 CV가 아니라 발급용 in-sample 피팅. 실기기 UniqueCameraModel 미확인 - 'Nikon Z5II'는 EXIF Model 문자열."
+}

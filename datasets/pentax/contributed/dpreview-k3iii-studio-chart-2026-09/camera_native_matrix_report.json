@@ -1,0 +1,69 @@
+{
+  "brand": "pentax_k3iii",
+  "camera": "Pentax K-3 Mark III",
+  "n_images": 24,
+  "n_failed_detect": 0,
+  "images": [
+    "019dd7635c304a42a0b083c605d2fea7.dng",
+    "075d5e42a595487490f193dbd2c64a22.dng",
+    "09b4f09903584c07b480d5e44a784181.dng",
+    "272dec4894c849aca3d7b980e5357bf5.dng",
+    "41cc53a68e774be5a5027b1026b9e573.dng",
+    "475118c5f07d42f693c042357c8eb35c.dng",
+    "47a99d386b0c4b1f99c362cba9618f27.dng",
+    "4804c0c68e9a49ebab5faa9e7e404995.dng",
+    "67e7f31271a94d5c89f64d65425b0234.dng",
+    "69bbe6c9f4e04bb59fbd0b21fee89ad5.dng",
+    "7075e2c94c60468cbe09dd52fa322ead.dng",
+    "7e659ae59fe5400a91df17d7a3e00c93.dng",
+    "98c9cf2fd3504ab8b0be348e3d15662e.dng",
+    "b21695562b2f46b8b2bee6a23cd6c48b.dng",
+    "ba652ca6a48d4cfd936fc733f77e5d5c.dng",
+    "bce5e1ca3e12422ea0e14abe71b980f7.dng",
+    "c11d154c26c7479b951da46eb31b93c5.dng",
+    "c5ea7056585d43a488260cba70de92f7.dng",
+    "ce59ab8d0acc4f4cb36d9b500e497334.dng",
+    "d7ca1e1006844459a2760344fd368a4d.dng",
+    "d9d93c69e06544378651489781136546.dng",
+    "e61056b3980b493fb6cbe7623845681b.dng",
+    "f11d16117f254c389889774939c0b679.dng",
+    "f86631fdb59c49e9ab95eb73789b7914.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "chart_matrix_in_sample": [
+    [
+      2.966552344433598,
+      1.6920780203293193,
+      0.5317157343764667
+    ],
+    [
+      0.9839293981102458,
+      1.9277515628339374,
+      0.043811670858443744
+    ],
+    [
+      -1.1752343046187164,
+      -1.6867299990812146,
+      1.3187070415386029
+    ]
+  ],
+  "chart_matrix_in_sample_delta_e_mean": 17.232123231529297,
+  "dcp_color_matrix_1": [
+    [
+      0.451027012336246,
+      -0.2325795957971026,
+      0.10446856766712455
+    ],
+    [
+      -0.539330828531091,
+      0.7822005099319363,
+      0.5198432650900349
+    ],
+    [
+      -0.16394025931061676,
+      0.06779118976227627,
+      0.6989249224908559
+    ]
+  ],
+  "_comment": "tools/fit_dpreview_studio_chart.py - tools/fit_leica_sl3p_studio_chart.py(2026-09-02)의 일반화판. 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승, ridge=0.1, 전체 표본으로 최종 매트릭스 피팅. 이 브랜드의 챠트 보정 유의성(부트스트랩 95% CI)은 같은 폴더의 chart_validation_report.json(validate_dpreview_chart_brand.py, k-fold CV)에서 별도로 검증됨 - 이 리포트는 CV가 아니라 발급용 in-sample 피팅. 실기기 UniqueCameraModel 미확인 - 'Pentax K-3 Mark III'는 EXIF Model 문자열."
+}

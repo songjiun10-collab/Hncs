@@ -1,0 +1,67 @@
+{
+  "brand": "olympus_om3",
+  "camera": "OM System OM-3",
+  "n_images": 22,
+  "n_failed_detect": 0,
+  "images": [
+    "076fcf47e3804688b93efd187b3d2d10.orf",
+    "0b85e9d9886c48ed95c0dfcad69bf14c.orf",
+    "11cbe959240248299539453f9c69b7cb.orf",
+    "17e2f87d2d48468c929b695d62fcb35b.orf",
+    "2c4b446efcfa4a149493470736d00149.orf",
+    "3be37d27d22a472b80790b9ed18bf9dc.orf",
+    "3cc1c2c90dba4a56a7fa4b8e6bb4753c.orf",
+    "5b58ed71e1af495c8b976000c1eeff19.orf",
+    "5d658957f2de4ef5b3f4c1ca9d351ed1.orf",
+    "6aee525496f047479009491c6a60ba20.orf",
+    "840ab3f9c45c45e69b44f0f3b9b081ad.orf",
+    "963e918a56d94c0793afcaf705b65de2.orf",
+    "98836e190d4f4559bca80737eabe458a.orf",
+    "9b4cf0d1c64547b09349ee0b1c24876b.orf",
+    "9df864ff65c64bdea098bcdbae4bec6d.orf",
+    "bb2690365bd9480d9037cb1c6a3e6ebf.orf",
+    "bca6148b61bf4e2b8fefcd28a4ab0ab0.orf",
+    "cecc1003df414da182c4d54699a760ac.orf",
+    "d2817584a2a74373941e7b15406da193.orf",
+    "f2d6853a9557456581b6a894ac6250f0.orf",
+    "f950eb929bed44f8a1a87325bff94002.orf",
+    "fb99ccdd04834efe862ddd6f699751dd.orf"
+  ],
+  "chroma_patch_weight": 3.0,
+  "chart_matrix_in_sample": [
+    [
+      3.4914800739474505,
+      1.8274127395235895,
+      0.9006230170678895
+    ],
+    [
+      1.0025100740162245,
+      2.3220116402202735,
+      -0.168572079421925
+    ],
+    [
+      -0.31788205346560866,
+      -1.0788231232591714,
+      2.754999823787301
+    ]
+  ],
+  "chart_matrix_in_sample_delta_e_mean": 13.021354253099371,
+  "dcp_color_matrix_1": [
+    [
+      0.3780120738026903,
+      -0.16471996653392343,
+      -0.02088582874207961
+    ],
+    [
+      -0.36529177017214964,
+      0.6024392795887313,
+      0.19375889702587604
+    ],
+    [
+      -0.14592536965655428,
+      0.09070963749583044,
+      0.38165976970130805
+    ]
+  ],
+  "_comment": "tools/fit_dpreview_studio_chart.py - tools/fit_leica_sl3p_studio_chart.py(2026-09-02)의 일반화판. 무채색 6패치(인덱스 18-23) 대비 유채색 18패치 3x 가중 최소자승, ridge=0.1, 전체 표본으로 최종 매트릭스 피팅. 이 브랜드의 챠트 보정 유의성(부트스트랩 95% CI)은 같은 폴더의 chart_validation_report.json(validate_dpreview_chart_brand.py, k-fold CV)에서 별도로 검증됨 - 이 리포트는 CV가 아니라 발급용 in-sample 피팅. 실기기 UniqueCameraModel 미확인 - 'OM System OM-3'는 EXIF Model 문자열."
+}
