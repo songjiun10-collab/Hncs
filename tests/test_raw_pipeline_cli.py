@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from tools.raw_pipeline import lens_correct_linear_image
+from tools.cli.raw_pipeline import lens_correct_linear_image
 
 
 class TestLensCorrectLinearImage(unittest.TestCase):
@@ -19,8 +19,8 @@ class TestLensCorrectLinearImage(unittest.TestCase):
         linear = np.full((4, 5, 3), 0.18, dtype=np.float32)
         corrected = linear + 0.01
         info = {"ok": True, "camera": "X-T1", "lens": "XF10-24mmF4 R OIS"}
-        with patch("tools.raw_pipeline.resolve_lens_params", return_value=self._PARAMS) as resolve:
-            with patch("tools.raw_pipeline.correct_from_exif", return_value=(corrected, info)) as correct:
+        with patch("tools.cli.raw_pipeline.resolve_lens_params", return_value=self._PARAMS) as resolve:
+            with patch("tools.cli.raw_pipeline.correct_from_exif", return_value=(corrected, info)) as correct:
                 result, result_info = lens_correct_linear_image(
                     "input.RAF", linear, distance=12.5,
                 )
@@ -36,14 +36,14 @@ class TestLensCorrectLinearImage(unittest.TestCase):
     def test_lensfun_match_failure_is_not_silently_ignored(self):
         linear = np.zeros((2, 2, 3), dtype=np.float32)
         info = {"ok": False, "reason": "lens_not_found", "lens_model": "Unknown"}
-        with patch("tools.raw_pipeline.resolve_lens_params", return_value=self._PARAMS):
-            with patch("tools.raw_pipeline.correct_from_exif", return_value=(None, info)):
+        with patch("tools.cli.raw_pipeline.resolve_lens_params", return_value=self._PARAMS):
+            with patch("tools.cli.raw_pipeline.correct_from_exif", return_value=(None, info)):
                 with self.assertRaisesRegex(RuntimeError, "lens_not_found"):
                     lens_correct_linear_image("input.RAF", linear)
 
     def test_metadata_failure_propagates_to_cli_layer(self):
         linear = np.zeros((2, 2, 3), dtype=np.float32)
-        with patch("tools.raw_pipeline.resolve_lens_params",
+        with patch("tools.cli.raw_pipeline.resolve_lens_params",
                    side_effect=ValueError("EXIF metadata missing")):
             with self.assertRaisesRegex(ValueError, "metadata missing"):
                 lens_correct_linear_image("input.RAF", linear)

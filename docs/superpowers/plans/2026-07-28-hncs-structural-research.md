@@ -265,7 +265,7 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
     -> 클러스터별 chroma LUT -> 공유 필름커브.
 
     illuminant_matrices/chroma_lut_params는 {"cluster_a": ..., "cluster_b": ...}
-    형태의 피팅 결과를 받는다(피팅 자체는 tools/evaluate_hncs_structural.py).
+    형태의 피팅 결과를 받는다(피팅 자체는 tools/research/evaluate_hncs_structural.py).
     필름커브만 클러스터로 안 나누고 공유 - 톤(밝기 분포)은 조명보다
     노출/장면에 더 좌우된다고 보는 판단(v11에서 apply_hncs()의
     toe_lift/shoulder_start를 표본이 작아 바꾸지 않은 전례와 같은
@@ -378,7 +378,7 @@ leave-one-out 교차검증(13회, 매회 1쌍을 held-out으로 빼고 나머지
 피팅)으로 이 실험 모듈과 `apply_hncs()`(같은 raw 기반 baseline에
 적용, 공정 비교) 양쪽의 ΔE(CIEDE2000)를 같은 13쌍에 대해 재측정했다.
 
-<!-- 결과는 tools/evaluate_hncs_structural.py 실행 후 채워짐 -->
+<!-- 결과는 tools/research/evaluate_hncs_structural.py 실행 후 채워짐 -->
 
 ## 한계
 
@@ -473,7 +473,7 @@ fitting on the rest) re-measured ΔE (CIEDE2000) for both this
 experimental module and `apply_hncs()` (applied to the same raw-derived
 baseline, for a fair comparison) on the same 13 pairs.
 
-<!-- Results filled in after running tools/evaluate_hncs_structural.py -->
+<!-- Results filled in after running tools/research/evaluate_hncs_structural.py -->
 
 ## Limitations
 
@@ -506,15 +506,15 @@ git commit -m "Add bilingual HNCS structural research document"
 
 ---
 
-### Task 3: `tools/evaluate_hncs_structural.py` — calibration + leave-one-out cross-validation
+### Task 3: `tools/research/evaluate_hncs_structural.py` — calibration + leave-one-out cross-validation
 
 **Files:**
-- Create: `tools/evaluate_hncs_structural.py`
+- Create: `tools/research/evaluate_hncs_structural.py`
 - Test: `tests/test_evaluate_hncs_structural.py`
 
 **Interfaces:**
 - Consumes: everything from Task 1 (`decode_and_white_balance`, `classify_illuminant_cluster`, `apply_chroma_lut`, `apply_hncs_structural`). `hybrid_engine.core.raw_baseline.fit_color_matrix(sources, targets, ridge=0.0)` → `(3,3)` matrix. `hybrid_engine.core.raw_baseline.apply_color_matrix`. `core.curve.film_curve`. `hybrid_engine.utils.evaluate.mean_delta_e(rgb_a_linear, rgb_b_linear, method="CIE 2000")` and `load_image_linear_for_evaluate(target_path, result_shape, resize_to_match=True)`. `hybrid_engine.utils.io.decode_raw(raw_path)`, `decode_raw_native(raw_path)`, `load_image_linear(path, resize_to=None)`. `brands.hasselblad.apply_hncs(img_bgr, ...)` (uint8 BGR in/out). `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` (13 rows, `jpeg_url` column gives the basename used to find cache files). `raw_calib_cache/{name}.jpg.3FR` or `.fff` (raw) and `raw_calib_cache/{name}.jpg.target.jpg` (target JPEG).
-- Produces: `_pair_names()`, `_resize_max_dim(img, max_dim)` (unit-tested, portable helpers). `load_pairs()`, `run_loocv()`, `main()` (full pipeline, verified by actually running the script — not committed unit tests, matching this project's existing precedent for one-off experiment scripts like `tools/analyze_camera_native_matrix.py`, which also has no test file).
+- Produces: `_pair_names()`, `_resize_max_dim(img, max_dim)` (unit-tested, portable helpers). `load_pairs()`, `run_loocv()`, `main()` (full pipeline, verified by actually running the script — not committed unit tests, matching this project's existing precedent for one-off experiment scripts like `tools/fit/analyze_camera_native_matrix.py`, which also has no test file).
 
 **Design notes for the implementer:**
 
@@ -529,7 +529,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_hncs_structural import _pair_names, _resize_max_dim
+from tools.research.evaluate_hncs_structural import _pair_names, _resize_max_dim
 
 
 class TestPairNames(unittest.TestCase):
@@ -572,11 +572,11 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `python3 -m unittest tests.test_evaluate_hncs_structural -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'tools.evaluate_hncs_structural'`
+Expected: FAIL with `ModuleNotFoundError: No module named 'tools.research.evaluate_hncs_structural'`
 
 - [ ] **Step 3: Write the implementation**
 
-Create `tools/evaluate_hncs_structural.py`:
+Create `tools/research/evaluate_hncs_structural.py`:
 
 ```python
 """hybrid_engine/research/hncs_structural.py(HNCS 실제 4단계 구조를
@@ -584,7 +584,7 @@ Create `tools/evaluate_hncs_structural.py`:
 leave-one-out 교차검증으로 확인한다. 설계 근거:
 docs/superpowers/specs/2026-07-28-hncs-structural-research-design.md
 
-  python3 -m tools.evaluate_hncs_structural
+  python3 -m tools.research.evaluate_hncs_structural
 """
 import csv
 import glob
@@ -823,15 +823,15 @@ Expected: all existing tests still PASS, plus the 6 new ones
 
 - [ ] **Step 6: Actually run the evaluation against the real 13-pair dataset**
 
-Run: `python3 -m tools.evaluate_hncs_structural`
+Run: `python3 -m tools.research.evaluate_hncs_structural`
 
 This will take several minutes (13 RAW decodes + grid search per fold). Capture the **full stdout output verbatim** — every per-fold line plus the final summary (mean structural ΔE, mean `apply_hncs` ΔE, improvement %, verdict). This output is required input for Task 4; do not paraphrase or round it — copy it exactly into your task report.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add tools/evaluate_hncs_structural.py tests/test_evaluate_hncs_structural.py
-git commit -m "Add tools/evaluate_hncs_structural.py: LOOCV vs apply_hncs()"
+git add tools/research/evaluate_hncs_structural.py tests/test_evaluate_hncs_structural.py
+git commit -m "Add tools/research/evaluate_hncs_structural.py: LOOCV vs apply_hncs()"
 ```
 
 ---
@@ -860,7 +860,7 @@ Using Task 3's actual captured output, append a section at the end of `hybrid_en
 단순화한 근사다. 실제 구조(조명별 매트릭스 -> 조명별 chroma LUT ->
 공유 필름커브, `docs/hncs_structural_research.md` 참고)를 미러링한
 연구용 실험 모듈(`hybrid_engine/research/hncs_structural.py`)이 실제로
-ΔE를 개선하는지 leave-one-out 교차검증(13쌍, `tools/evaluate_hncs_structural.py`)으로
+ΔE를 개선하는지 leave-one-out 교차검증(13쌍, `tools/research/evaluate_hncs_structural.py`)으로
 측정했다.
 
 **결과** (같은 13쌍, CIEDE2000, held-out마다 재피팅):
@@ -899,7 +899,7 @@ Fill in every `<...>` placeholder with the literal numbers/strings from Task 3's
 
 - [ ] **Step 2: Fill in the results section of both research documents**
 
-In both `docs/hncs_structural_research.md` and `docs/hncs_structural_research.en.md`, replace the `<!-- 결과는 tools/evaluate_hncs_structural.py 실행 후 채워짐 -->` / `<!-- Results filled in after running tools/evaluate_hncs_structural.py -->` comment with a short results paragraph plus the same results table used in `EVALUATION.md` Step 1 (Korean numbers/wording in the `.md`, English in the `.en.md`), and a one-line pointer: `자세한 방법론과 한계는 hybrid_engine/EVALUATION.md의 "HNCS 구조 실험" 절 참고.` (Korean file) / `See the "HNCS Structural Experiment" section of hybrid_engine/EVALUATION.md for full methodology and limitations.` (English file).
+In both `docs/hncs_structural_research.md` and `docs/hncs_structural_research.en.md`, replace the `<!-- 결과는 tools/research/evaluate_hncs_structural.py 실행 후 채워짐 -->` / `<!-- Results filled in after running tools/research/evaluate_hncs_structural.py -->` comment with a short results paragraph plus the same results table used in `EVALUATION.md` Step 1 (Korean numbers/wording in the `.md`, English in the `.en.md`), and a one-line pointer: `자세한 방법론과 한계는 hybrid_engine/EVALUATION.md의 "HNCS 구조 실험" 절 참고.` (Korean file) / `See the "HNCS Structural Experiment" section of hybrid_engine/EVALUATION.md for full methodology and limitations.` (English file).
 
 - [ ] **Step 3: Add a README "Further Reading" link**
 

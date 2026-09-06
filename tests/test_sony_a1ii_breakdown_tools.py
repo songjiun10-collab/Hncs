@@ -1,4 +1,4 @@
-"""`tools/breakdown_sony_by_camera_body.py`/`tools/evaluate_sony_a1ii_vs_raw_look.py`
+"""`tools/fit/breakdown_sony_by_camera_body.py`/`tools/fit/evaluate_sony_a1ii_vs_raw_look.py`
 의 순수 부분만 검증 - RAW 디코드는 CI에 데이터가 없어서(tests/CLAUDE.md)
 제외. 카메라 매핑 CSV 파싱과 부호검정 통계 함수만 대상."""
 import csv
@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.evaluate_sony_a1ii_vs_raw_look import _sign_test_p
+from tools.fit.evaluate_sony_a1ii_vs_raw_look import _sign_test_p
 
 
 class TestSignTestP(unittest.TestCase):
@@ -24,7 +24,7 @@ class TestSignTestP(unittest.TestCase):
 
 
 class TestCameraManifestMapping(unittest.TestCase):
-    """`tools/breakdown_sony_by_camera_body.py`의 name->camera 매핑 로직을
+    """`tools/fit/breakdown_sony_by_camera_body.py`의 name->camera 매핑 로직을
     실제 manifest.csv 스키마와 같은 임시 CSV로 검증 - RAW 파일은 안 씀."""
 
     def test_name_to_camera_reads_camera_column(self):

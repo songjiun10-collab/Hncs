@@ -1,4 +1,4 @@
-"""`tools/experiment_leica_sl3p_upscale_chart.py`의 순수 로직 테스트 -
+"""`tools/dpreview/experiment_leica_sl3p_upscale_chart.py`의 순수 로직 테스트 -
 실제 raw 디코드 없이 `tests/test_chart_baseline.py`와 같은 합성 챠트
 이미지로 `detect_and_sample_upscaled()`을 검증한다(CI에 이미지 데이터
 없음, `tests/CLAUDE.md`)."""
@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from hybrid_engine.core import chart_baseline
 from tests.test_chart_baseline import _synthetic_chart_linear
-from tools.experiment_leica_sl3p_upscale_chart import detect_and_sample_upscaled, _mean_de
+from tools.dpreview.experiment_leica_sl3p_upscale_chart import detect_and_sample_upscaled, _mean_de
 
 
 class TestDetectAndSampleUpscaled(unittest.TestCase):

@@ -31,11 +31,11 @@ $ python3 -m unittest tests.test_fuji_classic_negative_recalibration
 Ran 28 tests in 0.845s
 OK
 
-$ python3 -m py_compile hybrid_engine/utils/evaluate.py tools/evaluate_fuji_classic_negative_v2_grid.py tools/diagnose_fuji_autobright_vs_look.py hybrid_engine/verify_l_channel_residual.py
+$ python3 -m py_compile hybrid_engine/utils/evaluate.py tools/fuji/evaluate_fuji_classic_negative_v2_grid.py tools/fuji/diagnose_fuji_autobright_vs_look.py hybrid_engine/verify_l_channel_residual.py
 ```
 
-`rg -n "mean_delta_e\\(" tools/evaluate_fuji_classic_negative_v2_grid.py
-tools/diagnose_fuji_autobright_vs_look.py -C 2` confirms every five affected
+`rg -n "mean_delta_e\\(" tools/fuji/evaluate_fuji_classic_negative_v2_grid.py
+tools/fuji/diagnose_fuji_autobright_vs_look.py -C 2` confirms every five affected
 metric call receives `bgr_u8_to_linear_rgb(...)` output.  The residual verifier
 imports successfully with the installed colour-science 0.4.4.
 
@@ -83,7 +83,7 @@ OK
 
 ## Boundary probe follow-up
 
-`tools/probe_fuji_classic_negative_v2_boundary.py` also evaluates OpenCV BGR
+`tools/fuji/probe_fuji_classic_negative_v2_boundary.py` also evaluates OpenCV BGR
 uint8 candidate and JPEG arrays.  Its pending change was reviewed and retained:
 targets are converted once with `bgr_u8_to_linear_rgb`, and every candidate is
 converted at the `mean_delta_e` boundary.  No raw BGR metric path remains in

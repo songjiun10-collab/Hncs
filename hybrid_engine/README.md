@@ -3,7 +3,7 @@
 *[한국어 README](README.ko.md)*
 
 A third, independent module with yet another purpose from `brands/*.py`
-and `tools/raw_pipeline.py`: "re-render a finished JPEG shot on camera A
+and `tools/cli/raw_pipeline.py`: "re-render a finished JPEG shot on camera A
 as if camera B had shot it." There are two entry points - one for RAW
 input (`HybridCameraEngine`: Phase 0 color unification + Gray World
 normalization + LAB tone/saturation curves) and one for JPEG-only input

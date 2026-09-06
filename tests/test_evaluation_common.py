@@ -7,7 +7,7 @@ from unittest import mock
 import cv2
 import numpy as np
 
-from tools import evaluation_common
+from tools.fit import evaluation_common
 
 
 class TestCollectContributedPairs(unittest.TestCase):

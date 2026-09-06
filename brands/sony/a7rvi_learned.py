@@ -4,26 +4,26 @@ apply_sony_a7rvi_learned - Experimental. `apply_sony_a7rvi_look`(brands/sony_a7r
 근사한다(raw+jpeg 기반 파라메트릭 채택값) - `hasselblad_learned.py`(파라메트릭 vs 학습 LUT)와
 같은 패턴.
 
-**경위(2026-08)**: `tools/evaluate_empirical_tone_curve.py`로 실제 카메라
+**경위(2026-08)**: `tools/fit/evaluate_empirical_tone_curve.py`로 실제 카메라
 톤 매핑을 raw+jpeg 페어에서 직접 뽑아 채택된 파라메트릭
 `toe_lift/shoulder_start/white_point` 값과 비교했더니, 이 바디는 RMSE=34.72로
 실제 곡선과 잘 안 맞음 - 파라메트릭 3파라미터 모양 자체가 실제 곡선과 안 맞는다는
-뜻이라, `tools/evaluate_learned_lut.py`로 학습 LUT을 직접 LOO
+뜻이라, `tools/fit/evaluate_learned_lut.py`로 학습 LUT을 직접 LOO
 교차검증했다(exposure_gamma(있으면)->CLAHE까지는 기존과 동일, 그 뒤
 `film_curve` 대신 256bin LUT).
 
 개선폭 +9.12%, 26승14패, 부호검정 p=0.0807, 부트스트랩
 95% CI [+0.689, +2.341] - 학습 LUT 우세. 최종 LUT은 홀드아웃 없이
-전체 40쌍으로 재학습(`tools/fit_final_lut.py`).
+전체 40쌍으로 재학습(`tools/fit/fit_final_lut.py`).
 
 `apply_sony_a7rvi_look()`은 이 실험으로 바뀌지 않는다(브랜드 룩 정본 유지) - 둘
-다 나란히 둔다. 재현: `python3 -m tools.evaluate_learned_lut --label
+다 나란히 둔다. 재현: `python3 -m tools.fit.evaluate_learned_lut --label
 "Sony a7R VI" --manifest datasets/sony/sony_new_pairs.csv --raw-dir "/Users/songjiun/local-work" --model "ILCE-7RM6" --clahe-clip 1.25
 --toe-lift 0.09 --shoulder-start 0.7 --white-point 0.85`.
 
 **정정(2026-08 코드리뷰)**: 이 LUT의 그림자 초입(index 0-2)이 mid-gray(93)로
 튀었다가 index 3에서 20으로 급락하는 비단조 절벽이 있음 - L=0이 L=3보다
-밝게 렌더링되는 반전(암부/밤하늘에서 보일 수 있음). `tools/fit_final_lut.py`가
+밝게 렌더링되는 반전(암부/밤하늘에서 보일 수 있음). `tools/fit/fit_final_lut.py`가
 순수 bin별 가중평균만 쓰고 단조성 보장이 없어서 표본 노이즈가 그대로
 반영된 것. 아래 `apply_sony_a7rvi_learned_v2()`가 PAVA(가중 isotonic
 regression)로 이 문제를 고친 버전 - 이 함수는 그대로 두고 나란히 둔다.
@@ -59,15 +59,15 @@ def apply_sony_a7rvi_learned(img_bgr, clahe_clip=1.25):
 # ==========================================
 # v2 - PAVA(isotonic regression)로 그림자 비단조 절벽 수정(2026-08)
 # ==========================================
-# 위 apply_sony_a7rvi_learned()의 정정판. tools/fit_final_lut.py에
+# 위 apply_sony_a7rvi_learned()의 정정판. tools/fit/fit_final_lut.py에
 # 가중 PAVA(pool adjacent violators)를 추가해서(표본이 많은 bin일수록
 # 더 세게 고정) 물리적으로 있을 수 없는 톤 반전을 제거하고 40쌍 전체로
-# 재학습했다. 재검증(tools/evaluate_learned_lut.py, 동일 40쌍 LOO):
+# 재학습했다. 재검증(tools/fit/evaluate_learned_lut.py, 동일 40쌍 LOO):
 # 개선폭 +7.24%(구 버전 +9.12%에서 소폭 하락 - 절벽 부분이 우연히
 # 맞아떨어졌던 노이즈 과적합 일부가 사라진 것으로 해석), 25승15패,
 # 부호검정 p=0.1539, 부트스트랩 95% CI [+0.363, +2.049] - CI가 0을
 # 넘지 않아 학습 LUT 우세 판정은 그대로 유지. 재현:
-# `python3 -m tools.fit_final_lut --label "Sony a7R VI" --manifest
+# `python3 -m tools.fit.fit_final_lut --label "Sony a7R VI" --manifest
 # datasets/sony/sony_new_pairs.csv --raw-dir "/Users/songjiun/local-work"
 # --model "ILCE-7RM6" --clahe-clip 1.25`.
 _LEARNED_LUT_V2 = np.array([

@@ -4,20 +4,20 @@ apply_provia_learned - Experimental. `apply_provia`(brands/fuji.py)와 같은
 근사한다(GFX100RF/X-T30 III/GFX50S II 3바디 통합 파라메트릭 채택값) - `hasselblad_learned.py`(파라메트릭 vs 학습 LUT)와
 같은 패턴.
 
-**경위(2026-08)**: `tools/evaluate_empirical_tone_curve.py`로 실제 카메라
+**경위(2026-08)**: `tools/fit/evaluate_empirical_tone_curve.py`로 실제 카메라
 톤 매핑을 raw+jpeg 페어에서 직접 뽑아 채택된 파라메트릭
 `toe_lift/shoulder_start/white_point` 값과 비교했더니, 이 바디는 RMSE=26.31로
 실제 곡선과 잘 안 맞음 - 파라메트릭 3파라미터 모양 자체가 실제 곡선과 안 맞는다는
-뜻이라, `tools/evaluate_learned_lut.py`로 학습 LUT을 직접 LOO
+뜻이라, `tools/fit/evaluate_learned_lut.py`로 학습 LUT을 직접 LOO
 교차검증했다(exposure_gamma(있으면)->CLAHE까지는 기존과 동일, 그 뒤
 `film_curve` 대신 256bin LUT).
 
 개선폭 +20.42%, 52승15패, 부호검정 p=0.0000, 부트스트랩
 95% CI [+1.959, +3.365] - 학습 LUT 우세. 최종 LUT은 홀드아웃 없이
-전체 67쌍으로 재학습(`tools/fit_final_lut.py`).
+전체 67쌍으로 재학습(`tools/fit/fit_final_lut.py`).
 
 `apply_provia()`은 이 실험으로 바뀌지 않는다(브랜드 룩 정본 유지) - 둘
-다 나란히 둔다. 재현: `python3 -m tools.evaluate_learned_lut --label
+다 나란히 둔다. 재현: `python3 -m tools.fit.evaluate_learned_lut --label
 "Fuji Provia 3바디 통합" --manifest datasets/fuji/fuji_new_pairs.csv --raw-dir "/Users/songjiun/local-work" --model "GFX100RF" --model "X-T30 III" --model "GFX50S II" --film-mode "F0/Standard (Provia)" --clahe-clip 1.25
 --toe-lift 0.0 --shoulder-start 0.82 --white-point 1.0`.
 """

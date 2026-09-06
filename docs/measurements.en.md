@@ -66,7 +66,7 @@ As of v12/day-night v3 (see `brands/hasselblad.py`'s docstring).
     decided not to change `brands/hasselblad.py` - the real output of this analysis is the
     evidence-backed conclusion that "not changing anything is correct."
 - **Re-verification (2026-07, after the brands/core/tools refactor)**: re-ran `apply_hncs`
-  (parametric) and `apply_hncs_learned` (learned) through `tools.calibrate grid_search`/
+  (parametric) and `apply_hncs_learned` (learned) through `tools.fit.calibrate grid_search`/
   `learn_curve` and confirmed the RMSE reproduces exactly as before the refactor
   (23.31→16.51 for grid_search, 23.31→15.41 for learn_curve) - there are still only 10 raw+jpeg
   pairs (the rest are dead links), so there's no new data to recalibrate against
@@ -223,8 +223,8 @@ that the raw+jpeg calibration pairs are X1D-only - the offered X2D II pairs are 
 realistic path to closing that gap.
 
 **Code fix**: added an EXIF Software check (`_check_genuine_bytes()`) to
-`tools/analyze.py`'s `_hasselblad_download()`, applied to the raw bytes *before* the resize
-step, so re-running `python3 -m tools.analyze hasselblad` now automatically excludes
+`tools/cli/analyze.py`'s `_hasselblad_download()`, applied to the raw bytes *before* the resize
+step, so re-running `python3 -m tools.cli.analyze hasselblad` now automatically excludes
 Photoshop/Lightroom-edited photos and prints the exclusion count. cameralabs.com is not
 hard-excluded (the table above shows its distorting effect is noise-level, too weak to justify
 excluding a whole third-party source) - the `source` column is already in the CSV if anyone
@@ -241,9 +241,9 @@ personal photo library. Unlike the public web-scraping attempts above ("Another 
 attempt"), these are files the owner already owns, so there's no licensing question standing in
 the way.
 
-**Methodology** (`tools/build_local_manifest.py`, new):
+**Methodology** (`tools/data/build_local_manifest.py`, new):
 - Match raw/jpeg as "same shutter" when EXIF `DateTimeOriginal` agrees within 2 seconds (same
-  tolerance `tools/verify_contributed_pairs.py` already uses)
+  tolerance `tools/data/verify_contributed_pairs.py` already uses)
 - Found mid-matching: 8 X1D raw files from a 2017 shoot had `DateTimeOriginal` recorded exactly
   **7 hours** ahead of their jpeg siblings (minute and second matched exactly - a pattern that's
   essentially impossible by chance). Likely the camera/firmware stamped raw and jpeg against
@@ -266,7 +266,7 @@ this project has ever had:
 | X1D II 50C | 6 |
 | X1D | 1 |
 
-Re-ran `python3 -m tools.calibrate learn_curve` on official 13 pairs (all X1D-line) + local 61
+Re-ran `python3 -m tools.fit.calibrate learn_curve` on official 13 pairs (all X1D-line) + local 61
 pairs = 74 total. RMSE broken down by generation:
 
 | Camera | n | Parametric (v11) RMSE | Learned LUT (v12) RMSE |
@@ -284,7 +284,7 @@ correction under "First check against a real Phocus render" above
 (irrelevant for the local 61 - `verify_contributed_pairs` already
 filtered on the same criterion, rejecting 43 of 104 candidates for
 exactly this reason, see "Methodology" above) are now excluded in
-`tools/calibrate.py`'s `_resolve_pairs()` (the `_CONTAMINATED_OFFICIAL_PAIRS`
+`tools/fit/calibrate.py`'s `_resolve_pairs()` (the `_CONTAMINATED_OFFICIAL_PAIRS`
 constant). Re-ran `learn_curve` on the resulting 65 pairs (4 clean
 official + 61 local):
 
@@ -311,10 +311,10 @@ in its current pooled form since its cross-generation premise doesn't hold; per-
 learned LUTs might still beat the parametric curve within a single generation (untested - each
 generation only has on the order of 30 pairs so far, not attempted this round).
 
-Reproduce: `python3 -m tools.build_local_manifest <source dir> datasets/hasselblad/contributed/local-mixed-2026-07`
-to add pairs, then `python3 -m tools.calibrate learn_curve` to retrain.
+Reproduce: `python3 -m tools.data.build_local_manifest <source dir> datasets/hasselblad/contributed/local-mixed-2026-07`
+to add pairs, then `python3 -m tools.fit.calibrate learn_curve` to retrain.
 
-**Hybrid (regularize) re-check (2026-08)** - re-ran `tools/calibrate.py`'s
+**Hybrid (regularize) re-check (2026-08)** - re-ran `tools/fit/calibrate.py`'s
 `regularize` mode (the v11↔v12 ridge hybrid, `lut = (sums + λ·prior)/(counts + λ)`)
 on the same 74 pairs as the two re-checks above. Best λ=1e9 (effectively pure
 parametric) - LOO RMSE decreased monotonically from 33.61 at λ=0 (this λ=0
@@ -342,7 +342,7 @@ the v11 column above, even though λ=1e9 is effectively pure v11):
 
 **Conclusion: the hybrid doesn't help.** v11 already beats v12 by a wide
 margin, so there's no upside to blending them, and the grid search itself
-confirms that quantitatively. Reproduce: `python3 -m tools.calibrate regularize`.
+confirms that quantitatively. Reproduce: `python3 -m tools.fit.calibrate regularize`.
 
 ## v11 parameter recalibration - 65-pair grid search + LOO validation, actually adopted (2026-08)
 
@@ -353,7 +353,7 @@ compared v12/the hybrid against them. This time the parameters of
 `apply_hncs` itself were re-searched on the 65 pairs (4 clean official +
 61 local-contributed).
 
-**Step 1 - in-sample grid search** (modified `tools/calibrate.py`'s
+**Step 1 - in-sample grid search** (modified `tools/fit/calibrate.py`'s
 `run_grid_search()` to use `_resolve_pairs()` (65 pairs) instead of
 `collect_pairs()` (13 official only); same parameter grid as before:
 7 exposure_gamma values x 3 toe_lift x 7 shoulder_start x 3 white_point =
@@ -404,8 +404,8 @@ across 4 generations. Actually updated `apply_hncs()`/
 white_point unchanged at 1.0) - see that file's docstring for the full
 rationale. Confirmed the full test suite (613 tests) still passes.
 
-Reproduce: `python3 -m tools.calibrate grid_search` (in-sample) /
-`python3 -m tools.calibrate grid_search_loo` (LOO validation).
+Reproduce: `python3 -m tools.fit.calibrate grid_search` (in-sample) /
+`python3 -m tools.fit.calibrate grid_search_loo` (LOO validation).
 
 ### Independent check - re-confirmed with ΔE00 (real photos + a ColorChecker chart) (2026-08)
 
@@ -500,7 +500,7 @@ adjustments) → Export - to get genuine HNCS-rendered TIFFs. See
 `hncs_external_sources_analysis.en.md` section 6 for how this came about.
 
 **Method**: decode each RAW to a "raw/neutral" baseline using the same
-recipe as `tools/calibrate.py`'s `load_neutral_render()`
+recipe as `tools/fit/calibrate.py`'s `load_neutral_render()`
 (`rawpy.postprocess(use_camera_wb=True, no_auto_bright=True, output_bps=8,
 gamma=(2.222, 4.5))`), feed that into `apply_hncs()`, then compare all
 three images (camera-JPEG target / real Phocus render / `apply_hncs()`
@@ -556,7 +556,7 @@ by downsampling).
 
 Reproduce: Import all 13 `raw_calib_cache/*.3FR`/`*.fff` files into Phocus
 (default Standard preset) → Export as TIFF, then combine
-`tools/calibrate.py`'s `load_neutral_render()` with
+`tools/fit/calibrate.py`'s `load_neutral_render()` with
 `hybrid_engine.utils.evaluate.mean_delta_e` and
 `hybrid_engine.utils.io.load_image_linear` (the one-off script that
 produced this table lived in session scratch space, not the repo).
@@ -616,7 +616,7 @@ a commit, but noting that they exist locally.
 
 ## White Patch / Shades of Gray auto-white-balance accuracy (2026-08)
 
-Measured how accurate `tools/raw_pipeline.py --auto-wb-mode
+Measured how accurate `tools/cli/raw_pipeline.py --auto-wb-mode
 {white_patch,shades_of_gray}` (new, in `core/log_pipeline.py`) actually is
 against the camera's real AsShotNeutral (DNG spec, treated as ground
 truth) across the 13 `raw_calib_cache` RAWs (real-world photos, not color
@@ -745,7 +745,7 @@ directly.
    No blur 22.01 -> 5px 21.96 -> 15px 21.88 -> 31px 21.81 -> 61px (heavy)
    21.76 - even wiping out essentially all the noise only drops it 1.1%.
 2. **All 74 pairs** (13 official + 61 local-contributed, via
-   `tools/calibrate.py`'s `collect_pairs()` + `collect_local_pairs()` -
+   `tools/fit/calibrate.py`'s `collect_pairs()` + `collect_local_pairs()` -
    no jpeg target is used here so the EXIF contamination filter is
    irrelevant), comparing the full per-pixel ΔE00 distribution before/after
    a 61px blur (camera_wb vs shades_of_gray):
@@ -857,7 +857,7 @@ in opposite directions for the two generations.
 **Conclusion**: splitting by generation gives a different answer for each
 generation (CFV gets worse if split; X2D 100C improves, but the evidence
 is weak) - neither is clean enough to adopt right now. `apply_hncs()`
-stays as-is. Reproduce: `python3 -m tools.calibrate
+stays as-is. Reproduce: `python3 -m tools.fit.calibrate
 grid_search_loo_per_generation` / `regularize_per_generation`, both
 auto-skip generations under min_n=10.
 
@@ -869,7 +869,7 @@ lateral chromatic aberration reduces ΔE00. Reproduced the original spec
 (`docs/superpowers/specs/2026-07-31-chromatic-aberration-correction-design.md`,
 13 pairs, X1D-only) at larger scale using the local dpreview-sourced
 clean 95 pairs (4 generations: CFV/X2D/X2D II/X1D II; X1D excluded - only
-1 clean sample) via `tools/evaluate_chromatic_aberration.py` (new -
+1 clean sample) via `tools/research/evaluate_chromatic_aberration.py` (new -
 self-contained, since this checkout has no `hybrid_engine`).
 
 **Method**: rawpy decode with `half_size=True` (speed) and `gamma=(1,1)`
@@ -907,7 +907,7 @@ this dataset (4 generations, 94 pairs). `apply_hncs()` is untouched (same
 rationale as the original spec - this experiment is scoped to the raw
 decode stage, unrelated to the tone-curve stage).
 
-Reproduce: `python3 -m tools.evaluate_chromatic_aberration` (95 pairs ×
+Reproduce: `python3 -m tools.research.evaluate_chromatic_aberration` (95 pairs ×
 81 combos, ~1 hour).
 
 ## v13: 135-pair dpreview revalidation (5 gens incl. X2D II) - candidate (2026-08)
@@ -1105,11 +1105,11 @@ recalibration" section above for full background):
   dpreview pairs (5 generations), including 41 real X2D II photos
 
 `shoulder_start`/`white_point` already agree, so the only real point of
-disagreement is `exposure_gamma` (0.8 vs 0.7). `tools/evaluate_exposure_gamma_x2dii.py`
+disagreement is `exposure_gamma` (0.8 vs 0.7). `tools/x2dii/evaluate_exposure_gamma_x2dii.py`
 (new) put both candidates head-to-head on **the 95 clean dpreview pairs
 including the 41 X2D II photos** - a combination neither candidate had
 seen before. Since both parameter sets are fixed (no fitting), this is a
-paired comparison, not LOO - reused `tools/calibrate.py`'s `summarize()`
+paired comparison, not LOO - reused `tools/fit/calibrate.py`'s `summarize()`
 (sign test, paired t, bootstrap 95% CI, drop-one) as-is.
 
 | Generation | n | Result | Sign test p | Bootstrap 95% CI (improvement) |
@@ -1136,8 +1136,8 @@ significant, opposite-direction signal against CFV/X2D.
 
 `apply_hncs()` is not changed by this experiment - whether to introduce a
 per-generation branch is a separate decision. Reproduce: `python3 -m
-tools.evaluate_exposure_gamma_x2dii` (95 pairs, ~5 min - reuses
-`tools.calibrate.load_neutral_render`/`gray_stats`).
+tools.x2dii.evaluate_exposure_gamma_x2dii` (95 pairs, ~5 min - reuses
+`tools.fit.calibrate.load_neutral_render`/`gray_stats`).
 
 ### X2D II-only parameters, LOO/5-fold - inconclusive (2026-08)
 
@@ -1145,8 +1145,8 @@ The table above compared **two fixed parameter sets** (main vs.
 candidate) against each other. Separately, tested - within the 41 X2D II
 pairs alone - whether a generation-only grid-searched parameter set beats
 the pooled main default, using the same methodology as
-`tools.calibrate.run_grid_search_loo_per_generation`
-(`tools/evaluate_x2dii_generation_loo.py`, new - 441-combo grid; all 41
+`tools.fit.calibrate.run_grid_search_loo_per_generation`
+(`tools/x2dii/evaluate_x2dii_generation_loo.py`, new - 441-combo grid; all 41
 pairs are clean, no contamination filter needed).
 
 **LOO (41 outer folds)**: 36.0% improvement (RMSE 19.88->12.73), 27
@@ -1186,7 +1186,7 @@ the per-generation main-vs-candidate head-to-head, this LOO/5-fold check)
 II-only parameter set. The 41-pair sample size itself is the limiting
 factor. **Revisit once more X2D II raw+jpeg pairs from a different
 reviewer/shooting session are available.** Reproduce: `python3 -m
-tools.evaluate_x2dii_generation_loo`.
+tools.x2dii.evaluate_x2dii_generation_loo`.
 
 #### Verdict resolved after expanding the sample (41->63->70 pairs), shoulder_start corrected (2026-08)
 
@@ -1199,7 +1199,7 @@ different habit" from the 8-hypothesis investigation above), but the
 new pairs mix in -2/3, -4/3, etc. - so this isn't quite the same single
 shooting session either. Expanded the manifest 41->63 (+22, one was a
 duplicate file, so +21 net) ->70 (+7) pairs and re-ran
-`tools/evaluate_x2dii_generation_loo.py` unchanged:
+`tools/x2dii/evaluate_x2dii_generation_loo.py` unchanged:
 
 | n | LOO improvement | LOO sign test p | 5-fold sign test p | Dominant combo |
 |---|---|---|---|---|
@@ -1229,7 +1229,7 @@ had fit on a **chart** (kmichels-x2dii-2026-07) to the real photos
 (chaining the chart matrix + tone curve did worse than the tone curve
 alone, 11.23->12.32 ΔE00). This time, re-fit a fresh 3x3 matrix directly
 from **the 41 X2D II real photos themselves**, not the chart
-(`tools/evaluate_x2dii_color_matrix.py`, new - source is camera-native
+(`tools/x2dii/evaluate_x2dii_color_matrix.py`, new - source is camera-native
 linear RGB white-balanced via `AsShotNeutral`, ridge=1.0 least squares),
 asking the same question again. LOO (41 folds, refitting the matrix on
 the other 40 pairs each time) - the tone curve chained after the matrix
@@ -1247,7 +1247,7 @@ apply_hncs than the chart-matrix experiment). **Conclusion: refitting the
 matrix on real photos instead of the chart doesn't change the outcome**
 - a second, independent experiment confirms X2D II's problem isn't
 spatial color distortion (what a matrix corrects) but tone/exposure.
-Reproduce: `python3 -m tools.evaluate_x2dii_color_matrix`.
+Reproduce: `python3 -m tools.x2dii.evaluate_x2dii_color_matrix`.
 
 ### apply_hncs_x2dii - new X2D II-only experimental function (2026-08)
 
@@ -1292,7 +1292,7 @@ objective - `apply_hncs()` (main) had never been put head-to-head
 against `apply_hncs_x2dii()` on real ΔE00 until now.
 
 **Direct head-to-head (3000px, minimal downsampling) - result:
-essentially a wash** (`tools/evaluate_full_pixel_de00_confirm.py`,
+essentially a wash** (`tools/fit/evaluate_full_pixel_de00_confirm.py`,
 n=70): -5.13% (main slightly ahead), win/loss 34/36, bootstrap 95% CI
 [-1.679, +0.292] (includes 0) - **the "44.1% improvement" the percentile
 RMSE grid search reported was a defect in the objective itself** - the
@@ -1303,7 +1303,7 @@ looking at real renders (exposure_gamma=0.3 output was "too bright,
 noisy, and hazy").
 
 **Re-ran the 441-combo grid search with ΔE00 itself as the objective**
-(`tools/evaluate_x2dii_de00_grid.py`, new - low-res 200px for per-fold
+(`tools/x2dii/evaluate_x2dii_de00_grid.py`, new - low-res 200px for per-fold
 combo selection, 3000px for the final LOO evaluation): **+12.99%
 improvement over `apply_hncs()` (main), 61 wins/9 losses, sign test
 p<0.0001, bootstrap 95% CI [+1.421, +2.065]** (excludes 0, genuinely
@@ -1325,7 +1325,7 @@ except when the original objective was pointing in a completely wrong
 direction, as with X2D II, where a genuinely large improvement (+12.99%)
 was there all along. The size of the number was never the point - the
 objective function was. Reproduce: `python3 -m
-tools.evaluate_x2dii_de00_grid`.
+tools.x2dii.evaluate_x2dii_de00_grid`.
 
 ### Joint shoulder_start x clahe_clip re-verification - already at the optimum (2026-08)
 
@@ -1334,7 +1334,7 @@ white_point - `clahe_clip` (=1.25) had simply been inherited from
 `apply_hncs()` (main)'s default and had never once been treated as a
 variable (user flagged this). To check for an interaction between
 `shoulder_start` and `clahe_clip`, a joint re-grid-search was run on the
-same X2D II 70 pairs (`tools/evaluate_x2dii_clahe_shoulder_grid.py`, new
+same X2D II 70 pairs (`tools/x2dii/evaluate_x2dii_clahe_shoulder_grid.py`, new
 - exposure_gamma=0.6/toe_lift=0.02/white_point=0.95 held fixed,
 shoulder_start x 7 values x clahe_clip x 6 values = 42 combos).
 
@@ -1359,15 +1359,15 @@ of up - the current values already win both by majority vote and by
 stability. **Conclusion: `clahe_clip=1.25`/`shoulder_start=0.58` weren't
 an unverified borrowed default after all - they were the actual joint
 optimum of this 2D grid.** No code change (`apply_hncs_x2dii()` left as
-is). Reproduce: `python3 -m tools.evaluate_x2dii_clahe_shoulder_grid`.
+is). Reproduce: `python3 -m tools.x2dii.evaluate_x2dii_clahe_shoulder_grid`.
 
 ### apply_hncs_x1d50c added - Hasselblad X1D-50c specific (2026-08)
 
 20 new X1D-50c raw+jpeg pairs were added to the local library (verified
 free of Adobe editing contamination). Ran the same ΔE00-native grid
 search + LOO as X2D II against `apply_hncs()` (main)
-(`tools/evaluate_hasselblad_body_de00_grid.py` - 200px for per-fold combo
-selection, 400px to confirm, then `tools/evaluate_native_pixel_confirm.py`
+(`tools/x2dii/evaluate_hasselblad_body_de00_grid.py` - 200px for per-fold combo
+selection, 400px to confirm, then `tools/fit/evaluate_native_pixel_confirm.py`
 for a native-resolution (max_dim=3000) re-check).
 
 | Stage | Improvement | Wins/Losses | Sign-test p | Bootstrap 95% CI |
@@ -1428,10 +1428,10 @@ Tried again once GFX100RF (.raf) and X-T30 III (.raf) pairs landed in the
 local raw+jpeg library. Both bodies' JPEGs all used FilmMode "F0/Standard
 (Provia)", for which fuji.py had no matching preset - so instead of
 comparing against an existing function, used the unprocessed raw neutral
-render itself as the baseline (`tools/evaluate_new_body_de00_grid.py
+render itself as the baseline (`tools/fit/evaluate_new_body_de00_grid.py
 --baseline-identity`, new flag), ran a ΔE00-native grid search + LOO, then
 re-checked at native pixel resolution (max_dim=3000) with
-`tools/evaluate_native_pixel_confirm.py`.
+`tools/fit/evaluate_native_pixel_confirm.py`.
 
 | Body | n | Improvement (LOO) | Improvement (native pixel) | Sign-test p | Bootstrap 95% CI (pixel) |
 |---|---|---|---|---|---|
@@ -1474,7 +1474,7 @@ hue+chroma LUT +16.01%" result (the largest improvement of this session),
 which turned up **two independent data-integrity bugs**:
 
 **Bug 1 - Capture One was missing from the edit-keyword list.**
-`tools/analyze.py`'s `_check_genuine_bytes()` only screened for
+`tools/cli/analyze.py`'s `_check_genuine_bytes()` only screened for
 Photoshop/Lightroom/Camera Raw, missing **Capture One** (Phase One's RAW
 processing software). Re-checking M11's "clean" 35 pairs showed every
 single EXIF `Software` tag was `Capture One 15 Macintosh` - **all
@@ -1523,7 +1523,7 @@ out to **+2.83% / CI[-0.030, +0.341] - CI now includes 0, flipping to
 "inconclusive."** Never adopted (always sat in "weak evidence, held back"
 territory), so no real-world impact, but it's a second case - alongside
 M11 - of contamination inflating a weak signal into a false win.
-Reproduce: `python3 -m tools.evaluate_hasselblad_body_de00_grid --label
+Reproduce: `python3 -m tools.x2dii.evaluate_hasselblad_body_de00_grid --label
 "Hasselblad CFV 100C/907X" --manifest
 datasets/hasselblad/hasselblad_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --model "CFV 100C/907X"`.
@@ -1558,7 +1558,7 @@ shoulder=0.82, wp=1.0`) unchanged - a third body added and nothing moved,
 reconfirming the earlier conclusion.
 
 **Directly verified 3 existing presets against raw+jpeg**
-(`tools/evaluate_fuji_preset_de00.py`, new - compares the shipped preset
+(`tools/fuji/evaluate_fuji_preset_de00.py`, new - compares the shipped preset
 function as-is against untouched raw, not a grid search):
 
 | Preset | n | Improvement | Verdict |
@@ -1585,7 +1585,7 @@ all): +5.60% improvement, 30 wins/9 losses, sign-test p=0.0011, bootstrap
 0.82 (9/39) - adopted the middle value 0.70 as default; worth
 re-checking once more samples land.
 
-Reproduce: `python3 -m tools.evaluate_new_body_de00_grid --label "..."
+Reproduce: `python3 -m tools.fit.evaluate_new_body_de00_grid --label "..."
 --manifest /tmp/fuji_<mode>.csv --raw-dir "/Users/songjiun/local-work"
 --baseline-identity` (manifest built by filtering
 `datasets/fuji/fuji_new_pairs.csv` on the film_mode column).
@@ -1623,7 +1623,7 @@ explain as coincidence.
 
 Following the empirical tone-curve study kicked off by the user's "check
 whether Leica/Fuji tone curves are really the same" request
-(`tools/evaluate_empirical_tone_curve.py`), measured how well the
+(`tools/fit/evaluate_empirical_tone_curve.py`), measured how well the
 parametric `toe_lift/shoulder_start/white_point` 3-parameter assumption
 actually matches each camera's real curve, via RMSE, across all 10
 adopted functions:
@@ -1641,7 +1641,7 @@ adopted functions:
 | Sigma BF | 45.87 (worst fit) |
 | Nostalgic Neg v2 | 46.36 |
 
-Followed up with `tools/evaluate_learned_lut.py` (LOO-cross-validated
+Followed up with `tools/fit/evaluate_learned_lut.py` (LOO-cross-validated
 256-bin learned LUT instead of the parametric curve) to check whether
 this translates into a real ΔE00 win:
 
@@ -1667,7 +1667,7 @@ count midtone bins), so the two metrics aren't measuring quite the same
 thing.
 
 **Shipped the 6 winning cases as new functions**, refit on the full
-sample with no holdout (`tools/fit_final_lut.py`); the parametric
+sample with no holdout (`tools/fit/fit_final_lut.py`); the parametric
 `apply_*_look`/`apply_provia` functions are left unchanged and kept
 side-by-side, following the `hasselblad_learned.py` precedent:
 
@@ -1707,7 +1707,7 @@ mean ISO: 163 vs 2734, and 1167 vs 3339 respectively). Tried building a
 hybrid that switches between parametric and LUT based on noise estimated
 directly from the image (Immerkaer 1996 fast noise estimation - EXIF ISO
 isn't available inside `apply_*()`'s signature), LOO-validated via
-`tools/evaluate_hybrid_switch.py`. Result: slightly *worse* than always
+`tools/fit/evaluate_hybrid_switch.py`. Result: slightly *worse* than always
 using the LUT (a7V +10.96% vs always-LUT's +11.10%; a7R VI +8.51% vs
 +9.12%) - the learned threshold almost never picked parametric (1/61
 pairs for a7V, 1.6%). Concluded the image-derived noise estimate doesn't
@@ -1715,7 +1715,7 @@ capture the real ISO signal well enough; rejected.
 
 **Per-body Leica LUTs (rejected)**: Compared the combined 5-body LUT
 (`apply_leica_raw_learned`) against individually-fit per-body LUTs
-(SL3-P/Q3 43/SL2/M10/SL2-S, via `tools/fit_final_lut.py`) - mean absolute
+(SL3-P/Q3 43/SL2/M10/SL2-S, via `tools/fit/fit_final_lut.py`) - mean absolute
 difference between each body's own LUT and the combined one was only
 2.3-6.9 (0-255 scale, much smaller than the 11-24 gap found between Leica
 and Fuji's real curves) - the bodies don't differ much from each other.
@@ -1729,7 +1729,7 @@ justify splitting into 5 separate shipped functions; kept the combined LUT.
 Per this project's statistical convention that LOO can look more optimistic
 as sample size grows (`hybrid_engine/CLAUDE.md`), re-verified some of the
 learned-LUT results with 5-fold CV instead (new `--n-folds 5` option on
-`tools/evaluate_learned_lut.py`).
+`tools/fit/evaluate_learned_lut.py`).
 
 **Leica by lens** (VARIO-ELMARIT etc. shared across SL3-P/SL2/SL2-S; sample
 counts re-derived fresh from the manifest and confirmed to match exactly:
@@ -1794,12 +1794,12 @@ A full codebase review (6 areas - brands/core/hybrid_engine/gui/tools/tests
 `apply_sony_a7v_learned`'s `_LEARNED_LUT` jumps to mid-gray (93/99) at the
 shadow start (index 0-2), then drops sharply at index 3 (20/24) - a
 non-monotonic cliff where L=0 renders brighter than L=3. Root cause:
-`tools/fit_final_lut.py` only takes a per-bin weighted mean with no
+`tools/fit/fit_final_lut.py` only takes a per-bin weighted mean with no
 monotonicity guarantee, so a handful of mismatched pixels (registration/
 noise) in a given bin get reflected as-is.
 
 Fix: added weighted PAVA (pool adjacent violators, isotonic regression) to
-both `tools/fit_final_lut.py` and `tools/evaluate_learned_lut.py` - pins
+both `tools/fit/fit_final_lut.py` and `tools/fit/evaluate_learned_lut.py` - pins
 more strongly where sample weight is higher, while forcing
 non-decreasing output. Re-validated both bodies (same raw+jpeg pairs, LOO):
 
@@ -1816,15 +1816,15 @@ Per `brands/CLAUDE.md`, the existing `apply_sony_a7rvi_learned`/
 `apply_sony_a7rvi_learned_v2`/`apply_sony_a7v_learned_v2` functions were
 added instead (a changed LUT array is more than a dated-comment
 correction) - not yet wired into the
-`hybrid_engine/core/preset_inverse.py`/`tools/video_engine.py` registries
+`hybrid_engine/core/preset_inverse.py`/`tools/cli/video_engine.py` registries
 (adopting them is a separate decision).
 
 Other items from the same review: `hybrid_engine/calibrate_profile.py`
 was silently overwriting `hasselblad.json` with no cross-validation when
 run without `--mode` (a `hybrid_engine/CLAUDE.md` "Never touch"
 violation) - removed the write path, left a pointer to the gated
-`recalibrate.py --write` instead. `tools/iso_noise.py` had the same
-fixed-temp-file-path race condition as `tools/analyze.py` - fixed the
+`recalibrate.py --write` instead. `tools/research/iso_noise.py` had the same
+fixed-temp-file-path race condition as `tools/cli/analyze.py` - fixed the
 same way. `core/engine.py` was missing the `ensure_uint8()` guard (a path
 15+ population-fit brands go through) - added. Added golden-hash tests
 for the `apply_hncs` family (5 functions) and all 13 Fuji presets
@@ -1836,11 +1836,11 @@ meaningful difference in ΔE00 or saturation delta, so left unchanged
 
 ### Pair-matching bug had corrupted half the Fuji dataset - found and fixed (2026-08)
 
-After fixing `tools/build_local_manifest.py`'s pair matcher (separate
+After fixing `tools/data/build_local_manifest.py`'s pair matcher (separate
 commit - it processed raws in chronological order and grabbed the "first
 candidate encountered" in the jpeg pool, never comparing delta size),
 checked how much this actually affected the brand-specific
-`*_new_pairs.csv` files built by `tools/build_flat_manifest.py`, which
+`*_new_pairs.csv` files built by `tools/data/build_flat_manifest.py`, which
 reuses that same function - re-ran the fixed matcher over the entire
 `~/local-work` pool.
 
@@ -1878,7 +1878,7 @@ re-verification" above), most raw+jpeg-calibrated body-specific
 population-fit default without ever treating it as a grid-search
 variable. On the user's instruction ("all brands"), the remaining 9
 bodies with local raw+jpeg data were re-verified the same way
-(`tools/evaluate_all_brands_clahe_shoulder_grid.py`, new -
+(`tools/fit/evaluate_all_brands_clahe_shoulder_grid.py`, new -
 exposure_gamma/toe_lift/white_point held at each body's already-adopted
 values, shoulder_start x 7 values x clahe_clip x 6 values = 42 combos,
 200px selection / 400px LOO confirm). Data was read from
@@ -1927,7 +1927,7 @@ process (which included a native-pixel confirmation) was evidently more
 trustworthy than this grid search, and this result must never be used to
 overwrite it.
 
-Reproduce: `python3 -m tools.evaluate_all_brands_clahe_shoulder_grid`
+Reproduce: `python3 -m tools.fit.evaluate_all_brands_clahe_shoulder_grid`
 (~450 pairs, ~25 minutes).
 
 ## /goal "other brands' average ΔE00 -> under 10" - missed, ruled a structural limit (2026-08)
@@ -1938,7 +1938,7 @@ after an opus escalation (below), judged structurally unreachable with
 current techniques.** Everything tried, and the reasoning, is recorded
 here.
 
-**1) Current-state survey** (`tools/measure_all_brand_baselines.py`,
+**1) Current-state survey** (`tools/fit/measure_all_brand_baselines.py`,
 800px, each body's current shipped function as-is):
 
 | Group | ΔE00 |
@@ -1963,7 +1963,7 @@ even be measured.
 
 **2) A 4-parameter tone-curve grid alone falls far short** - on Canon
 (the worst group, with no prior dedicated tuning at all), a ΔE00-direct
-grid search + LOO (`tools/fit_population_body_de00_grid.py`, toe_lift x
+grid search + LOO (`tools/fit/fit_population_body_de00_grid.py`, toe_lift x
 shoulder_start x white_point x clahe_clip, 252 combos): 23.109 -> 22.041,
 **only +4.62%** (the statistics are solid, p<0.0001, but the size isn't
 enough).
@@ -1971,7 +1971,7 @@ enough).
 **3) Adding a color matrix helps, but nowhere near enough**: fit a fresh
 3x3 color matrix by least squares on raw native-white-balanced linear RGB
 (same method as the `hncs_structural` work), then apply the tone curve
-on top (`tools/fit_body_matrix_plus_tone_de00.py`): Canon 19.964
+on top (`tools/fit/fit_body_matrix_plus_tone_de00.py`): Canon 19.964
 (tone-only) -> 17.478 (matrix+tone), **+12.45%** (p=0.0006) - adding a
 saturation/hue LUT on top of that (`--chroma`) only gets to 17.242, a
 further +1.3 points - matrix+tone+chroma combined **plateaus in the
@@ -1985,7 +1985,7 @@ already found in the Hasselblad `hncs_structural` revalidation ("fitting
 a global matrix on pooled, diverse data can actively hurt") repeats here.
 
 **4) Slicing by ISO/exposure/portrait doesn't close the gap either**
-(`tools/breakdown_by_exposure_iso.py`, Canon's fixed matrix+tone+chroma
+(`tools/fit/breakdown_by_exposure_iso.py`, Canon's fixed matrix+tone+chroma
 pipeline): ISO buckets (low/mid/high/very-high) run 14.6-19.0, exposure-
 compensation buckets (under/neutral/over) run 14.4-19.7 - **no bucket
 comes anywhere near 10**. Portraits alone (OpenCV Haar-cascade face
@@ -2035,7 +2035,7 @@ call. Verdict: **structurally unreachable**.
 
 **What was executed on opus's recommendation**: re-checked SL2/SL3-P/M10
 (the three groups the survey called "already under 10") at native pixel
-resolution (`tools/confirm_leica_raw_look_extension.py --already10`,
+resolution (`tools/fit/confirm_leica_raw_look_extension.py --already10`,
 time-boxed to ~30 min - all 143 pairs actually finished in about 10):
 
 | Body | n | apply_leica_look (main) | apply_leica_raw_look (dedicated) | Verdict |
@@ -2060,7 +2060,7 @@ by >=5% at native pixel resolution," or "close the gap toward
 Hasselblad's ~11.7 floor") or to authorize a multi-session, per-body/
 per-scene conditional-branching project.
 
-Reproduce: `python3 -m tools.fit_population_body_de00_grid canon`,
+Reproduce: `python3 -m tools.fit.fit_population_body_de00_grid canon`,
 `... fit_body_matrix_plus_tone_de00 canon --chroma`,
 `... breakdown_by_exposure_iso canon`,
 `... confirm_leica_raw_look_extension`.
@@ -2076,7 +2076,7 @@ for everything else) was applied as-is across the full
 `datasets/hasselblad/contributed/` pool (368 pairs excluding chart
 frames, dedup applied, 367 decoded successfully), bucketed by ISO,
 exposure compensation (EV), and portrait detection (new
-`tools/breakdown_hasselblad_by_exposure_iso_portrait.py`).
+`tools/x2dii/breakdown_hasselblad_by_exposure_iso_portrait.py`).
 
 **Overall mean ΔE00 = 10.290** (actual deployed function per generation, in-sample diagnostic).
 
@@ -2119,14 +2119,14 @@ known), and X1D is the newly-identified weak point within it. Neither
 `apply_hncs()` nor `apply_hncs_x2dii()` changes from this investigation
 (diagnostic only).
 
-Reproduce: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
+Reproduce: `python3 -m tools.x2dii.breakdown_hasselblad_by_exposure_iso_portrait`
 (368 pairs, ~9 minutes with 3-core parallel decode).
 
 ## New apply_hncs_x1d - X1D-dedicated, 121/121 folds unanimous, +18.35% (2026-09)
 
 Following the per-generation breakdown identifying X1D as the worst
 generation, the user asked for a dedicated X1D function, same as X2D
-II/X1D-50c. New `tools/evaluate_x1d_de00_grid.py` (same methodology as
+II/X1D-50c. New `tools/x2dii/evaluate_x1d_de00_grid.py` (same methodology as
 `evaluate_x2dii_de00_grid.py` - 441-combo ΔE00-direct grid including
 exposure_gamma, low-res 200px combo selection per fold, then **a full
 LOO evaluation at 3000px (native pixel)** - no separate native-pixel
@@ -2152,14 +2152,14 @@ X2D 100C (6.783) and CFV 100C/907X (5.783) already fit main well, but
 **X1D II 50C (11.795, second-worst generation) is still a real,
 unaddressed gap** - left as the next candidate.
 
-Reproduce: `python3 -m tools.evaluate_x1d_de00_grid` (121 pairs, ~15-20
+Reproduce: `python3 -m tools.x2dii.evaluate_x1d_de00_grid` (121 pairs, ~15-20
 minutes with sequential decode).
 
 ## New apply_hncs_x1dii50c - X1D II 50C-dedicated, 38/38 folds unanimous (+9.63%) (2026-09)
 
 Following X1D, the user asked to also dedicate a function to X1D II 50C
 (second-worst, 11.795) using the same method
-(`tools/evaluate_x1dii50c_de00_grid.py`, a copy of
+(`tools/x2dii/evaluate_x1dii50c_de00_grid.py`, a copy of
 `evaluate_x1d_de00_grid.py`) on X1D II 50C's 38 pairs from
 `collect_local_pairs()` (dedup applied, chart excluded):
 
@@ -2176,5 +2176,5 @@ remaining 2 (X2D 100C/CFV 100C/907X) still use main directly, which is
 already good enough for them (6.783/5.783) - **all 6 generations now
 addressed**.
 
-Reproduce: `python3 -m tools.evaluate_x1dii50c_de00_grid` (38 pairs, a
+Reproduce: `python3 -m tools.x2dii.evaluate_x1dii50c_de00_grid` (38 pairs, a
 few minutes).

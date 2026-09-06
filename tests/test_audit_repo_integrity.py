@@ -1,4 +1,4 @@
-"""`tools/audit_repo_integrity.py`의 프로필 헤더 검사 회귀 테스트.
+"""`tools/maintenance/audit_repo_integrity.py`의 프로필 헤더 검사 회귀 테스트.
 
 이 검사가 따로 있는 이유는 `exiftool -validate`가 DCP 매직이 틀린 파일에도
 `Validate: OK`를 내기 때문이다(`tests/test_dcp_export.py`의
@@ -18,7 +18,7 @@ import numpy as np
 
 from core.dcp_export import write_dcp
 from core.icc_export import write_icc_matrix_trc_profile
-from tools.audit_repo_integrity import (check_profiles, dcp_header_problems,
+from tools.maintenance.audit_repo_integrity import (check_profiles, dcp_header_problems,
                                         icc_header_problems)
 
 _CM1 = np.array([[0.9, -0.2, -0.1], [-0.3, 1.2, 0.05], [0.02, -0.25, 0.8]])
@@ -113,13 +113,13 @@ class TestCheckProfilesSkipsWithoutExiftool(unittest.TestCase):
     부풀리지 않는다."""
 
     def test_returns_none_when_exiftool_is_absent(self):
-        with patch("tools.audit_repo_integrity.shutil.which", return_value=None):
+        with patch("tools.maintenance.audit_repo_integrity.shutil.which", return_value=None):
             self.assertIsNone(check_profiles())
 
     def test_returns_list_when_exiftool_is_present(self):
-        with patch("tools.audit_repo_integrity.shutil.which",
+        with patch("tools.maintenance.audit_repo_integrity.shutil.which",
                    return_value="/usr/bin/exiftool"), \
-             patch("tools.audit_repo_integrity.subprocess.run") as run:
+             patch("tools.maintenance.audit_repo_integrity.subprocess.run") as run:
             run.return_value.stdout = "OK\n"
             self.assertEqual(check_profiles(), [])
         self.assertTrue(run.called)
@@ -144,8 +144,8 @@ class TestCheckProfilesSkipsWithoutExiftool(unittest.TestCase):
                 self.assertEqual(path, json_path)
                 return handle
 
-            with patch("tools.audit_repo_integrity.PROFILES", directory), \
-                 patch("tools.audit_repo_integrity.shutil.which", return_value=None), \
+            with patch("tools.maintenance.audit_repo_integrity.PROFILES", directory), \
+                 patch("tools.maintenance.audit_repo_integrity.shutil.which", return_value=None), \
                  patch("builtins.open", side_effect=open_profile):
                 self.assertIsNone(check_profiles())
             self.assertTrue(handle.was_closed)

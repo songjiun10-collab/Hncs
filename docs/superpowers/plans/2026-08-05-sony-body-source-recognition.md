@@ -4,7 +4,7 @@
 
 **Goal:** Measure, with leave-one-out cross-validation and significance testing, whether per-camera-body `toe_lift`/`white_point` targets predict a held-out Sony photo's own black/white point better than the existing brand-pooled targets — per body, individually.
 
-**Architecture:** A new standalone research script (`tools/evaluate_sony_body_split.py`) reads the already-collected per-image population statistics (`sony_stats_result.csv`, 115 rows: 5 Sony bodies x n=23), and for every image computes two competing LOO predictions of that image's own `b2` (black p2) and `w995` (white p99.5): the brand-pooled mean (over the other 114 images, any body) and the body-specific mean (over the other 22 images of the same body). It reuses `tools/evaluate_hncs_blend.py`'s `summarize()`/`_sign_test_p()`/`print_summary()` verbatim (copied, not imported, per `tools/CLAUDE.md`) to run the project's standard 4-part significance test per body per statistic (10 tests total: 5 bodies x {b2, w995}).
+**Architecture:** A new standalone research script (`tools/fit/evaluate_sony_body_split.py`) reads the already-collected per-image population statistics (`sony_stats_result.csv`, 115 rows: 5 Sony bodies x n=23), and for every image computes two competing LOO predictions of that image's own `b2` (black p2) and `w995` (white p99.5): the brand-pooled mean (over the other 114 images, any body) and the body-specific mean (over the other 22 images of the same body). It reuses `tools/research/evaluate_hncs_blend.py`'s `summarize()`/`_sign_test_p()`/`print_summary()` verbatim (copied, not imported, per `tools/CLAUDE.md`) to run the project's standard 4-part significance test per body per statistic (10 tests total: 5 bodies x {b2, w995}).
 
 **This plan stops at measurement + recording the result in `hybrid_engine/EVALUATION.md`.** It does **not** wire any per-body override into `hybrid_engine/core/preset_inverse.py` or `hybrid_engine/convert.py` — per root `CLAUDE.md`'s "never ship an experimental result automatically" rule and this repo's established practice (the illuminant-blend experiment's win on 2026-08-03 still isn't wired into shipped `hybrid_engine.convert` either). If the results support adopting one or more bodies, that's a separate follow-up task gated on the owner reviewing the real numbers this plan produces — the design for that wiring (`SONY_MODEL_CODES`, `detect_body_from_exif()`, `curve_params(brand, body=None)`, and their unit tests) is already fully specified in the spec's "구현 설계" and "테스트" sections for whenever that follow-up happens; this plan does not implement or test any of it.
 
@@ -16,7 +16,7 @@
 - `hybrid_engine/core/preset_inverse.py`, `hybrid_engine/convert.py` are **not modified by this plan** (see Architecture above).
 - Data source: `sony_stats_result.csv` at the repo root (115 rows, header `camera,filename,url,b2,w995,med,sat,dark_pct`) - **git-ignored**, already present in this environment. Never re-scrape or re-download; if it's missing, stop and report `BLOCKED` rather than fabricating numbers.
 - Body key format: strip the `"Sony "` prefix from the CSV's `camera` column to get the body key (`"Sony A7 III"` -> `"A7 III"`) - this must exactly match the body names already used in `brands/sony.py`'s docstring (`A7`, `A7R`, `A7S`, `A7 III`, `A7 IV`).
-- Statistics: copy `summarize()`, `_sign_test_p()`, and `print_summary()` from `tools/evaluate_hncs_blend.py:369-461` verbatim into the new script - do not import them (`tools/CLAUDE.md`: "Standalone. Never import from a sibling `evaluate_*.py` — copy the loader instead"). `summarize()`'s bootstrap uses `n_bootstrap=20000, seed=0` (its defaults) - do not change them.
+- Statistics: copy `summarize()`, `_sign_test_p()`, and `print_summary()` from `tools/research/evaluate_hncs_blend.py:369-461` verbatim into the new script - do not import them (`tools/CLAUDE.md`: "Standalone. Never import from a sibling `evaluate_*.py` — copy the loader instead"). `summarize()`'s bootstrap uses `n_bootstrap=20000, seed=0` (its defaults) - do not change them.
 - In `summarize(per_fold, ...)`, `per_fold` rows are `(name, value_a, value_b)` and **lower value_b is a win for b** - value_a must be the pooled-prediction error, value_b the body-prediction error, so that "b가 이겼다" means the body-specific target predicted better.
 - A body is only a genuine win if **both** `b2` and `w995` tests independently produce a bootstrap 95% CI that does not straddle zero in the "body wins" direction - report each body's verdict for both statistics separately, do not average them into one number.
 - Record the real result honestly in `hybrid_engine/EVALUATION.md` regardless of outcome (win, loss, or inconclusive, per body) - a body failing (A7 III is expected to, per the spec's documented sampling-bias caveat) is not a bug to fix, it's the finding.
@@ -24,10 +24,10 @@
 
 ---
 
-### Task 1: `tools/evaluate_sony_body_split.py` — LOO prediction-error computation
+### Task 1: `tools/fit/evaluate_sony_body_split.py` — LOO prediction-error computation
 
 **Files:**
-- Create: `tools/evaluate_sony_body_split.py`
+- Create: `tools/fit/evaluate_sony_body_split.py`
 - Test: `tests/test_evaluate_sony_body_split.py`
 
 **Interfaces:**
@@ -44,7 +44,7 @@ import os
 import tempfile
 import unittest
 
-from tools.evaluate_sony_body_split import load_rows, loo_errors
+from tools.fit.evaluate_sony_body_split import load_rows, loo_errors
 
 
 class TestLoadRows(unittest.TestCase):
@@ -122,9 +122,9 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `python3 -m unittest tests.test_evaluate_sony_body_split -v`
-Expected: `ModuleNotFoundError: No module named 'tools.evaluate_sony_body_split'` (or `ImportError`) - the module doesn't exist yet.
+Expected: `ModuleNotFoundError: No module named 'tools.fit.evaluate_sony_body_split'` (or `ImportError`) - the module doesn't exist yet.
 
-- [ ] **Step 3: Write `tools/evaluate_sony_body_split.py`**
+- [ ] **Step 3: Write `tools/fit/evaluate_sony_body_split.py`**
 
 ```python
 """연구용 - Sony 5바디(A7/A7R/A7S/A7 III/A7 IV)의 population 통계에서,
@@ -140,7 +140,7 @@ CSV만으로 평가 가능, core/stats.py의 image_stats() 결과가 이미
 각 예측의 오차(|실제값 - 예측값|)를 b2(블랙p2)/w995(화이트p99.5) 따로
 계산해서, 바디별로 5개씩 leave-one-out 페어드 비교를 만든다.
 
-  python3 -m tools.evaluate_sony_body_split
+  python3 -m tools.fit.evaluate_sony_body_split
 """
 import csv
 import math
@@ -191,7 +191,7 @@ def loo_errors(rows, stat_key):
 
 def _sign_test_p(wins, losses):
     """부호검정 양측 p값(정확 이항, 무승부 제외). scipy 의존 없이
-    math.comb으로 직접 계산한다. tools/evaluate_hncs_blend.py에서
+    math.comb으로 직접 계산한다. tools/research/evaluate_hncs_blend.py에서
     그대로 복사(tools/CLAUDE.md: 공용 helper를 import하지 않고 각
     evaluate_*.py가 독립적으로 복사해서 쓴다)."""
     n = wins + losses
@@ -206,7 +206,7 @@ def summarize(per_fold, n_bootstrap=20000, seed=0):
     """페어드 비교 통계. per_fold의 각 행은 (name, value_a, value_b)
     - value_a가 기준(pooled 오차), value_b가 비교 대상(바디별 오차).
     오차는 낮을수록 좋으므로, value_b가 value_a보다 작을 때(=바디별
-    예측이 더 정확) 개선폭이 양수가 된다. tools/evaluate_hncs_blend.py
+    예측이 더 정확) 개선폭이 양수가 된다. tools/research/evaluate_hncs_blend.py
     에서 그대로 복사."""
     a = np.array([row[1] for row in per_fold], dtype=np.float64)
     b = np.array([row[2] for row in per_fold], dtype=np.float64)
@@ -320,7 +320,7 @@ Expected: all 4 tests PASS.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tools/evaluate_sony_body_split.py tests/test_evaluate_sony_body_split.py
+git add tools/fit/evaluate_sony_body_split.py tests/test_evaluate_sony_body_split.py
 git commit -m "Add Sony body-split LOO evaluation script (pooled vs per-body prediction error)"
 ```
 
@@ -333,7 +333,7 @@ git commit -m "Add Sony body-split LOO evaluation script (pooled vs per-body pre
 - Modify: `hybrid_engine/EVALUATION.md` (append a new section at the end)
 
 **Interfaces:**
-- Consumes: `tools.evaluate_sony_body_split.load_rows`, `loo_errors`, `summarize` (from Task 1).
+- Consumes: `tools.fit.evaluate_sony_body_split.load_rows`, `loo_errors`, `summarize` (from Task 1).
 - Produces: nothing further consumes this - it's the terminal task of this plan.
 
 - [ ] **Step 1: Run the real evaluation**
@@ -341,7 +341,7 @@ git commit -m "Add Sony body-split LOO evaluation script (pooled vs per-body pre
 `sony_stats_result.csv` is already present in this environment (115 rows, confirmed during spec research - do not re-derive or re-scrape it). This is pure in-memory computation on a small CSV (no image decoding, no RAW, no network) - it should complete in well under a second, no background/`nohup` handling needed.
 
 ```bash
-python3 -m tools.evaluate_sony_body_split > /tmp/sony_body_split_output.log 2>&1
+python3 -m tools.fit.evaluate_sony_body_split > /tmp/sony_body_split_output.log 2>&1
 cat /tmp/sony_body_split_output.log
 ```
 
@@ -357,7 +357,7 @@ all 10 lines. Copy each one's list literal verbatim into the matching
 `_RECORDED_*` constant below - no need to hand-transcribe or re-run
 anything.
 
-Append to `tests/test_evaluate_sony_body_split.py` (add `from tools.evaluate_sony_body_split import summarize` to the existing import line):
+Append to `tests/test_evaluate_sony_body_split.py` (add `from tools.fit.evaluate_sony_body_split import summarize` to the existing import line):
 
 ```python
 # 실제 LOO 재실행 기록값(sony_stats_result.csv, 115장) -

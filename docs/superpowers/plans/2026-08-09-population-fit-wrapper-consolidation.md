@@ -29,7 +29,7 @@ unchanged.
 - Zero behavior change. Every brand's photo-mode output for a given
   input must be byte-identical before and after.
 - `hybrid_engine/core/preset_inverse.py`'s `curve_params()` and
-  `tools/video_engine.py`'s `brand_video_params()` both call
+  `tools/cli/video_engine.py`'s `brand_video_params()` both call
   `inspect.signature(func).parameters["toe_lift"].default` (also
   `shoulder_start`, `white_point`) on these exact functions — the
   factory's returned callable must be a real function with those three
@@ -125,7 +125,7 @@ In `core/engine.py`, add this function immediately after
 def make_population_fit_look(toe_lift, shoulder_start, white_point, clahe_clip):
     """apply_population_fit_look()에 브랜드별 상수를 고정한 apply_*_look()
     함수를 만들어 반환한다. functools.partial이 아니라 진짜 def 클로저를
-    쓰는 이유: hybrid_engine/core/preset_inverse.py와 tools/video_engine.py가
+    쓰는 이유: hybrid_engine/core/preset_inverse.py와 tools/cli/video_engine.py가
     inspect.signature(func).parameters["toe_lift"].default 형태로 이
     함수의 기본값을 직접 읽어가므로(브랜드 상수를 이중 기록하지 않기
     위해), 그 두 소비자가 지금과 동일하게 동작하려면 실제 함수

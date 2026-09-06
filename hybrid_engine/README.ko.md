@@ -2,7 +2,7 @@
 
 *[English README](README.md)*
 
-`brands/*.py`, `tools/raw_pipeline.py`와도 또 다른 목적을 가진 세
+`brands/*.py`, `tools/cli/raw_pipeline.py`와도 또 다른 목적을 가진 세
 번째 독립 모듈이다: "카메라 A로 찍어 완성된 JPEG을 마치 카메라 B가
 찍은 것처럼 다시 렌더링한다." 진입점은 두 개다 - RAW 입력용
 (`HybridCameraEngine`: Phase 0 색상 통일 + Gray World 정규화 + LAB

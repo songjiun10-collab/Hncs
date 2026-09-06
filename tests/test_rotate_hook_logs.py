@@ -1,4 +1,4 @@
-"""tools/rotate_hook_logs.py 테스트 - retention 기간보다 오래된 항목이
+"""tools/maintenance/rotate_hook_logs.py 테스트 - retention 기간보다 오래된 항목이
 월별 아카이브로 옮겨지고, 최근 항목은 활성 로그에 남는지, 여러 번
 돌려도 안전한지(idempotent) 확인."""
 import json
@@ -8,7 +8,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from tools.rotate_hook_logs import rotate
+from tools.maintenance.rotate_hook_logs import rotate
 
 
 def _entry(hook, days_ago, now):

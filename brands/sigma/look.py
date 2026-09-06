@@ -2,7 +2,7 @@
 Sigma 색감 근사 - population 통계 기반 1차 버전
 
 imaging-resource.com 카메라 리뷰 갤러리에서 미편집 SOOC JPEG를 모아
-population 통계를 냈다(analyze 스크립트는 tools/analyze.py의
+population 통계를 냈다(analyze 스크립트는 tools/cli/analyze.py의
 BRAND_CONFIGS를 건드리지 않고 독립 스크립트로 실행 - 기존 Panasonic/
 Olympus 작업과 동일한 이유로 공용 딕셔너리 충돌을 피하려고 분리함, 로직
 자체는 run_imaging_resource_brand()와 동일). EXIF Make="SIGMA"로 진짜

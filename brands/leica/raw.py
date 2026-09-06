@@ -35,13 +35,13 @@ percentile RMSE 그리드서치가 냈던 것 같은 큰 숫자는 안 나온다
 이번 세션에서 반복 확인된 패턴).
 
 clahe_clip=1.25는 population-fit 값 그대로 차용(미검증, 이번 실험
-범위 밖). 재현: `python3 -m tools.evaluate_leica_de00_grid sl3p` /
-`python3 -m tools.evaluate_leica_de00_grid q343`.
+범위 밖). 재현: `python3 -m tools.fit.evaluate_leica_de00_grid sl3p` /
+`python3 -m tools.fit.evaluate_leica_de00_grid q343`.
 
 **적용 범위 확장 - SL2/M10 추가 (2026-08)**: 로컬 raw+jpeg 라이브러리에
 SL2(55쌍)·M10(32쌍)이 새로 추가돼서 같은 방법론(ΔE00 직접 그리드서치+
-LOO, `tools/evaluate_new_body_de00_grid.py` 저해상도 선택 -> 400px
-확정, `tools/evaluate_native_pixel_confirm.py`로 원본 픽셀(max_dim=3000)
+LOO, `tools/fit/evaluate_new_body_de00_grid.py` 저해상도 선택 -> 400px
+확정, `tools/fit/evaluate_native_pixel_confirm.py`로 원본 픽셀(max_dim=3000)
 재확인)으로 `apply_leica_look()`(brands/leica.py) 대비 검증했다.
 
 | 바디 | n | 개선폭(LOO, 400px) | 개선폭(원본 픽셀) | 부호검정 p | 부트스트랩 95% CI(픽셀) |
@@ -55,7 +55,7 @@ white_point=1.0`) - 이제 4개 바디(SL3-P/Q3 43/SL2/M10)가 전부 같은
 값이라 우연이 아니라 "라이카 하우스 룩"에 가깝다는 근거가 됨. 호출부는
 이 4개 모델 중 하나일 때 이 함수를 쓰면 된다 - M11은 편집 오염(Adobe
 Camera Raw)으로 이번 배치에 클린 페어가 0장이라 검증 불가, 아직
-미포함. 재현: `python3 -m tools.evaluate_new_body_de00_grid --label
+미포함. 재현: `python3 -m tools.fit.evaluate_new_body_de00_grid --label
 "Leica SL2" --manifest datasets/leica/leica_new_pairs.csv --raw-dir
 "/Users/songjiun/local-work" --model "LEICA SL2" --baseline
 brands.leica.apply_leica_look` (M10은 --model만 교체).
@@ -70,7 +70,7 @@ diff 0.002~0.041 ΔE00로 편향 신호 없음(렌즈/ISO/F값/촬영일 확인,
 교체.
 
 **독립 재확인 - SL2-S(2026-08, /goal "다른 브랜드 ΔE00<10" 조사 중)**:
-같은 SL2-S 43쌍으로 별도 스크립트(`tools/confirm_leica_raw_look_extension.py`)로
+같은 SL2-S 43쌍으로 별도 스크립트(`tools/fit/confirm_leica_raw_look_extension.py`)로
 원본 픽셀(max_dim=3000)에서 다시 재확인 - +0.93%, 34승9패, 부호검정
 p=0.0002, 부트스트랩 95% CI [+0.070, +0.157](0 미포함) - 위 +1.21%와
 소폭 다르지만(다른 스크립트/다른 시점 파이프라인) 방향·유의성 모두

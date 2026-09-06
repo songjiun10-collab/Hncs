@@ -50,7 +50,7 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 소스 `DSCF9556.RAF`(서울 이태원 거리 스냅샷)는 `999_FUJI` 기여 라이브러리에
 있는데 이게 gitignore 대상이라 모든 체크아웃에 있는 게 아니라서, 이번
 재생성은 대신 횡단보도 사진을 재사용했다. 특정 인물 클로즈업 아님.
-`tools/build_readme_demo.py`로 생성 - **손으로 재실행해야** 하고 자동이
+`tools/demo/build_readme_demo.py`로 생성 - **손으로 재실행해야** 하고 자동이
 아니다. 이 개수 자체가 마지막 실재생성(317f3bd, 44개) 이후 이미 두 번 벌어졌다
 (55로, 이번 스윕에서 무관한 GUI 탭 드리프트를 고치다 우연히 잡음 -> 56으로,
 그 수정을 푸시하기도 전에 커밋 하나 사이로 또) -
@@ -124,7 +124,7 @@ pip install -r requirements.txt
 - [x] GitHub Actions CI(push/PR마다 자동 실행)
 - [x] population 통계 재현성 감사 도구
 - [x] RAW -> Log 색공간(F-Log2/S-Log3/V-Log 등) + `.cube` LUT 적용
-      파이프라인(`tools/raw_pipeline.py`, 브랜드 엔진과 별도)
+      파이프라인(`tools/cli/raw_pipeline.py`, 브랜드 엔진과 별도)
 - [x] EXIF 기반 카메라 간 색감 변환 엔진 V0.1(`hybrid_engine/`, RAW/JPEG
       입력 둘 다 지원, 브랜드 톤커브 역산 + ΔE 평가 루프)
 

@@ -7,7 +7,7 @@ LUT으로 근사한다. 원래 brands/hasselblad.py 한 파일에 apply_hncs와 
 v12: toe+리니어미드+shoulder라는 파라메트릭 모양을 아예 가정하지 않고,
 raw+jpeg 페어(10장, gamma=(2.222,4.5) 베이스라인)의 neutral_L/target_L을
 픽셀 단위로 대응시켜(총 1,078만 쌍) neutral_L값별 target_L 중앙값으로
-256단계 LUT을 직접 학습 (tools/calibrate.py learn_curve 모드). RMSE=15.4로
+256단계 LUT을 직접 학습 (tools/fit/calibrate.py learn_curve 모드). RMSE=15.4로
 apply_hncs 파라메트릭(23.3)보다 낮음 - 원본이 raw+jpeg 페어 10장뿐이라
 apply_hncs를 완전히 대체하기엔 표본이 작다고 판단, 파라메트릭/데이터기반
 두 버전을 나란히 유지(Experimental로 표시하는 이유). 학습된 커브는 그림자
@@ -18,7 +18,7 @@ shoulder" 가정과 결이 다름.
 실험 기록 (음성 결과): v12 LUT이 raw+jpeg 10장뿐이라 과적합 우려가 있어,
 bin별 표본수에 반비례해 apply_hncs 파라메트릭 커브 쪽으로 수축시키는
 정규화를 추가해보고, 10장 leave-one-out 교차검증으로 lambda별 일반화
-성능을 측정(tools/calibrate.py regularize 모드). 결과: lambda=0(정규화
+성능을 측정(tools/fit/calibrate.py regularize 모드). 결과: lambda=0(정규화
 없음)이 LOO RMSE 14.6으로 제일 좋고, lambda를 키울수록(파라메트릭 쪽으로
 더 당길수록) 오히려 계속 나빠짐(lambda=20000일 때 20.7, 순수 파라메트릭
 28.0). 원인: 매 fold마다 9장 * 약 108만 픽셀 = 약 970만 픽셀이 들어가서
@@ -27,7 +27,7 @@ bin별 표본수에 반비례해 apply_hncs 파라메트릭 커브 쪽으로 수
 달라서 그쪽으로 당길수록 체계적 편향만 커짐. apply_hncs_learned()는
 정규화 없는 순수 경험적 LUT 그대로 유지.
 
-**하이브리드 재검증(2026-08, 74쌍/4세대, `tools/calibrate.py`
+**하이브리드 재검증(2026-08, 74쌍/4세대, `tools/fit/calibrate.py`
 뺄셈 기반 LOO로 재작성 - 병렬화 없이 수 분 내 완료)**: 위 정규화
 실험(X1D 10장, lambda=0 최적)을 74쌍(공식 13 + local-mixed-2026-07
 61)으로 재실행. 이번엔 반대 결과 - lambda를 키울수록(파라메트릭
@@ -62,10 +62,10 @@ bin별 표본수에 반비례해 apply_hncs 파라메트릭 커브 쪽으로 수
 하이브리드가 전혀 도움이 안 된다** - v11이 이미 v12를 압도적으로
 이기는 상황에서는 둘을 섞을 이유가 없고, regularize 그리드서치
 자체가 그걸 정량적으로 확인해준 셈. `apply_hncs`(v11)가 기본값으로
-남는 근거가 하나 더 늘었다. 재현: `python3 -m tools.calibrate
+남는 근거가 하나 더 늘었다. 재현: `python3 -m tools.fit.calibrate
 regularize`.
 
-재검증(2026-07, brands/core/tools 리팩토링 후): `tools.calibrate
+재검증(2026-07, brands/core/tools 리팩토링 후): `tools.fit.calibrate
 learn_curve`로 다시 돌려서 RMSE가 리팩토링 전과 완전히 동일하게 재현됨을
 확인(23.31->15.41) - raw+jpeg 페어가 여전히 10장뿐이라(나머지는 죽은
 링크) 더 재학습할 새 데이터는 없음.
@@ -81,13 +81,13 @@ X1D 페어로만 학습한 LUT을 다른 세대에 그대로 적용한 게 과�
 뜻. 아래 LUT 값 자체는 재학습해서 바꾸지 않았음(X1D 전용으로는 여전히
 유효) - `apply_hncs_learned`가 Experimental로 남아있는 이유가 이제
 데이터로 뒷받침됨. 세대별 표는 `docs/measurements.md` 참고, 재현은
-`python3 -m tools.calibrate learn_curve`.
+`python3 -m tools.fit.calibrate learn_curve`.
 """
 import numpy as np
 
 from core.engine import apply_learned_lut_look
 
-# neutral_L(0~255) -> target_L, tools/calibrate.py learn_curve 모드로
+# neutral_L(0~255) -> target_L, tools/fit/calibrate.py learn_curve 모드로
 # raw+jpeg 10페어에서 학습 (v12). raw+jpeg 페어 기준 RMSE:
 #   apply_hncs (파라메트릭)     23.31
 #   apply_hncs_learned (이 LUT) 15.41
@@ -99,7 +99,7 @@ from core.engine import apply_learned_lut_look
 # 무시할 수준이지만 apply_hncs만큼 엄격하게 불변은 아님.
 #
 # 2026-07 재검토: 인덱스 112~127이 전부 186으로 완전히 평평하다가
-# 128에서 195로 9단계 뛰는 구간이 있음 - tools/calibrate.py의
+# 128에서 195로 9단계 뛰는 구간이 있음 - tools/fit/calibrate.py의
 # learn_curve가 표본(카운트<=20) 부족 bin을 np.interp로 보간하는데, 이
 # 구간에 유효 표본이 있는 neutral_L 값이 드물어서 생긴 아티팩트로 보임.
 # 이 톤 범위(중간 어두운 톤, 스킨/흐린하늘에서 흔함)를 지나는 이미지에서

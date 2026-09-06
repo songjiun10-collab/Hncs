@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tools.iso_noise import estimate_noise_flat_patch, estimate_noise_sigma
+from tools.research.iso_noise import estimate_noise_flat_patch, estimate_noise_sigma
 
 
 class TestEstimateNoiseSigma(unittest.TestCase):

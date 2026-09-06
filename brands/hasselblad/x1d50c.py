@@ -7,9 +7,9 @@ apply_hncs_x1d50c - Experimental. Hasselblad X1D-50c 전용 `apply_hncs()`
 **경위(2026-08)**: 로컬 raw+jpeg 라이브러리에 X1D-50c 페어 20장이 처음
 추가돼서(EXIF Software가 펌웨어 버전 문자열만 있고 Adobe 서명 없음 -
 편집 오염 없음 확인), ΔE00을 직접 목적함수로 그리드서치+LOO를 X2D II와
-동일한 방식으로 돌렸다(`tools/evaluate_hasselblad_body_de00_grid.py`,
+동일한 방식으로 돌렸다(`tools/x2dii/evaluate_hasselblad_body_de00_grid.py`,
 저해상도(200px) 폴드별 콤보 선택 -> 400px 확정, 이어서
-`tools/evaluate_native_pixel_confirm.py`로 원본 해상도(max_dim=3000)
+`tools/fit/evaluate_native_pixel_confirm.py`로 원본 해상도(max_dim=3000)
 재확인) - `apply_hncs()`(main) 대비:
 
 | 검증 단계 | 개선폭 | 승/패 | 부호검정 p | 부트스트랩 95% CI |
@@ -26,7 +26,7 @@ main(0.5)보다도 훨씬 길다 - 별개 센서/펌웨어 세대라 X2D II 값�
 
 표본이 20장으로 X2D II(70장)보다 작아 통계적 견고함이 상대적으로
 약하다는 점은 유의 - 이후 X1D-50c 페어가 더 추가되면 재검증 권장. 재현:
-`python3 -m tools.evaluate_hasselblad_body_de00_grid --label
+`python3 -m tools.x2dii.evaluate_hasselblad_body_de00_grid --label
 "Hasselblad X1D-50c" --manifest datasets/hasselblad/hasselblad_new_pairs.csv
 --raw-dir "/Users/songjiun/local-work/raw pair" --model "Hasselblad X1D-50c"`
 """

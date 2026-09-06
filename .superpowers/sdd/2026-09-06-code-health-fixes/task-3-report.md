@@ -12,7 +12,7 @@ DONE_WITH_CONCERNS
   is closed in every case.
 - Updated the four Fuji tools to context-manage `manifest.csv` and reject zero
   usable JPEG/RAW pairs before statistics.
-- Context-managed JSON and text reads touched in `tools/audit_repo_integrity.py`.
+- Context-managed JSON and text reads touched in `tools/maintenance/audit_repo_integrity.py`.
   Added a regression proving profile JSON handles close after parsing.
 
 ## Verification
@@ -29,8 +29,8 @@ DONE_WITH_CONCERNS
   `apply_eterna_cinema`, `apply_eterna_bleach_bypass`, `apply_reala_ace`, and
   `apply_classic_negative`) plus `apply_hasselblad_night`. Task 3 did not edit
   any shipped look function.
-- `python3 -m tools.audit_repo_integrity` reports 2 unrelated registration
-  failures for untracked `tools/refit_borrowed_population_fit_params.py`.
+- `python3 -m tools.maintenance.audit_repo_integrity` reports 2 unrelated registration
+  failures for untracked `tools/fit/refit_borrowed_population_fit_params.py`.
 
 ## Concerns
 

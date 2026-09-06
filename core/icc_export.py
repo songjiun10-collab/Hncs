@@ -73,7 +73,7 @@ Characteristics 파이프라인이 정확히 어느 단계에 이 매트릭스�
 **챠트 실측 없는 브랜드용 확장(2026-09-02, 사용자 지시 "소니같은거도
 다 매트릭스 만들어")**: `srgb_linear_to_xyz_d50_matrix()`가
 Sony/Sigma/Leica처럼 진짜 컬러체커 실측이 없는 브랜드를 위해 추가됐다.
-이 브랜드들의 raw+jpeg 매트릭스(`tools/fit_brand_native_matrix_for_icc.py`,
+이 브랜드들의 raw+jpeg 매트릭스(`tools/fit/fit_brand_native_matrix_for_icc.py`,
 native -> 카메라 JPEG 근사)를 `native_matrix @
 srgb_linear_to_xyz_d50_matrix()`로 합성하면 ICC가 요구하는 native ->
 XYZ(D50) 형태가 된다 - 다만 **여전히 진짜 컬러체커 실측이 아니라 "그
@@ -270,7 +270,7 @@ def srgb_linear_to_xyz_d50_matrix():
     native -> XYZ(D50)로 합성할 때 쓴다: `combined = native_to_srgb_matrix
     @ srgb_linear_to_xyz_d50_matrix()`. **주의**: 이렇게 합성한 프로필은
     하셀블라드 챠트 프로필과 달리 진짜 컬러체커 실측이 아니라 "카메라
-    JPEG 근사"다 - `tools/fit_brand_native_matrix_for_icc.py` 참고."""
+    JPEG 근사"다 - `tools/fit/fit_brand_native_matrix_for_icc.py` 참고."""
     import colour
     D50 = colour.CCS_ILLUMINANTS["CIE 1931 2 Degree Standard Observer"]["D50"]
     srgb = colour.RGB_COLOURSPACES["sRGB"]

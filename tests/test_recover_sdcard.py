@@ -7,7 +7,7 @@ from contextlib import redirect_stdout
 from io import StringIO
 from unittest.mock import patch
 
-from tools.recover_sdcard import main, _reject_if_device
+from tools.data.recover_sdcard import main, _reject_if_device
 
 _SECTOR = 512
 

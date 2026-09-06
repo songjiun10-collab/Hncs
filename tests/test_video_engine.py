@@ -9,12 +9,12 @@ import cv2
 import imageio_ffmpeg
 import numpy as np
 
-from tools.video_engine import (
+from tools.cli.video_engine import (
     EXPANDED_SUPPORTED_BRANDS, SUPPORTED_BRANDS, brand_video_params,
     mux_audio, process_video, process_video_v2, process_video_v2_with_audio,
     process_video_with_audio,
 )
-from tools.video_engine import _EXPANDED_BRAND_FUNCTIONS, _grayscale_to_bgr_frame
+from tools.cli.video_engine import _EXPANDED_BRAND_FUNCTIONS, _grayscale_to_bgr_frame
 from brands.fuji import apply_pro_neg_hi, apply_pro_neg_hi_video_frame
 from brands.hasselblad import apply_hncs, apply_hncs_video_frame
 from core.curve import film_curve, s_curve
@@ -160,7 +160,7 @@ class TestVideoModeReducesFlickerVsPhotoMode(unittest.TestCase):
     def test_frame_to_frame_variation_lower_without_clahe(self):
         from brands.canon import apply_canon_look
         from core.engine import apply_population_fit_look_video_frame
-        from tools.video_engine import brand_video_params
+        from tools.cli.video_engine import brand_video_params
 
         rng = np.random.default_rng(7)
         width, height = 64, 48
@@ -193,7 +193,7 @@ class TestVideoModeReducesFlickerVsPhotoMode(unittest.TestCase):
 class TestBrandFunctionsArePurePassthroughs(unittest.TestCase):
     def test_every_brand_look_is_a_pure_population_fit_passthrough(self):
         from core.engine import apply_population_fit_look
-        from tools.video_engine import _BRAND_FUNCTIONS, brand_video_params
+        from tools.cli.video_engine import _BRAND_FUNCTIONS, brand_video_params
 
         img = np.random.default_rng(3).integers(0, 255, (64, 64, 3), dtype=np.uint8)
         for name, fn in _BRAND_FUNCTIONS.items():

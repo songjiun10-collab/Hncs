@@ -1,4 +1,4 @@
-"""`tools/validate_chart_pipeline_on_external_camera.py`의 순수 부분만
+"""`tools/dpreview/validate_chart_pipeline_on_external_camera.py`의 순수 부분만
 검증 - RAW 디코드는 CI에 데이터가 없고, 이 외부 데이터셋은 애초에 이
 저장소에 커밋되지도 않으므로(tests/CLAUDE.md) 제외."""
 import os
@@ -9,7 +9,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.validate_chart_pipeline_on_external_camera import _mean_de, _rmse_xyz
+from tools.dpreview.validate_chart_pipeline_on_external_camera import _mean_de, _rmse_xyz
 
 
 class TestMeanDe(unittest.TestCase):

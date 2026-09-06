@@ -1,4 +1,4 @@
-"""tools/match_dpreview_downloads_by_hash.py, tools/write_dpreview_manifest.py -
+"""tools/dpreview/match_dpreview_downloads_by_hash.py, tools/dpreview/write_dpreview_manifest.py -
 import smoke test + unit test for the pure logic (SHA-256 matching, CSV
 writing), no network/browser dependency so this runs in CI."""
 import csv
@@ -7,8 +7,8 @@ import os
 import tempfile
 import unittest
 
-from tools import match_dpreview_downloads_by_hash as match_mod
-from tools import write_dpreview_manifest as manifest_mod
+from tools.dpreview import match_dpreview_downloads_by_hash as match_mod
+from tools.dpreview import write_dpreview_manifest as manifest_mod
 
 
 class TestMatchByHash(unittest.TestCase):

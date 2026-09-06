@@ -4,7 +4,7 @@
 
 **Goal:** 11개 브랜드의 이미 계산된 population 시그니처(`datasets/<brand>/*_signature.json`)만으로 leave-one-out nearest-centroid 분류기를 만들어, 그 시그니처 데이터가 브랜드를 실제로 구별할 만큼 결정력이 있는지 정직하게 검증한다.
 
-**Architecture:** `core/brand_classifier.py`(순수 numpy 함수: 로딩/조인 → 피처 추출 → 표준화 → LOO 분류 → confusion matrix/리포트)와 이를 감싸는 `tools/classify_brand.py` CLI 두 층으로 나눈다. 새 사진 입력은 스코프 밖 - 오직 933장 기존 데이터로만 동작.
+**Architecture:** `core/brand_classifier.py`(순수 numpy 함수: 로딩/조인 → 피처 추출 → 표준화 → LOO 분류 → confusion matrix/리포트)와 이를 감싸는 `tools/cli/classify_brand.py` CLI 두 층으로 나눈다. 새 사진 입력은 스코프 밖 - 오직 933장 기존 데이터로만 동작.
 
 **Tech Stack:** Python 표준 라이브러리 + numpy만 사용(새 의존성 없음). 테스트는 `unittest`(프로젝트 관례, pytest 미사용).
 
@@ -551,17 +551,17 @@ git commit -m "Add confusion_matrix() + classification_report() with majority/un
 
 ---
 
-### Task 5: CLI (`tools/classify_brand.py`)
+### Task 5: CLI (`tools/cli/classify_brand.py`)
 
 **Files:**
-- Create: `tools/classify_brand.py`
+- Create: `tools/cli/classify_brand.py`
 
 **Interfaces:**
 - Consumes: `core.brand_classifier.BRANDS`, `load_signatures`, `extract_features`, `nearest_centroid_loo`, `confusion_matrix`, `classification_report` (Tasks 1-4).
 
 - [ ] **Step 1: CLI 작성**
 
-`tools/classify_brand.py` 새로 작성:
+`tools/cli/classify_brand.py` 새로 작성:
 
 ```python
 """브랜드 시그니처 판별기 CLI - 11개 브랜드의 이미 계산된 population
@@ -644,13 +644,13 @@ if __name__ == "__main__":
 
 - [ ] **Step 2: 수동 스모크테스트 (실제 933장 데이터)**
 
-Run: `python3 -m tools.classify_brand`
+Run: `python3 -m tools.cli.classify_brand`
 Expected: 예외 없이 11×11 confusion matrix 표, 브랜드별 precision/recall/f1, `overall accuracy`/`macro accuracy`/두 baseline이 출력됨.
 
-Run: `python3 -m tools.classify_brand --features all`
+Run: `python3 -m tools.cli.classify_brand --features all`
 Expected: 21차원(Set B) 기준으로 동일한 형식의 출력, Set A와 다른 수치.
 
-Run: `python3 -m tools.classify_brand --csv /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/matrix_a.csv`
+Run: `python3 -m tools.cli.classify_brand --csv /tmp/claude-0/-home-user-Hncs/1d07a51d-3df6-5c74-ae37-0cc778eeeb5b/scratchpad/matrix_a.csv`
 Expected: 콘솔 출력 + `matrix_a.csv` 파일 생성, 12행(헤더+11브랜드) × 12열(헤더+11브랜드) CSV.
 
 Step 2에서 출력된 정확한 수치(overall accuracy, macro accuracy, 두 baseline, Set A/B 각각)를 받아적어 둔다 - Task 6에서 README에 그대로 옮겨 적는다.
@@ -658,8 +658,8 @@ Step 2에서 출력된 정확한 수치(overall accuracy, macro accuracy, 두 ba
 - [ ] **Step 3: 커밋**
 
 ```bash
-git add tools/classify_brand.py
-git commit -m "Add tools/classify_brand.py CLI for the brand-signature LOO classifier"
+git add tools/cli/classify_brand.py
+git commit -m "Add tools/cli/classify_brand.py CLI for the brand-signature LOO classifier"
 ```
 
 ---
@@ -673,7 +673,7 @@ git commit -m "Add tools/classify_brand.py CLI for the brand-signature LOO class
 - Modify: `docs/project_structure.en.md`
 
 **Interfaces:**
-- Consumes: Task 5의 `python3 -m tools.classify_brand` / `--features all` 실행 결과(정확한 accuracy/macro_accuracy/baseline 수치, Set A와 B 각각).
+- Consumes: Task 5의 `python3 -m tools.cli.classify_brand` / `--features all` 실행 결과(정확한 accuracy/macro_accuracy/baseline 수치, Set A와 B 각각).
 
 - [ ] **Step 1: README.ko.md에 새 섹션 추가**
 
@@ -682,7 +682,7 @@ git commit -m "Add tools/classify_brand.py CLI for the brand-signature LOO class
 ```markdown
 ## 브랜드 시그니처 판별력 검증 (연구용)
 
-`tools/classify_brand.py`는 이 프로젝트의 다른 도구들과 방향이 반대다 -
+`tools/cli/classify_brand.py`는 이 프로젝트의 다른 도구들과 방향이 반대다 -
 새 기능을 만드는 게 아니라, 이미 계산해둔 11개 브랜드의 population
 시그니처(`datasets/<brand>/*_signature.json`, 총 933장)가 브랜드를 실제로
 구별할 만큼 결정력이 있는지를 leave-one-out nearest-centroid 분류로
@@ -695,8 +695,8 @@ centroid 계산에서도 완전히 제외된다(리키지 없음). `npix`/`is_po
 근거는 `docs/superpowers/specs/2026-07-24-brand-classifier-design.md`).
 
 ```
-python3 -m tools.classify_brand                # Set A: tone+color+gamut (15차원)
-python3 -m tools.classify_brand --features all  # Set B: + texture (21차원)
+python3 -m tools.cli.classify_brand                # Set A: tone+color+gamut (15차원)
+python3 -m tools.cli.classify_brand --features all  # Set B: + texture (21차원)
 ```
 
 [[TASK 5 STEP 2에서 받아적은 실제 출력값으로 아래를 채운다:]]
@@ -721,11 +721,11 @@ Pentax/Ricoh GR 스케일 다름) Set B가 Set A보다 정확도가 높게 나�
 ```markdown
 ## Brand-signature discriminability check (research)
 
-`tools/classify_brand.py` runs in the opposite direction from this project's other tools - instead of building a new feature, it validates whether the already-computed population signatures for the 11 brands (`datasets/<brand>/*_signature.json`, 933 photos total) actually carry enough signal to tell brands apart, via leave-one-out nearest-centroid classification. Distances are standardized (z-score), and the held-out photo is fully excluded from its own brand's centroid on every fold (no leakage). `npix`/`is_portrait`/`quality`/`subsampling` (image size, JPEG encoder settings) are deliberately excluded - keeping them would let the classifier learn "which brand uploads which resolution/JPEG setting" instead of an actual color-rendering difference. There's no predict-from-a-new-photo mode - design rationale in `docs/superpowers/specs/2026-07-24-brand-classifier-design.md`.
+`tools/cli/classify_brand.py` runs in the opposite direction from this project's other tools - instead of building a new feature, it validates whether the already-computed population signatures for the 11 brands (`datasets/<brand>/*_signature.json`, 933 photos total) actually carry enough signal to tell brands apart, via leave-one-out nearest-centroid classification. Distances are standardized (z-score), and the held-out photo is fully excluded from its own brand's centroid on every fold (no leakage). `npix`/`is_portrait`/`quality`/`subsampling` (image size, JPEG encoder settings) are deliberately excluded - keeping them would let the classifier learn "which brand uploads which resolution/JPEG setting" instead of an actual color-rendering difference. There's no predict-from-a-new-photo mode - design rationale in `docs/superpowers/specs/2026-07-24-brand-classifier-design.md`.
 
 ```
-python3 -m tools.classify_brand                # Set A: tone+color+gamut (15-dim)
-python3 -m tools.classify_brand --features all  # Set B: + texture (21-dim)
+python3 -m tools.cli.classify_brand                # Set A: tone+color+gamut (15-dim)
+python3 -m tools.cli.classify_brand --features all  # Set B: + texture (21-dim)
 ```
 
 [[fill in with the actual numbers recorded in Task 5 step 2:]]
@@ -744,10 +744,10 @@ Texture's sharpening/micro_contrast use different formulas per brand (documented
 | `core/brand_classifier.py` | "연구용" 브랜드 시그니처 판별력 검증 - 11개 브랜드의 `datasets/*/*_signature.json`을 filename으로 조인해서 leave-one-out nearest-centroid 분류(`load_signatures`/`extract_features`/`standardize`/`nearest_centroid_loo`/`confusion_matrix`/`classification_report`). numpy만 사용, 새 사진 예측 기능은 없음 |
 ```
 
-`docs/project_structure.md`의 `tools/export_lut.py` 행 다음에 추가:
+`docs/project_structure.md`의 `tools/cli/export_lut.py` 행 다음에 추가:
 
 ```markdown
-| `tools/classify_brand.py` | 브랜드 시그니처 판별기 CLI - `python3 -m tools.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]` |
+| `tools/cli/classify_brand.py` | 브랜드 시그니처 판별기 CLI - `python3 -m tools.cli.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]` |
 ```
 
 `docs/project_structure.en.md`의 `core/lut_export.py` 행 다음에 추가:
@@ -756,10 +756,10 @@ Texture's sharpening/micro_contrast use different formulas per brand (documented
 | `core/brand_classifier.py` | "Research-only" brand-signature discriminability check - joins the 11 brands' `datasets/*/*_signature.json` on filename and runs leave-one-out nearest-centroid classification (`load_signatures`/`extract_features`/`standardize`/`nearest_centroid_loo`/`confusion_matrix`/`classification_report`). numpy-only, no predict-from-a-new-photo mode |
 ```
 
-`docs/project_structure.en.md`의 `tools/export_lut.py` 행 다음에 추가:
+`docs/project_structure.en.md`의 `tools/cli/export_lut.py` 행 다음에 추가:
 
 ```markdown
-| `tools/classify_brand.py` | Brand-signature classifier CLI - `python3 -m tools.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]` |
+| `tools/cli/classify_brand.py` | Brand-signature classifier CLI - `python3 -m tools.cli.classify_brand [--features tone_color_gamut\|all] [--csv out.csv]` |
 ```
 
 - [ ] **Step 4: 전체 테스트 스위트 확인**

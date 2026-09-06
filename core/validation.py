@@ -1,6 +1,6 @@
 """
 "이 이미지가 진짜 미가공 SOOC인가" / "이 변환이 hue를 보존하는가" /
-"이 파일이 실제로 온전히 디코드되는가" 검증 헬퍼. tools/analyze.py의
+"이 파일이 실제로 온전히 디코드되는가" 검증 헬퍼. tools/cli/analyze.py의
 라이카/Phase One/Pentax/Ricoh GR 스크레이핑 로직과 portrait_skin_analysis
 로직에서 거의 동일하게 중복돼 있던 걸 합쳤다.
 

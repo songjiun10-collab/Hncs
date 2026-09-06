@@ -2,7 +2,7 @@
 
 ## 배경
 
-`tools/calibrate.py`의 `regularize` 모드(`run_regularize()`)는 이미
+`tools/fit/calibrate.py`의 `regularize` 모드(`run_regularize()`)는 이미
 v11(파라메트릭)↔v12(학습 LUT) **하이브리드 메커니즘 그 자체**다:
 
 ```python
@@ -58,14 +58,14 @@ docstring)는 X1D 10장짜리 표본에서 나온 것이고, 그 표본으로 �
   실험에서 ΔE를 폴드별 스칼라로 쓰는 것과 같은 역할, RMSE 자체는
   집계 후에만 sqrt하므로 폴드별로는 근사).
 - 통계 함수(부호검정 `math.comb` 기반, 부트스트랩 95% CI 20000회
-  고정시드, drop-one)는 `tools/evaluate_hncs_blend.py`에 이미 있는
+  고정시드, drop-one)는 `tools/research/evaluate_hncs_blend.py`에 이미 있는
   코드를 그대로 복사한다(`tools/CLAUDE.md`: "Standalone. Never import
   from a sibling evaluate_*.py — copy the loader instead", 같은 원칙을
   calibrate.py에도 적용).
 
 ## 설계
 
-### 1. `tools/calibrate.py` 변경
+### 1. `tools/fit/calibrate.py` 변경
 
 - `collect_local_pairs()`: 반환 dict에 `camera=row["camera"]` 필드
   추가(기존 소비자 `_resolve_pairs()`/`run_learn_curve()`는 새 필드를
@@ -93,7 +93,7 @@ docstring)는 X1D 10장짜리 표본에서 나온 것이고, 그 표본으로 �
   - 기존처럼 lambda별 RMSE 출력 + 최적 lambda 선정은 유지.
 - 유의성 검정 추가: 최적 lambda vs `lambda=0`(순수 v12), 최적 lambda vs
   `lambda=1e9`(순수 v11) 각각 폴드별 `sqrt(e)` 페어드 비교(부호검정+
-  부트스트랩 95% CI+drop-one) - `tools/evaluate_hncs_blend.py`의
+  부트스트랩 95% CI+drop-one) - `tools/research/evaluate_hncs_blend.py`의
   `_sign_test_p`/`summarize`/`print_summary` 패턴을 복사해 이식(ΔE
   대신 `sqrt_e`를 그 자리에 넣는 정도의 변경).
 - 세대별 RMSE 분해 표 출력: 최적 lambda LUT으로 전체 74쌍 예측한 뒤

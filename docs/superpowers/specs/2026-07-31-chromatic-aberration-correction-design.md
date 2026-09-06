@@ -46,14 +46,14 @@ FBDD 노이즈 감소, 하이라이트 복구 모드도 후보로 검토했으�
 - 핫셀블라드 raw+jpeg 13쌍은 이미 로컬에 있다
   (`datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` + gitignore된
   `raw_calib_cache/`, `{jpeg_basename}.{ext}` RAW + `{jpeg_basename}.target.jpg`
-  타깃 패턴) - `tools/evaluate_hncs_structural.py`가 이미 이 페어를
+  타깃 패턴) - `tools/research/evaluate_hncs_structural.py`가 이미 이 페어를
   로드하는 코드(`_pair_names()`/`_raw_path_for()`/`_target_path_for()`)를
   갖고 있어 그대로 재사용한다.
 - ΔE 측정은 이 프로젝트 표준: `hybrid_engine.utils.evaluate.mean_delta_e`
   (CIEDE2000, `colour.delta_E(method="CIE 2000")`).
 - LOO 교차검증 + 통계 검정(`summarize()`/`_sign_test_p()`) 패턴은
-  `tools/evaluate_hncs_structural.py`에 이미 구현돼 있고
-  `tools/evaluate_darktable_vs_rawpy.py`에도 그대로 복제된 전례가 있다 -
+  `tools/research/evaluate_hncs_structural.py`에 이미 구현돼 있고
+  `tools/research/evaluate_darktable_vs_rawpy.py`에도 그대로 복제된 전례가 있다 -
   이번에도 같은 패턴을 재사용한다(부호검정은 `math.comb` 기반 정확
   이항검정, scipy 의존 없음).
 
@@ -100,13 +100,13 @@ demosaic_algorithm=...)`처럼 위치 인자 + 기존 키워드만 쓰므로 새
 `decode_raw_native()`는 DCP 프로필용 별도 경로(WB/매트릭스까지 우회)라
 이 실험과 무관, 변경하지 않는다.
 
-### 2. `tools/evaluate_chromatic_aberration.py` (신규)
+### 2. `tools/research/evaluate_chromatic_aberration.py` (신규)
 
 ```
-python3 -m tools.evaluate_chromatic_aberration
+python3 -m tools.research.evaluate_chromatic_aberration
 ```
 
-- 핫셀블라드 13쌍 로드(`tools/evaluate_hncs_structural.py`의
+- 핫셀블라드 13쌍 로드(`tools/research/evaluate_hncs_structural.py`의
   `_pair_names()`/`_raw_path_for()`/`_target_path_for()`와 동일한 CSV +
   캐시 경로 패턴을 이 스크립트 안에 자체 구현 - 모듈 간 import로 얽지
   않고 독립 스크립트로 유지, 기존 연구 스크립트들의 관례).
@@ -161,8 +161,8 @@ aberration) 실험" 추가 - 이기든 지든 애매하든 정직하게(이 프�
   캐시 의존적이라 이 프로젝트 관례대로(Fuji/darktable 실험과 동일)
   커밋되는 자동화 테스트 없이 수동 실행으로 검증.
 - `evaluate_chromatic_aberration.py`의 `_sign_test_p()`/`summarize()`는
-  순수 함수이므로 `tools/evaluate_hncs_structural.py`/
-  `tools/evaluate_darktable_vs_rawpy.py`와 동일하게 하드코딩된 값으로
+  순수 함수이므로 `tools/research/evaluate_hncs_structural.py`/
+  `tools/research/evaluate_darktable_vs_rawpy.py`와 동일하게 하드코딩된 값으로
   단위 테스트 가능(실제 13쌍 LOO 실행 결과를 기록한 뒤 회귀 테스트로
   고정 - `tests/test_evaluate_darktable_vs_rawpy.py`의
   `TestSummarizeRecordedRun` 패턴).

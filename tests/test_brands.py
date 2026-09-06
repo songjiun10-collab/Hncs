@@ -196,7 +196,7 @@ class TestFujiPresets(unittest.TestCase):
 
     def test_all_documented_presets_covered(self):
         # brand.fuji의 apply_* 중 core.curve/core.lut에서 재노출된 범용
-        # 헬퍼(apply_lut/apply_highlight_rolloff)와 tools/video_engine.py
+        # 헬퍼(apply_lut/apply_highlight_rolloff)와 tools/cli/video_engine.py
         # 전용 CLAHE-생략 변형(이름이 "_video_frame"으로 끝남 - 별도
         # "룩"이 아니라 구현 디테일)을 뺀 진짜 프리셋 개수가 FUJI_COLOR_
         # PRESETS/FUJI_MONO_PRESETS 목록과 일치하는지 확인 - 프리셋을

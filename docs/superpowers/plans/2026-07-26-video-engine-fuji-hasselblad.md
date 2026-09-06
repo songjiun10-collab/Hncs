@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `tools/video_engine.py`의 지원 브랜드를 기존 10개(population-fit)에서 Fujifilm 10개 프리셋 + Hasselblad `apply_hncs`까지 21개로 확장한다.
+**Goal:** `tools/cli/video_engine.py`의 지원 브랜드를 기존 10개(population-fit)에서 Fujifilm 10개 프리셋 + Hasselblad `apply_hncs`까지 21개로 확장한다.
 
 **Architecture:** Fuji 프리셋 10개 중 CLAHE를 쓰는 건 `apply_pro_neg_hi` 하나뿐이라 나머지 9개는 수정 없이 그대로 재사용한다. `apply_pro_neg_hi`와 Hasselblad의 `apply_hncs`에는 CLAHE를 생략한 비디오 전용 변형을 새로 추가한다(v1의 `apply_population_fit_look_video_frame()`과 같은 패턴). 이미 리뷰를 통과한 `process_video()`/`process_video_with_audio()`는 한 줄도 건드리지 않고, 같은 I/O 구조를 가진 `process_video_v2()`/`process_video_v2_with_audio()`를 나란히 추가해서 확장 브랜드를 처리한다(사용자가 명시적으로 이 방향을 선택 - 코드 중복을 감수하고 이미 검증된 코드를 보존).
 
@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- **`process_video()`, `process_video_with_audio()`, `brand_video_params()`, `_BRAND_FUNCTIONS`, `SUPPORTED_BRANDS`(전부 `tools/video_engine.py`, 기존)는 수정 금지.** 새 기능은 나란히 추가하는 새 함수/딕셔너리로만 구현한다.
+- **`process_video()`, `process_video_with_audio()`, `brand_video_params()`, `_BRAND_FUNCTIONS`, `SUPPORTED_BRANDS`(전부 `tools/cli/video_engine.py`, 기존)는 수정 금지.** 새 기능은 나란히 추가하는 새 함수/딕셔너리로만 구현한다.
 - **`brands/fuji.py`의 기존 10개 함수, `brands/hasselblad.py`의 기존 `apply_hncs`는 수정 금지.** 각 파일에 새 `*_video_frame()` 함수를 추가만 한다.
 - **Fuji 9개(CLAHE 없는 프리셋)는 새 video_frame 변형 없이 원본 함수를 그대로 쓴다** - `apply_astia`/`apply_pro_neg_std`/`apply_eterna_cinema`/`apply_eterna_bleach_bypass`/`apply_nostalgic_neg`/`apply_reala_ace`/`apply_classic_negative`/`apply_acros`/`apply_monochrome`.
 - **CLAHE 생략 변형이 필요한 건 `apply_pro_neg_hi_video_frame()`(`brands/fuji.py`)과 `apply_hncs_video_frame()`(`brands/hasselblad.py`) 2개뿐** - 각각 원본 함수에서 `cv2.createCLAHE(...)` / `clahe.apply(...)` 두 줄만 뺀 것, 나머지 로직은 원본과 동일해야 한다.
@@ -39,7 +39,7 @@
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-`tests/test_video_engine.py` 상단 import 블록(기존 `from tools.video_engine import (...)` 다음)에 추가:
+`tests/test_video_engine.py` 상단 import 블록(기존 `from tools.cli.video_engine import (...)` 다음)에 추가:
 
 ```python
 from brands.fuji import apply_pro_neg_hi, apply_pro_neg_hi_video_frame
@@ -136,7 +136,7 @@ Expected: `ImportError: cannot import name 'apply_pro_neg_hi_video_frame' from '
 
 
 # ==========================================
-# 10. PRO Neg. Hi 비디오 전용 변형 (CLAHE 생략) - tools/video_engine.py가 사용
+# 10. PRO Neg. Hi 비디오 전용 변형 (CLAHE 생략) - tools/cli/video_engine.py가 사용
 # ==========================================
 def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
     """apply_pro_neg_hi()의 비디오 전용 변형 - CLAHE(프레임별 적응형
@@ -225,29 +225,29 @@ git commit -m "Add CLAHE-free video-frame variants for Fuji Pro Neg Hi and Hasse
 ### Task 2: `process_video_v2()`/`process_video_v2_with_audio()` + 11개 브랜드 CLI 확장
 
 **Files:**
-- Modify: `tools/video_engine.py` (추가 + `main()`의 분기 로직만 수정 - `process_video`/`process_video_with_audio`/`brand_video_params`/`_BRAND_FUNCTIONS`/`SUPPORTED_BRANDS`는 수정 금지)
+- Modify: `tools/cli/video_engine.py` (추가 + `main()`의 분기 로직만 수정 - `process_video`/`process_video_with_audio`/`brand_video_params`/`_BRAND_FUNCTIONS`/`SUPPORTED_BRANDS`는 수정 금지)
 - Test: `tests/test_video_engine.py` (기존 파일에 추가)
 
 **Interfaces:**
-- Consumes: `apply_astia`, `apply_pro_neg_std`, `apply_eterna_cinema`, `apply_eterna_bleach_bypass`, `apply_nostalgic_neg`, `apply_reala_ace`, `apply_classic_negative`, `apply_acros`, `apply_monochrome`(전부 `brands/fuji.py`, 기존, 시그니처 `(img_bgr) -> np.ndarray`, `apply_acros`/`apply_monochrome`만 1채널 반환), `apply_pro_neg_hi_video_frame`(`brands/fuji.py`, Task 1), `apply_hncs_video_frame`(`brands/hasselblad.py`, Task 1), `mux_audio(video_only_path, audio_source_path, final_output_path) -> None`(`tools/video_engine.py`, 기존, 수정 없음)
+- Consumes: `apply_astia`, `apply_pro_neg_std`, `apply_eterna_cinema`, `apply_eterna_bleach_bypass`, `apply_nostalgic_neg`, `apply_reala_ace`, `apply_classic_negative`, `apply_acros`, `apply_monochrome`(전부 `brands/fuji.py`, 기존, 시그니처 `(img_bgr) -> np.ndarray`, `apply_acros`/`apply_monochrome`만 1채널 반환), `apply_pro_neg_hi_video_frame`(`brands/fuji.py`, Task 1), `apply_hncs_video_frame`(`brands/hasselblad.py`, Task 1), `mux_audio(video_only_path, audio_source_path, final_output_path) -> None`(`tools/cli/video_engine.py`, 기존, 수정 없음)
 - Produces: `EXPANDED_SUPPORTED_BRANDS: frozenset`(11개), `process_video_v2(input_path, output_path, brand_name, progress_every=100) -> int`, `process_video_v2_with_audio(input_path, output_path, brand_name, progress_every=100) -> int` - Task 3의 `main()` 분기가 이 두 함수를 사용.
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-`tests/test_video_engine.py`의 `from tools.video_engine import (...)` import 줄을 다음으로 교체:
+`tests/test_video_engine.py`의 `from tools.cli.video_engine import (...)` import 줄을 다음으로 교체:
 
 ```python
-from tools.video_engine import (
+from tools.cli.video_engine import (
     EXPANDED_SUPPORTED_BRANDS, SUPPORTED_BRANDS, brand_video_params,
     mux_audio, process_video, process_video_v2, process_video_v2_with_audio,
     process_video_with_audio,
 )
 ```
 
-`tools.video_engine`에서 `_grayscale_to_bgr_frame`도 테스트가 직접 써야 하므로, 같은 import 블록 **다음 줄**에 추가:
+`tools.cli.video_engine`에서 `_grayscale_to_bgr_frame`도 테스트가 직접 써야 하므로, 같은 import 블록 **다음 줄**에 추가:
 
 ```python
-from tools.video_engine import _grayscale_to_bgr_frame
+from tools.cli.video_engine import _grayscale_to_bgr_frame
 ```
 
 `TestApplyHncsVideoFrame` 클래스(Task 1에서 추가) **바로 다음**, `if __name__ == "__main__":` **바로 위**에 새 테스트 클래스들 추가:
@@ -475,11 +475,11 @@ class TestProcessVideoV2WithAudio(unittest.TestCase):
 - [ ] **Step 2: 테스트 실패 확인**
 
 Run: `python3 -m unittest tests.test_video_engine -v`
-Expected: `ImportError: cannot import name 'EXPANDED_SUPPORTED_BRANDS' from 'tools.video_engine'` 로 FAIL
+Expected: `ImportError: cannot import name 'EXPANDED_SUPPORTED_BRANDS' from 'tools.cli.video_engine'` 로 FAIL
 
 - [ ] **Step 3: 최소 구현 작성**
 
-`tools/video_engine.py`의 기존 import 블록에서 `from brands.sony import apply_sony_look` **다음 줄**에 추가(Fuji/Hasselblad import):
+`tools/cli/video_engine.py`의 기존 import 블록에서 `from brands.sony import apply_sony_look` **다음 줄**에 추가(Fuji/Hasselblad import):
 
 ```python
 from brands.fuji import (
@@ -599,7 +599,7 @@ Expected: 전부 PASS, 총 428개(기존 400 + Task 1의 8 + 이 태스크의 20
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add tools/video_engine.py tests/test_video_engine.py
+git add tools/cli/video_engine.py tests/test_video_engine.py
 git commit -m "Add process_video_v2()/process_video_v2_with_audio() for 11 expanded brands"
 ```
 
@@ -608,7 +608,7 @@ git commit -m "Add process_video_v2()/process_video_v2_with_audio() for 11 expan
 ### Task 3: `main()` CLI 분기 + 문서화 + 전체 테스트 스위트 확인 + 푸시
 
 **Files:**
-- Modify: `tools/video_engine.py` (`main()`의 분기 로직 + 모듈 docstring)
+- Modify: `tools/cli/video_engine.py` (`main()`의 분기 로직 + 모듈 docstring)
 - Modify: `README.md`
 - Modify: `README.ko.md`
 
@@ -617,7 +617,7 @@ git commit -m "Add process_video_v2()/process_video_v2_with_audio() for 11 expan
 
 - [ ] **Step 1: `main()`의 분기 로직 수정**
 
-현재(`tools/video_engine.py`의 `main()` 함수):
+현재(`tools/cli/video_engine.py`의 `main()` 함수):
 ```python
 def main():
     parser = argparse.ArgumentParser(
@@ -663,7 +663,7 @@ def main():
 
 (바뀐 것: `description=`에서 "population-fit " 삭제, `choices=`가 21개 합집합으로 확장, `try` 블록 안에서 브랜드 소속에 따라 두 함수 중 하나를 호출하도록 분기 - 그 외 argparse 인자 정의/`except`/출력 메시지는 무변경.)
 
-- [ ] **Step 2: `tools/video_engine.py` 모듈 docstring 수정**
+- [ ] **Step 2: `tools/cli/video_engine.py` 모듈 docstring 수정**
 
 현재(파일 맨 위):
 ```python
@@ -705,24 +705,24 @@ docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md
 
 현재 문단(`## Video engine ...` 섹션의 첫 문단):
 ```
-`tools/video_engine.py` applies an already-measured population-fit brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement, it reuses the 10 brands' measured tone-curve parameters (the default arguments of their `apply_*_look()`) (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony; Fujifilm and Hasselblad use different pipelines and are out of scope for this CLI - see [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md)).
+`tools/cli/video_engine.py` applies an already-measured population-fit brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement, it reuses the 10 brands' measured tone-curve parameters (the default arguments of their `apply_*_look()`) (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony; Fujifilm and Hasselblad use different pipelines and are out of scope for this CLI - see [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md)).
 ```
 
 다음으로 교체:
 ```
-`tools/video_engine.py` applies an already-measured brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement. 21 brands are supported: the 10 population-fit brands' measured tone-curve parameters (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony), plus Fujifilm's 10 film-simulation presets and Hasselblad's `apply_hncs` (`fuji_astia`/`fuji_pro_neg_std`/`fuji_pro_neg_hi`/`fuji_eterna_cinema`/`fuji_eterna_bleach_bypass`/`fuji_nostalgic_neg`/`fuji_reala_ace`/`fuji_classic_negative`/`fuji_acros`/`fuji_monochrome`/`hasselblad`) - see [docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md](docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md) for which presets needed a CLAHE-free variant and which didn't.
+`tools/cli/video_engine.py` applies an already-measured brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement. 21 brands are supported: the 10 population-fit brands' measured tone-curve parameters (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony), plus Fujifilm's 10 film-simulation presets and Hasselblad's `apply_hncs` (`fuji_astia`/`fuji_pro_neg_std`/`fuji_pro_neg_hi`/`fuji_eterna_cinema`/`fuji_eterna_bleach_bypass`/`fuji_nostalgic_neg`/`fuji_reala_ace`/`fuji_classic_negative`/`fuji_acros`/`fuji_monochrome`/`hasselblad`) - see [docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md](docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md) for which presets needed a CLAHE-free variant and which didn't.
 ```
 
 - [ ] **Step 4: `README.ko.md` 대응 섹션 수정**
 
 현재 문단(`## 비디오 엔진 ...` 섹션의 첫 문단):
 ```
-`tools/video_engine.py`는 이미 측정된 population-fit 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않고 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony) `apply_*_look()`의 측정된 톤커브 파라미터(기본 인자값)를 재사용한다(Fujifilm/Hasselblad는 별도 파이프라인이라 이 CLI 범위 밖 - [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md) 참고).
+`tools/cli/video_engine.py`는 이미 측정된 population-fit 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않고 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony) `apply_*_look()`의 측정된 톤커브 파라미터(기본 인자값)를 재사용한다(Fujifilm/Hasselblad는 별도 파이프라인이라 이 CLI 범위 밖 - [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md) 참고).
 ```
 
 다음으로 교체:
 ```
-`tools/video_engine.py`는 이미 측정된 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않는다. 21개 브랜드를 지원: 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 측정된 톤커브 파라미터에 더해, Fujifilm 필름 시뮬레이션 프리셋 10종과 Hasselblad `apply_hncs`(`fuji_astia`/`fuji_pro_neg_std`/`fuji_pro_neg_hi`/`fuji_eterna_cinema`/`fuji_eterna_bleach_bypass`/`fuji_nostalgic_neg`/`fuji_reala_ace`/`fuji_classic_negative`/`fuji_acros`/`fuji_monochrome`/`hasselblad`) - 어떤 프리셋이 CLAHE 생략 변형을 필요로 했고 어떤 건 그대로 재사용했는지는 [docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md](docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md) 참고.
+`tools/cli/video_engine.py`는 이미 측정된 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않는다. 21개 브랜드를 지원: 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 측정된 톤커브 파라미터에 더해, Fujifilm 필름 시뮬레이션 프리셋 10종과 Hasselblad `apply_hncs`(`fuji_astia`/`fuji_pro_neg_std`/`fuji_pro_neg_hi`/`fuji_eterna_cinema`/`fuji_eterna_bleach_bypass`/`fuji_nostalgic_neg`/`fuji_reala_ace`/`fuji_classic_negative`/`fuji_acros`/`fuji_monochrome`/`hasselblad`) - 어떤 프리셋이 CLAHE 생략 변형을 필요로 했고 어떤 건 그대로 재사용했는지는 [docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md](docs/superpowers/specs/2026-07-26-video-engine-fuji-hasselblad-design.md) 참고.
 ```
 
 - [ ] **Step 5: 전체 테스트 스위트 실행**
@@ -738,9 +738,9 @@ python3 -c "
 from tests.test_video_engine import _make_synthetic_video_with_audio
 _make_synthetic_video_with_audio('/tmp/smoke_input2.mp4', duration=1, fps=24)
 "
-python3 -m tools.video_engine /tmp/smoke_input2.mp4 /tmp/smoke_out_fuji.mp4 --brand fuji_astia
-python3 -m tools.video_engine /tmp/smoke_input2.mp4 /tmp/smoke_out_hasselblad.mp4 --brand hasselblad
-python3 -m tools.video_engine /tmp/smoke_input2.mp4 /tmp/smoke_out_canon.mp4 --brand canon
+python3 -m tools.cli.video_engine /tmp/smoke_input2.mp4 /tmp/smoke_out_fuji.mp4 --brand fuji_astia
+python3 -m tools.cli.video_engine /tmp/smoke_input2.mp4 /tmp/smoke_out_hasselblad.mp4 --brand hasselblad
+python3 -m tools.cli.video_engine /tmp/smoke_input2.mp4 /tmp/smoke_out_canon.mp4 --brand canon
 ```
 
 Expected: 세 명령 모두 `완료: 24프레임 -> ...` 출력 후 exit code 0 (확장 브랜드 2개 + 기존 브랜드 1개 모두 정상 동작 확인 - `main()`의 분기 로직이 두 경로 다 올바르게 타는지 실측 확인).
@@ -748,7 +748,7 @@ Expected: 세 명령 모두 `완료: 24프레임 -> ...` 출력 후 exit code 0 
 - [ ] **Step 7: 커밋 + 푸시**
 
 ```bash
-git add tools/video_engine.py README.md README.ko.md
+git add tools/cli/video_engine.py README.md README.ko.md
 git commit -m "Wire main() to route 21 brands between the original and expanded video pipelines"
 git push -u origin claude/unknown-character-0x48vp
 ```

@@ -1,5 +1,5 @@
 """
-population 통계 계산 - tools/analyze.py의 모든 브랜드 분석에서 동일하게
+population 통계 계산 - tools/cli/analyze.py의 모든 브랜드 분석에서 동일하게
 쓰던 stats()가 analyze_all_samples.py/analyze_leica_samples.py/
 analyze_phaseone_samples.py/analyze_pentax_samples.py/
 analyze_ricoh_gr_samples.py/analyze_fuji_film_modes.py에 5~6번 그대로

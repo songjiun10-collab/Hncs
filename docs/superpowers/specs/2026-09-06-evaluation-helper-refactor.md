@@ -8,10 +8,10 @@
 ## 범위
 
 - 대상 모듈:
-  - `tools/evaluate_expanded_clahe_shoulder_refit.py`
-  - `tools/measure_all_brand_baselines.py`
-  - `tools/fit_population_body_de00_grid.py`
-- 신규 모듈: `tools/evaluation_common.py`
+  - `tools/fit/evaluate_expanded_clahe_shoulder_refit.py`
+  - `tools/fit/measure_all_brand_baselines.py`
+  - `tools/fit/fit_population_body_de00_grid.py`
+- 신규 모듈: `tools/fit/evaluation_common.py`
 - 신규 테스트: `tests/test_evaluation_common.py`
 - 도구 인벤토리: `docs/project_structure.md`, `docs/project_structure.en.md`
 - `brands/*` shipped 함수, profile asset, 데이터셋 파일, CLI 인자와 출력 형식은
@@ -19,7 +19,7 @@
 
 ## 공통 인터페이스
 
-`tools.evaluation_common`은 다음 함수를 제공한다.
+`tools.fit.evaluation_common`은 다음 함수를 제공한다.
 
 ```python
 collect_contributed_pairs(
@@ -48,5 +48,5 @@ mean_delta_e(linear_a: np.ndarray, linear_b: np.ndarray) -> float
   shape 및 동일 이미지의 DeltaE 0을 검증한다.
 - 세 대상 모듈이 공통 모듈을 import하고 로컬 중복 정의를 갖지 않는다.
 - `python3 -m unittest discover -s tests` 전체 통과.
-- `python3 -m tools.audit_repo_integrity` exit 0 with no unlisted-file warnings.
+- `python3 -m tools.maintenance.audit_repo_integrity` exit 0 with no unlisted-file warnings.
 - `git diff --check` 통과.

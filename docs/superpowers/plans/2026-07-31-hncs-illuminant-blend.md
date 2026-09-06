@@ -4,7 +4,7 @@
 
 **Goal:** Determine, with full LOO cross-validation and significance testing, whether continuous illuminant-weight blending of the two anchor color matrices/chroma LUTs (as real HNCS reportedly does — dual-illuminant-style interpolation per external forum analysis) beats the existing hard 2-cluster structural model on the same 13 real Hasselblad pairs, using two different blend-weight formulas (R/B ratio, CCT/mired).
 
-**Architecture:** Add three new functions to `hybrid_engine/research/hncs_structural.py` (continuous blend-weight computation in two variants, plus a blended-pipeline apply function) alongside the existing hard-cluster functions, which stay untouched. A new standalone research script (`tools/evaluate_hncs_blend.py`) reuses `fit_color_matrix()`'s existing per-pixel weight support to do weighted least-squares fitting where all 13 pairs contribute to both anchor matrices, runs LOO CV for both weight formulas, and compares each against the already-recorded hard-cluster per-fold ΔE values (no need to re-run the hard-cluster experiment).
+**Architecture:** Add three new functions to `hybrid_engine/research/hncs_structural.py` (continuous blend-weight computation in two variants, plus a blended-pipeline apply function) alongside the existing hard-cluster functions, which stay untouched. A new standalone research script (`tools/research/evaluate_hncs_blend.py`) reuses `fit_color_matrix()`'s existing per-pixel weight support to do weighted least-squares fitting where all 13 pairs contribute to both anchor matrices, runs LOO CV for both weight formulas, and compares each against the already-recorded hard-cluster per-fold ΔE values (no need to re-run the hard-cluster experiment).
 
 **Tech Stack:** Python 3, `colour-science` (CCT computation, already a dependency), `numpy`, `opencv-python` (`cv2`, via existing `apply_chroma_lut`), `unittest`.
 
@@ -15,12 +15,12 @@
 - The existing hard-cluster functions in `hybrid_engine/research/hncs_structural.py` (`CLUSTER_THRESHOLD_R_OVER_B`, `classify_illuminant_cluster`, `apply_hncs_structural`) must NOT be modified or removed — only new functions are added alongside them.
 - Blend weight convention: `weight=0.0` means fully anchor A, `weight=1.0` means fully anchor B. Blending is linear: `(1.0 - weight) * value_a + weight * value_b`, applied identically to the 3x3 matrix and to both chroma LUT scalars (`sat_mult`, `hue_shift_deg`).
 - R/B-blend normalization range and CCT/mired-blend normalization range are each computed **once from the full 13-pair population**, not per LOO fold — a per-fold-shifting normalization range would make fold-to-fold comparison meaningless.
-- Grid for the weighted chroma LUT search: `SAT_MULT_GRID = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15]`, `HUE_SHIFT_GRID = [-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0]` (identical values to `tools/evaluate_hncs_structural.py`, already validated on this data).
-- `MATRIX_RIDGE = 1.0` for `fit_color_matrix()` calls (matches `tools/evaluate_hncs_structural.py`'s value, documented there as effectively a no-op at this pixel-count scale but kept for reproducibility).
+- Grid for the weighted chroma LUT search: `SAT_MULT_GRID = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15]`, `HUE_SHIFT_GRID = [-6.0, -4.0, -2.0, 0.0, 2.0, 4.0, 6.0]` (identical values to `tools/research/evaluate_hncs_structural.py`, already validated on this data).
+- `MATRIX_RIDGE = 1.0` for `fit_color_matrix()` calls (matches `tools/research/evaluate_hncs_structural.py`'s value, documented there as effectively a no-op at this pixel-count scale but kept for reproducibility).
 - Shared film curve constants stay fixed and un-fitted, matching the hard-cluster experiment: `FILM_CURVE_TOE_LIFT = 0.001`, `FILM_CURVE_SHOULDER_START = 0.78`, `FILM_CURVE_WHITE_POINT = 1.0`.
 - ΔE measurement: `hybrid_engine.utils.evaluate.mean_delta_e` (CIEDE2000) exclusively.
 - Never declare a winner from a raw mean-difference alone. Report the full `summarize()` output (paired t-test, sign test via `math.comb`, bootstrap 95% CI, drop-one sensitivity) and treat a 95% CI that straddles zero as "판정 보류" (inconclusive).
-- Dataset: the same 13 Hasselblad pairs used by `tools/evaluate_hncs_structural.py` (`datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` + `raw_calib_cache/`, both already present on this container's local disk, `raw_calib_cache/` is git-ignored).
+- Dataset: the same 13 Hasselblad pairs used by `tools/research/evaluate_hncs_structural.py` (`datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv` + `raw_calib_cache/`, both already present on this container's local disk, `raw_calib_cache/` is git-ignored).
 - Decode is not the bottleneck for this experiment (unlike the chromatic-aberration experiment): `decode_and_white_balance()` runs once per pair and the result is cached; all grid-search and LOO-fold work operates on the cached, downsampled (`DOWNSAMPLE_MAX_DIM = 512`) arrays.
 - The hard-cluster comparison baseline is a **hardcoded constant** (`HARD_CLUSTER_DE`, 13 name→ΔE entries) copied verbatim from `hybrid_engine/EVALUATION.md`'s "HNCS 구조 실험" section's "폴드별 상세" table — the hard-cluster experiment is NOT re-run.
 - Record the result in `hybrid_engine/EVALUATION.md` honestly whether it wins, loses, or is inconclusive, for both weight formulas, plus a direct RB-vs-CCT comparison.
@@ -222,10 +222,10 @@ git commit -m "Add continuous illuminant-blend functions to hncs_structural.py"
 
 ---
 
-### Task 2: `tools/evaluate_hncs_blend.py` — weighted LOO CV + real run + documentation
+### Task 2: `tools/research/evaluate_hncs_blend.py` — weighted LOO CV + real run + documentation
 
 **Files:**
-- Create: `tools/evaluate_hncs_blend.py`
+- Create: `tools/research/evaluate_hncs_blend.py`
 - Test: `tests/test_evaluate_hncs_blend.py`
 - Modify: `hybrid_engine/EVALUATION.md` (append new section at the end)
 
@@ -245,7 +245,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_hncs_blend import (
+from tools.research.evaluate_hncs_blend import (
     HARD_CLUSTER_DE, _resize_max_dim, _sign_test_p, load_pairs, summarize,
 )
 
@@ -347,9 +347,9 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `python3 -m unittest tests.test_evaluate_hncs_blend -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'tools.evaluate_hncs_blend'`.
+Expected: FAIL with `ModuleNotFoundError: No module named 'tools.research.evaluate_hncs_blend'`.
 
-- [ ] **Step 3: Implement `tools/evaluate_hncs_blend.py`**
+- [ ] **Step 3: Implement `tools/research/evaluate_hncs_blend.py`**
 
 ```python
 """HNCS 조명 블렌딩(illuminant blend) 실험 - hncs_structural.py의
@@ -359,7 +359,7 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'tools.evaluate_hncs_b
 낮아지는지 leave-one-out 교차검증으로 확인한다. 설계 근거:
 docs/superpowers/specs/2026-07-31-hncs-illuminant-blend-design.md
 
-  python3 -m tools.evaluate_hncs_blend
+  python3 -m tools.research.evaluate_hncs_blend
 
 두 가지 블렌딩 가중치 공식(R/B 비율 선형, CCT/mired)을 각각 독립적으로
 평가하고, 마지막에 둘을 직접 비교한다. 하드-클러스터 쪽은 재실행하지
@@ -729,7 +729,7 @@ Expected: all tests PASS.
 - [ ] **Step 5: Commit the script and portable tests**
 
 ```bash
-git add tools/evaluate_hncs_blend.py tests/test_evaluate_hncs_blend.py
+git add tools/research/evaluate_hncs_blend.py tests/test_evaluate_hncs_blend.py
 git commit -m "Add HNCS illuminant-blend evaluation script (weighted LOO CV + significance tests)"
 ```
 
@@ -738,7 +738,7 @@ git commit -m "Add HNCS illuminant-blend evaluation script (weighted LOO CV + si
 Decode is cached and not the bottleneck for this experiment (unlike the chromatic-aberration experiment) — the grid search runs on already-decoded, downsampled arrays. Expected runtime is unmeasured but should be much faster than the ~60-70 minute chromatic-aberration run since no RAW re-decoding happens per grid point. Run it and capture output:
 
 ```bash
-python3 -m tools.evaluate_hncs_blend > /tmp/hncs_blend_output.log 2>&1
+python3 -m tools.research.evaluate_hncs_blend > /tmp/hncs_blend_output.log 2>&1
 ```
 
 If it runs long enough that your turn might end before it completes, switch to background execution (`nohup ... &`) and poll `/tmp/hncs_blend_output.log`, following this project's established pattern for long-running research scripts. Do not fabricate results if your turn ends first — report `DONE_WITH_CONCERNS` with the log path so the controller can finish once it completes.

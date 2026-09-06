@@ -1,10 +1,10 @@
-"""tools/refit_x2dii_chart_combined_irls.py - unit test for the pure ΔE00
+"""tools/x2dii/refit_x2dii_chart_combined_irls.py - unit test for the pure ΔE00
 helper (no RAW/cv2 dependency) plus an import smoke test."""
 import unittest
 
 import numpy as np
 
-from tools.refit_x2dii_chart_combined_irls import _mean_de
+from tools.x2dii.refit_x2dii_chart_combined_irls import _mean_de
 
 
 class TestMeanDe(unittest.TestCase):

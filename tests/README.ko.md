@@ -13,7 +13,7 @@ download.py`(imaging-resource.com HTML 파싱, 필터링, 구글드라이브
 URL 분류 - 네트워크 호출은 mock 처리) / `datasets/*/texture_signature.json`
 전체(sharpening/micro_contrast/noise가 브랜드 간 합리적 범위 안에
 있는지 - 소니 스케일 버그류의 자릿수 오류를 잡는 회귀 가드) /
-`core/lut.py` / `core/denoise.py` / `tools/iso_noise.py`(패치그리드
+`core/lut.py` / `core/denoise.py` / `tools/research/iso_noise.py`(패치그리드
 off-by-one 버그 회귀 테스트 포함) / `core/log_pipeline.py`(노출 조정,
 Log 인코딩, `.cube` LUT 적용, 지원되는 `LOG_SPACES` 전 항목) /
 `hybrid_engine/`(정규화/톤/색/색매트릭스/파이프라인/ΔE 평가/EXIF

@@ -255,11 +255,11 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     돌아간다. 누군가 전치를 빼고 프로필을 재생성하면 여기서 깨진다.
 
     **정정(2026-09-01)**: 사용자 승인으로 매트릭스를 무채색 6패치 가중치
-    낮춘(유채색 4x) 최소자승으로 재피팅해서 배포(`tools/refit_dcp_weighted_chroma.py`,
+    낮춘(유채색 4x) 최소자승으로 재피팅해서 배포(`tools/x2dii/refit_dcp_weighted_chroma.py`,
     9장 LOO 기준 -4.9% 확인 - `hybrid_engine/EVALUATION.md` 참고).
 
     **추가 정정(2026-09-01, 같은 날)**: 그 위에 Huber IRLS(무채색-4x에서
-    시작, `tools/refit_dcp_irls_final.py`)로 한 번 더 재피팅해서 배포 -
+    시작, `tools/x2dii/refit_dcp_irls_final.py`)로 한 번 더 재피팅해서 배포 -
     9장 LOO 기준 -8.8%(2.8588->2.6078, `_weighted` 단독 -4.9%보다 더 낮음).
     리포트 JSON엔 균등가중 필드(`chart_matrix_in_sample`/`dcp_color_matrix_1`,
     n=10 - B_31334 유실로 지금은 재현 불가)/유채색-4x 필드(`_weighted`)/
@@ -269,7 +269,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     **추가 정정(2026-09-01, 같은 날)**: 패치별 잔차를 뜯어보니 patch
     17(cyan)만 9장 전부에서 평균 ΔE00=7.166(표준편차 0.977)로 다른 패치
     (다음 최악 3.695)보다 압도적으로 나빴다. cyan의 IRLS 초기가중치를
-    4.0에서 2.0으로 낮춰 재수렴시킨 매트릭스(`tools/refit_dcp_irls_cyan_init.py`)로
+    4.0에서 2.0으로 낮춰 재수렴시킨 매트릭스(`tools/x2dii/refit_dcp_irls_cyan_init.py`)로
     배포 - 9장 LOO 기준 -0.52%(2.6078->2.5942, 부트스트랩 CI 없음, 단조성으로
     신호 판정). `_irls`(무채색-4x 단독, -8.8%)와 원래 균등가중 필드는
     `kmichels-x2dii-2026-07/camera_native_matrix_report.json`에 기록용으로
@@ -281,7 +281,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     시킴") 승인한 재보정("이제 하셀은 보정 ㄱㄱ dcp") - 두 데이터셋을
     합쳐(n=25) 기존에 이미 승인된 `_weighted` 단계(무채색 6패치 대비
     유채색 18패치 4x 가중 최소자승, ridge=0.0)와 같은 방법론으로 다시
-    피팅했다(`tools/refit_x2dii_chart_combined.py`). **IRLS/cyan
+    피팅했다(`tools/x2dii/refit_x2dii_chart_combined.py`). **IRLS/cyan
     재조정 단계는 이번엔 재적용하지 않았다** - 그 두 단계는 n=9
     kmichels 단독 데이터의 특정 잔차 패턴에 맞춰 손튜닝된 것이라(원본
     리포트 자체가 "n=9 표본 과적합" 위험을 명시) 25장으로 늘어난 합친
@@ -311,12 +311,12 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     daylight성 R/G≈0.33 n=9, dpreview tungsten성 R/G≈0.64 n=7, kmichels
     R/G≈0.41 n=9)으로 뚜렷이 갈렸다 - 매트릭스 하나로 여러 조명의
     화이트밸런스를 동시에 못 맞추는 게 12.69의 주원인이었다
-    (`tools/analyze_x2dii_combined_lighting_split.py` 실행 확인,
+    (`tools/x2dii/analyze_x2dii_combined_lighting_split.py` 실행 확인,
     무채색 패치 잔차가 유채색보다 훨씬 컸다:
-    `tools/analyze_x2dii_combined_patch_residuals.py`). 사용자 승인
+    `tools/x2dii/analyze_x2dii_combined_patch_residuals.py`). 사용자 승인
     받아 DNG의 dual-illuminant 메커니즘(`ColorMatrix1`+`ColorMatrix2`+
     `CalibrationIlluminant1/2`, `core/dcp_export.py`에 이번에 추가)으로
-    풀었다(`tools/refit_x2dii_dual_illuminant.py`).
+    풀었다(`tools/x2dii/refit_x2dii_dual_illuminant.py`).
 
     daylight성/tungsten성 두 dpreview 그룹으로 각각 `ColorMatrix1`
     (illuminant=21/D65 근사)/`ColorMatrix2`(illuminant=17/Standard
@@ -337,7 +337,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     이 편향 때문에 v1은 `core/dcp_interpolate.py`의 실제 보간을
     거치면 group2(텅스텐성)에서 combined 단일매트릭스(18.998)보다도
     나쁜 19.878을 냈다(`hybrid_engine/EVALUATION.md` "실험4" 절).
-    `tools/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py`가
+    `tools/x2dii/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py`가
     `chart_baseline.reference_patches_xyz(illuminant_xy)`(신규)로
     matrix_1은 D65, matrix_2는 Standard Illuminant A 색도로 다시
     fit했다 - self-consistency 완전히 회복(group1 자기중립색 g=0.9916,
@@ -359,7 +359,7 @@ class TestShippedProfileMatchesReport(unittest.TestCase):
     이하 모든 촬영이 `wbtemp <= temperature_1` 분기에 걸려 무조건
     ColorMatrix1(D65)로 스냅됐다 - RT에서 dual-illuminant가 사실상
     죽어있었다(`hybrid_engine/EVALUATION.md` "RawTherapee illuminant1
-    스냅 근본원인 확정" 절). `tools/reissue_x2dii_dcp_v3_adobe_illuminant_order.py`가
+    스냅 근본원인 확정" 절). `tools/x2dii/reissue_x2dii_dcp_v3_adobe_illuminant_order.py`가
     **매트릭스 값은 한 자리도 안 바꾸고** 슬롯만 교차 배치해 재발급했다
     (1=StdA/17 <- v2의 슬롯2, 2=D65/21 <- v2의 슬롯1). `core/dcp_interpolate.py`
     보간은 이 스왑에 수학적으로 불변이라(g는 1-g로 뒤집히지만 최종

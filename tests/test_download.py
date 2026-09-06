@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from tools.download import (_collect_files, _gdrive_extract_id,
+from tools.cli.download import (_collect_files, _gdrive_extract_id,
                              download_fuji_pairs,
                              find_fuji_drive_links, ir_img_url,
                              list_gallery_images, resolve_full_image)
@@ -40,7 +40,7 @@ class TestListGalleryImages(unittest.TestCase):
             ("/cameras/foo/image/1?section=gallery", ' src="a.jpg" class="x"'),  # 중복
             ("/cameras/foo/image/2?section=gallery", ' src="b.jpg" class="x"'),
         ])
-        with patch("tools.download.ir_fetch", return_value=html):
+        with patch("tools.cli.download.ir_fetch", return_value=html):
             result = list_gallery_images("http://example.com/gallery")
         self.assertEqual(result, ["/cameras/foo/image/1?section=gallery",
                                    "/cameras/foo/image/2?section=gallery"])
@@ -50,7 +50,7 @@ class TestListGalleryImages(unittest.TestCase):
             ("/cameras/foo/image/1?section=gallery", ' src="normal.jpg" class="x"'),
             ("/cameras/foo/image/2?section=gallery", ' src="edited-mod.jpg" class="x"'),
         ])
-        with patch("tools.download.ir_fetch", return_value=html):
+        with patch("tools.cli.download.ir_fetch", return_value=html):
             result = list_gallery_images("http://example.com/gallery", skip_keywords=("-mod",))
         self.assertEqual(result, ["/cameras/foo/image/1?section=gallery"])
 
@@ -60,7 +60,7 @@ class TestListGalleryImages(unittest.TestCase):
             ("/cameras/foo/image/2?section=gallery", ' src="shot-f2.8.jpg" class="x"'),
         ])
         import re
-        with patch("tools.download.ir_fetch", return_value=html):
+        with patch("tools.cli.download.ir_fetch", return_value=html):
             result = list_gallery_images("http://example.com/gallery",
                                           skip_patterns=(re.compile(r"-f\d"),))
         self.assertEqual(result, ["/cameras/foo/image/1?section=gallery"])
@@ -69,7 +69,7 @@ class TestListGalleryImages(unittest.TestCase):
         html = self._gallery_html([
             ("/cameras/foo/image/1?section=gallery", ' src="Shot-ISO-800.jpg" class="x"'),
         ])
-        with patch("tools.download.ir_fetch", return_value=html):
+        with patch("tools.cli.download.ir_fetch", return_value=html):
             result = list_gallery_images("http://example.com/gallery", skip_keywords=("-iso-",))
         self.assertEqual(result, [])
 
@@ -78,14 +78,14 @@ class TestResolveFullImage(unittest.TestCase):
     def test_extracts_original_and_returns_none_when_no_match(self):
         html = ('<a href="https://media.example.com/full.jpg" target="_blank">'
                 '<img src="thumb.jpg" class="attachment-full size-full"></a>')
-        with patch("tools.download.ir_fetch", return_value=html):
+        with patch("tools.cli.download.ir_fetch", return_value=html):
             result = resolve_full_image("/cameras/foo/image/1")
         self.assertIsNotNone(result)
         original_url, scaled_url = result
         self.assertEqual(original_url, "https://media.example.com/full.jpg")
 
     def test_returns_none_when_pattern_absent(self):
-        with patch("tools.download.ir_fetch", return_value="<html>no match here</html>"):
+        with patch("tools.cli.download.ir_fetch", return_value="<html>no match here</html>"):
             result = resolve_full_image("/cameras/foo/image/1")
         self.assertIsNone(result)
 
@@ -173,13 +173,13 @@ class TestDownloadFujiPairsMatching(unittest.TestCase):
                 w.writerow(dict(camera="Fujifilm X-T3", gallery_url="", raw_drive_url="",
                                  jpeg_drive_url=""))
 
-            with patch("tools.download.FUJI_LINKS_CSV", links_csv), \
-                 patch("tools.download.FUJI_MANIFEST_PATH", manifest_path), \
-                 patch("tools.download._gdrive_fetch", return_value=None), \
-                 patch("tools.download._collect_files",
+            with patch("tools.cli.download.FUJI_LINKS_CSV", links_csv), \
+                 patch("tools.cli.download.FUJI_MANIFEST_PATH", manifest_path), \
+                 patch("tools.cli.download._gdrive_fetch", return_value=None), \
+                 patch("tools.cli.download._collect_files",
                        side_effect=lambda d, exts: raw_files if ".raf" in exts else jpeg_files), \
-                 patch("tools.download.is_image_usable", return_value=True), \
-                 patch("tools.download._exif_datetime_and_filmmode",
+                 patch("tools.cli.download.is_image_usable", return_value=True), \
+                 patch("tools.cli.download._exif_datetime_and_filmmode",
                        side_effect=lambda p: exif_map[p]):
                 download_fuji_pairs()
 

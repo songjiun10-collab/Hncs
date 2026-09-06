@@ -70,7 +70,7 @@ checks now load `tests/fixtures/hsv_golden_outputs.npz`, which stores the seven
 known-good deterministic 128×128×3 uint8 outputs. Each function is compared
 at the same pixel position with `max |Δ| <= 1`.
 
-- Reproducibility: `tools/generate_hsv_golden_fixture.py` regenerates the
+- Reproducibility: `tools/research/generate_hsv_golden_fixture.py` regenerates the
   fixture from `make_test_image()` and the explicitly listed seven functions;
   it is for an approved new baseline only.
 - RED: the row-permutation test failed under the histogram check because its

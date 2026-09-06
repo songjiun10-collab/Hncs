@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 이미 population-fit으로 측정된 10개 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 `apply_*_look()`을 실제 비디오 파일(mp4)에 프레임 단위로 적용하는 CLI(`tools/video_engine.py`)를 만든다. 프레임 단위 CLAHE가 일으키는 시간적 깜빡임을 피하기 위해 비디오 전용 처리 경로는 톤 커브만 적용한다.
+**Goal:** 이미 population-fit으로 측정된 10개 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 `apply_*_look()`을 실제 비디오 파일(mp4)에 프레임 단위로 적용하는 CLI(`tools/cli/video_engine.py`)를 만든다. 프레임 단위 CLAHE가 일으키는 시간적 깜빡임을 피하기 위해 비디오 전용 처리 경로는 톤 커브만 적용한다.
 
-**Architecture:** `core/engine.py`에 CLAHE 없이 톤 LUT만 적용하는 `apply_population_fit_look_video_frame()`을 추가한다(기존 `apply_population_fit_look()`은 건드리지 않음). `tools/video_engine.py`는 `cv2.VideoCapture`/`cv2.VideoWriter`로 비디오를 프레임 단위로 순회하며 이 새 함수를 호출한다. 브랜드별 `toe_lift`/`shoulder_start`/`white_point` 값은 각 브랜드 모듈의 `apply_*_look()` 함수 기본 인자값을 `inspect.signature`로 읽어와서 얻는다(private 상수를 직접 import하지 않음).
+**Architecture:** `core/engine.py`에 CLAHE 없이 톤 LUT만 적용하는 `apply_population_fit_look_video_frame()`을 추가한다(기존 `apply_population_fit_look()`은 건드리지 않음). `tools/cli/video_engine.py`는 `cv2.VideoCapture`/`cv2.VideoWriter`로 비디오를 프레임 단위로 순회하며 이 새 함수를 호출한다. 브랜드별 `toe_lift`/`shoulder_start`/`white_point` 값은 각 브랜드 모듈의 `apply_*_look()` 함수 기본 인자값을 `inspect.signature`로 읽어와서 얻는다(private 상수를 직접 import하지 않음).
 
 **Tech Stack:** 기존 의존성만 사용 - `opencv-python`(cv2, 내장 FFmpeg 빌드), `numpy`. 새 의존성 추가 없음(`ffmpeg` CLI/`moviepy`/`imageio_ffmpeg`/`av`는 이 환경에 없고 추가하지 않는다).
 
@@ -146,10 +146,10 @@ git commit -m "Add CLAHE-free video-frame variant of apply_population_fit_look"
 
 ---
 
-### Task 2: `tools/video_engine.py` CLI (브랜드 파라미터 조회 + 비디오 처리 + argparse)
+### Task 2: `tools/cli/video_engine.py` CLI (브랜드 파라미터 조회 + 비디오 처리 + argparse)
 
 **Files:**
-- Create: `tools/video_engine.py`
+- Create: `tools/cli/video_engine.py`
 - Test: `tests/test_video_engine.py`
 
 **Interfaces:**
@@ -172,7 +172,7 @@ import unittest
 import cv2
 import numpy as np
 
-from tools.video_engine import SUPPORTED_BRANDS, brand_video_params, process_video
+from tools.cli.video_engine import SUPPORTED_BRANDS, brand_video_params, process_video
 
 
 def _make_synthetic_video(path, num_frames=10, width=64, height=48, fps=24.0, seed=0):
@@ -278,7 +278,7 @@ class TestVideoModeReducesFlickerVsPhotoMode(unittest.TestCase):
     def test_frame_to_frame_variation_lower_without_clahe(self):
         from brands.canon import apply_canon_look
         from core.engine import apply_population_fit_look_video_frame
-        from tools.video_engine import brand_video_params
+        from tools.cli.video_engine import brand_video_params
 
         rng = np.random.default_rng(7)
         width, height = 64, 48
@@ -314,11 +314,11 @@ if __name__ == "__main__":
 - [ ] **Step 2: 테스트 실패 확인**
 
 Run: `python3 -m unittest tests.test_video_engine -v`
-Expected: `ModuleNotFoundError: No module named 'tools.video_engine'` 로 FAIL
+Expected: `ModuleNotFoundError: No module named 'tools.cli.video_engine'` 로 FAIL
 
 - [ ] **Step 3: 최소 구현 작성**
 
-`tools/video_engine.py` 신규 작성:
+`tools/cli/video_engine.py` 신규 작성:
 
 ```python
 """비디오 파일(mp4)에 population-fit 브랜드 룩을 프레임 단위로 적용하는
@@ -343,7 +343,7 @@ Fujifilm(프리셋마다 CLAHE 사용이 제각각)과 Hasselblad(별도 파이�
 mux 도구가 없다(cv2가 FFmpeg를 내장 빌드했지만 파이썬에서 오디오
 스트림을 다루는 경로는 별도로 없음).
 
-  python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+  python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon
 """
 import argparse
 import inspect
@@ -470,8 +470,8 @@ python3 -c "
 from tests.test_video_engine import _make_synthetic_video
 _make_synthetic_video('/tmp/smoke_input.mp4', num_frames=15)
 "
-python3 -m tools.video_engine /tmp/smoke_input.mp4 /tmp/smoke_output.mp4 --brand sigma
-python3 -m tools.video_engine /tmp/smoke_input.mp4 /tmp/smoke_output.mp4 --brand not_a_brand
+python3 -m tools.cli.video_engine /tmp/smoke_input.mp4 /tmp/smoke_output.mp4 --brand sigma
+python3 -m tools.cli.video_engine /tmp/smoke_input.mp4 /tmp/smoke_output.mp4 --brand not_a_brand
 ```
 
 Expected: 첫 번째 명령은 `완료: 15프레임 -> /tmp/smoke_output.mp4` 출력 후 exit code 0. 두 번째 명령은 argparse가 `--brand`를 `choices`로 검증하므로 `invalid choice: 'not_a_brand'` 에러와 함께 exit code 2.
@@ -479,7 +479,7 @@ Expected: 첫 번째 명령은 `완료: 15프레임 -> /tmp/smoke_output.mp4` �
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add tools/video_engine.py tests/test_video_engine.py
+git add tools/cli/video_engine.py tests/test_video_engine.py
 git commit -m "Add video_engine CLI: apply population-fit brand looks to video files"
 ```
 
@@ -494,34 +494,34 @@ git commit -m "Add video_engine CLI: apply population-fit brand looks to video f
 - Modify: `docs/project_structure.en.md`
 
 **Interfaces:**
-- Consumes: Task 1/2에서 만든 `tools/video_engine.py`, `core.engine.apply_population_fit_look_video_frame` (이름만 문서에 인용, 코드 변경 없음)
+- Consumes: Task 1/2에서 만든 `tools/cli/video_engine.py`, `core.engine.apply_population_fit_look_video_frame` (이름만 문서에 인용, 코드 변경 없음)
 
 - [ ] **Step 1: `docs/project_structure.md`에 테이블 행 추가**
 
-`| `tools/raw_pipeline.py` | ... |` 행 바로 다음 줄에 추가:
+`| `tools/cli/raw_pipeline.py` | ... |` 행 바로 다음 줄에 추가:
 
 ```
-| `tools/video_engine.py` | 비디오 파일(mp4)에 population-fit 브랜드 룩(10개: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony) 프레임 단위 적용 CLI - `python3 -m tools.video_engine input.mp4 output.mp4 --brand canon` (오디오 미보존, CLAHE 생략 - 사진 모드와 동일 출력 아님) |
+| `tools/cli/video_engine.py` | 비디오 파일(mp4)에 population-fit 브랜드 룩(10개: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony) 프레임 단위 적용 CLI - `python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon` (오디오 미보존, CLAHE 생략 - 사진 모드와 동일 출력 아님) |
 ```
 
 `| `core/log_pipeline.py` | ... |` 행 바로 다음 줄에 추가:
 
 ```
-| `core/engine.py`의 `apply_population_fit_look_video_frame()` | population-fit 브랜드 엔진의 비디오 전용 변형 - CLAHE(프레임별 적응형 로컬 대비 보정)를 생략해 프레임 간 깜빡임을 피한다. `tools/video_engine.py`가 사용 |
+| `core/engine.py`의 `apply_population_fit_look_video_frame()` | population-fit 브랜드 엔진의 비디오 전용 변형 - CLAHE(프레임별 적응형 로컬 대비 보정)를 생략해 프레임 간 깜빡임을 피한다. `tools/cli/video_engine.py`가 사용 |
 ```
 
 - [ ] **Step 2: `docs/project_structure.en.md`에 대응 영문 행 추가**
 
-`| `tools/raw_pipeline.py` | ... |` 행 바로 다음 줄에 추가:
+`| `tools/cli/raw_pipeline.py` | ... |` 행 바로 다음 줄에 추가:
 
 ```
-| `tools/video_engine.py` | Applies a population-fit brand look to a video file (mp4) frame-by-frame, CLI - `python3 -m tools.video_engine input.mp4 output.mp4 --brand canon` (10 brands: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony; audio not preserved; skips CLAHE - not identical output to photo mode) |
+| `tools/cli/video_engine.py` | Applies a population-fit brand look to a video file (mp4) frame-by-frame, CLI - `python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon` (10 brands: canon/leica/nikon/olympus/panasonic/pentax/phaseone/ricoh_gr/sigma/sony; audio not preserved; skips CLAHE - not identical output to photo mode) |
 ```
 
 `| `core/log_pipeline.py` | ... |` 행 바로 다음 줄에 추가:
 
 ```
-| `core/engine.py`'s `apply_population_fit_look_video_frame()` | Video-only variant of the population-fit brand engine - skips CLAHE (per-frame adaptive local-contrast correction) to avoid inter-frame flicker. Used by `tools/video_engine.py` |
+| `core/engine.py`'s `apply_population_fit_look_video_frame()` | Video-only variant of the population-fit brand engine - skips CLAHE (per-frame adaptive local-contrast correction) to avoid inter-frame flicker. Used by `tools/cli/video_engine.py` |
 ```
 
 - [ ] **Step 3: `README.md`에 섹션 추가**
@@ -531,10 +531,10 @@ git commit -m "Add video_engine CLI: apply population-fit brand looks to video f
 ```markdown
 ## Video engine (frame-by-frame, engineering reuse - not a new measurement)
 
-`tools/video_engine.py` applies an already-measured population-fit brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement, it reuses the 10 population-fit brands' `apply_*_look()` (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony; Fujifilm and Hasselblad use different pipelines and are out of scope for this CLI - see [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md)).
+`tools/cli/video_engine.py` applies an already-measured population-fit brand look to an actual video file (mp4), frame by frame - it does not add any new color-science measurement, it reuses the 10 population-fit brands' `apply_*_look()` (Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony; Fujifilm and Hasselblad use different pipelines and are out of scope for this CLI - see [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md)).
 
 ```
-python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon
 ```
 
 **Known limitations**: (1) audio tracks are not preserved (this environment has no `ffmpeg` CLI/`moviepy`/audio-mux tooling - `cv2`'s built-in FFmpeg only covers video frames); (2) the video path skips CLAHE (per-frame adaptive local-contrast correction) to avoid inter-frame flicker, so its output is not identical to the photo-mode `apply_*_look()`; (3) this is not a video-specific color-science measurement - whether a camera brand actually renders video differently from its still JPEGs (different tone curve, sharpening, etc.) is unverified; (4) only validated against synthetic test video in this environment - no real camera mp4/mov sample was available for a smoke test.
@@ -547,10 +547,10 @@ python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
 ```markdown
 ## 비디오 엔진 (프레임 단위, 기존 측정 재사용 - 새 측정 아님)
 
-`tools/video_engine.py`는 이미 측정된 population-fit 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않고 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 `apply_*_look()`을 재사용한다(Fujifilm/Hasselblad는 별도 파이프라인이라 이 CLI 범위 밖 - [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md) 참고).
+`tools/cli/video_engine.py`는 이미 측정된 population-fit 브랜드 룩을 실제 비디오 파일(mp4)에 프레임 단위로 적용한다 - 새 색과학 측정을 하지 않고 10개 population-fit 브랜드(Canon/Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)의 `apply_*_look()`을 재사용한다(Fujifilm/Hasselblad는 별도 파이프라인이라 이 CLI 범위 밖 - [docs/superpowers/specs/2026-07-26-video-engine-design.md](docs/superpowers/specs/2026-07-26-video-engine-design.md) 참고).
 
 ```
-python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon
 ```
 
 **알려진 한계**: (1) 오디오 트랙 미보존(이 환경에 `ffmpeg` CLI/`moviepy` 등 오디오 mux 도구가 없음 - `cv2` 내장 FFmpeg는 비디오 프레임만 다룸); (2) 비디오 경로는 프레임 간 깜빡임을 피하려고 CLAHE(프레임별 적응형 로컬 대비 보정)를 생략해서 사진 모드 `apply_*_look()`과 동일한 출력이 아님; (3) 비디오 전용 색과학 측정이 아님 - 카메라 브랜드가 정지 JPEG와 실제 영상에서 다른 색처리(톤커브/샤프닝 등)를 쓸 수 있다는 점은 검증되지 않음; (4) 이 환경에 실제 카메라 mp4/mov 샘플이 없어 합성 테스트 비디오로만 검증됨.

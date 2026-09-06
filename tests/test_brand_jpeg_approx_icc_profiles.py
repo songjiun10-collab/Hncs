@@ -1,5 +1,5 @@
 """Sony/Sigma/Leica의 `<brand>_generic_jpeg_approx.icc`(2026-09-02,
-`tools/fit_brand_native_matrix_for_icc.py`)가 커밋된
+`tools/fit/fit_brand_native_matrix_for_icc.py`)가 커밋된
 `native_matrix_for_icc_report.json`의 매트릭스로 만들어진 게 맞는지
 확인 - `tests/test_icc_export.py`의 `TestShippedIccProfileMatchesReport`
 와 같은 역할, 3브랜드 파라미터화."""

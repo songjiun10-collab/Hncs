@@ -1,4 +1,4 @@
-"""`tools/evaluate_hncs_structural_gridsize_ablation.py`의 순수 함수
+"""`tools/research/evaluate_hncs_structural_gridsize_ablation.py`의 순수 함수
 테스트 - raw 디코드가 필요한 load_pairs()/run_kfold()는 CI에 이미지
 데이터가 없어서 제외한다(tests/CLAUDE.md). 이 파일의 모든 함수는
 evaluate_hncs_structural.py와 코드가 100% 동일(그리드 크기만 다름,
@@ -12,7 +12,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_hncs_structural_gridsize_ablation import (
+from tools.research.evaluate_hncs_structural_gridsize_ablation import (
     _sign_test_p, classify_illuminant_cluster, compute_blend_weight_rb,
     fit_color_matrix, apply_color_matrix, make_folds, summarize,
     CHROMA_COMBOS,
@@ -111,7 +111,7 @@ class TestMakeFolds(unittest.TestCase):
         폴드 분할이어야 한다(그리드 크기만 격리하려는 게 목적이므로) -
         같은 make_folds 구현 + 같은 seed=0이면 같은 입력에 항상 같은
         출력이 나오는 걸 원본 모듈과 교차확인."""
-        from tools.evaluate_hncs_structural import make_folds as original_make_folds
+        from tools.research.evaluate_hncs_structural import make_folds as original_make_folds
         pairs = list(range(389))
         a = make_folds(pairs, n_folds=5, seed=0)
         b = original_make_folds(pairs, n_folds=5, seed=0)

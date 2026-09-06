@@ -100,7 +100,7 @@ def cmd_env(args):
     print("\n== 데이터셋 (전부 .gitignore - 신선한 클론엔 없음) ==")
     checks = [
         ("raw_calib_cache/", "핫셀블라드 raw+jpeg 13쌍 - calibrate / evaluate_* / hybrid_engine.main"),
-        ("downloaded_samples/", "population 샘플 - tools.analyze (없으면 네트워크에서 받음)"),
+        ("downloaded_samples/", "population 샘플 - tools.cli.analyze (없으면 네트워크에서 받음)"),
         ("raw_calib_cache_fuji/", "후지 raw+jpeg 3쌍 - evaluate_fuji_demosaic"),
     ]
     for path, why in checks:
@@ -214,15 +214,15 @@ def cmd_smoke(args):
 
     steps = [
         ("라이브러리: apply_hncs 직접 호출", None),
-        ("CLI: tools.export_lut --list",
-         [sys.executable, "-m", "tools.export_lut", "--list"]),
-        ("CLI: tools.export_lut (17격자 .cube 생성)",
-         [sys.executable, "-m", "tools.export_lut", "hasselblad",
+        ("CLI: tools.cli.export_lut --list",
+         [sys.executable, "-m", "tools.cli.export_lut", "--list"]),
+        ("CLI: tools.cli.export_lut (17격자 .cube 생성)",
+         [sys.executable, "-m", "tools.cli.export_lut", "hasselblad",
           os.path.join(OUT_DIR, "smoke.cube"), "--size", "17"]),
-        ("CLI: tools.classify_brand predict",
-         [sys.executable, "-m", "tools.classify_brand", "predict", src_path]),
-        ("CLI: tools.denoise",
-         [sys.executable, "-m", "tools.denoise", src_path,
+        ("CLI: tools.cli.classify_brand predict",
+         [sys.executable, "-m", "tools.cli.classify_brand", "predict", src_path]),
+        ("CLI: tools.cli.denoise",
+         [sys.executable, "-m", "tools.cli.denoise", src_path,
           os.path.join(OUT_DIR, "smoke_denoise.jpg"), "--strength", "3"]),
         # EXIF 없는 입력이라 --source 필수. 빼면 "브랜드를 못 알아봄"으로 종료 1.
         ("CLI: hybrid_engine.convert (--source 필수)",

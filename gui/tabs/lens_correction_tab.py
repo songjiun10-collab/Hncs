@@ -1,4 +1,4 @@
-"""렌즈 왜곡 보정 탭 - tools.lens_correction을 subprocess로 실행한다.
+"""렌즈 왜곡 보정 탭 - tools.cli.lens_correction을 subprocess로 실행한다.
 EXIF는 미리 읽어서 화면에 보여주고, 없는 값만 수동 입력을 받는다."""
 import json
 import os
@@ -20,7 +20,7 @@ _EXIF_TAGS = ["Make", "Model", "LensModel", "LensID", "LensInfo",
 
 
 def read_exif_fields(path, on_error=None):
-    """tools/lens_correction.py의 _read_exif()와 동일한 exiftool 호출 -
+    """tools/cli/lens_correction.py의 _read_exif()와 동일한 exiftool 호출 -
     make/model/lens/focal_length/aperture가 EXIF에 있으면 채워서 반환,
     없으면 해당 키를 생략한다. exiftool이 설치돼 있지 않거나
     (FileNotFoundError) 타임아웃되면 {}를 반환한다 - 이 함수는 Tk에 의존하지
@@ -55,7 +55,7 @@ def read_exif_fields(path, on_error=None):
 def build_lens_correction_command(input_path, output_path, make=None, model=None, lens=None,
                                    focal_length=None, aperture=None, python_exe=None):
     python_exe = python_exe or sys.executable
-    cmd = [python_exe, "-m", "tools.lens_correction", input_path, output_path]
+    cmd = [python_exe, "-m", "tools.cli.lens_correction", input_path, output_path]
     if make:
         cmd += ["--make", make]
     if model:

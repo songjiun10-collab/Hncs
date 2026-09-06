@@ -181,7 +181,7 @@ FUJI_PRESET_GOLDEN_HASHES = [
 # significant bit. The committed arrays preserve position, so an output may
 # differ by a couple of LSBs at a handful of corresponding pixels.
 #
-# 허용치는 실측이다(2026-09-06, `tools/generate_hsv_golden_fixture.py`가 만든
+# 허용치는 실측이다(2026-09-06, `tools/research/generate_hsv_golden_fixture.py`가 만든
 # 커밋된 fixture vs 각 플랫폼 실제 출력). fixture는 macOS ARM에서 뽑혔고,
 # 같은 macOS ARM에서는 cv2 4.11.0/numpy 1.26.4와 고정 버전 cv2 5.0.0/numpy
 # 2.4.6 **둘 다 drift 0**이라 라이브러리 버전 문제가 아니라 아키텍처 차이다.

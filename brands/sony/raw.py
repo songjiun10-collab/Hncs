@@ -11,7 +11,7 @@ brands/sony.py)을 raw+jpeg 실측으로 다시 튜닝한 변형. `leica_raw.py`
 이후 이 프로젝트가 dpreview에서 직접 raw+jpeg 페어를 수집하면서
 `datasets/sony/contributed/`에 실측 데이터가 쌓였다 - 그 결론은 낡았다.
 
-`tools/fit_population_body_de00_grid.py sony`로 raw+jpeg 328쌍(288쌍
+`tools/fit/fit_population_body_de00_grid.py sony`로 raw+jpeg 328쌍(288쌍
 디코드 성공, 40쌍은 pre-production ARW를 libraw가 못 읽는 알려진 한계)에
 ΔE00 직접 목적함수 그리드서치(252콤보) + 5-fold LOO:
 
@@ -44,24 +44,24 @@ clahe_clip=2.0`에 수렴. 원본 픽셀에서 개선폭이 줄었지만(이 프
 것이므로, 있는 데이터가 완벽히 균등하게 커버하지 못해도 "차용값보다는
 낫다"는 게 이 채택의 근거다.
 
-재현: `python3 -m tools.fit_population_body_de00_grid sony` (200/400px),
-`python3 -m tools.evaluate_population_raw_look_native_confirm sony 0.02 0.82 1.0 2.0`
+재현: `python3 -m tools.fit.fit_population_body_de00_grid sony` (200/400px),
+`python3 -m tools.fit.evaluate_population_raw_look_native_confirm sony 0.02 0.82 1.0 2.0`
 (원본 픽셀 재확인).
 
 **바디별 분해 - a1 II(ILCE-1M2) 격차 확인, 전용 함수는 기각(2026-09-02)**:
-`tools/breakdown_sony_by_camera_body.py`로 전용 함수 없는 3바디
+`tools/fit/breakdown_sony_by_camera_body.py`로 전용 함수 없는 3바디
 (ILCE-7CR/ILCE-9M3/ILCE-1M2)에 현재 `apply_sony_raw_look()`을 그대로
 적용해서 바디별로 쪼개봤다 - a1 II(ILCE-1M2, n=55) 평균 ΔE00=14.272로
 나머지 두 바디 풀링(n=127) 평균 10.60~10.91 대비 유의미하게 나빴다
 (부트스트랩 95% CI [+2.351, +4.701], 0 안 걸침 - 통계적으로 실재하는
 격차, `hasselblad_x1d.py`가 발견했던 것과 같은 패턴).
 
-`tools/fit_population_body_de00_grid.py sony ILCE-1M2`로 a1 II 전용
+`tools/fit/fit_population_body_de00_grid.py sony ILCE-1M2`로 a1 II 전용
 4파라미터 그리드서치+5-fold LOO를 돌렸다(200px 선택, 400px 확정) - 다만
 이 스크립트는 구버전 `apply_sony_look()`(`brands/sony.py`) 대비였다.
 그 대비로는 +3.18% 개선(승/패=44/11, 부호검정 p<0.0001, CI
 [+0.290,+0.636])이 나왔지만, **진짜 baseline인 `apply_sony_raw_look()`
-자체와 맞대결**(`tools/evaluate_sony_a1ii_vs_raw_look.py`, n=55,
+자체와 맞대결**(`tools/fit/evaluate_sony_a1ii_vs_raw_look.py`, n=55,
 max_dim=400)한 결과 두 후보 콤보 전부 개선폭이 사실상 0이었다 -
 (toe=0.02,ss=0.66,wp=0.85,clip=3.0): +0.13%(CI [-0.092,+0.132], 0
 포함), (toe=0.02,ss=0.78,wp=0.85,clip=2.0): +0.02%(CI [-0.013,+0.015],
@@ -77,9 +77,9 @@ max_dim=400)한 결과 두 후보 콤보 전부 개선폭이 사실상 0이었�
 차이)일 가능성이 높다. 전용 `apply_sony_a1ii_raw_look()`은 이 데이터로는
 근거가 없어 기각, 만들지 않았다.
 
-재현: `python3 -m tools.breakdown_sony_by_camera_body`(바디별 분해),
-`python3 -m tools.fit_population_body_de00_grid sony ILCE-1M2`(그리드,
-구버전 대비), `python3 -m tools.evaluate_sony_a1ii_vs_raw_look`(진짜
+재현: `python3 -m tools.fit.breakdown_sony_by_camera_body`(바디별 분해),
+`python3 -m tools.fit.fit_population_body_de00_grid sony ILCE-1M2`(그리드,
+구버전 대비), `python3 -m tools.fit.evaluate_sony_a1ii_vs_raw_look`(진짜
 baseline 재확인)."""
 from core.engine import make_population_fit_look
 

@@ -5,7 +5,7 @@ Phase One 디지털백은 스튜디오/테더링 중심이라 컨슈머 카메�
 JPEG 엔진이 사실상 의미 없다. imaging-resource.com에서 받은 샘플들의 EXIF
 Software가 전부 "Capture One"(Phase One 자체 제작 RAW 컨버터)이었으므로,
 이 프로젝트가 재현하려는 건 "카메라 JPEG"가 아니라 "Capture One 기본
-렌더링"이다 (tools/analyze.py phaseone 모드).
+렌더링"이다 (tools/cli/analyze.py phaseone 모드).
 
 population 통계 (2026-07, imaging-resource.com Phase One XF 100MP 리뷰
 갤러리, 30장 - exiftool Software="Capture One" 확인, Photoshop/Lightroom
@@ -61,7 +61,7 @@ Review - Gallery")로 떨어졌다 - 라이카/올림푸스 문서에 기록된 
 "가짜 슬러그는 무관한 갤러리로 조용히 폴백" 패턴. 사이트 검색으로 실존이
 확인된 리뷰 갤러리는 "Phase One XT"(`/cameras/phase-one-xt-review/gallery/`,
 200, `<title>`="Phase One XT Review - Gallery" 정상) 단 하나뿐이었다 -
-이건 tools/analyze.py BRAND_CONFIGS 주석에 이미 "시도했다가 뺐음"으로
+이건 tools/cli/analyze.py BRAND_CONFIGS 주석에 이미 "시도했다가 뺐음"으로
 기록돼 있던 갤러리인데, 이번에 갤러리 HTML을 처음부터 다시 긁어
 독립적으로 재확인해보니 후보 218장 **전부**(100%, 이전 기록의 "무결성
 통과분 13장이 전부 achromatic"보다 더 강한 근거) 파일명에
@@ -76,7 +76,7 @@ white_point 피팅) 표본에 흑백 전용 카메라를 섞을 수 없으므로
 100MP Field Test")는 있지만 상세페이지별 갤러리 구조
 (`/image/N?section=gallery`) 없이 기사 본문에 이미지 17~28장이 박혀있고
 갤러리 링크는 전부 기존 XF 100MP 갤러리로 되돌아가는 형태라 이 프로젝트의
-스크레이핑 방식(tools/download.py list_gallery_images/resolve_full_image)이
+스크레이핑 방식(tools/cli/download.py list_gallery_images/resolve_full_image)이
 아예 적용되지 않는다. 결론: imaging-resource.com에서 뽑을 수 있는 Phase
 One 컬러 갤러리는 XF 100MP 하나뿐이고, 이 사이트를 소스로 쓰는 한
 n=16이 사실상의 상한이다 - 다음 세션이 같은 슬러그들을 다시 시도하며

@@ -23,11 +23,11 @@
 - `brands/hasselblad.py`'s `apply_hncs()` must NEVER be modified.
 - `brands/fuji.py`'s existing `apply_*` preset functions must NEVER be modified — this plan only touches the lower-level `decode_raw()` utility and a new standalone research script.
 - `hybrid_engine/utils/io.py`'s `decode_raw_native()` must NOT be touched — out of scope (used for the unrelated DCP camera-native-matrix path).
-- `decode_raw(path)` called with a single positional argument (all 12 existing call sites: `hybrid_engine/main.py`, `hybrid_engine/evaluation/fidelity.py`, `hybrid_engine/evaluation/cross_camera.py`, `hybrid_engine/calibrate_profile.py`, `hybrid_engine/utils/evaluate.py`, `tools/analyze_colorchecker_matrix.py`, `tools/evaluate_hncs_structural.py`, `tools/analyze_pixel_errors.py`, etc.) must see **zero behavior change** — the new parameter must default to `None` and only affect `raw.postprocess()`'s kwargs when explicitly set.
+- `decode_raw(path)` called with a single positional argument (all 12 existing call sites: `hybrid_engine/main.py`, `hybrid_engine/evaluation/fidelity.py`, `hybrid_engine/evaluation/cross_camera.py`, `hybrid_engine/calibrate_profile.py`, `hybrid_engine/utils/evaluate.py`, `tools/fit/analyze_colorchecker_matrix.py`, `tools/research/evaluate_hncs_structural.py`, `tools/fit/analyze_pixel_errors.py`, etc.) must see **zero behavior change** — the new parameter must default to `None` and only affect `raw.postprocess()`'s kwargs when explicitly set.
 - `rawpy.DemosaicAlgorithm.AMAZE` is NOT usable in this environment (`Demosaic algorithm AMAZE requires GPL3 demosaic pack`, confirmed by direct testing) — only `DHT` is used in this plan.
 - No new external programs (darktable-cli, RawTherapee-cli, etc.) are installed as part of this plan — out of scope, a possible future escalation only if this experiment's signal warrants it.
 - The real comparison uses only 3 raw+jpeg pairs (`fuji_pairs_manifest.csv`, all Fujifilm X-T3/X-T30, all F0/Standard "Provia" film mode) — **do not run any significance test (t-test, sign test, bootstrap, etc.) on n=3.** Report only the raw per-pair numbers and whether the direction agrees across all 3 pairs. State explicitly that n=3 cannot support a statistical conclusion.
-- `fuji_pairs_manifest.csv` and `raw_calib_cache_fuji/` are git-ignored (confirmed via `.gitignore`) — present on this container's local disk but not available in CI. Any committed automated test must NOT depend on their presence; use temp files / mocks instead, per this project's established convention for RAW-cache-dependent code (see `tools/analyze_camera_native_matrix.py`, which has no committed test file, and `tools/evaluate_hncs_structural.py`'s tests, which only cover CSV-parsing/portable helpers).
+- `fuji_pairs_manifest.csv` and `raw_calib_cache_fuji/` are git-ignored (confirmed via `.gitignore`) — present on this container's local disk but not available in CI. Any committed automated test must NOT depend on their presence; use temp files / mocks instead, per this project's established convention for RAW-cache-dependent code (see `tools/fit/analyze_camera_native_matrix.py`, which has no committed test file, and `tools/research/evaluate_hncs_structural.py`'s tests, which only cover CSV-parsing/portable helpers).
 
 ---
 
@@ -133,7 +133,7 @@ def decode_raw(raw_path, demosaic_algorithm=None):
     demosaic_algorithm: None(기본값)이면 rawpy 기본 데모자이크를 쓰고
     기존 호출부와 100% 동일하게 동작한다. rawpy.DemosaicAlgorithm 값을
     넘기면 raw.postprocess()에 그대로 전달된다(예: X-Trans용 DHT 비교
-    실험 - tools/evaluate_fuji_demosaic.py 참고). AMAZE는 이 프로젝트가
+    실험 - tools/fuji/evaluate_fuji_demosaic.py 참고). AMAZE는 이 프로젝트가
     쓰는 LibRaw 빌드에 GPL3 데모자이크 팩이 없어 런타임 에러가 난다."""
     kwargs = dict(
         use_camera_wb=True,
@@ -161,7 +161,7 @@ Expected: all existing tests still PASS (460 baseline + 4 new = 464), confirming
 
 - [ ] **Step 6: Manual smoke test against a real RAW file**
 
-`hybrid_engine/utils/io.py` has no other automated tests (RAW-decode correctness is verified manually per this project's convention — see e.g. `tools/analyze_camera_native_matrix.py`, which has no test file). Confirm the new parameter works against a real file:
+`hybrid_engine/utils/io.py` has no other automated tests (RAW-decode correctness is verified manually per this project's convention — see e.g. `tools/fit/analyze_camera_native_matrix.py`, which has no test file). Confirm the new parameter works against a real file:
 
 ```bash
 python3 -c "
@@ -187,16 +187,16 @@ git commit -m "Add optional demosaic_algorithm parameter to decode_raw()"
 
 ---
 
-### Task 2: `tools/evaluate_fuji_demosaic.py` + real comparison + record results
+### Task 2: `tools/fuji/evaluate_fuji_demosaic.py` + real comparison + record results
 
 **Files:**
-- Create: `tools/evaluate_fuji_demosaic.py`
+- Create: `tools/fuji/evaluate_fuji_demosaic.py`
 - Test: `tests/test_evaluate_fuji_demosaic.py`
 - Modify: `hybrid_engine/EVALUATION.md` (append new section)
 
 **Interfaces:**
 - Consumes: Task 1's `decode_raw(raw_path, demosaic_algorithm=None)`. `hybrid_engine.utils.evaluate.mean_delta_e(rgb_a_linear, rgb_b_linear, method="CIE 2000")` and `load_image_linear_for_evaluate(target_path, result_shape, resize_to_match=True)` (both already exist, signatures unchanged by this plan). `rawpy.DemosaicAlgorithm.DHT`.
-- Produces: `load_pairs(manifest_path=MANIFEST_PATH)` (unit-tested, portable — accepts an override path so tests never touch the real git-ignored manifest). `compare_pair()`, `run_comparison()`, `main()` (real-data-dependent, verified by actually running the script, matching this project's established precedent — see `tools/evaluate_hncs_structural.py`).
+- Produces: `load_pairs(manifest_path=MANIFEST_PATH)` (unit-tested, portable — accepts an override path so tests never touch the real git-ignored manifest). `compare_pair()`, `run_comparison()`, `main()` (real-data-dependent, verified by actually running the script, matching this project's established precedent — see `tools/research/evaluate_hncs_structural.py`).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -208,7 +208,7 @@ import os
 import tempfile
 import unittest
 
-from tools.evaluate_fuji_demosaic import load_pairs
+from tools.fuji.evaluate_fuji_demosaic import load_pairs
 
 _FIELDS = ["camera", "datetime", "film_mode", "raw_path", "jpeg_path"]
 
@@ -267,11 +267,11 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `python3 -m unittest tests.test_evaluate_fuji_demosaic -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'tools.evaluate_fuji_demosaic'`
+Expected: FAIL with `ModuleNotFoundError: No module named 'tools.fuji.evaluate_fuji_demosaic'`
 
 - [ ] **Step 3: Write the implementation**
 
-Create `tools/evaluate_fuji_demosaic.py`:
+Create `tools/fuji/evaluate_fuji_demosaic.py`:
 
 ```python
 """Fuji X-Trans 데모자이크 알고리즘(rawpy 기본 vs DHT) ΔE 비교 - 로컬에
@@ -280,7 +280,7 @@ Create `tools/evaluate_fuji_demosaic.py`:
 보고). 설계 근거:
 docs/superpowers/specs/2026-07-29-fuji-demosaic-algorithm-design.md
 
-  python3 -m tools.evaluate_fuji_demosaic
+  python3 -m tools.fuji.evaluate_fuji_demosaic
 """
 import csv
 import os
@@ -369,7 +369,7 @@ Expected: all tests PASS (464 from Task 1 + 3 new = 467)
 
 - [ ] **Step 6: Run the real comparison against the 3 local pairs**
 
-Run: `python3 -m tools.evaluate_fuji_demosaic`
+Run: `python3 -m tools.fuji.evaluate_fuji_demosaic`
 
 Capture the **full stdout output verbatim** (all 3 per-pair lines plus the summary block). This is required input for Step 7 — do not paraphrase or round it, copy it exactly into the task report.
 
@@ -434,7 +434,7 @@ Expected: all tests PASS (no code changed in this step, but confirms the branch 
 - [ ] **Step 9: Commit**
 
 ```bash
-git add tools/evaluate_fuji_demosaic.py tests/test_evaluate_fuji_demosaic.py hybrid_engine/EVALUATION.md
+git add tools/fuji/evaluate_fuji_demosaic.py tests/test_evaluate_fuji_demosaic.py hybrid_engine/EVALUATION.md
 git commit -m "Add Fuji X-Trans demosaic (default vs DHT) comparison, record results"
 ```
 

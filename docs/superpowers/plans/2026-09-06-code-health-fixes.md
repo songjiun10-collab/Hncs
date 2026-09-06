@@ -30,8 +30,8 @@
 ### Task 2: Correct research-tool color domain
 
 **Files:**
-- Modify: `tools/evaluate_fuji_classic_negative_v2_grid.py`
-- Modify: `tools/diagnose_fuji_autobright_vs_look.py`
+- Modify: `tools/fuji/evaluate_fuji_classic_negative_v2_grid.py`
+- Modify: `tools/fuji/diagnose_fuji_autobright_vs_look.py`
 - Test: `tests/test_fuji_classic_negative_recalibration.py`
 
 - [x] Add a regression test that the ΔE helper receives linear RGB and BGR uint8 targets are converted before comparison.
@@ -41,11 +41,11 @@
 ### Task 3: Empty dataset and file-handle safety
 
 **Files:**
-- Modify: `tools/evaluate_fuji_classic_negative_v2_grid.py`
-- Modify: `tools/diagnose_fuji_autobright_vs_look.py`
-- Modify: `tools/diagnose_fuji_neutral_render_offset.py`
-- Modify: `tools/probe_fuji_classic_negative_v2_boundary.py`
-- Modify: `tools/audit_repo_integrity.py`
+- Modify: `tools/fuji/evaluate_fuji_classic_negative_v2_grid.py`
+- Modify: `tools/fuji/diagnose_fuji_autobright_vs_look.py`
+- Modify: `tools/fuji/diagnose_fuji_neutral_render_offset.py`
+- Modify: `tools/fuji/probe_fuji_classic_negative_v2_boundary.py`
+- Modify: `tools/maintenance/audit_repo_integrity.py`
 - Test: `tests/test_fuji_classic_negative_recalibration.py`, relevant tool tests
 
 - [x] Add tests for zero usable pairs producing a clear, non-zero failure instead of NaN/TypeError.

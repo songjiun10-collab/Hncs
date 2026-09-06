@@ -3,7 +3,7 @@
 > Sub-project 1 of 4 in the "레포 전체 대규모 리팩토링" initiative
 > (maintainability + readability for other contributors). The other three
 > — brand wrapper-function consolidation, a `tools/` adopted-vs-rejected
-> index, and splitting `tools/calibrate.py` — get their own specs later.
+> index, and splitting `tools/fit/calibrate.py` — get their own specs later.
 
 ## Problem
 

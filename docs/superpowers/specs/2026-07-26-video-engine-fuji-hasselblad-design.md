@@ -2,7 +2,7 @@
 
 ## 배경 / 문제
 
-`tools/video_engine.py`(v1, `docs/superpowers/specs/2026-07-26-video-engine-design.md`)는
+`tools/cli/video_engine.py`(v1, `docs/superpowers/specs/2026-07-26-video-engine-design.md`)는
 `core.engine.apply_population_fit_look()`을 공유하는 10개 브랜드(Canon/
 Leica/Nikon/Olympus/Panasonic/Pentax/Phase One/Ricoh GR/Sigma/Sony)만
 지원한다. Fujifilm(`brands/fuji.py`, 프리셋 10종)과 Hasselblad
@@ -40,7 +40,7 @@ CLAHE 사용 여부가 제각각"이라는 이유로 명시적으로 범위 밖�
 
 1. Fuji 9개(CLAHE 없음) + 1개(`apply_pro_neg_hi`, CLAHE 생략 변형 신규) +
    Hasselblad 1개(`apply_hncs`, CLAHE 생략 변형 신규) = **11개 브랜드**를
-   `tools/video_engine.py`의 `--brand`에 추가한다.
+   `tools/cli/video_engine.py`의 `--brand`에 추가한다.
 2. `apply_pro_neg_hi_video_frame()`(`brands/fuji.py`)과
    `apply_hncs_video_frame()`(`brands/hasselblad.py`) 2개 함수를
    신규 추가한다 - 각 파일의 기존 함수는 수정하지 않는다.
@@ -148,7 +148,7 @@ def apply_hncs_video_frame(img_bgr, toe_lift=0.001, shoulder_start=0.78,
 (`apply_hncs()`에서 CLAHE 두 줄만 빠짐, 나머지 동일 - `exposure_gamma`
 LUT과 `film_curve` LUT 순서도 그대로 유지.)
 
-**`tools/video_engine.py`에 추가**(기존 `process_video`/
+**`tools/cli/video_engine.py`에 추가**(기존 `process_video`/
 `process_video_with_audio`/`SUPPORTED_BRANDS`/`_BRAND_FUNCTIONS`는
 수정 없음):
 

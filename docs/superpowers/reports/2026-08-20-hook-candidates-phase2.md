@@ -16,7 +16,7 @@
 |---|---|---|
 | `.claude/hooks/violations_log.jsonl` | 50 events (2026-08-14 ~ 08-20) | 실제 deny/ask/override 원본 이벤트 |
 | `.claude/hooks/override_audit.jsonl` | 10 events | 실제로 override된 가드 액션 + decision record |
-| `.claude/hooks/learning_data.jsonl` | 1 line, `n_events=13`, `n_determinable=4` | `tools/eval_hook_judgments.py`의 캘리브레이션 리포트 |
+| `.claude/hooks/learning_data.jsonl` | 1 line, `n_events=13`, `n_determinable=4` | `tools/maintenance/eval_hook_judgments.py`의 캘리브레이션 리포트 |
 
 기존 로스터 18개(`.claude/hooks/*.py`)와 `.claude/settings.json`의 실제
 등록 상태를 전부 읽고 나서 "이미 있는 것"과 "빈 곳"을 갈랐다.
@@ -107,7 +107,7 @@ PY
 
 `require_decision_or_deny()`(`_hook_common.py:727`)는 decision record가
 **존재하는지**만 본다 — 그 안의 `self_severity`가 가드 자신의 등급과
-정합적인지는 어떤 훅도 안 본다. `tools/eval_hook_judgments.py`는 이
+정합적인지는 어떤 훅도 안 본다. `tools/maintenance/eval_hook_judgments.py`는 이
 불일치를 **사후에 측정**하지만(`_over_under_match()`), 측정은 gating이
 아니고 게다가 `n_determinable=4 < min_n=20`이라 지금은 `verdict`조차 안
 낸다. 즉 "CRITICAL 가드가 걸렸는데 에이전트는 LOW라고 0.95 확신하면서
@@ -234,7 +234,7 @@ force-with-lease를 승인했다고 decision record에 적혀 있다)가 분명�
   냈다는 증거는 없다 — 문제는 결과가 아니라 "가드가 마찰을 주기로 한
   지점에서 실제 마찰이 38초짜리 형식 절차로 축소됐다"는 것.
 - 구현 시 주의: 훅이 자기 로그를 읽는 구조가 되면 로그 회전
-  (`tools/rotate_hook_logs.py`)과의 상호작용, 그리고 훅 실행 시간
+  (`tools/maintenance/rotate_hook_logs.py`)과의 상호작용, 그리고 훅 실행 시간
   (`settings.json`의 `timeout: 15`)을 같이 봐야 한다. 별도 카운터
   sentinel이 더 깔끔할 수 있다 — 단 그 sentinel도 C4의 보호 대상이 돼야
   한다(2차 라운드 finding #8의 교훈: 새 sentinel을 보호 없이 내보내지

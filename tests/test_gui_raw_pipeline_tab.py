@@ -4,7 +4,7 @@ from core.log_pipeline import LOG_SPACES
 from gui.tabs.raw_pipeline_tab import (
     AUTO_EXPOSE_MODES, LOG_SPACE_CHOICES, build_raw_pipeline_command,
 )
-from tools.raw_pipeline import _AUTO_EXPOSE_MODES
+from tools.cli.raw_pipeline import _AUTO_EXPOSE_MODES
 
 
 class TestLogSpaceChoices(unittest.TestCase):
@@ -21,7 +21,7 @@ class TestBuildRawPipelineCommand(unittest.TestCase):
     def test_minimal_command(self):
         cmd = build_raw_pipeline_command("in.CR3", "out.tiff", "S-Log3", python_exe="python3")
         self.assertEqual(
-            cmd, ["python3", "-m", "tools.raw_pipeline", "in.CR3", "out.tiff",
+            cmd, ["python3", "-m", "tools.cli.raw_pipeline", "in.CR3", "out.tiff",
                   "--log-space", "S-Log3"])
 
     def test_exposure_flag_included_when_nonzero(self):
