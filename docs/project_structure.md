@@ -135,6 +135,7 @@ docs/         상세 문서 (이 디렉토리)
 | `tools/fit_final_lut.py` | `evaluate_learned_lut.py`가 LOO로 검증한 학습 LUT을 홀드아웃 없이 전체 표본으로 재학습해서 `_LEARNED_LUT` 배열 형태로 출력 - 최종 shipped 함수에 굽는 용도 |
 | `tools/evaluate_hybrid_switch.py` | 이미지 콘텐츠에서 노이즈를 추정(Immerkaer 1996)해 파라메트릭/학습LUT을 전환하는 하이브리드가 "항상 LUT"보다 나은지 LOO 검증 - Sony a7V/a7R VI에서 근소하게 더 나쁜 것으로 판명, 기각(기록만 남김) |
 | `tools/evaluate_hue_chroma_lut.py` | 톤커브 보정 후에도 Lab a/b(hue/chroma)에 잔차가 남는지, `hybrid_engine/core/hue_core.py`의 순환 1D LUT으로 줄일 수 있는지 LOO 검증 - X2D II는 hue만, 라이카/후지는 hue+chroma가 유효한 것으로 확인 |
+| `tools/evaluation_common.py` | 기여 raw/JPEG manifest 수집과 평가용 BGR→sRGB linear·평균 CIEDE2000 변환을 공유하는 도구 계층 헬퍼 - `measure_all_brand_baselines.py`, `fit_population_body_de00_grid.py`, `evaluate_expanded_clahe_shoulder_refit.py`가 사용 |
 | `tools/measure_all_brand_baselines.py` | `/goal` 착수 전 현재 위치 파악용 - 브랜드/바디별 현재 shipped 함수(전용 있으면 그거, 없으면 generic)의 실측 ΔE00을 800px x 3코어 병렬로 한 번에 측정 |
 | `tools/fit_population_body_de00_grid.py` | population-fit 브랜드(toe_lift/shoulder_start/white_point/clahe_clip 4파라미터)에 ΔE00 직접 목적함수 그리드서치+LOO를 돌려 실제 shipped `apply_<brand>_look()` 대비 개선폭 확인(200px 콤보선택/400px LOO확정) - Canon(+4.62%)/Sony(+4.29%)/Sigma(+7.72%)에 사용. **정정(2026-09-01)**: 초판은 "기존" 대비값을 어느 브랜드와도 안 맞는 하드코딩(toe=0,ss=0.5,wp=1.0,clip=1.25)으로 비교하던 버그가 있었음(최적 콤보 선택 자체는 무관) - 실제 shipped 함수를 직접 호출하도록 수정 |
 | `tools/evaluate_population_raw_look_native_confirm.py` | `fit_population_body_de00_grid.py`가 저해상도(200/400px)로 고른 population-fit 후보 파라미터를 원본 픽셀(max_dim=3000)로 기존 shipped 함수와 직접 재대결 - CLAHE 해상도 민감성 확인 절차 |
