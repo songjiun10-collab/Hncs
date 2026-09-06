@@ -4,13 +4,26 @@ HNCS 실제 4단계 구조(조명별 3x3 매트릭스 -> 조명별 chroma LUT ->
 비교. origin 저장소(GitHub songjiun10-collab/Hncs)의
 hybrid_engine/research/hncs_structural.py + tools/evaluate_hncs_structural.py
 설계를 이 로컬 체크아웃(hybrid_engine 없음)에 맞게 독립 스크립트로
-재현한다. 원본은 13쌍(X1D 전용) + 7x7=49 chroma 그리드 + 13-fold LOO였는데,
-이번엔 dpreview 클린 95쌍(4세대) + 32x32=1024 chroma 그리드 + 5-fold CV로
-확장(그리드가 20배 커진 만큼 fold 수를 줄여 계산량을 유지).
+재현한다. 원본은 13쌍(X1D 전용) + 7x7=49 chroma 그리드 + 13-fold LOO,
+그 다음 버전은 dpreview 클린 95쌍(4세대) + 32x32=1024 chroma 그리드 +
+5-fold CV였다.
 
-두 방식 다 실행:
-  - 하드 클러스터(원본과 동일, AsShotNeutral R/B 비율 임계값 0.9로
-    2클러스터 하드 분류, 클러스터별 매트릭스+chroma LUT)
+**2026-09-02 재실행**: 그 95쌍 버전이 읽던 RAW_DIR
+("/Users/songjiun/Documents/raw pair")이 이 머신엔 없어서(실행 확인)
+이 스크립트는 이번 세션 전까지 아예 못 돌아가는 상태였다. 공식
+13쌍(`raw_calib_cache/`) + `datasets/hasselblad/contributed/*/manifest.csv`
+전체(디스크에 실제 존재하는 파일만, `tools.calibrate.collect_local_pairs()`)로
+데이터 소스를 바꿔서 총 390쌍(실행 확인)으로 확장했다 - 사용자 지시
+"데이터도 커졌는데 구조데로 해보면 안됨?" -> "ㅇㅇ". 동시에 하드
+클러스터를 2개(기존)뿐 아니라 **4개**로도 돌린다 - 외부 조사
+(`docs/hncs_external_sources_analysis.md` 1-2절, 포럼 스레드)가
+말하는 "실제 최소 4개 조명"에 표본이 이제 도달했는지 보려는 것.
+4클러스터 경계는 각 폴드의 train 데이터 R/B 비율 25/50/75 분위수로
+리키지 없이 계산(블렌딩의 rb_min/rb_max와 같은 원칙).
+
+3가지 방식 다 실행:
+  - 하드 클러스터 2개(원본과 동일, AsShotNeutral R/B 비율 임계값 0.9)
+  - 하드 클러스터 4개(신규, train 분위수 기반 경계)
   - 연속 블렌딩(원본의 apply_hncs_structural_blend - R/B를 fold의
     train 데이터 관측 범위로 정규화한 가중치로 두 앵커를 블렌딩)
 
@@ -21,7 +34,9 @@ apply_hncs()는 이 실험에서 아무것도 수정하지 않는다(항상 보�
 
   python3 -m tools.evaluate_hncs_structural
 """
+import concurrent.futures
 import csv
+import glob
 import itertools
 import math
 import os
@@ -40,9 +55,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from brands.hasselblad import apply_hncs
 from core.curve import film_curve
 
-RAW_DIR = "/Users/songjiun/Documents/raw pair"
-MANIFEST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                         "datasets", "hasselblad", "dpreview_raw_jpeg_pairs_clean.csv")
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OFFICIAL_CSV = os.path.join(_ROOT, "datasets", "hasselblad", "hasselblad_raw_jpeg_pairs.csv")
+OFFICIAL_CACHE_DIR = os.path.join(_ROOT, "raw_calib_cache")
 
 CLUSTER_THRESHOLD_R_OVER_B = 0.9
 DOWNSAMPLE_MAX_DIM = 512
@@ -57,6 +72,19 @@ FILM_CURVE_SHOULDER_START = 0.5
 FILM_CURVE_WHITE_POINT = 1.0
 
 N_FOLDS = 5
+# 폴드 단위 프로세스풀 병렬화(2026-09-02, 390쌍 확장 후 추가) -
+# evaluate_hncs_blend.py의 74쌍 LOO(148폴드, 3워커 4h22m 실측)와 같은
+# 이유: 단일 스레드로는 폴드당 훈련쌍이 74->311로 늘어난 만큼 그리드서치가
+# 몇 시간대로 늘어난다(첫 실행에서 확인 후 병렬화 추가).
+#
+# 워커 5개로 처음 돌렸다가 스왑이 6->8GB로 늘면서 93.6%(7.67/8.19GB)까지
+# 찬 걸 실측하고 죽였다 - 워커당 pair_data 캐시(311쌍 x 512px x
+# float64 ~= 1.6GB, evaluate_hncs_blend.py가 74쌍 LOO 때 "워커당
+# ~1.3GB라 3워커로 캡"이라고 적어둔 것과 같은 원인)가 5배로 쌓인
+# 탓이다. 같은 이유로 evaluate_hncs_blend.py도 3으로 캡했던 전례를
+# 그대로 따른다 - 폴드가 5개라 5워커가 이상적이지만 이 머신에서는
+# 메모리가 먼저 한계에 부딪힌다.
+N_WORKERS = max(1, min(3, (os.cpu_count() or 2) - 2))
 
 
 # ============================================================
@@ -118,6 +146,20 @@ def decode_and_white_balance(raw_path, max_dim=DOWNSAMPLE_MAX_DIM):
 def classify_illuminant_cluster(as_shot_neutral, threshold=CLUSTER_THRESHOLD_R_OVER_B):
     r_over_b = as_shot_neutral[0] / as_shot_neutral[2]
     return "cluster_a" if r_over_b < threshold else "cluster_b"
+
+
+def classify_cluster_k(r_over_b, boundaries):
+    """boundaries(오름차순 컷포인트 k-1개)로 r_over_b를 "cluster0".."k-1"로
+    분류. 4클러스터 실험(2026-09-02)에서 fold별 train 데이터 R/B
+    25/50/75 분위수를 boundaries로 넘겨 씀 - 리키지 없이 폴드마다
+    다시 계산."""
+    idx = 0
+    for b in boundaries:
+        if r_over_b >= b:
+            idx += 1
+        else:
+            break
+    return f"cluster{idx}"
 
 
 def fit_color_matrix(sources, targets, ridge=1.0):
@@ -189,20 +231,54 @@ _GRID_CACHE = {}
 _KNOWN_BAD_RAW_FILES = {"4589763049.3fr"}
 
 
-def load_pairs():
-    rows = list(csv.DictReader(open(MANIFEST)))
+def _load_official_pairs():
+    """evaluate_hncs_blend.py의 load_pairs()와 같은 관례(evaluate_*.py는
+    형제 스크립트를 import 안 하는 컨벤션이라 복붙, tools/CLAUDE.md) -
+    공식 13쌍을 raw_calib_cache/에서 읽는다."""
     pairs = []
-    for r in rows:
-        if r["raw_file"] in _KNOWN_BAD_RAW_FILES:
+    with open(OFFICIAL_CSV, newline="") as f:
+        for row in csv.DictReader(f):
+            name = os.path.basename(row["jpeg_url"])
+            matches = [m for m in glob.glob(os.path.join(OFFICIAL_CACHE_DIR, name + ".*"))
+                       if not m.endswith(".target.jpg")]
+            if len(matches) != 1:
+                raise FileNotFoundError(f"raw for {name}: expected 1 match, got {matches}")
+            pairs.append({"name": name, "raw_path": matches[0],
+                           "target_path": os.path.join(OFFICIAL_CACHE_DIR, name + ".target.jpg")})
+    return pairs
+
+
+def load_pairs():
+    """공식 13쌍 + datasets/hasselblad/contributed/*/manifest.csv 전체
+    (디스크에 실제 존재하는 파일만, tools.calibrate.collect_local_pairs()가
+    파일 존재 확인까지 함) - 총 390쌍(2026-09-02 실행 확인). 이전
+    버전이 읽던 MANIFEST/RAW_DIR는 이 머신에 데이터가 없어서 이
+    스크립트를 아예 못 돌리는 상태였다(위 헤더 docstring 참고)."""
+    from tools.calibrate import collect_local_pairs
+    raw_pairs = _load_official_pairs()
+    for p in collect_local_pairs():
+        raw_pairs.append({"name": p["filename"], "raw_path": p["raw_path"], "target_path": p["jpeg_path"]})
+
+    pairs = []
+    n_decode_fail = 0
+    for p in raw_pairs:
+        if os.path.basename(p["raw_path"]) in _KNOWN_BAD_RAW_FILES:
             continue
-        raw_path = os.path.join(RAW_DIR, r["raw_file"])
-        asn = read_as_shot_neutral(raw_path)
+        asn = read_as_shot_neutral(p["raw_path"])
         if asn is None:
             continue
-        pairs.append(dict(name=r["raw_file"], model=r["model"], raw_path=raw_path,
-                           target_path=os.path.join(RAW_DIR, r["jpeg_file"]),
+        try:
+            decode_raw_native(p["raw_path"], max_dim=GRID_DOWNSAMPLE_MAX_DIM)
+        except Exception as e:
+            n_decode_fail += 1
+            print(f"  프리플라이트 디코드 실패, 제외: {os.path.basename(p['raw_path'])} ({e})", flush=True)
+            continue
+        pairs.append(dict(name=p["name"], model=None, raw_path=p["raw_path"],
+                           target_path=p["target_path"],
                            as_shot_neutral=asn, cluster=classify_illuminant_cluster(asn),
                            r_over_b=asn[0] / asn[2]))
+    if n_decode_fail:
+        print(f"프리플라이트에서 디코드 실패로 제외된 페어: {n_decode_fail}개", flush=True)
     return pairs
 
 
@@ -243,10 +319,13 @@ def apply_hncs_delta_e(p):
 # ============================================================
 # 하드 클러스터 방식
 # ============================================================
-def fit_matrices(train_pairs):
+def fit_matrices(train_pairs, cluster_key="cluster", cluster_labels=("cluster_a", "cluster_b")):
+    """cluster_key/cluster_labels 기본값은 기존 2클러스터 호출부와
+    동일하게 동작 - 4클러스터 실험(2026-09-02)이 cluster_key="cluster4",
+    cluster_labels=["cluster0".."cluster3"]로 같은 함수를 재사용한다."""
     by_cluster = {}
-    for cluster in ("cluster_a", "cluster_b"):
-        cp = [p for p in train_pairs if p["cluster"] == cluster]
+    for cluster in cluster_labels:
+        cp = [p for p in train_pairs if p[cluster_key] == cluster]
         if not cp:
             continue
         sources = [pair_data(p)[0] for p in cp]
@@ -255,12 +334,12 @@ def fit_matrices(train_pairs):
     return by_cluster
 
 
-def fit_chroma_lut_grid(train_pairs, matrices):
+def fit_chroma_lut_grid(train_pairs, matrices, cluster_key="cluster"):
     """1024콤보 그리드서치 - 초저해상도 캐시로 매트릭스 적용 후 벡터화
     가능한 부분(HSV 변환)은 페어당 1회만, sat/hue 조합 루프만 반복."""
     by_cluster = {}
     for cluster, matrix in matrices.items():
-        cp = [p for p in train_pairs if p["cluster"] == cluster]
+        cp = [p for p in train_pairs if p[cluster_key] == cluster]
         if not cp:
             continue
         matrixed_hsv = []
@@ -291,11 +370,11 @@ def fit_chroma_lut_grid(train_pairs, matrices):
     return by_cluster
 
 
-def structural_hard_delta_e(test_pair, matrices, chroma_params):
+def structural_hard_delta_e(test_pair, matrices, chroma_params, cluster_key="cluster"):
     wb_rgb, target = pair_data(test_pair)
-    cluster = test_pair["cluster"]
+    cluster = test_pair[cluster_key]
     if cluster not in matrices:
-        cluster = "cluster_a" if "cluster_a" in matrices else "cluster_b"
+        cluster = next(iter(matrices))
     matrixed = apply_color_matrix(wb_rgb, matrices[cluster])
     sat_mult, hue_shift_deg = chroma_params[cluster]
     chroma_applied = apply_chroma_lut(matrixed, sat_mult, hue_shift_deg)
@@ -331,45 +410,80 @@ def make_folds(pairs, n_folds, seed=0):
     return folds
 
 
+def _run_one_fold(fi, pairs, train_idx, test_idx):
+    """폴드 하나(훈련+테스트)를 통째로 처리 - 프로세스풀 워커 하나가 이
+    함수 전체를 담당하므로 모듈 최상위 함수여야 pickle된다(spawn 방식,
+    macOS 기본). 각 워커는 독립 프로세스라 _PAIR_CACHE 등 전역 캐시를
+    공유하지 않는다 - 폴드끼리 훈련쌍이 78% 겹치는데도 재디코드가
+    생기지만, 디코드 자체가 싸서(개당 <1초) 그리드서치 병렬화 이득이
+    훨씬 크다."""
+    train = [pairs[i] for i in train_idx]
+    test = [pairs[i] for i in test_idx]
+
+    matrices = fit_matrices(train)
+    chroma_params = fit_chroma_lut_grid(train, matrices)
+
+    # 4클러스터: train R/B 25/50/75 분위수를 경계로 - 리키지 없이
+    # 폴드마다 새로 계산(블렌딩의 rb_min/rb_max와 같은 원칙).
+    train_rb_all = [p["r_over_b"] for p in train]
+    boundaries4 = np.percentile(train_rb_all, [25, 50, 75]).tolist()
+    cluster4_labels = [f"cluster{i}" for i in range(4)]
+    for p in train + test:
+        p["cluster4"] = classify_cluster_k(p["r_over_b"], boundaries4)
+    matrices4 = fit_matrices(train, cluster_key="cluster4", cluster_labels=cluster4_labels)
+    chroma_params4 = fit_chroma_lut_grid(train, matrices4, cluster_key="cluster4")
+
+    # 블렌딩용 앵커: 각 클러스터의 매트릭스/chroma를 그대로 앵커로 사용
+    matrix_a = matrices.get("cluster_a", matrices.get("cluster_b"))
+    matrix_b = matrices.get("cluster_b", matrices.get("cluster_a"))
+    chroma_a = chroma_params.get("cluster_a", chroma_params.get("cluster_b"))
+    chroma_b = chroma_params.get("cluster_b", chroma_params.get("cluster_a"))
+    rb_min, rb_max = min(train_rb_all), max(train_rb_all)
+
+    hard, hard4, blend, hncs = [], [], [], []
+    for p in test:
+        de_hard = structural_hard_delta_e(p, matrices, chroma_params)
+        de_hard4 = structural_hard_delta_e(p, matrices4, chroma_params4, cluster_key="cluster4")
+        de_blend = structural_blend_delta_e(p, matrix_a, matrix_b, chroma_a, chroma_b, rb_min, rb_max)
+        de_hncs = apply_hncs_delta_e(p)
+        hard.append((p["name"], p["cluster"], de_hard))
+        hard4.append((p["name"], p["cluster4"], de_hard4))
+        blend.append((p["name"], p["cluster"], de_blend))
+        hncs.append((p["name"], p["cluster"], de_hncs))
+    return fi, len(train), len(test), hard, hard4, blend, hncs
+
+
 def run_kfold():
     pairs = load_pairs()
     from collections import Counter
     print(f"페어 {len(pairs)}개, 클러스터 분포: {Counter(p['cluster'] for p in pairs)}", flush=True)
-    print(f"chroma 그리드: {len(CHROMA_COMBOS)}콤보, {N_FOLDS}-fold CV", flush=True)
+    print(f"chroma 그리드: {len(CHROMA_COMBOS)}콤보, {N_FOLDS}-fold CV, {N_WORKERS}워커", flush=True)
 
     folds = make_folds(pairs, N_FOLDS)
-    per_fold_hard, per_fold_blend, per_fold_hncs = [], [], []
     t0 = time.time()
 
-    for fi, test_idx in enumerate(folds):
-        train_idx = np.concatenate([folds[j] for j in range(N_FOLDS) if j != fi])
-        train = [pairs[i] for i in train_idx]
-        test = [pairs[i] for i in test_idx]
+    fold_results = {}
+    with concurrent.futures.ProcessPoolExecutor(max_workers=N_WORKERS) as ex:
+        futures = []
+        for fi, test_idx in enumerate(folds):
+            train_idx = np.concatenate([folds[j] for j in range(N_FOLDS) if j != fi])
+            futures.append(ex.submit(_run_one_fold, fi, pairs, train_idx, test_idx))
+        for fut in concurrent.futures.as_completed(futures):
+            fi, n_train, n_test, hard, hard4, blend, hncs = fut.result()
+            fold_results[fi] = (hard, hard4, blend, hncs)
+            elapsed = time.time() - t0
+            print(f"  fold {fi+1}/{N_FOLDS} 완료 (test n={n_test}, train n={n_train}, "
+                  f"{elapsed:.0f}s경과)", flush=True)
 
-        matrices = fit_matrices(train)
-        chroma_params = fit_chroma_lut_grid(train, matrices)
+    per_fold_hard, per_fold_hard4, per_fold_blend, per_fold_hncs = [], [], [], []
+    for fi in range(N_FOLDS):
+        hard, hard4, blend, hncs = fold_results[fi]
+        per_fold_hard.extend(hard)
+        per_fold_hard4.extend(hard4)
+        per_fold_blend.extend(blend)
+        per_fold_hncs.extend(hncs)
 
-        # 블렌딩용 앵커: 각 클러스터의 매트릭스/chroma를 그대로 앵커로 사용
-        matrix_a = matrices.get("cluster_a", matrices.get("cluster_b"))
-        matrix_b = matrices.get("cluster_b", matrices.get("cluster_a"))
-        chroma_a = chroma_params.get("cluster_a", chroma_params.get("cluster_b"))
-        chroma_b = chroma_params.get("cluster_b", chroma_params.get("cluster_a"))
-        train_rb = [p["r_over_b"] for p in train]
-        rb_min, rb_max = min(train_rb), max(train_rb)
-
-        for p in test:
-            de_hard = structural_hard_delta_e(p, matrices, chroma_params)
-            de_blend = structural_blend_delta_e(p, matrix_a, matrix_b, chroma_a, chroma_b, rb_min, rb_max)
-            de_hncs = apply_hncs_delta_e(p)
-            per_fold_hard.append((p["name"], p["cluster"], de_hard))
-            per_fold_blend.append((p["name"], p["cluster"], de_blend))
-            per_fold_hncs.append((p["name"], p["cluster"], de_hncs))
-
-        elapsed = time.time() - t0
-        print(f"  fold {fi+1}/{N_FOLDS} 완료 (test n={len(test)}, train n={len(train)}, "
-              f"{elapsed:.0f}s경과)", flush=True)
-
-    return per_fold_hard, per_fold_blend, per_fold_hncs
+    return per_fold_hard, per_fold_hard4, per_fold_blend, per_fold_hncs
 
 
 def _sign_test_p(wins, losses):
@@ -381,7 +495,12 @@ def _sign_test_p(wins, losses):
     return min(1.0, 2.0 * tail)
 
 
-def summarize(hncs_des, other_des, label, n_bootstrap=20000, seed=0):
+def summarize(hncs_des, other_des, label, n_bootstrap=20000, seed=0, baseline_label="apply_hncs"):
+    """baseline_label 기본값은 원래 동작(항상 "apply_hncs") 그대로 -
+    2026-09-02 4클러스터 실험에서 hard_des를 baseline으로 쓰는 두 호출
+    (4클러스터 vs 2클러스터, 블렌딩 vs 2클러스터하드)이 출력에 여전히
+    "vs apply_hncs"라고 찍던 라벨 버그를 고치려고 추가(계산 자체는
+    항상 맞았음, 표시만 틀렸었다)."""
     hncs = np.array(hncs_des)
     other = np.array(other_des)
     diff = hncs - other  # 양수 = other(구조실험)가 더 좋음
@@ -400,30 +519,34 @@ def summarize(hncs_des, other_des, label, n_bootstrap=20000, seed=0):
 
     p = _sign_test_p(wins, losses)
     inconclusive = ci_lo <= 0 <= ci_hi
-    print(f"\n=== {label} vs apply_hncs (n={n}) ===")
-    print(f"평균 apply_hncs ΔE00={mean_hncs:.3f}  평균 {label} ΔE00={mean_other:.3f}  "
+    print(f"\n=== {label} vs {baseline_label} (n={n}) ===")
+    print(f"평균 {baseline_label} ΔE00={mean_hncs:.3f}  평균 {label} ΔE00={mean_other:.3f}  "
           f"개선폭={improvement_pct:+.2f}%")
     print(f"승/패={wins}/{losses}  부호검정 p={p:.4f}")
     print(f"부트스트랩 95% CI(평균차)=[{ci_lo:+.3f}, {ci_hi:+.3f}]")
     print("판정: 보류 (CI가 0 포함)" if inconclusive else
-          f"판정: {'구조실험 우세' if improvement_pct > 0 else 'apply_hncs 우세'}")
+          f"판정: {label + ' 우세' if improvement_pct > 0 else baseline_label + ' 우세'}")
 
 
 def main():
-    per_fold_hard, per_fold_blend, per_fold_hncs = run_kfold()
+    per_fold_hard, per_fold_hard4, per_fold_blend, per_fold_hncs = run_kfold()
 
     hncs_des = [row[2] for row in per_fold_hncs]
     hard_des = [row[2] for row in per_fold_hard]
+    hard4_des = [row[2] for row in per_fold_hard4]
     blend_des = [row[2] for row in per_fold_blend]
 
     print("\n=== 표본별 상세 ===")
     for i in range(len(hncs_des)):
-        print(f"  {per_fold_hncs[i][0]:20s} ({per_fold_hncs[i][1]:10s})  "
-              f"hncs={hncs_des[i]:6.3f}  hard={hard_des[i]:6.3f}  blend={blend_des[i]:6.3f}")
+        print(f"  {per_fold_hncs[i][0]:20s} ({per_fold_hncs[i][1]:10s}/{per_fold_hard4[i][1]:9s})  "
+              f"hncs={hncs_des[i]:6.3f}  hard2={hard_des[i]:6.3f}  hard4={hard4_des[i]:6.3f}  "
+              f"blend={blend_des[i]:6.3f}")
 
-    summarize(hncs_des, hard_des, "하드클러스터")
+    summarize(hncs_des, hard_des, "2클러스터하드")
+    summarize(hncs_des, hard4_des, "4클러스터하드")
     summarize(hncs_des, blend_des, "블렌딩")
-    summarize(hard_des, blend_des, "블렌딩(vs 하드클러스터)")
+    summarize(hard_des, hard4_des, "4클러스터", baseline_label="2클러스터하드")
+    summarize(hard_des, blend_des, "블렌딩", baseline_label="2클러스터하드")
 
 
 if __name__ == "__main__":

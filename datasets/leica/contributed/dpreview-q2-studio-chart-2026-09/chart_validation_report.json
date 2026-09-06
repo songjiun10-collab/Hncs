@@ -1,0 +1,43 @@
+{
+  "brand": "leica",
+  "camera": "Leica Q2",
+  "n_images": 21,
+  "n_failed_detect": 1,
+  "images": [
+    "q2_536747.dng",
+    "q2_536749.dng",
+    "q2_536751.dng",
+    "q2_536753.dng",
+    "q2_536755.dng",
+    "q2_536757.dng",
+    "q2_536759.dng",
+    "q2_536761.dng",
+    "q2_536763.dng",
+    "q2_536765.dng",
+    "q2_536769.dng",
+    "q2_536771.dng",
+    "q2_536773.dng",
+    "q2_536775.dng",
+    "q2_536777.dng",
+    "q2_536779.dng",
+    "q2_536781.dng",
+    "q2_536783.dng",
+    "q2_536785.dng",
+    "q2_536787.dng",
+    "q2_536789.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 26.981750619101625,
+  "delta_e00_cv_mean": 12.001593709620272,
+  "delta_e00_improvement_pct": 55.519588483914795,
+  "delta_e00_bootstrap_ci95": [
+    12.392220342508551,
+    17.610720433973995
+  ],
+  "wins": 21,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.20965079054662675,
+  "rmse_xyz_cv_mean": 0.08295021236245928,
+  "rmse_xyz_improvement_pct": 60.43410466224262
+}

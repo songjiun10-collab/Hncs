@@ -448,8 +448,30 @@ def apply_pro_neg_hi_video_frame(img_bgr, sat_mult=1.10, contrast_n=1.7):
 
 # ==========================================
 # 11. Provia/Standard (기본 필름모드) - raw+jpeg 페어 실측 검증됨(2026-08, GFX100RF n=38/X-T30 III n=20)
+# clahe_clip=3.0은 2026-08 shoulder_start x clahe_clip 합동 재검증
+# (tools/evaluate_all_brands_clahe_shoulder_grid.py, GFX100RF n=38, +6.96%,
+# p=0.0139, CI [+0.520,+1.366] 0 미포함, 38/38 만장일치)으로 1.25에서
+# 갱신 - docs/measurements.md 참고.
+# 갱신(2026-08, 표본 확장 + 원본 픽셀 재확인): GFX100RF 표본이 dpreview
+# pre-production 갤러리에서 63쌍 늘어 n=89(Provia 프레임만) - 저해상도
+# LOO 재검증 89/89 폴드 만장일치로 clahe_clip=3.0 재확인(개선폭 0.00%,
+# 이미 최적). CLAHE가 해상도에 민감하다는 별도 발견(hncs_structural
+# 재검증) 이후 원본 픽셀(max_dim=3000)로도 clip=1.25 vs 3.0 직접
+# 재대결 - +4.30%, 60승29패, p=0.0013, CI [+0.381,+0.926] 0 미포함,
+# clip=3.0 우세 확정(tools/evaluate_clahe_clip_native_confirm.py).
+# 바디별 분해 재확인(2026-09-02, Canon/Sony 조사와 같은 질문):
+# tools/breakdown_fuji_provia_by_camera_body.py로 GFX100RF(89)/X-T30
+# III(20)/GFX50S II(10) 세 바디에 지금 함수를 그대로 돌려봄. GFX100RF
+# 평균 ΔE00=13.910은 위 이력대로 이미 자기 89쌍으로 셀프튜닝된 상태라
+# 더 짜낼 여지가 없고, X-T30 III(9.513)는 오히려 유의미하게 더
+# 좋음(부트스트랩 CI [-6.230,-2.514] vs GFX100RF, 0 미포함 - Canon/Sony
+# 조사와 반대로 "나쁜 쪽"이 이미 최적화된 다수표본이라 손댈 게 없는
+# 경우). GFX50S II(13.258)는 Provia 모드 표본이 10장뿐이라(그 바디의
+# 나머지 171쌍은 Classic Chrome 등 다른 필름모드) GFX100RF 대비 CI
+# [-1.885,+0.553]로 판정 보류 - 표본 확장 없인 더 못 본다. 전용 함수
+# 신설 근거 없음, 여기서 종결.
 # ==========================================
-def apply_provia(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=1.25):
+def apply_provia(img_bgr, toe_lift=0.0, shoulder_start=0.82, white_point=1.0, clahe_clip=3.0):
     img = ensure_uint8(img_bgr)
     lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)

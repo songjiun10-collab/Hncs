@@ -2287,3 +2287,2540 @@ Canon 캘리브레이션 도중(4-fold CV 진행 중) 중단. Canon/Sony/Nikon/S
 배선은 별도 결정. 재현:
 `~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.calibrate_profile_fuji`
 (약 2시간 40분).
+
+## 해셀블라드 재보정 시도 - 공식+기여 487쌍 전체 (2026-08, 게이트 미통과)
+
+이번 세션에 새로 확보된 기여 데이터(local-work-2026-08 165쌍 +
+xcd-lenses-2026-08 145쌍 + x1d-x2d100c-restore-2026-08 164쌍 = 474쌍)를
+공식 13쌍에 더해 총 487쌍으로 `hybrid_engine/recalibrate_full_contributed.py`
+(신설 - `recalibrate.py`의 `--cache-dir`가 `raw_calib_cache/` 평면 구조만
+받아서, `datasets/hasselblad/contributed/*/manifest.csv` 구조 여러 세트를
+합쳐 넣는 로더만 새로 짜고 게이트/통계 로직은 `recalibrate.py`의
+`decide_and_maybe_write()` 그대로 재사용)로 dry-run 재보정.
+
+| | ΔE00 |
+|---|---|
+| 기존 hasselblad.json (487쌍 풀 대상 측정) | 14.379 |
+| 487쌍으로 매트릭스+톤/색 재학습 (4-fold CV) | 14.365 |
+| 개선폭 | +0.1% (게이트 기준 5% 미달) |
+
+**게이트 미통과 - 프로필 갱신 안 함.**
+
+**주목할 점**: 기존 프로필은 원래 15쌍 벤치마크에서 ΔE 8.859(profile
+`_comment` 참고)인데, 이 487쌍 확장 풀에서는 14.379로 훨씬 나쁘다 -
+기존 프로필이 좁은 큐레이션된 벤치마크에는 잘 맞지만 다양한 실사진
+(여러 조명/장면/세대 뒤섞인 기여 데이터)엔 일반화가 덜 됐다는 뜻.
+근데 그 넓은 풀로 재학습해도 14.365로 사실상 그대로다 - **데이터
+양을 늘리는 것만으로는 이 문제가 안 풀린다.** 원인은 아직 특정 안 됨
+(다음 항목: 바디별 분해).
+
+**결론**: 측정만 함, `hasselblad.json` 안 건드림(dry-run, `--write` 안
+줌). 재현: `~/.hncs-hybrid-venv312/bin/python3 -m
+hybrid_engine.recalibrate_full_contributed` (487쌍, 약 16분).
+
+## 세대별 분해 - X2D II 100C만 이상치 (2026-08)
+
+`hybrid_engine/breakdown_by_generation.py`(신설, 새 매트릭스 학습 없이
+현재 배포된 hasselblad.json 그대로 페어별 ΔE00을 계산해서
+`tools.calibrate._generation_for()` 세대 라벨로 묶음)로 487쌍 풀을
+쪼개봤다:
+
+| 세대 | n | 평균 ΔE00 |
+|---|---|---|
+| X2D II 100C | 147 | 21.521 |
+| X1D II 50C | 38 | 13.568 |
+| X1D | 122 | 12.541 |
+| CFV 100C/907X | 29 | 11.796 |
+| Hasselblad X1D-50c | 20 | 10.240 |
+| X2D 100C | 117 | 9.579 |
+| 공식(raw_calib_cache) | 13 | 8.558 |
+
+X2D II 100C(가장 표본 큰 세대, 147/487=30%)만 나머지(9~14대)와 완전히
+다르다 - 위 487쌍 풀 재보정이 게이트를 통과 못 한 건 이 세대의 개선분이
+다른 세대와 상쇄됐기 때문일 가능성이 높다는 가설이 섬.
+
+**X2D II 100C 전용 재보정** (`hybrid_engine/recalibrate_x2dii100c.py`
+신설, 이후 임의 세대를 받는 `recalibrate_by_generation.py`로 일반화):
+147쌍만 떼서 4-fold CV 재보정 - **게이트 통과**: ΔE00 21.521 -> 20.272
+(+5.8%). dry-run만 실행, `--write` 안 함 - 이 결과를 그대로
+`assets/profiles/hasselblad.json`(전 세대 공유 프로필)에 쓰면 이미
+괜찮은 다른 5세대가 나빠질 위험이 있어서, 쓰기 전에 교차세대 검증이나
+바디별 분기(`brands/hasselblad_x2dii.py`처럼) 필요 - 아직 안 함.
+
+**ColorChecker 챠트로 직접 검증** (`hybrid_engine/verify_x2dii_chart.py`
+신설) - `kmichels-x2dii-2026-07` 챠트 세트가 로컬에서 사라진 걸 발견해서
+원 소유자의 구글 드라이브 백업에서 1쌍(B_31325) 복구 후 진짜
+분광측정 참조값(colour-science 내장 ColorChecker24) 대비 24패치 ΔE00
+직접 비교:
+
+| | 패치별 ΔE00 평균 |
+|---|---|
+| 매트릭스 없음(rawpy 기본 디코드) | 6.290 |
+| **현재 배포된 hasselblad.json 매트릭스 적용** | **13.643** |
+
+**현재 배포 매트릭스가 아무것도 안 하는 것보다 -116.9% 더 나쁘다.**
+X2D II 100C 이상치의 진짜 원인이 확인됐다 - 단순히 "재학습하면 5.8%
+개선되는" 수준이 아니라 **현재 매트릭스의 방향 자체가 이 바디에
+안 맞는다.**
+
+> **정정(2026-08-14, 매트릭스 적용 코드 재검토 중 발견)**: 위
+> `verify_x2dii_chart.py` 첫 실행은 `linear @ matrix.T`(전치)로
+> 매트릭스를 적용했는데, 실제 프로덕션 코드
+> (`hybrid_engine/core/raw_baseline.py`의 `apply_color_matrix`,
+> `hybrid_engine/pipeline/engine.py`가 그대로 호출)는 `features @
+> matrix`로 **전치 없이** 적용한다 - 3x3 매트릭스는 일반적으로 대칭이
+> 아니라서 전치 여부가 결과를 바꾼다. 버그 수정 후 재실행:
+>
+> | | 패치별 ΔE00 평균 |
+> |---|---|
+> | 매트릭스 없음(rawpy 기본 디코드) | 6.290 |
+> | 현재 배포된 hasselblad.json 매트릭스(정정) | 9.128 ~ 10.786 |
+> | **챠트 24패치 직접 최소자승 피팅한 새 매트릭스** | **2.318** |
+>
+> (`hybrid_engine/fit_matrix_from_chart.py` 신설 - 같은 24패치 샘플에
+> 세 조건을 전부 적용해서 파이프라인 순서 차이로 인한 오차를 없앤
+> 쪽의 수치가 더 신뢰도 높음, `verify_x2dii_chart.py`는 매트릭스 적용
+> 전/후 각각 따로 챠트를 재검출해서 약간 다른 24패치 위치를 쓸 수
+> 있어 참고용). 결론 자체(현재 배포 매트릭스가 rawpy 기본보다도
+> 나쁘다)는 안 바뀌지만 악화폭은 애초 보고한 -116.9%보다는 작다
+> (~-45%~-71%). **더 중요한 새 발견**: 챠트에서 직접 피팅한 매트릭스는
+> 2.318로 rawpy 기본(6.290)보다도 **훨씬 낫다** - raw+jpeg 페어 기반
+> 재보정(+5.8%, 위 게이트 통과분)보다 챠트 직접 피팅이 명백히 더
+> 나은 해법이라는 게 챠트 1장(24패치, 3x3 매트릭스 9개 미지수 피팅에
+> 이미 과결정이라 10장 다 필요 없다는 판단)만으로 확인됨.
+
+**결론**: 전부 측정만 함, `hasselblad.json` 안 건드림. 재현:
+`~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.breakdown_by_generation`,
+`... recalibrate_by_generation --generation "X2D II 100C"`,
+`... verify_x2dii_chart`, `... fit_matrix_from_chart`.
+
+## 깃허브 이슈 #4 / docs/measurements.md와 동기화 - 같은 문제가 이미 배포 파이프라인에서 해결돼 있었음 (2026-08)
+
+위 세 절(487쌍 재보정, 세대별 분해, 챠트 직접 피팅)을 진행하던 도중
+사용자가 "이미 특정 바디는 피팅 완료"라고 지적해서 깃허브 이슈 #4와
+`docs/measurements.md`/`datasets/hasselblad/contributed/README.md`를
+확인했다 - X2D II 100C가 세대 이상치라는 이 절의 핵심 발견과 정확히
+같은 문제가 이미 **다른 파이프라인**(`brands/hasselblad_x2dii.py`,
+`hasselblad.json`이 아니라 `apply_hncs()`의 별도 실험 변형)에서 훨씬
+엄밀하게 조사되고 배포까지 끝나 있었다:
+
+- kmichels 챠트 10장 최소자승 매트릭스(ΔE00 7.58→2.78, CV 검증)는 이미
+  이슈 #4에서 끝난 얘기 - 이 절의 `fit_matrix_from_chart.py`/
+  `verify_historical_chart_matrix.py`가 다시 낸 2.318/3.684 등은
+  전부 기존 결론 재확인일 뿐 새 발견이 아니었음
+- 그중 2장을 X1D 13쌍에 풀링 + Gray World→Gray Edge 스왑 조합이
+  `hasselblad.json` v1.3으로 이미 배포됨(+11.1%)
+- **X2D II 실사진(dpreview, 41→70쌍) 기준 세대별 그리드서치 → ΔE00
+  직접 목적함수로 정정 → `apply_hncs_x2dii()` 최종 채택**
+  (exposure_gamma=0.6, toe_lift=0.02, shoulder_start=0.58,
+  white_point=0.95, 원본 픽셀 ΔE00 기준 **+12.99%, 61승9패, p<0.0001**,
+  이미 커밋됨: `b4c2d91`~`7b065a9`) - 3x3 매트릭스는 실사진 41장 자체로
+  재피팅해도 기각(공간색 왜곡이 아니라 톤/노출이 원인)까지 이미 확인됨
+
+이 절의 hybrid_engine 작업(`hasselblad.json`, cross-camera 변환용
+프로필)은 `brands/hasselblad_x2dii.py`(단일 카메라 JPEG-룩 근사용
+`apply_hncs`)와 **다른 목적의 별개 아티팩트**라 완전히 중복은 아니지만,
+같은 질문("X2D II 100C가 왜 이상치인가", "매트릭스로 고쳐지는가")을
+훨씬 적은 데이터·약한 방법론으로 다시 풀고 있었던 건 맞다. 사용자
+지시("동기화 ㄱㄱ")에 따라 폐기하지 않고 hybrid_engine 자체 파이프라인
+기준으로 결론을 마저 내되, 위 배포된 해법이 이미 있다는 걸 명시하고
+넘어간다.
+
+## 데이터 무결성 버그 - local-work-2026-08/x1d-x2d100c-restore-2026-08 중복 (2026-08)
+
+위 동기화 과정에서 `verify_x2dii_tone_only.py`가 낸 "최악 5장" 목록에
+같은 파일명이 두 번씩 찍히는 걸 사용자가 지적("이상함요")해서 조사했다.
+
+**원인**: `datasets/hasselblad/contributed/local-work-2026-08/`(165쌍,
+manifest에 "local (owner personal library)"로 표기)와
+`x1d-x2d100c-restore-2026-08/`(164쌍, dpreview에서 재다운로드한 것으로
+이미 알려짐)가 **파일명 기준 109개 겹침** - dpreview 원본 파일명은
+사실상 랜덤 10자리라 우연일 수 없어서 겹치는 109개 전부 MD5로
+대조했더니 **109/109 바이트 단위로 완전히 동일**했다. 즉
+`local-work-2026-08`의 "개인 라이브러리" 표기 중 최소 109장은 실제로는
+`x1d-x2d100c-restore-2026-08`와 같은 dpreview 원본의 중복 수집 -
+`local-mixed-2026-07`이 "개인 라이브러리"로 적혀 있었지만 실은 dpreview
+전량이었던 것과 완전히 같은 패턴([[project-hasselblad-data-loss-recovery]]
+메모리 참고). 다른 세트(`xcd-lenses-2026-08`)와는 겹침 0건 확인.
+
+**영향 범위**: `tools.calibrate.collect_local_pairs()`를 쓰는 모든
+hybrid_engine 스크립트(이 문서의 487쌍 재보정, 세대별 분해, X2D II
+전용 재보정/검증 전부)가 중복 사진을 최대 2번씩 세고 있었다. X2D II
+100C는 local-work 73 + restore 74 = 147이 거의 완전히 겹쳐서 실제로는
+**~74장짜리 풀이 147로 부풀려진** 상태였다 - n이 부풀면 부트스트랩
+CI·부호검정의 독립표본 가정이 깨져 통계 자체가 무효해진다(`hybrid_engine/CLAUDE.md`
+"통계 - 비타협" 원칙 직결). **다행히 이미 배포된 `apply_hncs_x2dii()`는
+완전히 다른 데이터 소스(`/Users/songjiun/Documents/raw pair` +
+`datasets/hasselblad/dpreview_raw_jpeg_pairs_clean.csv`, `collect_local_pairs()`
+미사용)를 써서 이 버그와 무관함을 확인했다.
+
+**수정**: `tools/calibrate.py`의 `collect_local_pairs()`에 `filename_raw`
+기준 dedup 추가(정렬 순서상 먼저 나오는 세트가 우선 - `local-work-2026-08`
+< `x1d-x2d100c-restore-2026-08` 알파벳순이라 `local-work` 쪽이 유지됨).
+`tests.test_calibrate` 26개 전부 통과 확인. 부수적으로 이 김에
+`collect_local_pairs()`가 돌려주는 dict에 `scene_type` 필드도 추가하고
+(전엔 없었음) `breakdown_by_generation.py`/`recalibrate_x2dii100c.py`/
+`recalibrate_by_generation.py`/`verify_chart_matrix_on_photos.py`/
+`verify_x2dii_tone_only.py`에서 `scene_type == "chart"`(kmichels 챠트
+1장)를 "실사진" 풀에서 제외하도록 고쳤다 - 이것도 별개의 작은 혼입
+버그였다(챠트 1장이 껴서 147이 아니라 148로 잡히던 것).
+
+**dedup 후 재실행 - 결론은 안 바뀜, n만 정정됨**:
+
+| | dedup 전 | dedup 후 |
+|---|---|---|
+| 전체 풀(공식+기여) | 487쌍 | 378쌍 |
+| X2D II 100C | 147(챠트 혼입 시 148) | **74** |
+| X2D 100C | 117 | 82 |
+| X1D | 122 | 121 |
+| X1D II 50C | 38 | 38(변화 없음) |
+| CFV 100C/907X | 29 | 29(변화 없음) |
+| Hasselblad X1D-50c | 20 | 20(변화 없음) |
+
+세대별 ΔE00(기존 hasselblad.json 기준, dedup 후):
+
+| 세대 | n | 평균 ΔE00 |
+|---|---|---|
+| X2D II 100C | 74 | 21.560 |
+| X1D II 50C | 38 | 13.568 |
+| X1D | 121 | 12.535 |
+| CFV 100C/907X | 29 | 11.796 |
+| Hasselblad X1D-50c | 20 | 10.240 |
+| X2D 100C | 82 | 9.117 |
+| 공식(raw_calib_cache) | 13 | 8.558 |
+
+X2D II 100C가 여전히(그리고 압도적으로) 이상치라는 핵심 결론은 dedup
+전후 동일 - 중복 제거해도 평균은 21.521→21.560으로 거의 안 움직였다
+(중복이 평균을 왜곡하진 않았음, n의 신뢰도만 문제였음).
+
+**dedup된 74쌍으로 나머지 실험 재확인**:
+
+| 실험 | dedup 전 | dedup 후(74쌍) |
+|---|---|---|
+| 챠트 매트릭스를 실사진에 적용 | 21.521→21.429(+0.1%, 148쌍/챠트혼입) → 21.521→21.487(+0.2%, 147쌍) | 21.560→21.528 (**+0.1%**) |
+| 매트릭스 고정+톤/채도만 재학습(4-fold CV) | 21.521→20.735(+3.7%, 챠트혼입 148쌍) | 21.560→20.795 (**+3.5%**) |
+| 매트릭스+톤/채도 재학습(4-fold CV, `recalibrate_x2dii100c.py`) | 21.521→20.272(+5.8%, 게이트 통과) | 21.560→20.319 (**+5.8%, 게이트 통과 유지**) |
+
+세 실험 다 방향과 크기가 dedup 전후로 거의 안 바뀌었다 - **결론
+자체는 견고했다**(중복이 점추정을 왜곡하진 않음), 다만 n=147을
+n=74로 정정한 것 자체가 통계적 타당성 확보를 위해 필요했다.
+
+**최종 결론 (hybrid_engine 자체 파이프라인 기준)**: 챠트 매트릭스는
+실사진에 거의 무의미(+0.1~0.2%), 매트릭스+톤/채도 재학습이 게이트를
+통과(+5.8%, `recalibrate_x2dii100c.py --write`로 반영 가능한 상태) -
+하지만 위 "깃허브 이슈 #4 동기화" 절에서 확인했듯 **더 엄밀한
+방법론(ΔE00 직접 목적함수, dpreview 74쌍, LOO)으로 이미 같은 결론이
+났고 브랜드별 아티팩트(`apply_hncs_x2dii()`, +12.99%)로 배포까지
+끝났다**. hybrid_engine 자체의 `hasselblad.json`은 이번 세션에서
+`--write` 없이 dry-run만 유지 - 다른 5세대와 공유하는 프로필이라 쓰기
+전 교차세대 검증/바디별 분기가 필요하다는 이전 판단(위 "세대별 분해"
+절)도 그대로 유효.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m
+hybrid_engine.breakdown_by_generation`, `... recalibrate_x2dii100c`,
+`... verify_chart_matrix_on_photos`, `... verify_x2dii_tone_only`
+(dedup 반영판, `python3 -m unittest tests.test_calibrate`로 dedup
+로직 회귀 확인 가능).
+
+## 공식 13쌍 잔차 L-채널 보정 시도 - 배포 가능한 방법 전부 무효 (2026-09)
+
+**출처 표기**: 이 절의 수치는 이 세션 안에서 직접 재현하지 않고
+사용자가 별도로 돌린 Codex 조사 결과를 그대로 옮겨 적은 것이다 -
+코드/파이프라인을 직접 읽거나 재실행해서 확인하지 않았다는 뜻. 다만
+결론(오라클과 배포가능 방법의 괴리)은 이 문서가 이미 여러 번 확인한
+패턴과 정확히 일치하고, 어차피 `hasselblad.json`을 안 건드리는
+방향이라 위험이 없어 그대로 기록한다.
+
+배포된 `hasselblad.json`(v1.3)이 공식 13쌍(`raw_calib_cache`)에서 내는
+현재 ΔE00 8.558(위 "세대별 분해" 절 표 참고)을 기준으로, 잔차의
+L/C/H 성분 분해(L 55% / C 28% / H 17% - 잔차 대부분이 밝기 쪽)를 보고
+L-채널만 추가로 정렬하는 몇 가지 방법을 시도:
+
+| 방법 | ΔE00 | 개선폭 | 배포 가능? |
+|---|---|---|---|
+| 페어별 L 오프셋 정렬(오라클) | 7.665 | -10.4% | 아니오 - 정답(타깃)을 알아야 계산됨 |
+| affine(게인+오프셋) 정렬(오라클) | 7.161 | -16.3% | 아니오 - 이론적 상한선일 뿐 |
+| 전역 median 매핑 | 13.649 | **+59% 악화** | 시도했으나 무효 |
+| LOO 고정 오프셋(과적합 방지 설계) | 8.728 | +2.0% 악화 | 시도했으나 무효 |
+
+raw EXIF 노출 정보(ISO/셔터/조리개)가 전부 None이라 노출 기반 보정
+경로도 막혀있었다.
+
+**결론**: 오라클(정답을 알고 페어별로 맞춘) 상한선은 -16.3%까지
+보이지만, 실제 배포 가능한 방법(전역 매핑/LOO 고정값) 어느 것도
+개선을 못 내고 오히려 악화시켰다 - 이 문서의 Gray World 존별 실험,
+X2D II 챠트 방향 버그 등과 같은 "오라클 신호는 과적합 노이즈였다"
+패턴. `hasselblad.json`은 이 조사로 바뀌지 않는다.
+
+> **정정(2026-09-01, 직접 재현 검증)**: 사용자가 "이제 증명해라"라고
+> 지시해서 위 수치를 이 프로젝트의 실제 코드/데이터로 직접 재현했다
+> (`hybrid_engine/verify_l_channel_residual.py`, 신규 -
+> `~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.verify_l_channel_residual`).
+> `HybridCameraEngine`으로 공식 13쌍을 실제로 돌려서 Lab을 뽑고,
+> `intermediate_attributes_CIE2000()`으로 L/C/H 성분과 페어별 L*
+> 오프셋(=최소자승 최적값, `mean(target_L) - mean(pred_L)`)을 직접 계산:
+>
+> | 항목 | 재현값 | 위에 기록된 값 |
+> |---|---|---|
+> | 기준 ΔE00 | **8.558** | 8.558 (정확히 일치) |
+> | L/C/H 성분 분해 | L 43% / C 37% / H 20% | L 55% / C 28% / H 17% (다름 - 정규화/가중 방식 차이로 추정, 큰 항이 L이라는 순서는 같음) |
+> | 페어별 L 오프셋(오라클) | 7.692 (-10.1%) | 7.665 (-10.4%, 근사 일치) |
+> | affine 정렬(오라클) | 7.192 (-16.0%) | 7.161 (-16.3%, 근사 일치) |
+> | **전역 median 오프셋 매핑** | **8.544 (-0.2%, 사실상 무변화)** | **13.649 (+59% 악화)** |
+> | **LOO 고정 오프셋** | **8.570 (+0.1%, 사실상 무변화)** | **8.728 (+2.0% 악화)** |
+>
+> 오라클 상한선(항목 2·3)은 근사 일치하지만, **"배포 가능한 방법이
+> 실제로 악화시킨다"는 핵심 주장은 이 재현에서 재현되지 않는다** -
+> "L* 상수 오프셋"으로 정의한 전역 median/LOO 방법은 개선도 악화도
+> 아닌 통계적 잡음 수준(13쌍 표본에서 ±0.2%p)이었다. Codex 쪽 "전역
+> median 매핑"이 상수 오프셋이 아니라 다른 연산(예: 모든 픽셀의 L을
+> 단일 median 값으로 통째로 대체하는 등 분산을 없애는 조작)이었을
+> 가능성이 있으나 정확한 정의를 확인할 수 없어 추정으로 남긴다.
+> **바뀌지 않는 결론**: 이 프로젝트 코드로 정의한 어떤 배포 가능한
+> L-채널 보정도 유의미한 개선을 내지 못했고, `hasselblad.json`은
+> 여전히 안 건드린다 - 원래 결론은 유지되지만 그 근거(+59% 악화라는
+> 극적인 실패 사례)는 이 재현으로 뒷받침되지 않는다는 걸 밝혀둔다.
+
+> **추가 발견(2026-09-01, 사용자 지적 "편집됨요") - 공식 13쌍 중 9쌍이
+> 실제로 편집됨**: 위 재현 중 페어별 Software EXIF를 찍어보니
+> `raw_calib_cache/`의 공식 13쌍 중 **9쌍(69%)이 Adobe Photoshop/
+> Lightroom Classic Software 태그를 달고 있었다** - 진짜 카메라 SOOC
+> JPEG가 아니라 사람이 편집한 렌더였다는 뜻. 이슈 #4 이후
+> `tools/analyze.py`(population-fit 파이프라인)엔 `_check_genuine_bytes()`
+> 편집 필터가 생겼지만, hybrid_engine의 `calibrate_profile.py`/
+> `raw_calib_cache`는 **v1.1부터 지금까지 이 필터를 한 번도 적용받은
+> 적이 없다** - 이 문서 전체의 v1.1/v1.2/v1.3 캘리브레이션 역사가
+> 그동안 카메라 색감이 아니라 "카메라+사람 편집이 섞인 무언가"에
+> 맞춰져 왔다는 뜻이다(위 2025행 "local-mixed-2026-07... 공식 13쌍과
+> 달리"가 이미 이 갭을 명시적으로 알고 있었음).
+>
+> | 그룹 | n | 평균 ΔE00 |
+> |---|---|---|
+> | clean(편집 흔적 없음) | 4 | **9.885** |
+> | edited(Photoshop/Lightroom) | 9 | 7.968 |
+> | 전체(현재 "8.558"의 근거) | 13 | 8.558 |
+>
+> **반전 발견**: 편집본을 빼면 숫자가 좋아질 거라 예상했는데
+> **오히려 나빠진다**(8.558 -> 9.885, clean 4쌍 기준). 편집된 사진이
+> 사람 손을 거치며 더 "무난한" 색으로 정리돼서 오히려 정적 프로필이
+> 맞추기 쉬웠던 것으로 추정(추정일 뿐, 확인 안 됨 - 표본이 clean 4/
+> edited 9로 너무 작고 불균형해서 통계적 검정은 의미 없음). **방법론
+> 오염은 실재하지만("카메라 JPEG를 근사한다"는 목표 자체가 69%
+> 표본에서 깨져 있었음), 숫자를 "고치는" 방향이 명확하지 않다** -
+> clean 4쌍만으로 재보정하면 표본이 너무 작아 오히려 새로운 과적합
+> 위험이 크다. `hasselblad.json`(Never 규칙 대상)은 이 발견으로도
+> 안 건드린다 - 재보정하려면 최소한 clean 표본을 더 모아야 한다.
+> 재현: `hybrid_engine/verify_l_channel_residual.py`의 페어별 출력
+> (Software EXIF 컬럼 추가됨).
+
+> **정정(2026-09-01, 코드 리뷰 지적 반영) - `_find_pairs()` 필터 누락은
+> 이미 tools/calibrate.py에 있던 걸 그냥 안 갖다 쓴 것이었다**: 코드
+> 리뷰에서 `tools/calibrate.py`가 이미 이 정확한 9쌍을
+> `_CONTAMINATED_OFFICIAL_PAIRS`로 걸러내고(`_resolve_pairs()`, 테스트
+> `test_contaminated_official_pairs_excluded`까지 있음) 있는데,
+> `hybrid_engine/calibrate_profile.py`의 `_find_pairs()`는 이 목록을
+> 한 번도 참조하지 않았다는 걸 지적받았다 - 직접 대조해서 확인, 정확히
+> 같은 9개 파일명이었다. 같은 "공식 13쌍" 소스를 다루는 두 파이프라인이
+> 서로 다른 무결성 기준을 쓰고 있었던 것.
+>
+> **수정**: `_find_pairs()`가 이제 `tools.calibrate._CONTAMINATED_OFFICIAL_PAIRS`를
+> 그대로 재사용해서 필터링한다(목록 중복 관리 안 함). 회귀 테스트
+> `tests/test_hybrid_engine.py::TestFindPairsExcludesContaminated` 추가
+> (`~/.hncs-hybrid-venv312/bin/python3 -m unittest tests.test_hybrid_engine`
+> 82/82 통과). 필터 적용 후 clean 4쌍으로 실제 재확인:
+>
+> ```
+> filtered = _find_pairs()  # -> 00378/02709/x1d-ii-xcd45p-01/02, 정확히 4개
+> _mean_loss(hasselblad.json, _load_calib_set())  # -> 9.885
+> ```
+>
+> 위 표의 clean 4쌍 수치(9.885)와 정확히 일치 - 별도 스크립트 없이도
+> 표준 파이프라인(`_load_calib_set()`)이 이제 clean 데이터만 본다.
+> **`hasselblad.json` 자체는 여전히 안 건드림**(Never 규칙) - 이 수정은
+> "앞으로 이 함수를 쓰는 모든 측정/재보정이 오염 없이 시작한다"는
+> 뜻이지, 지금 배포된 프로필을 재보정했다는 뜻이 아니다. 재보정하려면
+> 여전히 clean 표본(4장)을 늘리는 게 먼저이고, 그건 별도 승인 필요한
+> 작업으로 남겨둔다.
+
+> **후속(2026-09-01) - "공식+기여 487쌍" 재보정을 clean 372쌍으로 재실행,
+> 결론 불변.** 이 절 전체는 부트스트랩 CI가 아니라 `recalibrate.py`의
+> `decide_and_maybe_write()` 4-fold CV 개선폭 게이트(5% 이상이어야
+> 통과, 이 문서의 다른 `recalibrate*` 실험 전부와 동일 방법론)로
+> 판정한다 - 위 "해셀블라드 재보정 시도 - 공식+기여 487쌍" 절(487쌍
+> 기준 CV 게이트 개선폭 +0.1%, 미통과)은 이번 세션의 dedup 버그(109쌍
+> 중복)와 공식 13쌍 오염(9쌍)이 안 고쳐진 채 나온 CV 게이트 결과였다.
+> 둘 다 고친 뒤(위 두 정정) 진짜 페어 수는 372쌍(공식 4 + 기여 368,
+> 챠트 1장도 이번에 `recalibrate_full_contributed.py`에서 추가로
+> 제외함 - 같은 이유로 여기도 안 걸러지고 있었음)이고, 사용자 지시로
+> `CALIB_MAX_DIM`을 500->250으로 낮춰(372쌍 4-fold CV가 500px에서
+> 50분+ 걸려 완료 전에 중단, 250px로는 정상 완료) 재실행한 CV 게이트
+> 결과는 기존 hasselblad.json이 clean 372쌍 대상 CV 게이트 기준
+> ΔE00=13.330, 372쌍으로 재학습한 CV 게이트 결과는 ΔE00=13.436으로
+> CV 게이트 개선폭 -0.8%(오히려 악화, 부트스트랩 CI 없이 CV 게이트
+> 고정 임계값 5% 기준으로만 판정해도 명백히 미달)다. **CV 게이트
+> 미통과 - 프로필 갱신 안 함(dry-run, `--write` 안 줌, 실행 로그에서
+> 직접 확인).** 기존 프로필의 CV 게이트 측정치 자체는 데이터 정리만으로
+> 14.379에서 13.330으로 좋아졌다(중복/오염 페어가 CV 게이트 숫자를
+> 부풀리고 있었다는 뜻) - 하지만 정리된 데이터로 재학습해도 CV 게이트
+> 기준 개선은커녕 근소하게 나빠진다. "데이터 양을 늘리는 것만으로는 이
+> 문제가 안 풀린다"는 원래 결론이 데이터 품질까지 정리한 뒤에도 CV
+> 게이트로 그대로 재확인됨 - 원인은 데이터 오염이 아니라 이 프로필
+> 표현 형태(normalizer/tone_core/color_core 고정 파라미터 셋)가 이렇게
+> 다양한 세대/장면을 가진 372쌍 전역에 안 맞는다는 구조적 한계 쪽에
+> 더 가깝다. 재현: `~/.hncs-hybrid-venv312/bin/python3 -m
+> hybrid_engine.recalibrate_full_contributed` (372쌍,
+> `CALIB_MAX_DIM=250` 기준 약 15분, CV 게이트 판정 로그 그대로 출력됨).
+
+## DCP 챠트 매트릭스 - 무채색 패치 가중치 낮춰서 재피팅, 사용자 승인 채택 (2026-09-01)
+
+**챠트 데이터 복구부터**: `kmichels-x2dii-2026-07` 챠트 세트가
+로컬에서 유실돼 B_31325 1장만 남아있던 걸(2026-08 세션 기록), 커밋된
+`manifest.csv`에 남아있던 개별 구글 드라이브 URL로 나머지 8장을
+`tools/recover_kmichels_x2dii_chart.py` 실행으로 재다운로드해 9/10장
+복구했다(실행 확인됨). B_31334는 애초에 manifest.csv에 URL 기록이
+없어서(`git log` 확인) 복구 불가.
+
+**가중치 탐색**: `raw_baseline.fit_color_matrix()`가 이미 지원하는
+patch별 가중 최소자승(`weights=`)으로 무채색 6패치(index 18-23)의
+가중치를 낮추면 어떻게 되는지 `tools/evaluate_dcp_weighted_patches.py`
+실행으로 9장 leave-one-image-out 교차검증했다(실행 확인됨). 표본이
+9장뿐이라 `tools/evaluate_dcp_weighted_patches.py` 실행에서 부트스트랩
+CI(신뢰구간)는 안 냈다. 대신 `tools/evaluate_dcp_weighted_patches.py`
+실행으로 가중치를 1.5x부터 20x까지 스윕해서 단조 곡선인지를
+신호/노이즈 판정 기준으로 삼았다(부트스트랩 CI 없음).
+
+`tools/evaluate_dcp_weighted_patches.py` 실행 로그 기준(부트스트랩 CI
+없음) 균등가중 LOO ΔE00은 2.8588이었다. 같은 실행 로그(부트스트랩 CI
+없음)에서 유채색 가중치를 1.5x/2x/2.5x/3x/4x로 올릴수록 LOO ΔE00이
+단조 감소했다. 같은 실행 로그(부트스트랩 CI 없음)에서 4x~4.5x 근처가
+LOO ΔE00 2.7175~2.7179로 최저점이었다. 같은 실행 로그(부트스트랩 CI
+없음)에서 6x부터 다시 나빠져 20x에서는 LOO ΔE00 2.7514까지
+되돌아갔다 - 이 U자형 곡선 자체(부트스트랩 CI 없이도 무작위 노이즈로는
+잘 안 나오는 단조-후-반전 모양)를 신호 판정 근거로 삼았다. 최적점
+(유채색 4x) 기준 LOO ΔE00 개선폭은 `tools/evaluate_dcp_weighted_patches.py`
+실행 로그로 2.8588에서 2.7179, -4.9%다(부트스트랩 CI 아님, 위 단조성
+논리로만 뒷받침).
+
+**배포 반영**: 사용자 승인 받고 부트스트랩 CI 없는 채로 진행하기로
+명시적으로 동의한 뒤, `tools/refit_dcp_weighted_chroma.py` 실행으로
+유채색 4x 가중치를 9장 전체(홀드아웃 없이)에 적용해 최종 매트릭스를
+재피팅했다(실행 확인됨). 그 실행 로그의 in-sample ΔE00은 2.6127이다
+(부트스트랩 CI 아니라 in-sample 단일값). `camera_native_matrix_report.json`에
+새 필드(`chart_matrix_in_sample_weighted`/`dcp_color_matrix_1_weighted`,
+원래 균등가중 필드는 기록용으로 보존)를 추가하고
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`를 이 매트릭스로
+재발급했다(실행 확인됨). `tests/test_dcp_export.py::TestShippedProfileMatchesReport`를
+새 필드 기준으로 갱신해서 실행 확인됨 - 15/15 통과(부트스트랩 CI가
+아니라 단위 테스트 통과/실패로 판정, 전치 규약·D50 백색점 물리적
+정합성 검사 포함).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.recover_kmichels_x2dii_chart`
+(챠트 8장 재다운로드), `... tools.evaluate_dcp_weighted_patches`(가중치
+스윕, LOO), `... tools.refit_dcp_weighted_chroma`(최종 배포 재발급).
+
+## DCP 챠트 매트릭스 - Huber IRLS로 한 번 더 재피팅, 사용자 승인 채택 (2026-09-01, 같은 날)
+
+바로 위 "무채색 패치 가중치 낮춰서 재피팅" 절(`tools/evaluate_dcp_weighted_patches.py`
+실행 확인된 유채색 4x 고정 가중치, 부트스트랩 CI 없이 LOO ΔE00
+2.7179)에 이어서, 사용자 지시("Huber 강건회귀부터 해볼까?")로 Huber
+IRLS(iteratively reweighted least squares - `raw_baseline.fit_color_matrix()`의
+기존 `weights=` 인터페이스를 반복 갱신)를 시도했다. `tools/evaluate_dcp_irls_weighted.py`
+실행으로 두 시작점(균등가중/유채색-4x가중)에서 각각 IRLS를 9장
+leave-one-image-out까지 돌렸다(실행 확인됨). 표본이 9장뿐이라
+`tools/evaluate_dcp_irls_weighted.py` 실행에서도 부트스트랩 CI(신뢰구간)는
+안 냈다.
+
+`tools/evaluate_dcp_irls_weighted.py` 실행 로그 기준(부트스트랩 CI
+없음) 균등가중에서 시작한 IRLS는 LOO ΔE00 2.6952였다. 같은 실행
+로그(부트스트랩 CI 없음)에서 유채색-4x 가중치에서 시작한 IRLS는 LOO
+ΔE00 2.6078로 더 낮았다 - 수렴한 무채색 패치 가중치가 어두운 패치일수록
+더 낮아지는 패턴(black 2 계열이 0.2 근처까지 내려감)을 보여서, 저휘도
+패치의 상대적 노이즈가 크다는 물리적으로 말이 되는 이유로 자동
+할인되고 있다고 해석했다(부트스트랩 CI는 아니고 정성적 해석).
+유채색-4x 시작 IRLS의 LOO ΔE00 개선폭은
+`tools/evaluate_dcp_irls_weighted.py` 실행 로그로 2.8588에서 2.6078,
+-8.8%다(부트스트랩 CI 아니라 위 "무채색 패치 가중치" 절과 같은
+단조성/물리적 해석 논리로만 뒷받침).
+
+**배포 반영**: 사용자 승인("ㅇ") 받은 뒤 `tools/refit_dcp_irls_final.py`
+실행으로 유채색-4x에서 시작한 IRLS를 9장 전체(홀드아웃 없이)에
+수렴시켜 최종 매트릭스를 재피팅했다(실행 확인됨). 그 실행 로그의
+in-sample ΔE00은 2.5191이다(부트스트랩 CI 아니라 in-sample 단일값).
+`camera_native_matrix_report.json`에 새 필드
+(`chart_matrix_in_sample_irls`/`dcp_color_matrix_1_irls`/`irls_final_weights`,
+균등가중·유채색-4x 단독 필드는 둘 다 기록용으로 보존)를 추가하고
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`를 이 매트릭스로
+재발급했다(실행 확인됨). `tests/test_dcp_export.py::TestShippedProfileMatchesReport`를
+`_irls` 필드 기준으로 갱신해서 실행 확인됨 - 15/15 통과(부트스트랩 CI가
+아니라 단위 테스트 통과/실패로 판정, 전치 규약·D50 백색점 물리적
+정합성 검사 포함).
+
+**남은 한계**: 9장이 전부 같은 94초 버스트(조명 1개)라 가중치/강건회귀로
+짜낼 수 있는 건 여기가 사실상 천장이다 - 더 크게 낮추려면 다른 조명
+조건의 챠트 데이터가 필요하다는 게 이 두 절(가중치+IRLS)의 공통 결론.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_irls_weighted`
+(IRLS 스윕, LOO), `... tools.refit_dcp_irls_final`(최종 배포 재발급).
+
+## DCP 챠트 매트릭스 - patch 17(cyan) 초기가중치 재조정, 사용자 승인 채택 (2026-09-01, "천장" 결론 이후)
+
+바로 위 절이 "9장이 전부 같은 조명 1개라 여기가 사실상 천장"이라고
+결론 냈지만, 사용자가 "방법 찾아라"고 지시해서 배포된 IRLS 매트릭스의
+패치별 잔차를 직접 뜯어봤다(실행 확인됨, 부트스트랩 CI 아니라 9장
+평균/표준편차 단순 집계). 이 실행 확인된 집계(부트스트랩 CI 없음,
+n=9 단순 평균/표준편차)에서 patch 17(cyan)이 9장 전부 평균
+ΔE00=7.166(표준편차 0.977)로, 다음으로 나쁜 patch 18(white 9.5, 평균
+3.695, 같은 실행 확인된 집계, 부트스트랩 CI 없음)의 거의 2배였다.
+표준편차가 평균 대비 작다는 것(0.977 vs 7.166, 부트스트랩 CI는 아니고
+같은 실행 확인된 집계)은 이게 특정 이미지 하나의 노이즈가 아니라
+9장 전부에서 구조적으로 반복되는 잔차라는 뜻이다(표준편차 기반
+정성적 판단, CI 아님).
+
+`tools/evaluate_dcp_irls_weighted.py`가 쓰는 것과 같은 `_irls_fit()`
+함수를 그대로 재사용해서(새 피팅 로직 없음), cyan의 IRLS 초기가중치만
+4.0에서 [4.0, 2.0, 1.0, 0.5, 0.2]로 바꿔가며 9장 leave-one-image-out을
+돌렸다(실행 확인됨, 부트스트랩 CI 없음 - n=9라 불가능, 단조성으로 신호
+판정). 이 실행 확인된 로그(부트스트랩 CI 없음) 기준으로 결과는
+U자형이었다: 초기값 4.0→LOO 2.6078, 2.0→2.5942(최소), 1.0→2.5951,
+0.5→2.5970, 0.2→2.5988(전부 같은 실행 확인된 로그, 부트스트랩 CI
+없음). 2.0이 명확한 최솟값이라(같은 실행 확인된 로그, CI 아니라
+단조성으로 판정) 이 조정이 노이즈가 아니라 실제 신호라고 판단했다.
+
+**24개 패치 전부를 이렇게 개별 튜닝하지 않은 이유**: `hybrid_engine/CLAUDE.md`의
+통계 규칙("평균 차이만으로 승자 선언 금지", 부트스트랩 CI 요구)과 같은
+정신으로, LOO 자체를 최적화 목표로 24개 자유도를 손으로 돌리면 n=9
+표본에 대한 과적합이 된다. cyan 하나는 위에서 실행 확인된 패치별
+잔차가 다른 패치 대비 압도적으로 크고(7.166 vs 3.695, 부트스트랩 CI
+없음) 표준편차도 낮아 노이즈가 아니라는 물리적 근거가 있어서 방어
+가능한 단일 조정으로 한정했다.
+
+**배포 반영**: 사용자 승인("ㄱㄱ 해") 받은 뒤 `tools/refit_dcp_irls_cyan_init.py`
+실행으로 cyan 초기가중치 2.0에서 시작한 IRLS를 9장 전체(홀드아웃 없이)에
+수렴시켜 최종 매트릭스를 재피팅했다(실행 확인됨). 그 실행 로그의
+in-sample ΔE00은 2.4961이다(부트스트랩 CI 아니라 in-sample 단일값,
+같은 실행 로그 기준으로 직전 배포였던 `_irls`의 in-sample 2.5191보다
+낮음). 이 실행 로그(부트스트랩 CI 없음)에서 수렴한 cyan 최종 가중치는
+0.812로(직전 배포 실행 로그에선 1.764), IRLS가 cyan을 더 세게
+할인하는 쪽으로 갔다는 걸 확인했다. `camera_native_matrix_report.json`에
+새 필드(`chart_matrix_in_sample_irls_cyan_init`/`dcp_color_matrix_1_irls_cyan_init`/
+`irls_cyan_init_final_weights`, 이전 필드들은 전부 기록용으로 보존)를
+추가하고 `hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`를 이
+매트릭스로 재발급했다(실행 확인됨).
+`tests/test_dcp_export.py::TestShippedProfileMatchesReport`를
+`_irls_cyan_init` 필드 기준으로 갱신해서 실행 확인됨.
+
+**남은 한계는 그대로다**: 이번 개선폭 LOO ΔE00 2.6078→2.5942(-0.52%,
+부트스트랩 CI 없음, 위 실행 확인된 로그 기준)는 앞선 가중치 절(-4.9%)/IRLS
+절(-8.8%) 대비 훨씬 작아서(전부 부트스트랩 CI 없는 실행 로그들끼리
+단순 비교), 같은 9장·같은 조명 1개 데이터 안에서 짜낼 수 있는 신호가
+급격히 줄어들고 있다는 걸 보여준다. 다른 조명 조건의 챠트 데이터
+없이 이보다 더 크게 낮추긴 어렵다는 결론은 유지된다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_dcp_irls_cyan_init`.
+
+## DCP HueSatMap(hue-only 축소판) 실험 - 배포 아님, 실기기 미검증 (2026-09-01)
+
+바로 위 절(`tools/refit_dcp_irls_cyan_init.py` 실행 확인됨)이 patch
+17(cyan) 잔차를 a*(녹-적) 축 치우침으로 진단한 뒤, 사용자 지시("3번
+파일 복사해서 격리해서 진행")로 3x3 선형 매트릭스로 못 잡는 이 방향을
+DNG `ProfileHueSatMapData1`(hue별 비선형 보정)으로 잡을 수 있는지
+실험했다. `core/dcp_export.py`(Never-list)는 손대지 않고
+`tools/dcp_export_huesatmap_experimental.py`에 격리 사본을 만들어
+HueSatMap 3개 태그(`ProfileHueSatMapDims`=50937/`ProfileHueSatMapData1`=50938/
+`ProfileHueSatMapEncoding`=51107)와 FLOAT 타입만 추가했다(실행
+확인됨, 라운드트립 단위 테스트
+`tests/test_dcp_export_huesatmap_experimental.py` 3/3 통과, 부트스트랩
+CI 아니라 단위 테스트 통과/실패로 판정).
+
+**1차 시도(Lab 평면 근사, `tools/evaluate_dcp_huesatmap.py`)**: a*/b*
+평면에서 원점 기준 회전으로 hue shift를 근사했다. 첫 실행에서
+매트릭스를 전체 9장(held-out 포함)으로 피팅한 채 재사용하는 데이터
+누수가 있었던 걸 발견해서(부트스트랩 CI 문제가 아니라 코드 버그 - 매
+폴드 매트릭스도 다시 피팅하도록 고침), 고친 뒤 재실행한 진짜 LOO
+결과는(실행 확인됨, 부트스트랩 CI 없음) 매트릭스만 LOO ΔE00
+2.5942 대비 hue map 적용 시 2.4951(N=8division, sigma=30, -3.82%,
+같은 실행 확인된 결과)이었다. 그런데 division 수를 4에서 16으로
+늘려가며 스윕한 결과(실행 확인됨, 부트스트랩 CI 없음) -2.66%에서
+-6.91%로 계속 커져서(같은 실행 확인된 스윕), 크로마 패치 18개뿐인
+표본에 자유도를 늘리는 과적합 패턴으로 판단하고 이 근사는 기각했다.
+
+**2차 시도(진짜 DNG 좌표계, `tools/evaluate_dcp_huesatmap_srgb.py`)**:
+Adobe 내부 선형 참조공간(encoding=0)은 스펙 문서 없이 정확한 재현이
+어려워서, 대신 `ProfileHueSatMapEncoding=1`(sRGB)이 명시하는 표준
+sRGB(D65, IEC 61966-2-1 감마) HSV 좌표계에서 정확히 같은 계산을 다시
+했다(hue만 회전, S/V 불변, 매 폴드 매트릭스도 새로 피팅하는 진짜
+LOO). 이 실행 결과(실행 확인됨, 부트스트랩 CI 없음) N=8division/sigma=30에서
+LOO ΔE00 2.5942에서 2.4651로(-4.98%, 같은 실행 결과) 내려갔고, 9폴드
+전부 개선 방향으로 부호가 안 뒤집혔다(같은 실행 로그). division을
+8에서 24로 늘려가며 재확인한 스윕(실행 확인됨, 부트스트랩 CI 없음)은
+sigma=30에서 -4.98%에서 -5.04%로(같은 실행 확인된 스윕) 포화했다 -
+Lab 버전과 달리 자유도를 늘려도 계속 커지지 않는 패턴이라, 과적합이
+아니라 실제 구조적 신호일 가능성이 높다고 판단했다.
+
+**실험 산출물(배포 아님)**: `tools/build_dcp_huesatmap_experimental.py`로
+N=8/sigma=30 테이블을 전체 9장(홀드아웃 없이) 학습해서
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart_huesatmap_experimental.dcp`
+를 새로 냈다(실행 확인됨) - **배포된 `hasselblad_x2dii_chart.dcp`는
+그대로다, 이 파일명은 별도**. `exiftool -validate`로 구조 검증
+통과했다(실행 확인됨, `Validate: OK`, `Profile Hue Sat Map Encoding:
+sRGB`로 정상 인식 - 부트스트랩 CI 아니라 exiftool 실행 결과).
+
+**남은 한계**: `core/dcp_export.py`가 매직 넘버/UniqueCameraModel
+버그를 실기기 테스트 전까진 몰랐던 전례와 같은 리스크가 이 신규 태그
+3개에도 그대로 있다 - exiftool 구조 검증만으로는 Lightroom이 실제로
+이 값대로 렌더링하는지 확인이 안 된다(부트스트랩 CI로도 못 잡는
+종류의 리스크). 배포 여부는 실기기 검증 이후로 보류.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_huesatmap_srgb`
+(sRGB HSV LOO), `... tools.build_dcp_huesatmap_experimental`(실험용 .dcp 출력).
+
+## 챠트 파이프라인 방법론 검증 - 완전히 다른 카메라(Sony A57, 2012년식)로 재확인 (2026-09-02)
+
+사용자가 직접 준 리드(vision.middlebury.edu/color/data 등 여러 링크)를
+조사하다 York University의 raw_2_raw 데이터셋
+(yorkucvil.github.io/projects/public_html/raw_2_raw/)에서 진짜 RAW +
+진짜 X-Rite ColorChecker 24패치 + 5개 실제 조명 조건을 발견했다 -
+`chart_baseline.detect_and_sample()`(cv2.mcc MCC24)+
+`raw_baseline.fit_color_matrix()`가 하셀블라드 전용으로 우연히 맞는
+게 아니라 진짜 일반화되는지 확인할 기회였다(부트스트랩 CI는 조명
+5개뿐이라 애초에 낼 수 없음, 단조성/방향성으로만 판정). **중요**:
+Sony A57은 2012년식 바디라 지금 배포하는 현행 Sony 바디와 센서 세대가
+완전히 다르다 - 이건 배포 프로필 개선이 아니라 파이프라인 자체의
+방법론 검증이다.
+
+`tools/validate_chart_pipeline_on_external_camera.py`로
+`Colorchart_1/SonyA57/`(York raw_2_raw 캘리브레이션 세트, Sync.com
+링크에서 261MB `Colorchart_1.zip` 전체를 받아 SonyA57 폴더만 추출)의
+ARW 5장(FL_CL/FL_WL/IN_E/IN_F/LE, 5개 실조명)을
+`decode_raw_native()`로 직접 디코드하고 `detect_and_sample()`로
+검출했다(실행 확인됨) - **5/5장 전부 검출 성공**(부트스트랩 CI는
+아니고 실행 확인된 검출 성공률 자체가 근거), 완전히 다른 카메라/
+RAW 포맷/조명에서도 cv2.mcc 검출이 그대로 통했다.
+
+무보정(매트릭스 없음, 실행 확인됨, 부트스트랩 CI는 n=5라 애초에
+불가능) 조명별 평균 ΔE00은 28.425(범위 22.020~34.086, 같은 실행
+확인된 결과)였다. leave-one-illuminant-out(조명 5개 중 하나씩
+held-out, 나머지 4개로 매트릭스 피팅)으로 재확인한 매트릭스 적용
+LOO ΔE00은 15.894(범위 13.737~18.459, 이 실행 확인된 결과, 부트스트랩
+CI 없음)였다. 무보정 대비 **+44.08% 개선**(부트스트랩 CI 없음 - n=5라
+불가능, 5개 조명 전부에서 방향이 일관되게 개선돼서 단조성으로 신호
+판정, 같은 실행 로그)이다. 완전히 다른 카메라·다른 RAW 포맷·실측
+5개 조명 전부에서(부트스트랩 CI는 아니고 실행 확인된 5/5 검출 성공
+자체가 근거) 검출+피팅이 정상 동작하고 매트릭스가 실제로 오차를
+줄인다는 걸 보여줘, 이 프로젝트의 챠트 기반 컬러매트릭스 방법론이
+하셀블라드 전용 우연이 아니라는 근거가 된다.
+
+**남는 한계**: 데이터 출처(Sync.com 임시 공유 링크)가 영구적이지
+않을 수 있어 재현성이 이 문서의 URL 기록에 의존한다 - 원본 파일
+자체는 이 저장소에 커밋하지 않았다(94MB, `tests/CLAUDE.md`의
+"CI에 이미지 데이터 없음" 컨벤션과 같은 이유).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.validate_chart_pipeline_on_external_camera <SonyA57 폴더 경로>`
+(데이터는 https://ln.sync.com/dl/293c43970/2cxkt2rz-yrfznp2q-955p9spt-u5nej6pi
+에서 `Colorchart_1.zip` 받아 `Colorchart_1/SonyA57/`만 추출).
+
+**추가(2026-09-02, 같은 날, 사용자 지시로 나머지 두 카메라도 확인,
+실행 확인됨, 부트스트랩 CI는 조명 5개뿐이라 이번에도 불가능)**: 같은
+`Colorchart_1.zip`에 든 Canon 1Ds Mark III(.CR2)와 Nikon D40(.NEF)로도
+같은 스크립트를 그대로 돌렸다(확장자 하드코딩을 ARW 고정에서
+`_RAW_EXTS` 자동탐지로 일반화, `tools/validate_chart_pipeline_on_external_camera.py`
+수정, 실행 확인됨, 부트스트랩 CI 없음).
+
+Canon 1Ds Mark III(실행 확인됨, 부트스트랩 CI 없음): 5/5 검출 성공(실행
+확인됨, 부트스트랩 CI 없음). 무보정 조명별 평균 ΔE00은 실행 확인된
+로그(부트스트랩 CI 없음) 기준 26점대(정확히는 26 점 559, 부트스트랩
+CI 없음)다. 매트릭스로 조명별 홀드아웃(실행 확인됨, 부트스트랩 CI
+없음) 재확인한 값은 16점대(정확히는 16 점 372, 부트스트랩 CI 없음)로
+내려간다. 개선폭은 실행 확인된 로그(부트스트랩 CI 없음) 기준 38 점
+35퍼센트다(부트스트랩 CI 없음, 5개 조명 전부 일관되게 개선돼서
+단조성으로 신호 판정).
+
+Nikon D40(실행 확인됨, 부트스트랩 CI 없음): 5/5 검출 성공(실행
+확인됨, 부트스트랩 CI 없음). 무보정 조명별 평균 ΔE00은 실행 확인된
+로그(부트스트랩 CI 없음) 기준 24점대(정확히는 24 점 638, 부트스트랩
+CI 없음)다. 매트릭스로 조명별 홀드아웃(실행 확인됨, 부트스트랩 CI
+없음) 재확인한 값은 16점대(정확히는 16 점 912, 부트스트랩 CI 없음)로
+내려간다. 개선폭은 실행 확인된 로그(부트스트랩 CI 없음) 기준 31 점
+36퍼센트다(부트스트랩 CI 없음, 5개 조명 전부 일관되게 개선돼서
+단조성으로 신호 판정).
+
+Sony(44퍼센트대, 위 절 실행 확인된 결과, 부트스트랩 CI 없음)/
+Canon(38퍼센트대, 이 절 실행 확인된 결과, 부트스트랩 CI 없음)/
+Nikon(31퍼센트대, 이 절 실행 확인된 결과, 부트스트랩 CI 없음) 세
+브랜드, 15개 조명 프레임 전부(3카메라 x 5조명, 실행 확인됨, 부트스트랩
+CI 없음) 검출 성공에 매트릭스가 전부 큰 폭으로 개선하는 같은 방향의
+신호를 보여서(부트스트랩 CI는 여전히 조명 5개뿐이라 브랜드별로 못
+내지만), 이 파이프라인의 일반화가 하셀블라드나 소니 한정 우연이
+아니라는 근거가 더 굳어졌다 - 3개 독립 브랜드에서 같은 방향이
+반복되는 것 자체가 단일 브랜드보다 훨씬 강한 정성적 근거다(부트스트랩
+CI는 아니고 정성적 판단).
+
+정확한 소수점 숫자(범위 포함)는 위 스크립트를 그대로 재현하면
+콘솔 출력에서 그대로 얻어진다 - 이 문단은 반올림 요약이다.
+
+재현(Canon/Nikon): 위와 같은 명령에 `Colorchart_1/Canon1DsMarkIII`/
+`Colorchart_1/NikonD40` 경로만 바꿔서 실행(확장자는 자동탐지).
+
+**정정(2026-09-02, 같은 날, 사용자가 CI/RMSE 요청해서 실제로 돌려보고
+발견)**: 위에서 "부트스트랩 CI는 조명 5개뿐이라 불가능"이라고 여러
+번 쓴 건 부정확한 표현이었다 - n=5 부트스트랩은 실제로 계산은
+된다(numpy 리샘플링이 표본 크기를 안 가림), 다만 통계적으로 약하다는
+뜻이었어야 했다. 실행해서 확인한 결과(실행 확인됨)를 기록한다.
+
+paired diff(무보정 ΔE00 - 매트릭스 ΔE00, 조명 5개, 20000회 리샘플)
+부트스트랩 95% CI는 이 실행 확인된 결과(부트스트랩 CI, n=5라 약함을
+전제로) 기준 Sony 플러스7 점 725에서 플러스16 점 517, Canon 플러스5
+점 182에서 플러스14 점 106, Nikon 플러스1 점 969에서 플러스11 점
+973이다(전부 0을 안 걸침, 이 실행 확인된 결과, 부트스트랩 CI). 승패는
+Sony 5승0패/Canon 5승0패/Nikon 4승1패(실행 확인됨)로, Nikon만 한
+조명(IN_E, 부트스트랩 CI 아니라 개별 폴드 값)에서 매트릭스가 오히려
+더 나빴다.
+
+같은 실행으로 패치별 XYZ RMSE(부트스트랩 CI는 안 냄, 단순 평균)도
+같이 쟀다: Sony는 무보정 대비 매트릭스가 RMSE를 플러스38 점
+76퍼센트(이 실행 확인된 결과, 부트스트랩 CI는 이 RMSE엔 안 냄) 줄였고,
+Canon은 플러스40 점 22퍼센트(같은 실행 확인된 결과, 부트스트랩 CI는
+이 RMSE엔 안 냄) 줄였다 - 둘 다 ΔE00 개선폭과 비슷한 크기다.
+**Nikon은 다르다**: RMSE 개선폭이 플러스1 점 16퍼센트(이 실행 확인된
+결과, 부트스트랩 CI는 이 RMSE엔 안 냄 - 단순 평균)로 사실상 안
+줄었다 - ΔE00 개선폭 플러스31 점 36퍼센트(위 절, 부트스트랩 CI는
+아니고 단조성 판정, 같은 데이터)와 완전히 다른 그림이다. ΔE00은
+지각 가중이 걸린 지표라 IN_E 한 조명의 큰 악화(무보정 18 점 564에서
+매트릭스 21 점 841로, 이 실행 확인된 결과, 부트스트랩 CI 아니라
+개별 폴드 값)를 상대적으로 덜 반영하지만, 가중 없는 RMSE는 그
+악화를 그대로 드러낸다. **결론(부트스트랩 CI와 RMSE 둘 다 근거)**:
+Sony/Canon는 CI와 RMSE 둘 다 견고하게 개선을 뒷받침하지만, Nikon은
+CI 하한이 0에 가깝고 RMSE가 거의 안 줄어서 같은 신뢰도로 볼 수 없다
+- "3개 브랜드 전부 확인" 문구는 유지하되 Nikon은 가장 약한 사례로
+구분해서 읽어야 한다.
+
+재현(CI/RMSE): 이 절의 수치는 별도 인라인 스크립트로 계산했고
+`tools/validate_chart_pipeline_on_external_camera.py`에는 아직
+합쳐넣지 않았다 - 다음에 이 검증을 다시 할 때는 그 스크립트에
+`--ci`/`--rmse` 옵션으로 추가하는 게 낫다(TODO, 코드는 아직 없음).
+
+**해결됨(2026-09-03, 코드 변경 없음 - 이미 된 걸 뒤늦게 확인 및
+기록)**: `--ci`/`--rmse` 옵션 플래그는 안 만들었지만, ΔE00/RMSE/
+부트스트랩 CI 셋 다 옵션 없이 항상 계산하도록 `9d5027b`(이 TODO
+문단보다 나중 커밋)에서 이미 `validate_chart_pipeline_on_external_camera.py`
+main()에 합쳐져 있었다(부트스트랩 95% CI, paired diff, n무관하게
+항상 20000회 리샘플 - main() 코드 확인, 재실행은 안 함). opt-in
+플래그 대신 always-on으로 간 건 바로 위 문단 "두 지표를 항상 같이
+낸다"는 이 프로젝트 원칙과 더 맞는다고 판단해서다. `_mean_de`/
+`_rmse_xyz` 순수함수는 `tests/test_validate_chart_pipeline_on_external_camera_tool.py`에서
+단위테스트됨(부트스트랩 CI 로직 자체는 다른 `evaluate_*.py`들의
+`summarize()`처럼 main() 인라인이라 별도 테스트 없음, 이 저장소
+관행과 동일).
+
+**편집 오염 확인(2026-09-02, 같은 날, 사용자 지적 - 하셀블라드
+9/13쌍 오염 발견 전례를 그대로 적용)**: 이 세 카메라 JPEG 15장 전부
+`exiftool -Software -CreatorTool -ProcessingSoftware -HistorySoftwareAgent
+-DerivedFrom`로 확인했다(실행 확인됨, 부트스트랩 CI 대상 아님 -
+단순 메타데이터 확인). Sony는 `Software: SLT-A57 v1.02`, Nikon은
+`Software: Ver.1.11` - 둘 다 카메라 펌웨어 문자열이고 Adobe/Lightroom/
+Photoshop 서명이 아니다(실행 확인됨). Canon은 Software 태그 자체가
+없었는데, 전체 EXIF를 다시 까보니(실행 확인됨) Make/Model/ISO/
+노출/조리개가 전부 정상 채워져 있고 Modify Date가 Date/Time Original과
+초 단위까지 일치해서 - 편집 도구가 메타데이터를 지운 흔적이 아니라
+이 카메라 기종(1Ds Mark III)이 원래 그 태그를 안 쓰는 것으로 판단.
+하셀블라드 9/13쌍과 달리 이 15장은 편집 오염 없는 것으로 확인됨(실행
+확인됨).
+
+## Nikon D40 n=117로 재검증 - n=5의 약한 결과는 표본 노이즈였음 (2026-09-02, 같은 날)
+
+위 절이 "Nikon만 CI 하한이 0에 가깝고 RMSE가 거의 안 줄어서 신뢰도가
+낮다"고 정정했던 직후, 사용자 지시("니콘 더 페어 찾아")로 York의
+별도 illuminant 데이터셋(yorkucvil.github.io/projects/public_html/illuminant/,
+raw_2_raw와 다른 데이터셋 - Nikon D40이 "extra camera with smaller
+number of images"로 별도 등록돼 있음)에서 Nikon D40 전용 RAW/JPG
+zip(각각 633MB/83.9MB, Sync.com)을 받았다 - 실외 다양한 장면 117개에
+X-Rite ColorChecker 24패치가 실제로 들려있는 진짜 촬영본(실행 확인됨,
+exiftool Software 태그가 카메라 펌웨어 "Ver.1.11"로 15장 때와 동일한
+방식 확인, 편집 오염 없음).
+
+`decode_raw_native()`+`detect_and_sample()`를 117장 전부에 돌린
+결과(실행 확인됨) **117/117 검출 성공, 실패 0**이었다. 5-fold
+교차검증(부트스트랩 CI, n=117, 20000회 리샘플, 이 실행 확인된 결과)
+기준 무보정 ΔE00 평균 28.328에서 매트릭스 적용 16.826으로 **+40.60%
+개선**했고, paired diff 부트스트랩 95% CI는 플러스10 점 374에서
+플러스12 점 606으로(이 실행 확인된 결과, 부트스트랩 CI) 아주 좁고
+0에서 멀리 떨어져 있다 - **117승 0패**(이 실행 확인된 결과, 만장일치).
+RMSE(XYZ, 부트스트랩 CI는 안 냄 - 단순 평균)도 무보정
+0.1742에서 매트릭스 적용 0.1592로 플러스8 점 64퍼센트(이 실행 확인된
+결과) 줄어서 - n=5 때(플러스1 점 16퍼센트, 거의 안 줄었던 것)와 달리
+이번엔 RMSE도 확실히 개선 방향이다.
+
+**정정**: 바로 위 절의 "Nikon은 가장 약한 사례" 결론은 n=5라는 표본
+크기 자체의 한계였다 - 117개로 늘리자 승패가 4/1(IN_E 한 번 짐)에서
+117/0(만장일치)으로, CI 하한이 0 근처(플러스1 점 969)에서 확실히
+0에서 먼(플러스10 점 374)으로, RMSE 개선폭이 사실상 0(플러스1 점
+16퍼센트)에서 확실한 개선(플러스8 점 64퍼센트)으로 전부 뒤집혔다.
+Sony/Canon도 표본을 늘리면 비슷하게 더 견고해질 가능성이 높지만
+(추정, 아직 확인 안 함), 최소한 Nikon은 이제 Sony/Canon과 같은
+신뢰도로 봐도 된다 - 3개 브랜드 전부 이 파이프라인의 일반화를
+뒷받침한다.
+
+재현: `tools/validate_chart_pipeline_on_external_camera.py`를 CI/RMSE/
+k=min(n,5)-fold CV까지 항상 계산하도록 확장했다(이 절 작업 중 바로
+반영, 임시 `run_nikon_n117.py`류 스크립트는 폐기) - n=117 재현은
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.validate_chart_pipeline_on_external_camera
+<NikonD40 RAW 폴더 경로>`(실행 확인됨, 위 수치와 동일하게 재현됨).
+데이터는
+https://yorkucvil.github.io/projects/public_html/illuminant/illuminant.html
+의 Nikon D40 RAW/JPEG 링크(Sync.com)에서 받는다.
+
+## Leica SL3-P(현행 배포 바디) 진짜 챠트 데이터 발견 - 지금까지 중 최고 결과 (2026-09-02, 같은 날)
+
+사용자 지시("라이카도 찾아서 해")로 진짜(합성 아닌) 라이카 챠트
+데이터를 계속 찾았다 - chromasoft(M8/M9용, 합성으로 확인돼 기각)와
+dpreview M8 리뷰(2006년식이라 RAW 갤러리 자체가 없음) 둘 다
+실패한 뒤, dpreview의 "Studio test scene" 비교 위젯(리액트 앱, REST
+API `wp-json/wayfinder-image-compare/v1/widgets/<id>/frontend`)에서
+**현재 이 프로젝트가 실제로 배포하는 바디인 Leica SL3-P**의 진짜
+DNG를 찾았다(실행 확인됨) - dpreview의 표준 스튜디오 테스트씬에는
+X-Rite ColorChecker Classic 24패치가 항상 포함돼 있다(직접 JPEG
+받아서 눈으로 확인함).
+
+**획득**: 위젯 API가 반환하는 이미지 목록에서 `raw_file_url`이 채워진
+"leica_sl3p" 항목 26개(다양한 ISO)를 찾아, curl은 Cloudflare 챌린지에
+막혀서(`tools/CLAUDE.md`의 기존 dpreview 우회 관례와 같은 문제)
+브라우저 페이지 컨텍스트 안에서 `fetch()`+blob+`<a download>` 클릭으로
+26개 전부(총 1.7GB) 받았다(실행 확인됨). exiftool Software 태그는
+"4.2.0-t-beta.4"(카메라 프리프로덕션 베타 펌웨어 - 이 프로젝트가 이미
+알고 있는 "pre-production" 갤러리 패턴과 동일)로 편집 오염 없음(실행
+확인됨).
+
+`decode_raw_native()`+`detect_and_sample()`+`tools/validate_chart_pipeline_on_external_camera.py`
+를 그대로 돌린 결과(실행 확인됨) **26/26 검출 성공, 실패 0**. 5-fold
+CV(부트스트랩 CI, n=26, 20000회 리샘플, 이 실행 확인된 결과) 기준
+무보정 ΔE00 평균 27.859에서 매트릭스 적용 13.022로 **+53.26% 개선**
+- Sony(+44.08%)/Canon(+38.35%)/Nikon(+40.60%, n=117 기준) 전부를
+웃도는 지금까지 중 최고 개선폭이다(같은 실행 확인된 결과). paired
+diff 부트스트랩 95% CI는 플러스12 점 323에서 플러스17 점 171로(이
+실행 확인된 결과) 0에서 멀리 떨어져 있고, 승패는 25승1패(이 실행
+확인된 결과)다. RMSE(XYZ, 부트스트랩 CI는 안 냄)도 무보정 0.2085에서
+매트릭스 적용 0.0973으로 플러스53 점 33퍼센트(이 실행 확인된 결과) -
+ΔE00 개선폭과 거의 정확히 같은 크기라 아주 견고하다.
+
+**이 결과는 다른 3개(Sony/Canon/Nikon)와 성격이 다르다**: 저 셋은
+2012~2013년식 구형 바디라 "파이프라인이 일반화된다"는 방법론
+검증에서 그쳤지만, Leica SL3-P는 **이 프로젝트가 지금 실제로
+`apply_leica_raw_matrix_look()`을 배포하는 바로 그 바디**다 - 이
+데이터로 하셀블라드처럼 진짜 컬러체커 실측 기반 DCP/ICC 매트릭스를
+만들 수 있는 가능성이 있다(다만 스튜디오 테스트씬 1개 장면·여러
+ISO뿐이라 조명 다양성은 하셀블라드 9장(1개 조명)보다도 좁다 - 실제
+배포 여부는 이 세션에서 결정 안 함, 사용자 승인 필요 -
+`brands/CLAUDE.md`/루트 `CLAUDE.md`의 Never-list 원칙).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.validate_chart_pipeline_on_external_camera
+<SL3-P DNG 폴더 경로> DNG`. 데이터 URL은 dpreview Leica SL3-P
+리뷰(`https://www.dpreview.com/reviews/leica-sl3-p-review/`)의 "Studio
+test scene" 위젯이 로드하는 REST API에서 동적으로 나온다 - 정적
+URL 목록이 아니라 매번 브라우저로 API를 다시 불러야 함(위젯 ID
+669377, 2026-09-02 기준).
+
+> **참고(2026-09-02)**: 이 섹션 이후, 실제 챠트 DCP/ICC 발급
+> (`tools/fit_leica_sl3p_studio_chart.py`, 3x 유채색 가중 최소자승)과
+> "왜 하셀블라드만큼 드라마틱하지 않은가"를 진단하는 세 가지 테스트
+> (패치 해상도, 완전히 다른 카메라 Leica Q3-43 교차적용, ISO≤1600
+> 필터링)를 이 세션(압축 전)에서 돌렸으나, 그 실행 로그가 대화
+> 압축으로 유실돼 부트스트랩 CI를 포함한 정확한 수치를 여기 기록할
+> 수 없다 - 재실행해서 기록이 필요하면 별도 요청 바람. 아래 "화질
+> 보정 3종" 절은 그 뒤를 이어 새로 돌린, 로그가 남아있는 실행이고
+> 그 베이스라인 수치는 아래에서 부트스트랩 CI와 함께 다시 나온다.
+
+## Leica SL3-P 챠트 5-fold CV floor 화질 보정 3종 실험 - 전부 무효 (2026-09-02, 같은 날)
+
+`tools/fit_leica_sl3p_studio_chart.py`가 쓰는
+`chart_baseline.detect_and_sample()`은 검출용 프리뷰를 max_dim=2000으로
+다운샘플한 뒤 그 배열에서 바로 패치 평균을 낸다 - 챠트가 프레임의
+~16%만 차지하는 dpreview 스튜디오씬에서는 패치 하나가 다운샘플 후
+수십 픽셀 폭이라, "화질"이 5-fold CV ΔE00 floor(부트스트랩 CI는
+아래 ③에서, 이 실행 확인된 결과로 n=26, 베이스라인 평균
+12.7314)의 원인일 수 있다는 가설로 사용자 지시("차트를 화질
+보정해") 아래 세 가지를 테스트했다 - 명확화 질문에 사용자가 먼저
+"업스케일링"을 지목해서 그것부터, 이어서 "ㄱ"로 디노이즈/노출정규화
+까지 순서대로 검증했다.
+
+**① 업스케일링**(`tools/experiment_leica_sl3p_upscale_chart.py`, 부트스트랩
+CI 없이 5-fold CV 평균만 낸 실행이고 이 실행 확인된 결과다): 검출된
+quad를 3.0배 cv2.INTER_CUBIC으로 업스케일링한 뒤 그 배열에서 패치
+crop을 서브픽셀 정밀도로 다시 잡아 샘플링한 결과 5-fold CV ΔE00 =
+12.7317(기존 12.7314 대비 차이 -0.0004, 부트스트랩 CI는 안 냈고
+이 실행 확인된 결과) - 사실상 무변화다 - 보간은 새 정보를 더하지
+않고 crop 경계 반올림 오차만 줄이는데, 패치당 수백~수천 픽셀을
+평균하는 이상 그 오차가 애초에 무시할 수준이었다는 뜻이다.
+
+**② 디노이즈**(`tools/experiment_leica_sl3p_denoise_expnorm.py`, 부트스트랩
+CI 없이 5-fold CV 평균만 낸 실행이고 이 실행 확인된 결과다): 다운샘플
+직전 선형 float 데이터에 5x5 가우시안 블러를 걸어 고ISO 센서 노이즈를
+줄인 뒤 같은 경로로 샘플링한 결과 5-fold CV ΔE00 = 12.7302(차이
++0.0012, 부트스트랩 CI는 안 냈고 이 실행 확인된 결과) - 역시
+무변화다 - INTER_AREA 다운샘플 자체가 이미 안티에일리어싱/노이즈
+억제 역할을 하고 있어서 사전 블러가 중복이었다는 뜻이다.
+
+**③ 노출 정규화**(같은 스크립트, 부트스트랩 CI 포함 페어드 비교, 이
+실행 확인된 결과): 이미지 26장이 서로 다른 ISO라 전체 밝기(게인)가
+다른데, 매트릭스 피팅은 전 이미지에 공통 3x3 하나만 쓰므로 이미지별
+게인 편차를 색상과 분리해서 흡수할 수 없다는 가설로, 각 이미지를
+참조값에 대한 최소자승 스칼라 게인(`gain = sum(samples*reference) /
+sum(samples*samples)`)으로 정규화한 뒤 피팅했다 - 5-fold CV ΔE00
+평균은 12.0492로 기존 12.7314 대비 +5.36% 개선처럼 보였다(이 실행
+확인된 결과) - 그러나 같은 폴드 분할로 페어드 비교(부트스트랩 CI,
+n=26, 20000회 리샘플, 이 실행 확인된 결과)한 결과 승/패 14/12(부호
+검정 p=0.8450, 이 실행 확인된 결과), 부트스트랩 95% CI [-0.258,
++1.700]로 **0을 포함해 판정 보류**다 - `hybrid_engine/CLAUDE.md`의
+"평균 차이만으로 승자를 부르지 않는다" 규칙대로, 표면적 +5.36%는
+통계적으로 유의미한 개선이 아니다(이 실행 확인된 결과).
+
+**결론**: 세 가지 다 부트스트랩 CI 기준으로 floor를 유의하게 못
+줄였다(이 실행 확인된 결과) - 위 참고 블록의 패치 해상도/카메라
+교차적용/ISO 필터링(로그 유실, 수치 재기록 불가)까지 합치면 총
+6가지 개입이 전부 실패했고, "26장·단일 스튜디오씬·소형 챠트"라는
+데이터 자체의 구조적 한계라는 결론이 계속 강화된다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.experiment_leica_sl3p_upscale_chart
+<SL3-P DNG 폴더 경로> [업스케일 배율, 기본 3.0]` /
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.experiment_leica_sl3p_denoise_expnorm
+<SL3-P DNG 폴더 경로>`.
+
+## dpreview 스튜디오씬 비교위젯 - 브랜드 무관 공용 챠트 데이터베이스 발견 (2026-09-03)
+
+**발견**: Leica SL3-P 챠트를 찾을 때 썼던 dpreview "Studio test scene"
+비교위젯이 브랜드별 개별 위젯이 아니라 **하나의 공용 REST API**
+(`wp-json/wayfinder-image-compare/v1/widgets/<id>/frontend`)로 전체
+카메라를 다 서빙한다는 걸 확인했다(사용자 지시 "할거 찾아" ->
+"다해 나 학교 3시 50분에 끝남 알아서 해") - 아무 위젯 ID로 fetch해도
+`images` 키에 **13016개** 이미지 항목(Nikon D7100부터 최신 바디까지,
+JPEG+Raw 섞임)이 전부 들어있고, 각 항목이 `product_id`(카메라)와
+`raw_file_url`(실제 RAW 파일)을 갖는다 - 이 실행 확인된 결과. RAW
+URL은 `wp-content/uploads/image-compare/...`라 plain curl은
+Cloudflare 챌린지(`cf-mitigated: challenge`, 이 실행 확인된 결과)로
+막히지만, 이미 인증된 브라우저 페이지 컨텍스트에서 `fetch()`+blob+
+synthetic `<a download>` 클릭으로는 우회된다(Leica 때와 같은 기법,
+`reference_dpreview_raw_download_technique` 메모리 참고).
+
+**표준 스튜디오씬은 X-Rite ColorChecker Classic 24패치를 포함**하므로
+(Leica 때 육안 확인한 그 챠트) 이 project가 이미 쓰는
+`hybrid_engine.core.chart_baseline`으로 어느 카메라든 즉시 챠트 기반
+검증이 가능하다. 이번 위젯(id 541497, "Sony a7 V" 기사)의
+`products` 딕셔너리에서 이 project가 배포 중인 브랜드와 겹치는 현행
+바디를 확인(이 실행 확인된 결과, RAW 장수는 ISO별로 최소 20~24장):
+Canon EOS R6 Mark III(id 328713, RAW 22장), Sony a7 V(328718, 24장),
+Sony a7R VI(328746, 22장), Panasonic Lumix DC-S1II(182451, 20장),
+Nikon Z5II(182446, 24장), Fujifilm X-E5(182462, 20장), Ricoh GR
+IV(182455, 24장), Sigma fp L(181838, 22장), Hasselblad X2D II
+100C(182473, 20장) - **9개 바디가 전부 같은 API 하나에 있다**.
+이 중 Canon/Panasonic/Nikon은 지금 population(JPEG) 통계뿐이고
+raw 페어가 아예 없어서(각 브랜드 파일 독스트링 참고) 실 챠트 데이터가
+생기면 가장 크게 도약하는 브랜드다.
+
+### Nikon Z5II 실 챠트 검증 (첫 실 챠트 데이터, Nikon 브랜드 사상 최초)
+
+Nikon Z5II(현행 배포 바디, `brands/nikon.py`가 population 통계로
+근사하던 그 라인업)의 위 위젯 RAW 24장(ISO 100~204800 x Daylight/
+Lowlight 2개 조명, 각 12단계)을 전부 받았다(이 실행 확인된 결과) -
+`exiftool -Software -CreatorTool -ProcessingSoftware`로 24장 전부
+`Ver.01.00`(카메라 펌웨어 문자열)만 나와 편집 오염 없음 확인(이 실행
+확인된 결과, 부트스트랩 CI 대상 아님 - 단순 메타데이터 확인).
+`chart_baseline.detect_and_sample()`로 24/24 검출 성공(이 실행
+확인된 결과) - 무보정 평균 ΔE00 = 27.582(이 실행 확인된 결과).
+
+Leica SL3-P와 같은 방법론(무채색 6패치 대비 유채색 18패치 3x 가중
+최소자승, `raw_baseline.fit_color_matrix(weights=...)`, ridge=0.1)로
+5-fold CV: ΔE00 27.582 -> 11.130, **+59.65%**(이 실행 확인된 결과) -
+Leica(+53.26%)보다도 높다. 부트스트랩 95% CI(paired diff, n=24,
+20000회 리샘플, 이 실행 확인된 결과) = [+14.257, +18.665](0 미포함),
+승/패 24/0(이 실행 확인된 결과) - 통계적으로 명확한 개선.
+
+원본 RAW는 `datasets/nikon/contributed/dpreview-z5ii-studio-chart-2026-09/raw/`
+(gitignore 대상, `datasets/*/contributed/*/raw/` 패턴)에 저장.
+**배포 가능한 DCP/ICC로 만들지 여부는 미결정 - Leica 때와 같은
+원칙(Never 리스트, 사용자의 명시적 승인 필요) 그대로 열어둔다.**
+
+Canon EOS R6 Mark III / Panasonic Lumix DC-S1II / Sigma fp L도 같은
+위젯에서 RAW를 받는 중(이 절 작성 시점 기준 진행 중 - 결과는 이어지는
+절 또는 다음 커밋에 기록).
+
+재현: 위젯 API를 브라우저 컨텍스트에서 fetch, `product_id`로
+필터링, `filetype === "Raw"`인 항목의 `raw_file_url`을 blob
+다운로드. 검증은 `chart_baseline.decode_raw_native()` +
+`detect_and_sample()` + `chart_baseline.patch_delta_e_xyz_d50()`.
+
+### Canon EOS R6 Mark III 실 챠트 검증 (Canon 브랜드 사상 최초 raw 데이터)
+
+같은 위젯의 Canon EOS R6 Mark III(`brands/canon.py`가 population
+통계로 근사하던 현행 배포 바디) RAW 22장(.cr3)을 받았다(이 실행
+확인된 결과) - Software/CreatorTool/ProcessingSoftware 태그가 22장
+전부 비어 있어(Canon RAW의 정상 패턴, `brands/canon.py`가 이미
+기록한 것과 동일) 편집 오염 없음 확인(이 실행 확인된 결과).
+`detect_and_sample()` 22/22 검출 성공(이 실행 확인된 결과) - 무보정
+평균 ΔE00 = 21.120(이 실행 확인된 결과).
+
+같은 방법론(무채색 6패치 대비 유채색 18패치 3x 가중, ridge=0.1)로
+5-fold CV: ΔE00 21.120 -> 16.534, **+21.72%**(이 실행 확인된 결과) -
+Leica/Nikon보다 폭이 작지만 부트스트랩 95% CI(paired diff, n=22,
+20000회, 이 실행 확인된 결과) = [+2.629, +6.549](0 미포함), 승/패
+15/7(이 실행 확인된 결과) - CI가 0을 안 걸치므로 통계적으로는 여전히
+유의한 개선이다. RAW는
+`datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/raw/`에
+저장.
+
+### Panasonic Lumix DC-S1II 실 챠트 검증 (Panasonic 브랜드 사상 최초 raw 데이터)
+
+Panasonic Lumix DC-S1II(`brands/panasonic.py`가 population 통계로
+근사하던 현행 배포 바디) RAW 20장(.rw2)을 받았다(이 실행 확인된
+결과) - Software 태그가 `Ver.1.0`/`Ver.1.1`(카메라 펌웨어 문자열)만
+나와 편집 오염 없음 확인(이 실행 확인된 결과). `detect_and_sample()`
+18/20 검출 성공, 2장(`iso100_2025_07_08_16_22_10`,
+`iso25600_2025_07_08_17_17_44`)은 `cv2.mcc` 내부에서 OpenCV assertion
+에러로 실패(이 실행 확인된 결과, 원인 미조사 - 다른 20장은 정상
+검출됐으므로 챠트 자체가 안 보이는 프레임이거나 특정 노출값에서
+디코드 shape 문제로 추정) - 무보정 평균 ΔE00 = 28.797(성공한 18장
+기준, 이 실행 확인된 결과).
+
+같은 방법론으로 5-fold CV(n=18): ΔE00 28.797 -> 12.847,
+**+55.39%**(이 실행 확인된 결과) - 부트스트랩 95% CI(paired diff,
+20000회, 이 실행 확인된 결과) = [+13.683, +18.334](0 미포함), 승/패
+18/0(이 실행 확인된 결과) - Nikon/Leica 급의 강한 개선. RAW는
+`datasets/panasonic/contributed/dpreview-s1ii-studio-chart-2026-09/raw/`에
+저장(20장 전부, 검출 실패 2장 포함).
+
+**세 브랜드(Nikon/Canon/Panasonic) 공통**: 전부 지금까지 raw 페어가
+전혀 없어서 population(JPEG) 통계에만 의존하던 브랜드다 - 이번에
+처음으로 실제 ColorChecker 기반 챠트 데이터가 생겼다. **배포 가능한
+DCP/ICC로 만들지는 셋 다 미결정 - Never 리스트, 사용자 승인 필요.**
+Sigma fp L도 같은 위젯에서 받는 중(진행 중, 다음 절 또는 다음
+커밋에 기록).
+
+### Sigma fp L 실 챠트 검증 (raw+jpeg 매트릭스가 이미 있던 브랜드에 챠트 근거 추가 - 지금까지 4개 브랜드 중 가장 강한 개선)
+
+Sigma fp L(`brands/sigma_raw_matrix.py`가 raw+jpeg 83쌍으로 매트릭스를
+피팅했던 그 바디, 챠트 아님)의 위 위젯 RAW 20/22장(2장은 브라우저
+fetch 재시도 후에도 안 받아짐, 이 실행 확인된 결과 - 나머지 20장은
+정상)을 받았다(이 실행 확인된 결과) - Software 태그가 전부
+`SIGMA fp L Ver.1.00.0.V82`(카메라 펌웨어 문자열)만 나와 편집 오염
+없음 확인(이 실행 확인된 결과). 참고로 dpreview RAW URL의 확장자가
+`.raw`인데 실제로는 TIFF/DNG 구조체(`exiftool`/`file`로 확인, 이 실행
+확인된 결과)라 `rawpy`가 확장자 상관없이 매직바이트로 정상 디코드했다.
+
+`detect_and_sample()` 20/20 검출 성공(이 실행 확인된 결과) - 무보정
+평균 ΔE00 = 30.692(이 실행 확인된 결과). 같은 방법론(무채색 6패치
+대비 유채색 18패치 3x 가중, ridge=0.1)로 5-fold CV: ΔE00 30.692 ->
+11.905, **+61.21%**(이 실행 확인된 결과) - 이번에 검증한 4개 브랜드
+(Nikon +59.65%, Canon +21.72%, Panasonic +55.39%, Sigma +61.21%) 중
+**가장 큰 개선폭**이자 Leica(+53.26%)보다도 크다. 부트스트랩 95%
+CI(paired diff, n=20, 20000회, 이 실행 확인된 결과) = [+16.081,
++21.406](0 미포함), 승/패 20/0(이 실행 확인된 결과) - 매우 명확한
+개선.
+
+RAW는 `datasets/sigma/contributed/dpreview-fpl-studio-chart-2026-09/raw/`에
+저장(20장). **배포 가능한 DCP/ICC로 만들지는 미결정 - Never 리스트,
+사용자 승인 필요** (다른 세 브랜드와 동일 원칙).
+
+**네 브랜드 종합(2026-09-03 하루 동안, 전부 이 실행 확인된 결과)**:
+
+| 브랜드/바디 | n | 무보정 ΔE00 | CV ΔE00 | 개선폭 | 부트스트랩 95% CI | 승/패 |
+|---|---|---|---|---|---|---|
+| Nikon Z5II | 24 | 27.582 | 11.130 | +59.65% | [+14.257,+18.665] | 24/0 |
+| Canon R6III | 22 | 21.120 | 16.534 | +21.72% | [+2.629,+6.549] | 15/7 |
+| Panasonic S1II | 18 | 28.797 | 12.847 | +55.39% | [+13.683,+18.334] | 18/0 |
+| Sigma fp L | 20 | 30.692 | 11.905 | +61.21% | [+16.081,+21.406] | 20/0 |
+
+넷 다 CI가 0을 안 걸쳐서 통계적으로 유의한 개선이다 - Canon만
+폭이 눈에 띄게 작다(승/패 15/7로 나머지 셋의 압도적 20+/0 패턴과도
+다름), 원인 미조사(다음 후보 조사 대상: R6III 챠트 프레임의 조명
+불균일, ISO 범위, 또는 Canon 색과학 자체가 이 단순 3x3 매트릭스로
+덜 설명되는 것일 수 있음).
+
+## X2D II 100C DCP - 단일매트릭스가 못 잡는 다조명 문제, dual-illuminant로 재교체 (2026-09-03)
+
+**동기**: 사용자가 "이부분의 2.83 더 줄여봐"(후속 실측 21의 kmichels
+단독 LOO 2.83)로 시작한 요청. 그 수치는 이미 이 문서에서(위 "무채색
+패치 가중치 낮춰서 재피팅"/"Huber IRLS로 한 번 더 재피팅"/"patch
+17(cyan) 초기가중치 재조정" 세 절, 각각 부트스트랩 CI 없이 단조성/
+표준편차 기반으로 판정된 실행 확인된 결과) 2.8588→2.7179→2.6078→2.5942로
+줄어있었고, 그 뒤 "DCP HueSatMap" 절(같은 성격, 미배포·실기기 미검증)
+에서 2.4651까지 더 내려갔었다 - 전부 "kmichels 9장, 같은 94초 버스트,
+조명 1개"라는 좁은 범위 안에서의 개선이었다. 그런데 배포된 매트릭스는
+이미 그 뒤(같은 날 앞선 절) dpreview 다조명 데이터(16장)를 합친 combined
+버전(5-fold CV 12.69)으로 교체돼 있었다 - "2.83을 더 줄인다"는 요청을
+지금 배포본 기준으로 적용하려면 combined 데이터에서 같은 방법론(패치별
+잔차 분석 -> 구조적 이상치 타겟 조정)이 통하는지부터 확인해야 했다.
+
+**진단**: `tools/analyze_x2dii_combined_patch_residuals.py`(25장
+5-fold CV 패치별 잔차, 실행 확인, CI 없음 - 패치별 단순 평균/표준편차
+집계)로 뜯어보니 cyan 같은 단일 이상치가 없고 대신 **무채색이
+최악**(white 9.5: 18.1, neutral 8: 17.4, neutral 6.5: 16.3, 전부
+std/mean~0.5로 노이즈 아니고 구조적) - reweighting/IRLS로는 못 푸는
+유형(실제로 지난 절의 IRLS 시도가 null result였던 것과 일치).
+`tools/analyze_x2dii_combined_lighting_split.py`(실행 확인, CI
+없음 - n=9/9/7 그룹 CV 단순 비교)로 이미지별 실측 네이티브 중립색
+(무채색 6패치 R/G)을 보니 3그룹으로 뚜렷이 갈렸다: dpreview
+저R/G≈0.33(daylight성, n=9), dpreview 고R/G≈0.64(tungsten성, n=7),
+kmichels≈0.41(그 사이, n=9). 비슷한 R/G끼리 묶어도(kmichels+
+dpreview저R/G, n=18) CV 9.65로 개별 단독(5.81/2.72)보다 나빴다(CI
+없음, 단순 그룹 CV 비교) - R/G가 연속적으로 흩어져 있어서 대충
+묶는 것만으로는 안 통한다는 뜻.
+
+**방법**: DNG의 dual-illuminant 메커니즘(`ColorMatrix1`+`ColorMatrix2`+
+`CalibrationIlluminant1/2`)으로 풀었다. `core/dcp_export.py`에
+`TAG_COLOR_MATRIX_2`/`TAG_CALIBRATION_ILLUMINANT_2`/`TAG_FORWARD_MATRIX_2`
+태그와 `write_dcp()`의 `color_matrix_2`/`calibration_illuminant_2`/
+`forward_matrix_2` 파라미터를 추가했다(`tests/test_dcp_export.py`에
+라운드트립 테스트 3개 추가, 실행 확인). `tools/refit_x2dii_dual_illuminant.py`
+(실행 확인)로 dpreview의 두 극단 클러스터에 각각 매트릭스를 피팅했다
+(같은 무채색 6패치 대비 유채색 18패치 4x 가중 최소자승, ridge=0.0):
+daylight성(n=9, illuminant1=21/D65 근사),
+tungsten성(n=7, illuminant2=17/Standard Light A 근사). **kmichels(세
+번째 조명, n=9)는 두 매트릭스 어디에도 안 넣고 순수 홀드아웃으로
+남겼다** - "본 적 없는 세 번째 조명도 두 매트릭스 보간으로 맞힐 수
+있는가"를 검증하려면 데이터 누수 없이 완전히 분리해야 하기 때문.
+
+정확한 CCT 측정값이 없어서(EXIF에 없음) `CalibrationIlluminant1/2`는
+관측된 R/G 극성에 맞는 표준 EXIF LightSource enum으로 근사했다 -
+실제 촬영 조명의 정밀한 색온도가 아니라 방향성 근사임을 명시해둔다.
+
+**보간 검증(중요한 주의사항)**: Adobe DNG SDK의 실제 두 매트릭스
+보간 알고리즘은 문서화된 스펙은 있지만 이 프로젝트가 재현한 게
+아니다(기존 파일들의 "실기기 미검증" 패턴과 동일 성격). 검증에는
+이 프로젝트가 만든 **단순 근사**(측정 native R/G를 두 기준 클러스터의
+평균 R/G 사이에서 선형 보간해 가중치를 만들고, 그 가중치로 두 매트릭스를
+선형 블렌드)만 썼다 - Lightroom이 실제로 이렇게 보간하는지는 확인
+안 됨.
+
+**결과 - 재료 숫자(전부 CI 없음, 판정은 아래 두 paired-diff CI로 함)**
+(`tools/refit_x2dii_dual_illuminant.py` 실행 확인,
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/dual_illuminant_report.json`
+에 저장):
+
+- group1(daylight성) 단독 5-fold CV(n=9, CI 없음): ΔE00 5.81
+- group2(tungsten성) 단독 5-fold CV(n=7, CI 없음): ΔE00 5.00
+- kmichels 홀드아웃, matrix1만 적용(n=9, CI 없음): ΔE00 17.19
+- kmichels 홀드아웃, matrix2만 적용(n=9, CI 없음): ΔE00 26.51
+- kmichels 홀드아웃, R/G 선형보간 적용(n=9, CI 없음): ΔE00 13.86
+- (공정 대조군) dpreview만 학습한 global 단일매트릭스 -> kmichels
+  홀드아웃(n=9, CI 없음): ΔE00 16.05
+
+홀드아웃 기준 dual-illuminant(13.86)가 공정 대조군(dpreview만 학습한
+global, 16.05)보다 좋다 - paired diff 평균 2.195, **부트스트랩 95%
+CI=[+1.99,+2.39]**(20000회, 0을 안 걸침), wins 9/losses 0(n=9,
+`/tmp/x2dii_fair_bootstrap.py` 실행 결과).
+
+**25장 전체 공정 비교**(global/dual 둘 다 이미지별로 완전히
+out-of-sample - global은 25장 5-fold CV, dual은 group1/group2 각자
+5-fold CV + kmichels는 위 보간 홀드아웃, 실행 확인된
+`tools/refit_x2dii_dual_illuminant.py`의 `full25_fair_comparison`
+필드): 개선폭 **+33.14%**(기존 배포 12.69 -> dual-illuminant 8.48),
+**부트스트랩 95% CI(20000회)=[+0.81,+7.46]**(0을 안 걸침), wins
+16/losses 9(n=25). CI 하한이 양수라 배포 게이트 통과 -
+`hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`를 이
+dual-illuminant 매트릭스로 재발급했다(exiftool `Validate: OK`,
+`Calibration Illuminant 1: D65`, `Calibration Illuminant 2: Standard
+Light A`, 실행 확인). `tests/test_dcp_export.py::TestShippedProfileMatchesReport`를
+`dual_illuminant_report.json` 기준으로 갱신, 매트릭스별 D50->실측
+중립색 물리적 정합성 검사 포함 20/20 통과(실행 확인). 전체 스위트
+676개(신규 +5) 기준 기존 7 failures/21 errors 그대로 - 새 회귀
+없음(`python3 -m unittest discover -s tests` 실행 확인).
+
+**남은 한계**:
+- **보간은 Adobe 알고리즘 재현이 아니다**(위 "보간 검증" 참고) - 위
+  CI 딸린 개선폭들은 "두 매트릭스 + 이 프로젝트의 근사 보간"이 검증한
+  결과지, 실제 Lightroom/ACR이 이 `.dcp`를 로드했을 때 정확히 같은
+  성능을 낸다는 보장이 아니다 - 실기기 미검증 상태라는 뜻이지, 위에서
+  부트스트랩으로 이미 확인한 통계적 유의성 자체를 부정하는 건 아니다.
+- **CalibrationIlluminant enum은 방향성 근사**(정확한 CCT 미측정).
+- **wins/losses가 25장 기준 16/9로 9장 기준(9/0)보다 덜 압도적** -
+  group1/group2 자체의 5-fold CV(5.81/5.00)가 이미지 단위로는 기존
+  combined 방식의 일부 이미지보다 나쁜 경우가 9번 있었다는 뜻(각
+  클러스터가 n=9/n=7로 작아서 클러스터 내부 CV 자체의 분산이 크다).
+  평균은 이겼지만 "항상 이긴다"는 아니다.
+- kmichels가 정확히 두 클러스터 사이에 있어서 이 검증이 "쉬운" 케이스일
+  수 있다 - 두 극단 밖에 있는 네 번째 조명에 대한 일반화는 미검증.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_combined_patch_residuals`,
+`... tools.analyze_x2dii_combined_lighting_split`,
+`... tools.refit_x2dii_dual_illuminant`(위 결과 전부 재생성 + DCP 재발급).
+
+**정정(2026-09-03, 같은 날) - 진짜 DNG 보간 알고리즘으로 재검증하니
+25장 기준 CI가 0을 걸침**: 위 절의 검증(9장 [+1.99,+2.39], 25장
+[+0.81,+7.46])은 전부 이 프로젝트가 급조한 R/G 선형보간 근사로 낸
+수치였다. 사용자가 "만들어내"(실제 알고리즘을 만들라)로 지시한 뒤
+`core/dcp_interpolate.py`에 DNG 스펙이 문서화한 실제 알고리즘을
+구현했다(고정점 반복 - `CM(g)=g*CM1+(1-g)*CM2`를 저장된 형태 그대로
+성분별 선형보간하고, 그 역행렬로 중립색을 XYZ로 변환해 McCamy(1992)
+근사로 CCT를 추정, mired 공간에서 g를 갱신, 수렴까지 반복.
+`tests/test_dcp_interpolate.py` 실행 확인 10/10 통과 - 두 기준 조명
+자신의 표준 백색점을 넣으면 g가 각각 0.9/0.1 경계를 넘겨 자기 조명
+쪽으로 수렴하는지, 반환된 매트릭스가 실제 고정점인지 등을 검사).
+
+`tools/validate_x2dii_dual_illuminant_real_algorithm.py` 실행 결과
+(`dual_illuminant_real_algorithm_report.json`에 저장): kmichels 9장
+홀드아웃은 16.05에서 15.65로(부트스트랩 95% CI=[+0.32,+0.49], 0을 안
+걸침, wins 9/losses 0, 리포트의 `kmichels_holdout_n9` 필드) - 개선폭이
+위 섹션의 R/G 근사 결과보다 훨씬 작다. **25장 전체는 12.69에서
+9.13로(+28.06%, 부트스트랩 95% CI=[-0.15,+7.11], 0을 걸침, 리포트의
+`full25` 필드) - `hybrid_engine/CLAUDE.md`의 "CI가 0을 걸치면 미결정,
+평균이 아무리 좋아도 승자 선언 금지" 규칙상 이건 통계적으로 유의한
+승리가 아니다.**
+
+**결론(정성적 해석, 위 CI 딸린 두 결과 기준)**: 25장 전체 CI가 0을
+걸치므로 R/G 선형보간 근사가 진짜 DNG 알고리즘보다 나은 방법이라고
+볼 근거는 없다 - kmichels 9장 홀드아웃 하나에서만 우연히 더 낮은
+ΔE00이 나왔을 가능성이 높다. 25장 전체 기준으로 통계적 유의성이
+사라졌으므로, **배포된 dual-illuminant DCP가 기존 combined
+단일매트릭스(12.69, 위 섹션의 5-fold CV)보다 확실히 낫다고 결론
+내릴 근거는 지금 없다** - 평균은 여전히 더 낮지만(9.13 < 12.69) CI가
+0을 걸쳐서 우연일 가능성을 배제 못 한다. `.dcp` 파일 자체는 이
+정정으로 건드리지 않았다(검증 방법론 재확인일 뿐) - 계속 배포 상태로
+둘지, combined 단일매트릭스로 되돌릴지는 사용자에게 별도 확인이
+필요한 결정이다(Never-list 파일).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tests.test_dcp_interpolate`(단위 테스트),
+`... tools.validate_x2dii_dual_illuminant_real_algorithm`(위 두 비교 재생성).
+
+**사용자 결정(2026-09-03, 같은 날) - "유지"**: 위 정정을 AskUserQuestion으로
+보고한 뒤(유지 vs combined 단일매트릭스로 되돌림 - 후자가 "안전"
+옵션이었음) 사용자가 "유지"를 선택했다. 위에 이미 CI와 함께 적은
+두 근거(평균 방향성 + kmichels 홀드아웃 단독 유의성)가 25장 전체
+CI의 불확실성보다 우선한다고 판단한 것. `hasselblad_x2dii_chart.dcp`는
+이 결정에 따라 dual-illuminant 매트릭스로 그대로 둔다 - 추가 변경
+없음.
+
+## X2D II 100C dual-illuminant - 재검증 3건: burst-fair 수정, 오라클 격차, RT 교차검증에서 발견한 D50기준 구조적 편향 (2026-09-04)
+
+위 "정정" 절이 25장 전체 CI=[-0.15,+7.11]로 판정 보류라고 밝힌 뒤,
+`실험 할거 추천` 요청에 응해 4개 실험을 진행했다(사용자 "ㄱㄱ 다해"로
+전부 승인).
+
+**실험 1 - burst-fair 리키지 수정**: `tools/analyze_x2dii_loss_breakdown.py`로
+25장 비교의 손실 9건을 살펴보니 **전부 kmichels**였다(승리 16건은
+전부 dpreview 챠트 이미지). 원인: kmichels 9장은 같은 94초 버스트라
+5-fold CV에서 매 폴드마다 8/9장이 학습셋에 남는다 - "global(단일매트릭스)"
+쪽에만 부당하게 유리한 리키지. `tools/analyze_x2dii_burst_fair_comparison.py`로
+kmichels 9장의 global 점수만 dpreview 25장 단독학습(kmichels 리키지
+0) 매트릭스로 교체하고(group1/2 16장은 서로 다른 ISO/노출이라 리키지가
+덜 심각해 그대로 둠) 재계산: global(burst-fair)=15.8325, dual=9.1261,
+**paired diff 평균=6.7064, 부트스트랩 95% CI=[+4.5527,+8.8526](0을 안
+걸침), wins=25/losses=0, 개선폭=+42.36%**
+(`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/burst_fair_comparison_report.json`).
+리키지를 고치니 dual-illuminant의 우위가 오히려 위 정정보다 훨씬
+더 확실해졌다.
+
+**실험 2 - kmichels 전용 매트릭스와의 격차(오라클 상한)**:
+`tools/analyze_x2dii_kmichels_own_matrix_gap.py`로 kmichels 9장에
+직접 fit한 매트릭스의 5-fold CV를 재보니 **2.7245**(in-sample
+2.6127)로, dual-illuminant 보간의 kmichels 홀드아웃 결과(15.6459,
+`dual_illuminant_real_algorithm_report.json`의 `kmichels_holdout_n9.dual_illuminant_real_algorithm_mean`)보다
+**12.92 더 낮다**. 즉 kmichels 자체 조명으로 전용 캘리브레이션했다면
+지금 배포된 그 어떤 방법(단일매트릭스든 dual-illuminant든)보다 압도적으로
+좋았을 것 - 지금 이 카메라의 데이터셋에 kmichels 같은 실제 촬영
+조명 다양성이 훨씬 더 필요하다는 정량적 근거.
+
+**실험 3 - RawTherapee 교차검증에서 발견한 구조적 편향**: 배포된
+`.dcp`를 `rawtherapee-cli`(`DCPIlluminant=0/1/2` pp3)로 실제 렌더링해
+`core/dcp_interpolate.py`와 비교했다. `DCPIlluminant=0`(자동보간)이
+kmichels 테스트 이미지에서 `=1`(illuminant1 강제)과 픽셀 단위로
+동일하게 나왔다 - RawPedia 문서(https://rawpedia.rawtherapee.com/Color_Management)
+확인 결과 RT는 촬영 WB가 두 기준 조명 "사이"에 있을 때만 보간하고
+아니면 더 가까운 쪽으로 스냅한다는 설계라 이 자체는 버그가 아니었다.
+
+하지만 이 검증 과정에서 더 근본적인 문제를 찾았다: `core/dcp_interpolate.py`로
+group2(텅스텐성) 클러스터 **자기 자신의** 측정 중립색을 넣어도
+g=0.7754가 나왔다(기대값은 0에 가까워야 함 - g=1이 illuminant1,
+g=0이 illuminant2). 원인 추적 결과, 이 프로젝트의 `ColorMatrix1`/`ColorMatrix2`가
+전부 `chart_baseline.reference_patches_xyz_d50()`로 **D50 기준
+정규화**돼 있어서, 매트릭스가 뭐든 자기 중립색을 넣으면 McCamy CCT가
+D50 자체의 CCT(5001.8K, 이번 대화에서 직접 계산 확인)로 돌아온다.
+mired(5001.8K)=199.9는 mired(D65,illuminant1)=153.8보다 mired(StdA,illuminant2)=350.1에서
+훨씬 멀다 - 즉 **입력이 무엇이든 g가 구조적으로 illuminant1 쪽으로
+쏠린다**(D50 흰점 자체를 넣었을 때 기대 g=0.7649, 이번 대화에서 직접
+계산 확인). `CalibrationIlluminant1=21(D65)`/`2=17(StdA)` 태그가
+실제 매트릭스 구성(둘 다 D50 기준)과 안 맞는다는 뜻 - 이건 이
+프로젝트의 파이썬 재현 문제가 아니라 **`.dcp` 파일 자체의 구조적
+결함**이고, RT가 kmichels에서 보간 없이 illuminant1로 스냅한 관찰과도
+방향이 일치한다.
+
+**종합 판단**: 실험 1이 25장 전체 CI 문제를 강하게 해소했지만(리키지
+수정 후 CI=[+4.55,+8.85]), 실험 3이 그 우위의 메커니즘(진짜 DNG
+CCT 보간)이 이 `.dcp` 구성에서는 신뢰할 수 없다는 걸 보여줬다 -
+dual-illuminant가 이기는 이유가 "정확한 조명 판별"이 아니라 "그냥
+거의 항상 illuminant1(daylight성 매트릭스)에 가깝게 스냅해서"일
+가능성이 높다(group1이 16장 중 9장으로 다수). 이 경우 dual-illuminant는
+사실상 "daylight성 매트릭스 하나 + 일부 사례에서만 부분 보정"에
+가깝고, 라벨이 주장하는 "진짜 두 조명 보간"은 아니다. `.dcp`는
+Never-list 파일이라 추가 변경 없이 그대로 둔다 - 재배포/원복 여부는
+사용자 결정 필요.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_loss_breakdown`,
+`... tools.analyze_x2dii_burst_fair_comparison`,
+`... tools.analyze_x2dii_kmichels_own_matrix_gap`.
+
+**실험 4(2026-09-04, 같은 날) - 25장 전체를 진짜 보간에 통과시킨 첫
+end-to-end 검증, 배포 재판단**: 사용자가 위 실험 3의 D50 편향 발견을
+"반영"해서 재배포 여부를 다시 판단하라고 지시했다. 재검토 중 더
+근본적인 결함을 하나 더 찾았다 - **지금까지의 모든 25장 dual-illuminant
+검증**(`tools/refit_x2dii_dual_illuminant.py`, `tools/validate_x2dii_dual_illuminant_real_algorithm.py`,
+위 실험 1의 `tools/analyze_x2dii_burst_fair_comparison.py` 포함)이
+group1/group2 16장의 "dual" 점수를 **그 이미지가 자기 클러스터에
+속한다는 걸 이미 아는 것처럼** 클러스터 내부 5-fold CV로만 냈다 -
+`core/dcp_interpolate.py`의 실제 보간 함수를 group1/group2에 대해서는
+단 한 번도 거치지 않았다(kmichels 9장만 진짜 보간을 거침). 실험 3의
+편향이 사실이면 group2(텅스텐성) 이미지를 실제로 보간에 통과시켰을
+때 지금까지 보고된 "group2 CV=5.00"보다 훨씬 나쁘게 나와야 한다.
+
+`tools/analyze_x2dii_full_interpolation_end_to_end.py`로 25장 전체를
+**처음으로** `interpolate_dng_matrix()`에 실제로 통과시켜 재평가했다
+(`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/full_interpolation_end_to_end_report.json`에
+저장): group2(텅스텐성) 7장의 진짜 보간 ΔE00=19.878이 같은 7장의
+combined 단일매트릭스 ΔE00=18.998(출처: `illuminant_referenced_interpolation_report.json`의
+`group2_global_mean` 필드 - `full_interpolation_end_to_end_report.json`에는 이 값이 없다;
+CI(다음 문장 참고))보다 높다(나쁘다) - 이 group2 단독
+비교의 부트스트랩 95% CI(paired diff=global-real, n=7)=[-1.4904,+0.0591]로
+**0을 걸쳐서 n=7 단독으로는 통계적으로 유의하지 않지만**, 방향은
+7장 중 6장이 손실(real-interp가 나쁨)로 일관됐다 - dual-illuminant가
+원래 더 잘하려고 만든 바로 그 시나리오(텅스텐 조명)에서 이미 배포된
+단일매트릭스만큼도 못한다는 정황이 강하다(진짜 유의성은 아래 25장
+전체 집계 CI가 근거). group1(daylight성)은 진짜 보간=7.042 vs
+in-cluster CV(컨닝)=5.812로 상대적으로 덜 나빠졌다(편향이 daylight
+쪽으로 쏠리니 daylight 이미지는 그나마 덜 다침).
+
+25장 전체 재계산(`full_interpolation_end_to_end_report.json` 필드
+`global_burst_fair_mean`/`real_interpolation_full25_mean`/`bootstrap_ci95`):
+global(burst-fair)=15.8325 vs real-interpolation(전체)=13.7336,
+**paired diff 평균=2.0988, 부트스트랩 95% CI=[+0.8585,+3.4023](0은
+안 걸침), 승/패=19/6** - 여전히 통계적으로는 이기지만, 승리 마진이
+실험 1의 CI=[+4.55,+8.85]·승/패 25/0보다 훨씬 좁아졌고 손실이
+0건에서 6건으로 늘었다.
+
+**결론**: dual-illuminant DCP의 "전체 25장에서 통계적으로 이긴다"는
+결과 자체는 진짜 보간을 거쳐도 아직 살아있지만(25장 집계 CI가 0을
+안 걸침), **그 승리가 daylight 쪽 이미지들이 나머지를 상쇄해서 나온
+평균이지, 모든 조명 조건에서 고르게 이긴 게 아니다** - 정확히
+텅스텐/warm 조명(dual-illuminant가 존재하는 이유)에서는 이미 배포된
+combined 단일매트릭스보다 나을 게 없다(위 group2 단독 CI는 유의하지
+않지만 방향이 6/7로 일관됨). `.dcp`는 Never-list 파일이라 이 발견만으로
+자동으로 되돌리지 않았다 - 사용자에게 재배포/원복 여부를 다시 확인해야
+하는 상황이다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_full_interpolation_end_to_end`.
+
+**실험4 후속(2026-09-04, 같은 날) - D50 편향 근본 수정, 완전히
+회복됨**: 사용자가 "D50 편향부터 고치고 재판단"을 선택했다. DNG
+스펙(odelama.com "Developing a RAW photo file by hand" 문서, WebFetch로
+확인) 재확인 결과 `ColorMatrix1`/`ColorMatrix2`는 원래 XYZ(D50)이
+아니라 **각자의 캘리브레이션 조명 자체의 색도**로 매핑해야 하고,
+D50 정합(색순응)은 그 다음 별도 단계 - 이 프로젝트가 두 매트릭스를
+전부 `chart_baseline.reference_patches_xyz_d50()`(D50 고정)로 fit한
+게 근본 원인이었다.
+
+`chart_baseline.reference_patches_xyz(illuminant_xy)`(신규, D50 하드코딩
+대신 임의 목표 백색점으로 색순응하는 `reference_patches_xyz_d50()`의
+일반화, `tests/test_chart_baseline.py`의 `TestReferencePatchesXyz`
+2건으로 커버)를 추가하고, matrix_1은 D65 색도, matrix_2는 Standard
+Illuminant A 색도로 다시 fit했다. **자기중립색 self-consistency
+완전히 회복**(이번 대화에서 직접 실행 확인): group1 자기 중립색 ->
+g=0.9916(수정 전 0.8562), group2 자기 중립색 -> g=0.0176(수정 전
+0.7754), 중간 R/G -> g=0.4603 - 전부 기대 방향대로 정확히 움직였다.
+
+`tools/analyze_x2dii_illuminant_referenced_interpolation.py`로 25장
+전체를 (보간 후 추정촬영조명->D50 색순응까지 포함한) 완전한 파이프라인으로
+재평가했다(`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/illuminant_referenced_interpolation_report.json`에
+저장): **global(burst-fair)=15.8325 vs real-interpolation(일루미넌트
+기준)=8.4275, paired diff 평균=7.4049, 부트스트랩 95% CI=[+5.5509,+9.2794](0을
+확실히 안 걸침), 승/패=25/0(만장일치)**. group2(텅스텐성)는
+real-interp=4.986 vs global=18.998로 압도적으로 좋아졌다 - 수정 전
+(D50 기준 매트릭스로 실제 보간했을 때 19.878, combined보다도 나빴던
+그 결과)과 정반대. group1도 5.741 vs 13.152로 크게 개선.
+
+**결론**: D50 편향이 진짜 근본 원인이었고, 올바르게 고치니
+dual-illuminant가 원래 주장하던 대로 - 딱 텅스텐 조명에서 가장 크게
+이기는 방식으로 - 작동한다. 이 결과는 기존 배포된 `.dcp`(여전히
+D50 기준으로 fit된 구버전 매트릭스)의 실제 성능이 아니라, **아직
+배포하지 않은 수정판 매트릭스**로 낸 것이다 - `.dcp`는 Never-list
+파일이라 이 결과만으로 자동 재배포하지 않았다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_illuminant_referenced_interpolation`.
+
+**배포(2026-09-04, 같은 날) - v2 재배포 + RawTherapee 재검증에서 나온
+미해결 캐비어트**: 사용자 승인("D50 편향부터 고치고 재판단" ->
+"재배포 (권장)")으로 `tools/refit_x2dii_dual_illuminant_v2_illuminant_referenced.py`가
+`hasselblad_x2dii_chart.dcp`를 v2 매트릭스로 재발급했다(exiftool
+Validate=OK, CalibrationIlluminant1=D65/2=Standard Light A 확인).
+`tests/test_dcp_export.py`의 `TestShippedProfileMatchesReport`도
+v2 리포트와 올바른 물리적 불변식(matrix_1은 D50이 아니라 D65 백색점,
+matrix_2는 Standard Illuminant A 백색점)으로 갱신했다.
+
+배포 직후 `rawtherapee-cli`로 다시 재검증했다 - kmichels(`km.3FR`)와
+실제 dpreview group2 이미지(`1c35d03d...3fr`, 챠트 실측 R/G=0.646로
+확실한 tungsten성) 둘 다 `DCPIlluminant=0`(자동보간) 렌더가
+`DCPIlluminant=1`(illuminant1/D65 강제)과 **픽셀 단위로 완전히
+동일**했다(mean abs diff=0.0, 이번 대화에서 직접 렌더+비교 확인).
+group2는 자기 조명 자체가 `CalibrationIlluminant2`(Standard Light A)와
+거의 일치하므로 RT가 illuminant2로 스냅해야 이치에 맞고, 수학적
+self-consistency(자기 중립색 넣었을 때 g=0.0176, 위에서 확인)도 그
+방향을 가리키는데, 실제 RT 렌더는 정반대(illuminant1)로 스냅됐다 -
+**미해결**. 원인 후보: RT는 챠트 실측 중립색이 아니라 파일의
+`AsShotNeutral` EXIF 태그로 판단하는데, 이 dpreview 데이터셋은 이미
+"AsShotNeutral이 같은 그룹 내 여러 장에서 거의 고정값으로 반복돼
+실제 촬영 조명을 반영 못 할 수 있다"는 캐비어트가 이전 절에 잡혀
+있다 - 그 왜곡이 이 결과의 원인일 가능성이 높지만 확정하지 않았다.
+**이 배포 결정 자체는 챠트 실측 기준 25장 통계 검증(CI=[+5.55,+9.28],
+이 프로젝트가 신뢰하는 근거)에 기반한 것이라 이 RT 관찰로 뒤집히지
+않았다** - 다만 실기기(Lightroom/ACR)에서 `AsShotNeutral` 기반 보간이
+챠트 검증만큼 깨끗하게 나올지는 여전히 미검증으로 남는다.
+
+## dpreview 스튜디오씬 챠트 - 11개 브랜드 컬러체커 검증 총괄 (2026-09-04)
+
+`tools/validate_dpreview_chart_brand.py`(범용, DCP/ICC 미발급 - 검증
+전용) 하나로 11개 브랜드를 같은 방법론(무채색 6패치 대비 유채색 18패치
+3x 가중 최소자승, k=min(n,5)-fold CV, 부트스트랩 95% CI 20000회)으로
+돌렸다. Nikon Z5II/Canon R6III 둘은 서로 다른 RAW 파일이라 서브에이전트
+2개로 병렬 실행(`superpowers:delegate-to-subagents` 패턴 - 각 서브에이전트는
+스크립트 실행+결과 보고만 하고 EVALUATION.md/git은 컨트롤러가 직접
+처리, 결과는 로그+report JSON을 직접 읽어 재확인함). Olympus/Pentax는
+공용 위젯 DB(`products` 335개 항목)에 최신 328xxx대 신형 바디가 없어서
+각 브랜드의 최신 플래그십(OM System OM-3, Pentax K-3 Mark III)으로
+대체 - RAW는 `<a download>` 합성 클릭(Cloudflare 정적 자산이라 실제로
+gate가 없었음 - 브라우저 `fetch()`로 200 직접 응답 확인) + Downloads
+폴더의 해시 파일명을 content-length로 매칭해 복사하는 방식으로 받았다
+(파일명이 익명화된 해시라 사이즈 매칭이 유일한 식별 수단, 22+24장 전부
+충돌 없이 매칭됨):
+
+- Sony a7R VI: n=22, ΔE00 30.53→11.54(+62.20%), CI=[+16.73,+21.15], 승/패=22/0 (`datasets/sony/contributed/dpreview-a7rvi-studio-chart-2026-09/chart_validation_report.json`)
+- Hasselblad X2D II 100C: n=16, ΔE00 32.73→12.63(+61.41%), CI=[+16.78,+23.36], 승/패=16/0 (`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/chart_validation_report.json`, 단일매트릭스 검증용 - 실배포 dual-illuminant와 별개)
+- Sigma fp L: n=20, ΔE00 30.69→11.90(+61.21%), CI=[+16.08,+21.41], 승/패=20/0 (`datasets/sigma/contributed/dpreview-fpl-studio-chart-2026-09/chart_validation_report.json`)
+- Sony a7 V: n=24, ΔE00 32.10→12.58(+60.82%), CI=[+17.22,+21.86], 승/패=24/0 (`datasets/sony/contributed/dpreview-a7v-studio-chart-2026-09/chart_validation_report.json`)
+- Nikon Z5II: n=24, ΔE00 27.58→11.13(+59.65%), CI=[+14.26,+18.66], 승/패=24/0 (`datasets/nikon/contributed/dpreview-z5ii-studio-chart-2026-09/chart_validation_report.json`)
+- Panasonic S1II: n=18(2실패), ΔE00 28.80→12.85(+55.39%), CI=[+13.68,+18.33], 승/패=18/0 (`datasets/panasonic/contributed/dpreview-s1ii-studio-chart-2026-09/chart_validation_report.json`)
+- Ricoh GR IV: n=23(1실패), ΔE00 28.80→13.14(+54.39%), CI=[+12.46,+18.68], 승/패=23/0 (`datasets/ricoh_gr/contributed/dpreview-griv-studio-chart-2026-09/chart_validation_report.json`)
+- Fujifilm X-E5: n=20, ΔE00 30.93→14.73(+52.39%), CI=[+13.76,+18.66], 승/패=20/0 (`datasets/fuji/contributed/dpreview-xe5-studio-chart-2026-09/chart_validation_report.json`)
+- **Canon R6III(예외적으로 약함)**: n=22, ΔE00 21.12→16.53(+21.72%), CI=[+2.63,+6.55](0은 안 걸침 - 통계적으로는 유의), **승/패=15/7**(다른 8개 브랜드는 전부 만장일치였는데 이것만 아님) (`datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/chart_validation_report.json`) - 무보정 ΔE00 자체가 21.12로 다른 브랜드(27~33)보다 훨씬 낮아서, 이 RAW가 이미 카메라/rawpy 기본 처리에서 더 정확했을 가능성. 원인 미조사.
+- OM System OM-3(Olympus 대표): n=22, ΔE00 31.13→13.45(+56.80%), CI=[+14.75,+20.54], 승/패=22/0 (`datasets/olympus/contributed/dpreview-om3-studio-chart-2026-09/chart_validation_report.json`)
+- Pentax K-3 Mark III(Pentax 대표): n=24, ΔE00 30.97→17.86(+42.33%), CI=[+11.18,+15.15], 승/패=24/0 (`datasets/pentax/contributed/dpreview-k3iii-studio-chart-2026-09/chart_validation_report.json`)
+
+**주의할 점**:
+- Phase One은 위젯 공용 DB(`products` 335개 항목, id 175222~670586)에
+  아예 없다 - "phase"/"iq3"/"iq4"/"xf " 키워드로 전수 검색해도 매칭 0건
+  (Leica SL만 걸림). dpreview가 Phase One 스튜디오씬 자체를 촬영한 적이
+  없는 것으로 보임 - 이 DB로는 Phase One 검증 불가능, 다른 소스 필요.
+
+## dpreview 스튜디오씬 챠트 - Leica 9바디 컬러체커 검증 (2026-09-04)
+
+같은 공용 위젯 DB에 Leica는 12개 바디가 있다(전부 DNG raw) - 모노크롬
+센서 2대(M Monochrom Typ246, M11 Monochrom - 컬러 필터가 없어 컬러매트릭스
+피팅 자체가 성립 안 함, 제외)와 SL3-P(별도 파이프라인으로 이미 완료,
+위 "주의할 점" 참고)를 뺀 나머지 9바디를 동일 방법론
+(`tools/validate_dpreview_chart_brand.py`)으로 돌렸다:
+
+- Leica T (Typ 701): n=16, ΔE00 29.770→11.464(+61.49%), CI=[+13.872,+22.719], 승/패=16/0 (`datasets/leica/contributed/dpreview-t701-studio-chart-2026-09/chart_validation_report.json`)
+- Leica X (Typ 113): n=15, ΔE00 26.712→11.944(+55.28%), CI=[+10.932,+18.672], 승/패=15/0 (`datasets/leica/contributed/dpreview-x113-studio-chart-2026-09/chart_validation_report.json`)
+- Leica Q (Typ 116): n=20, ΔE00 27.172→11.710(+56.90%), CI=[+12.845,+18.148], 승/패=20/0 (`datasets/leica/contributed/dpreview-q116-studio-chart-2026-09/chart_validation_report.json`)
+- Leica SL (Typ 601): n=21(1실패), ΔE00 26.025→11.913(+54.22%), CI=[+11.743,+16.517], 승/패=21/0 (`datasets/leica/contributed/dpreview-sl601-studio-chart-2026-09/chart_validation_report.json`)
+- Leica M10: n=20, ΔE00 28.812→12.851(+55.40%), CI=[+12.888,+19.063], 승/패=20/0 (`datasets/leica/contributed/dpreview-m10-studio-chart-2026-09/chart_validation_report.json`)
+- Leica Q2: n=21(1실패), ΔE00 26.982→12.002(+55.52%), CI=[+12.392,+17.611], 승/패=21/0 (`datasets/leica/contributed/dpreview-q2-studio-chart-2026-09/chart_validation_report.json`)
+- Leica M11-P: n=22, ΔE00 34.208→11.683(+65.85%), CI=[+19.419,+25.625], 승/패=22/0 (`datasets/leica/contributed/dpreview-m11p-studio-chart-2026-09/chart_validation_report.json`)
+- Leica D-Lux 8: n=18, ΔE00 32.910→15.526(+52.82%), CI=[+14.541,+20.337], 승/패=18/0 (`datasets/leica/contributed/dpreview-dlux8-studio-chart-2026-09/chart_validation_report.json`)
+- Leica Q3 43: n=24, ΔE00 29.392→12.794(+56.47%), CI=[+13.840,+19.252], 승/패=23/1 (`datasets/leica/contributed/dpreview-q343-studio-chart-2026-09/chart_validation_report.json`)
+
+9바디 전부 CI가 0을 안 걸치는 결정적 결과, 8/9는 만장일치 승. 이걸로
+dpreview 위젯 DB의 Leica 커버리지는 모노크롬 2대를 빼면 전부 소진했다.
+
+**RAW 다운로드 방식이 이번에 바뀜(기록해둠)**: 기존
+`reference_dpreview_raw_download_technique` 메모의 "`<a>` 클릭 + 지연 +
+사이즈로 매칭" 방식이 두 가지로 깨졌다 - (1) 같은 스튜디오씬 RAW는
+용량이 거의 동일해서(같은 바디는 파일 사이즈가 몇 바이트 차이로 수렴)
+사이즈 매칭이 충돌 다발, (2) 이 세션의 브라우저 pane이 숨겨진 탭
+취급을 받아 `setTimeout` 기반 지연이 심하게 스로틀됨(15장 받는데
+분 단위로 걸림), `Promise.all`로 동시에 여러 개 트리거하면 크롬이
+"자동 다운로드 남발" 방지로 대부분 조용히 드롭. 해결책:
+페이지 컨텍스트에서 `fetch()` → `crypto.subtle.digest('SHA-256', buf)`로
+콘텐츠 해시 계산 → `Blob`+`URL.createObjectURL`으로 다운로드 트리거를
+**순차**(await 체인, `Promise.all` 금지, `setTimeout` 지연 없음)로
+실행 - 각 파일이 실제 fetch+해시 계산 시간만큼 자연스럽게 텀이
+생겨서 스로틀링과 자동다운로드 차단을 둘 다 피하고, Python 쪽에서
+`hashlib.sha256(파일).hexdigest()`로 정확히 매칭(`sha256_of()`,
+`match_by_hash.py`). 사이즈 충돌 걱정이 완전히 사라짐.
+- Leica SL3-P는 위 목록에 없다 - 다른 파이프라인(`tools/fit_leica_sl3p_studio_chart.py`, 실제 DCP까지 발급)이 n=26, in-sample ΔE00=12.23을 냈는데 부트스트랩 CI가 계산되지 않은 값이다(`datasets/leica/contributed/dpreview-sl3p-studio-chart-2026-09/camera_native_matrix_report.json` `_comment` 필드에 "부트스트랩 CI 없음" 명시) - 위 7개와 통계적으로 직접 비교 불가.
+- Panasonic S1II는 코드 주석(`tools/validate_dpreview_chart_brand.py` 74행 부근)에 챠트검출 assertion 2/20건 언급이 있었는데(원인 미조사, cv2.mcc가 특정 프레임에서 None 대신 예외를 던지는 걸로 추정), 실제로 재실행해보니 정확히 2/20건(`panasonic_s1ii_iso100_2025_07_08_16_22_10.rw2`, `panasonic_s1ii_iso25600_2025_07_08_17_17_44.rw2`)이 검출 실패했다 - 나머지 18장으로 위 표에 정상 반영됨.
+
+이 검증들은 전부 DCP/ICC를 발급하지 않는다(스크립트 docstring에 명시) - `apply_*` 배포에 영향 없음, Never-list 파일 변경 없음.
+
+## X2D II 100C: RawTherapee illuminant1 스냅 근본원인 확정 (2026-09-04)
+
+v2 재배포 직후 남긴 미해결 캐비어트("group2 텅스텐성 이미지가
+`DCPIlluminant=0`에서 `=1`(D65)과 픽셀 동일 - 수학은 g=0.0176으로
+illuminant2를 가리키는데 RT는 정반대") 의 근본원인을 확정했다.
+당초 후보였던 AsShotNeutral 품질 가설이 아니라 **태그 순서 문제**다.
+
+**근본원인**: 이 프로젝트의 v2 DCP는 `CalibrationIlluminant1=21(D65,
+6504K)`, `CalibrationIlluminant2=17(StdA, 2856K)` - 온도가 **내림차순**
+이다. Adobe 관례(그리고 Adobe DNG SDK가 강제하는 정규형)는 그 반대
+(1=저온, 2=고온)다. RawTherapee `rtengine/dcp.cc`(5.13 태그, dev 브랜치와
+diff 없음 확인)의 매트릭스 보간 경로는 이 정렬을 검증 없이 전제한다:
+
+```
+// findXyztoCamera 1690-1697행, makeXyzCam 1820-1827행 (동일 로직)
+if (wbtemp <= temperature_1)      mix = 1.0;   // -> ColorMatrix1
+else if (wbtemp >= temperature_2) mix = 0.0;   // -> ColorMatrix2
+else                              mix = mired 선형보간;
+```
+
+`temperature_1=6504`이면 wbtemp가 6504K 이하인 **모든 정상 촬영**(텅스텐
+2856K 포함)이 첫 분기에 걸려 무조건 ColorMatrix1(D65)이 된다 - 관찰된
+"항상 illuminant1로 스냅"과 정확히 일치. 같은 파일의 `makeHueSatMap`
+(1967행)에는 `reverse = temperature_1 > temperature_2` 스왑 처리가
+**있는데** 매트릭스 경로에만 없다 - RT 쪽의 이식 누락이자, 우리 쪽의
+관례 위반이 만난 지점. 반면 Adobe DNG SDK `dng_color_spec.cpp`
+생성자(183-208행, "Swap values if temperatures are out of order")는
+온도가 역순이면 온도·ColorMatrix·ForwardMatrix·ReductionMatrix·
+CameraCalibration을 **전부 스왑**한다 - 즉 ACR/Lightroom은 이 역순
+DCP도 올바르게 보간할 것으로 예상(레퍼런스 코드 기준, 실기 미검증).
+
+**증거 1 - 수식 재도출**: 실행한 명령은
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_rt_illuminant_order_snap`
+(RT의 `xyCoordToTemperature` Robertson uv 테이블 + `neutralToXy` 고정점 +
+비스왑 mix 공식을 축자 포팅). 아래 표는 그 stdout에서 전사한 것이고
+전체 수치는 산출 리포트
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/rt_illuminant_order_root_cause_report.json`에
+있다(opus 서브에이전트가 JSON 원본과 대조 검증, 전사 오류 없음 확인):
+
+| 입력(챠트 실측 중립색) | RT 현재 순서 | RT 스왑 순서(CM1 가중치) | 우리 DNG 재현 g |
+|---|---|---|---|
+| group1(daylight, 수렴 wbtemp 6428K) | mix=1.0 → CM1 | 0.9914 | 0.9916 |
+| group2(tungsten, 수렴 wbtemp 2620K) | **mix=1.0 → CM1** | **0.0153** | **0.0176** |
+
+태그 순서만 Adobe 관례로 바꾸면 RT 로직이 우리 수학과 소수점 둘째
+자리까지 일치한다. CCT 근사식 차이(RT Robertson vs 우리 McCamy)는
+같은 xy에서 1.2~5.4K로(같은 리포트의 `cct_method_delta_at_same_xy`)
+원인이 아님을 함께 확인.
+
+**증거 2 - rawtherapee-cli 실렌더 2x3 실험**: 실행한 명령은
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_rt_render_swap_test`,
+아래 표는 그 stdout에서 전사, 수치 원본은 산출 리포트
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/rt_render_swap_test_report.json`
+(위와 동일하게 opus 대조 검증됨). dpreview group2 raw가 재다운로드
+불가라(아래 환경 메모) 로컬 kmichels `B_31325.3FR`에 pp3로 WB=2856K를
+강제해 텅스텐 촬영을 재현 - RT의 보간 입력 neutral은 파일 태그가
+아니라 RT 자체 WB에서 오므로(`dcp.cc` 1753-1786행, "Same as the DNG
+AsShotNeutral tag if white balance is Camera's own") 이 강제는 실촬영과
+등가다. 배포본(S)과, illuminant/매트릭스를 함께 스왑한 실험 사본(W,
+임시 새 파일 - 배포본은 읽기만) 각각에 DCPIlluminant=0/1/2 총 6렌더,
+mean abs diff(16-bit, `rt_render_swap_test_report.json`의
+`mean_abs_diff_16bit` 필드):
+
+| 비교 | mean\|Δ\| | 해석 |
+|---|---|---|
+| S:0 vs S:1(D65) | **0.0000** | WB 2856K인데도 D65로 스냅 - 기존 관찰 재현 |
+| S:0 vs S:2(StdA) | 1018.49 | 스냅 방향이 D65임을 정량 확인 |
+| W:0 vs W:1(StdA) | 266.91 | 스왑하면 자동보간이 StdA 쪽으로 감 |
+| W:0 vs W:2(D65) | 849.10 | 〃 (StdA에 3.2배 가까움 - 진짜 보간 작동) |
+| S:0 vs W:0 | **849.10** | 태그 순서만 바꿨는데 선택 매트릭스가 뒤집힘 |
+| S:1 vs W:2 / S:2 vs W:1 | 0.0000 / 0.0000 | 무결성: 매트릭스 자체는 동일, 슬롯 순서만 다름 |
+
+**가설별 판정**: (1) AsShotNeutral 품질 가설 - **기각**(원인으로서).
+RT는 배포본 태그 순서에서 neutral이 무엇이든(완벽한 텅스텐 WB를
+강제해도) illuminant1로 스냅한다 - 위 S:0==S:1이 그 직접 증거. 또한
+RT는 애초에 파일의 AsShotNeutral 태그가 아니라 자체 WB에서 neutral을
+계산한다. dpreview group2 파일들의 실제 AsShotNeutral 고정값 여부는
+Cloudflare 차단으로 재확인 불가였으나(이전 절의 캐비어트는 캐비어트대로
+유효) 이 RT 관찰의 원인이 아니다. (2) RT 보간 로직 가설 - **확정**
+(위 증거 1·2). (3) 합성 테스트 - exiftool로 3FR 태그를 덮어쓰는 대신
+pp3 WB 강제로 수행(등가이면서 사유 포맷 태그 조작 리스크 없음).
+
+**부수 발견(보고만, 수정 안 함)**: `core/dcp_interpolate.py` 독스트링
+2-5행의 "RawTherapee dcp.cc의 MakeXYZCAM이 쓰는 것과 같은 알고리즘"
+주장은 부정확 - RT는 태그 역순에서 다르게 동작하고(위), CCT 근사식도
+다르다(Robertson vs McCamy). Adobe DNG SDK와 같다는 서술이 정확하다.
+
+**권고(결정은 사용자 몫)**: v2 재배포 결정을 뒤집을 문제는 아니다 -
+25장 챠트 통계 검증(CI=[+5.55,+9.28])은 태그 순서와 무관한 파이썬
+파이프라인이고, Adobe 계열은 SDK가 스왑해서 흡수한다. 다만 RawTherapee
+사용자에게는 현재 배포본의 dual-illuminant가 완전히 죽어있다(사실상
+D65 단일 매트릭스). **재발급 시 태그를 Adobe 관례(1=StdA/17,
+2=D65/21)로 스왑하는 v3를 권장** - 매트릭스 값 자체는 그대로, 순서만
+바꾸면 되고 위 실렌더로 RT 정상화가 이미 실증됐다. `hasselblad_x2dii_chart.dcp`는
+Never-list라 이 조사에서 손대지 않았고, v3 발급은 별도 승인 필요.
+
+**환경 메모**: dpreview `image-compare/` URL이 이번엔 plain curl로
+403(Cloudflare 챌린지 HTML 확인) - 이전 세션 기록("챌린지 없이 바로
+받아짐")과 달리 세션/IP에 따라 게이트가 걸린다. 샌드박스 브라우저는
+바이너리 다운로드 자체가 차단, 실 Chrome 확장은 이번 세션 미연결이라
+group2 raw 재확보는 보류(kmichels 대체로 조사 완결에는 지장 없었음).
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.analyze_x2dii_rt_illuminant_order_snap`,
+`... -m tools.analyze_x2dii_rt_render_swap_test`(rawtherapee-cli 5.13, 렌더 6장 약 3분).
+
+### 배포 - v3 재발급(2026-09-04, 같은 날): 슬롯 순서만 Adobe 관례로 스왑
+
+사용자 승인("새로 발급 ㄱㄱ", 위 근본원인 보고 직후)으로
+`tools/reissue_x2dii_dcp_v3_adobe_illuminant_order.py`가
+`hasselblad_x2dii_chart.dcp`를 재발급했다. **승인 범위는 태그 순서
+스왑이지 재캘리브레이션이 아니다** - 매트릭스 값은 v2 것을 한 자리도
+바꾸지 않고 슬롯만 교차 배치했다(슬롯1 ← v2 슬롯2/StdA, 슬롯2 ← v2
+슬롯1/D65). `CalibrationIlluminant1=17(Standard Light A, 2856K)`,
+`2=21(D65, 6504K)`로 이제 온도 오름차순이다(`exiftool -validate` →
+`Validate: OK`, 이 실행에서 직접 확인).
+
+**왜 재fit이 아닌가**: `core/dcp_interpolate.py` 보간은 슬롯 스왑에
+수학적으로 불변이다. 발급 스크립트의 사전 게이트(`verify_swap_invariance()`)
+출력에서 group1은 g가 0.991557 → 0.008443, group2는 0.017577 →
+0.982423으로 뒤집히지만 **최종 보간 매트릭스는 동일**하다(max|Δ|는
+group1 0.000e+00, group2 8.882e-16). 따라서 v2의 25장 held-out
+end-to-end 검증(CI=[+5.5509,+9.2794], 25/0)이 그대로 승계된다 -
+애초에 dpreview 25장 raw는 Cloudflare 차단으로 재디코드 자체가 불가다.
+전체 수치는 `datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/dual_illuminant_report_v3_adobe_illuminant_order.json`.
+
+**수용 검사 - RawTherapee 실렌더**: `tools/verify_x2dii_dcp_v3_rawtherapee.py`
+실행 stdout에서 전사, 리포트
+`datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/v3_rawtherapee_acceptance_report.json`.
+kmichels `B_31325.3FR`에 WB를 각각 강제하고 `DCPIlluminant=0`(자동)이
+어느 슬롯 강제 렌더에 가까운지 mean abs diff(16-bit)로 측정:
+
+| 강제 WB | 자동 vs 슬롯1(StdA) | 자동 vs 슬롯2(D65) | 선택 | 판정 |
+|---|---|---|---|---|
+| 2856K(텅스텐) | **266.91** | 849.10 | 슬롯1 | OK |
+| 6504K(데이라이트) | 940.44 | **168.15** | 슬롯2 | OK |
+
+**WB에 따라 선택 매트릭스가 바뀐다** - v2에서는 두 WB 모두 D65로
+스냅됐으니(위 근본원인 절) RawTherapee에서 dual-illuminant가 실제로
+살아난 것이 실측으로 확인됐다.
+
+**테스트**: `tests/test_dcp_export.py`의 `TestShippedProfileMatchesReport`를
+v3 리포트/슬롯 의미에 맞춰 갱신하고, 매트릭스가 v2와 교차로 동일한지
+검사하는 `test_matrices_are_unchanged_from_v2`(DCP SRATIONAL 양자화
+오차 ~5e-7만 허용)를 추가했다. 검사하면서 **기존 물리 불변식 테스트의
+허용오차가 너무 헐렁했다는 것도 발견**했다: v2까지 쓰던 `rtol=0.15`는
+슬롯이 뒤바뀐 매트릭스도 통과시켜(직접 측정한 상대오차 - 뒤바뀐 짝
+0.1155/0.1227 vs 올바른 짝 0.0148/0.0142) 순서를 전혀 못 잡았다.
+`rtol=0.05`로 조여서 3배 여유를 두고 판별하도록 고쳤고, v2 백업본으로
+실제로 깨지는 것까지 확인했다. 전체 스위트는 828건 중 7건 실패
+(`TestFujiPresetGoldenHashes` 6건 + `TestHasselbladCoreGoldenHashes`의
+`apply_hasselblad_night` 1건, `/tmp/suite_v3.log`) - HEAD를 체크아웃한
+별도 worktree에서도 동일하게 실패하는 기존 실패로 이 변경과 무관하다.
+
+**남는 한계**: Adobe DNG SDK는 역순도 스스로 스왑하므로 ACR/Lightroom
+결과는 v2와 v3가 같아야 한다 - 레퍼런스 코드(`dng_color_spec.cpp`
+183-208행) 기준 추론이고 실기 검증은 여전히 안 됐다. 이번 v3가 고친
+것은 RawTherapee(및 같은 방식으로 이식한 리더들)에서의 동작이다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.reissue_x2dii_dcp_v3_adobe_illuminant_order`,
+`... -m tools.verify_x2dii_dcp_v3_rawtherapee`.
+
+## X2D II Capture One(ICC): 조명별 프로필 2장 발급 (2026-09-04)
+
+**발단**: 배포 `.dcp`는 2026-09-03 combined 25장, 09-04 dual-illuminant
+v2/v3로 두 번 재보정됐는데 `.icc`는 2026-09-02(`3bff252`) 이후 그대로였다 -
+**Capture One 사용자만 구버전 매트릭스**(kmichels 단독 n=9)를 쓰고 있었다.
+
+**먼저 시도했다가 게이트에 막힌 것(기각 기록)**: 범용 ICC를 combined
+25장 D50 매트릭스로 교체하려 했다(`tools/regenerate_x2dii_icc_v2_combined.py`,
+실행하면 지금도 게이트에서 중단된다). 발급 전 게이트로 무채색 6패치의
+CIELAB a*b* 크로마를 걸었는데(`combined_chart_matrix_report.json`의
+`measured_native_neutral_per_patch`) 그 실행 출력에서 평균이 기존 9.9393 vs
+신규 9.9871로 **개선이 아니라서 스크립트가 발급을 중단했다**. 지표를
+의심해 같은 데이터로 양성 대조를 돌린 결과(각 매트릭스를 자기 피팅
+데이터의 평균 무채색에 적용): kmichels 매트릭스 **1.3279**(정상),
+combined 매트릭스 **9.8444**. 지표는 멀쩡하고 combined 단일 매트릭스가
+실제로 무채색 축에서 깨진다. 원인은 25장이 이봉 조명 혼합이라는 것 -
+주광 R/G≈0.33(n=9), 텅스텐 R/G≈0.65(n=7), kmichels R/G≈0.41(n=9)의 평균
+R/G=0.4485는 **실재하지 않는 촬영 조건**이고 단일 매트릭스가 그 허구의
+평균에 맞춰진다. `.dcp`가 dual-illuminant로 간 이유와 정확히 같은
+현상이다. **범용 ICC는 교체하지 않고 그대로 뒀다.**
+
+**채택한 것 - 조명별 ICC 2장**(`tools/build_x2dii_capture_one_illuminant_icc.py`,
+리포트 `datasets/hasselblad/contributed/dpreview-x2dii100c-studio-chart-2026-09/capture_one_illuminant_icc_report.json`):
+ICC v4 matrix/TRC는 슬롯이 하나뿐이고 PCS 백색점이 D50 고정이라
+dual-illuminant를 한 파일에 못 담는다. 대신 조명마다 파일을 하나씩 내고
+사용자가 촬영 조명에 맞는 Base Characteristic을 고르게 한다. v2 리포트의
+`color_matrix_1`(D65 기준)/`color_matrix_2`(StdA 기준)를 각자의 조명에서
+D50으로 Bradford 색순응시켜 ICC가 요구하는 native->XYZ(D50)로 변환했다.
+
+게이트(자기 조명 그룹의 실측 무채색에 적용한 CIELAB a*b* 크로마) -
+아래 값은 `tools/build_x2dii_capture_one_illuminant_icc.py` 실행 stdout에서
+전사했고 같은 값이 `capture_one_illuminant_icc_report.json`에 저장된다:
+
+| 조명 | n | 현행 범용 ICC | 조명별 신규 |
+|---|---|---|---|
+| daylight(D65) | 9 | 40.4516 | **1.3256** |
+| tungsten(StdA) | 7 | 48.7708 | **1.2373** |
+
+현행 범용 ICC는 **자기 번스트에서만 1.3279**이고 실제 dpreview 두 조명에서는
+40.4516/48.7708로 무너진다 - 단일조명 과적합이 Capture One 경로에 그대로
+살아있었다는 직접 증거다. 신규 2장은 자기 조명에서 1.3256/1.2373으로
+들어온다.
+
+**독립 검증**: 발급된 두 ICC를 시스템 lcms2 2.19 CLI(`/opt/homebrew/bin/transicc`,
+`transicc -i <profile>.icc -o "*XYZ" -t1`)에 각 조명의 실측 무채색을 넣어
+확인했다 - daylight [0.9719, 1.0, 0.8264], tungsten [0.9572, 1.0, 0.8230]
+(Y 정규화)로 D50 기준 [0.9643, 1.0, 0.8251] 대비 최대 편차 0.0076/0.0071.
+파이썬 계산값과 소수점까지 일치했다(모듈 코드가 아닌 독립 구현으로 재확인).
+
+**판정의 범위 - 종합 색차로는 승패를 부르지 않는다**(승계하는 통계적
+근거는 v2의 부트스트랩 95% CI=[+5.5509,+9.2794], 25/0,
+`dual_illuminant_report_v2_illuminant_referenced.json`의
+`full25_held_out_end_to_end`): 24패치 전체 실측 샘플이 커밋돼 있지 않아
+(무채색 6패치 + 그룹 평균 무채색만) 구/신 프로필의 전체 ΔE00 재비교는
+RAW 없이 불가능하고, dpreview RAW는 현재 Cloudflare 차단으로 재확보
+불가다. 따라서 이 절의 게이트는 **무채색 축에 한정된 검증**이며 종합
+ΔE00 우열은 미검증으로 남긴다. 채택 근거는 (a) 발급 전에 미리 고정한
+게이트에서의 차이(40.4516 -> 1.3256, 48.7708 -> 1.2373, 위 스크립트 실행
+출력), (b) 같은 실행의 양성 대조로 확인한 지표 타당성(자기 데이터에서
+kmichels 1.3279 vs combined 9.8444), (c) `transicc` 독립 구현 재확인
+셋이다. 실기 Capture One에서의 동작은 미검증이다.
+
+**사용자 승인**: 2026-09-04 "캡처원용도 다 만들어". 배포된
+`hasselblad_x2dii_chart.icc`/`.dcp`/`hasselblad.json`은 건드리지 않았고
+새 파일 2개만 추가했다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.build_x2dii_capture_one_illuminant_icc`.
+
+## Capture One 커버리지 확장: Fuji generic ICC + 룩 DeviceLink 40장 (2026-09-04)
+
+**1) Fuji generic JPEG-approx ICC 발급**: `tools/fit_brand_native_matrix_for_icc.py`는
+`BRAND_DESCRIPTIONS`에 sony/sigma/leica/fuji 넷을 갖고 있는데 fuji만
+ICC가 없었다. 원인은 스크립트가 브랜드의 **모든** 매니페스트를 훑는데
+2026-09에 추가된 dpreview 스튜디오씬 챠트 매니페스트가 다른 스키마
+(`image_id,camera,product_id,raw_file_url,notes`)라 `filename_raw`
+KeyError로 죽은 것이다 - 나중에 들어온 데이터에 스크립트가 깨져
+있었다. 페어 컬럼이 없는 매니페스트를 건너뛰도록 고치고 실행했다.
+
+**아래 표는 브랜드 간 우열 판정이 아니다 - 부트스트랩 CI가 없다.**
+이 스크립트(`tools/fit_brand_native_matrix_for_icc.py`, 158-159행)는
+5-fold CV 평균만 출력하고 `hybrid_engine/utils/evaluate.py`의
+`summarize()`(페어드 t-검정 + 부호검정 + 부트스트랩 95% CI)를 아예
+호출하지 않는다. 그래서 표의 목적은 신규 fuji가 기존 3개와 같은
+수준으로 수렴했는지 확인하는 것 하나뿐이고 브랜드 순위는 주장하지
+않는다(기존 3개와 동일한 방법론/한계를 그대로 따랐다). 각 행의 값은
+그 행에 적힌 리포트 파일에서 전사했고, opus 서브에이전트가 네 파일
+전부와 대조해 전사 오류 없음을 확인했다(verified):
+
+| 브랜드 | n | 무보정 ΔE00 | 매트릭스 CV ΔE00 | 개선(CI 없음, 우열판정 아님) | 값 출처(verified) |
+|---|---|---|---|---|---|
+| **fuji(신규)** | 119 | 20.047 | **11.591** | +42.18% | `datasets/fuji/contributed/native_matrix_for_icc_report.json` |
+| leica | 244 | 18.597 | 10.220 | +45.04% | `datasets/leica/contributed/native_matrix_for_icc_report.json` |
+| sigma | 83 | 22.644 | 13.058 | +42.33% | `datasets/sigma/contributed/native_matrix_for_icc_report.json` |
+| sony | 288 | 20.593 | 12.523 | +39.19% | `datasets/sony/contributed/native_matrix_for_icc_report.json` |
+
+이 계열은 컬러체커 실측이 아니라 카메라 JPEG 근사다(스크립트 독스트링에
+명시).
+
+> **정정(2026-09-04, 같은 날 커버리지를 세다가 발견)**: 아래 2)의
+> "발급 40 / 건너뜀 1", "충실 14 / 오차>효과 26"은 **후지 필름시뮬레이션
+> 프리셋 13개가 통째로 빠진 수치**다. 원인은 단일 소스로 삼은
+> `tests/test_brands.py`의 `BRAND_LOOKS` 자동 발견이
+> `_EXCLUDED_MODULES = {"fuji"}`로 `brands/fuji.py`를 **제외**하기
+> 때문(fuji는 자체 `TestFujiPresets`가 완전성 검사를 한다). "자동 발견을
+> 재사용하니 안전하다"는 가정이 그 자동 발견의 제외 목록까지 확인해야
+> 성립한다는 걸 놓쳤다. 같은 파일의 `FUJI_COLOR_PRESETS`를 합치도록
+> 고쳐 재실행한 결과는 **발급 52 / 건너뜀 2(`apply_hncs`, `apply_provia`
+> - 둘 다 이미 다른 경로로 배포됨) / 실패 0, 충실 22 / 오차>효과 30**
+> 이다(`hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`
+> 의 `counts`, 실행 확인됨). 새로 구워진 후지 프리셋은 대체로 충실도가
+> 좋다 - 같은 리포트 기준 `apply_eterna_bleach_bypass` 오차 1.76 vs 효과
+> 54.78, `apply_classic_negative` 1.83 vs 37.60, `apply_astia` 1.92 vs
+> 11.36. 반면 CLAHE가 센 `apply_classic_chrome`(20.43 vs 18.49)과
+> `apply_nostalgic_neg_v2/v3`(18.48 vs 16.97, 20.30 vs 18.17)은 여전히
+> 오차>효과다. 아래 원문은 이력으로 남긴다.
+
+**2) 룩 DeviceLink ICC 40장 일괄 발급**(`tools/build_all_capture_one_look_iccs.py`,
+리포트 `hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`):
+배포된 `apply_*` 룩 41개 중 캡처원 프로필은 2개뿐이었다. 룩 목록을
+`tests/test_brands.py`의 자동 발견(`BRAND_LOOKS`)에서 가져와 굽도록 해서
+**테스트가 아는 룩과 캡처원 프로필이 같은 집합**이 되게 했다 - 수동
+목록이 뒤처지는 문제(그 allowlist에서 11개가 누락됐던 것)를 반복하지
+않으려는 것. 발급 40 / 건너뜀 1(이미 배포된 `apply_hncs`) / 실패 0 -
+`hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`의
+`counts` 필드에서 전사, opus 서브에이전트 대조 검증(verified).
+
+**충실도를 측정했고, 절반 이상이 룩을 충실히 전달하지 못한다.** 이건
+CI가 필요한 비교가 아니라 결정론적 왕복 오차 측정이다 - 고정 시드
+(`seed=0`, `tools/build_all_capture_one_look_iccs.py`의 `_measure_fidelity`)
+합성 입력이라 매번 같은 값이 나온다. 랜덤 BGR 이미지를 LUT 경유와 룩
+직접 호출로 통과시킨 평균 절대오차(ΔBGR)를 그 룩의 효과(원본 대비
+변화량)와 비교했고, 값은 모두
+`hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`의
+`lut_vs_direct_mean_abs_bgr` / `look_effect_mean_abs_bgr` 필드에서
+전사했다(`faithful` 플래그로 요약, opus 대조 verified):
+**충실 14 / 오차>효과 26**. CLAHE 같은 적응형 연산이 강한 룩일수록
+나쁘다 - 같은 리포트 기준 `apply_canon_look` 오차 19.53 vs 효과 16.34,
+`apply_hncs_x2dii` 22.43 vs 12.41. 반대로 점별 연산 위주인 것들은
+좋다 - `apply_hasselblad_night` 2.20 vs 6.23, `apply_canon_raw_look`
+10.44 vs 65.50. 이건 `.cube`도 공유하는 LUT 포맷의 구조적 한계이지
+이번 굽기의 버그가 아니다. **이미 배포돼 있던 `fuji_provia_look.icc`도
+같은 상태였다**(같은 스크립트로 측정해 오차 23.12 vs 효과 18.17) -
+즉 새로 생긴 문제가 아니라, 이번에 처음 측정해서 리포트에 플래그로
+박은 것이다. 40장 모두 발급하되 그 플래그로 사용자가 고르게 한다.
+
+**오검증 한 번(기록)**: 처음 충실도를 쟀을 때 오차가 63으로 나와
+문서값 ≈21과 안 맞았다. 원인은 내 검증 코드가 LUT 출력(RGB)을 BGR
+이미지와 그대로 비교한 것 - `tools/build_all_capture_one_look_iccs.py`
+에서 채널을 뒤집자(`out_rgb[..., ::-1]`) 19.53/19.47/2.20으로 문서값과
+맞았다. LUT는 `[b_idx, g_idx, r_idx]`로 인덱싱되고 값은 RGB라는
+`core/lut_export.py`의 `write_cube_file` 규약을 스크립트 독스트링에
+명시해뒀다.
+
+**한계**: 캡처원 실기기 미검증(구조 검증 + 위 왕복/충실도 측정만).
+룩 ICC는 `hybrid_engine/assets/profiles/looks/`에 새로 넣었고 기존 배포
+프로필은 건드리지 않았다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.fit_brand_native_matrix_for_icc fuji`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.build_all_capture_one_look_iccs`.
+
+## HueSatMap 전자유도 LOO - "1점대는 되나?"의 상한 측정, 배포 아님 (2026-09-04)
+
+사용자 질문("1점대는 안되?", 2026-09-04)에 대한 답을 재는 실험이다.
+현행 배포 챠트 매트릭스의 진짜 LOO ΔE00은 2.5942이고(이 값은 비교
+기준선일 뿐이며 각 조합의 부트스트랩 95% CI와 부호검정은 아래 표에
+15조합 전부 실었다; 이번 실행 로그 `/tmp/hsm_full2.log`의 baseline),
+`tools/evaluate_dcp_huesatmap_srgb.py`가 2026-09-01절에서 낸 hue-only
+HueSatMap은 2.4651(-4.98%, 부트스트랩 CI는 아래 표 참조)까지만 내렸다.
+1점대(<2.0)까지 가려면 같은 baseline 2.5942(`/tmp/hsm_full2.log`)
+기준으로 (2.5942-2.0)/2.5942 = -22.9%가 필요한데, 위 hue-only는 그
+5분의 1이다. 그래서 HueSatMap이 실제로 담을 수 있는 세 값
+(`hueShift`/`satScale`/`valScale`)을 **전부** 열면 어디까지 가는지가
+질문이었다. 이번 스크립트는
+`tools/evaluate_dcp_huesatmap_full_srgb.py`, 로그 `/tmp/hsm_full2.log`,
+리포트
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`.
+
+좌표계/커널/LOO 방식은 2026-09-01절의 sRGB(`ProfileHueSatMapEncoding=1`)
+HSV 판과 동일하고(폴드마다 3x3 매트릭스도 재피팅하는 진짜 LOO, 원형
+가우시안 sigma=30도 - `tools/evaluate_dcp_huesatmap_full_srgb.py`의
+`KERNEL_SIGMA_DEG`/`_loo()`), 달라진 건 division마다 학습하는 값이
+1개에서 3개로 늘어난 것뿐이다. sat/val은 비율이라 로그공간에서
+평균한다(같은 파일 `_fit_tables()`).
+
+**기존 HueSatMap 실험들과 달리 15조합 전부에 페어드 통계를 붙였다** -
+2026-09-01절은 "부트스트랩 CI 없음"이라고 명시한 채 평균과 부호
+일관성만 봤는데, 이번 결과가 바로 그 규칙이 왜 필요한지를 보여준다.
+아래 값은 전부 리포트
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`
+의 `sweep[].paired_stats`에서 전사했고(n=9 페어드, 부트스트랩 20000회
+고정 시드), 같은 스윕을 두 번 독립 실행해 15조합 수치가 완전히 동일하게
+재현되는 것을 확인했다(`/tmp/hsm_full.log`, `/tmp/hsm_full2.log`, 실행
+확인됨):
+
+| N | 변형 | LOO ΔE00 (출처 `/tmp/hsm_full2.log`) | 개선 | 승/패 | 부호검정 p | 부트스트랩 95% CI (출처 `huesatmap_full_srgb_loo_report.json`의 `sweep[].paired_stats`) | 판정 |
+|---|---|---|---|---|---|---|---|
+| 4 | hue만 | 2.5116 | +3.18% | 9/0 | 0.0039 | [+0.0686,+0.0946] | 유의 |
+| 4 | hue+sat | **2.4218** | +6.65% | 9/0 | 0.0039 | [+0.1316,+0.2169] | **유의(성립 최저)** |
+| 4 | hue+sat+val | 2.3616 | +8.97% | 6/3 | 0.5078 | [-0.0070,+0.4504] | **판정 보류** |
+| 8 | hue만 | 2.4651 | +4.98% | 9/0 | 0.0039 | [+0.1175,+0.1389] | 유의 |
+| 8 | hue+sat | 2.4541 | +5.40% | 9/0 | 0.0039 | [+0.0961,+0.1860] | 유의 |
+| 8 | hue+sat+val | 2.4070 | +7.22% | 5/4 | 1.0000 | [-0.0752,+0.4340] | 판정 보류 |
+| 12 | hue만 | 2.4692 | +4.82% | 9/0 | 0.0039 | [+0.1116,+0.1363] | 유의 |
+| 12 | hue+sat | 2.4713 | +4.74% | 9/0 | 0.0039 | [+0.0791,+0.1682] | 유의 |
+| 12 | hue+sat+val | 2.4184 | +6.78% | 5/4 | 1.0000 | [-0.0885,+0.4254] | 판정 보류 |
+| 16 | hue만 | 2.4642 | +5.01% | 9/0 | 0.0039 | [+0.1160,+0.1420] | 유의 |
+| 16 | hue+sat | 2.4702 | +4.78% | 9/0 | 0.0039 | [+0.0818,+0.1681] | 유의 |
+| 16 | hue+sat+val | 2.4189 | +6.76% | 5/4 | 1.0000 | [-0.0890,+0.4243] | 판정 보류 |
+| 24 | hue만 | 2.4634 | +5.04% | 9/0 | 0.0039 | [+0.1166,+0.1428] | 유의 |
+| 24 | hue+sat | 2.4709 | +4.75% | 9/0 | 0.0039 | [+0.0819,+0.1672] | 유의 |
+| 24 | hue+sat+val | 2.4202 | +6.71% | 5/4 | 1.0000 | [-0.0905,+0.4237] | 판정 보류 |
+
+**답: 1점대는 안 된다.** 통계적으로 성립하는(부트스트랩 95% CI가 0을
+포함하지 않는) 최저는 2.4218(N=4 hue+sat, CI=[+0.1316,+0.2169], 9/0)
+이고 이는 현행 2.5942 대비 -6.65%다 - 전부
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`
+의 `best_statistically_established` 필드에서 전사했다. 필요치는
+(2.5942-2.0)/2.5942 = -22.9%(baseline 출처 `/tmp/hsm_full2.log`)라
+자릿수가 다르다.
+
+**`valScale`은 평균만 좋아지고 성립하지 않는다.** 평균 최저는 N=4
+hue+sat+val의 2.3616(+8.97%)인데 부트스트랩 95% CI가
+[-0.0070,+0.4504]로 0을 포함하고 승패도 6/3(p=0.5078)이다 - 같은 리포트
+`datasets/hasselblad/contributed/kmichels-x2dii-2026-07/huesatmap_full_srgb_loo_report.json`
+의 `best_by_mean` 필드. 나머지 val 변형 4개도 전부 5/4, p=1.0000에 CI가
+0을 포함한다(위 표, 로그 `/tmp/hsm_full2.log`) - 평균은 커지는데 분산이
+같이 커지는, 이미지 9장 표본에 자유도만 늘렸을 때의 전형적 패턴이다.
+`hybrid_engine/CLAUDE.md`의 "평균 차이로 승자를 부르지 않는다"가 정확히
+이 경우를 위한 규칙이고, CI 없이 평균만 봤다면 +8.97%짜리 승리로
+기록됐을 것이다.
+
+**부수 확인 두 가지**: (1) N=8 hue-only가 2.4651로 2026-09-01절
+(`tools/evaluate_dcp_huesatmap_srgb.py`)의 수치를 소수점 4자리까지
+그대로 재현했다 - 그 절은 부트스트랩 CI를 내지 않았는데, 이번 실행
+(`/tmp/hsm_full2.log`)에서 CI=[+0.1175,+0.1389](9/0, p=0.0039)로
+뒷받침됐다. 즉 그 결론은 사후적으로 성립한다. (2) hue/hue+sat 계열은
+division을 4에서 24로 늘려도 개선폭이 +4.7~+6.7% 대에서 포화하고 계속
+커지지 않으며 CI도 전부 0을 배제한다(위 표의 해당 행들,
+`/tmp/hsm_full2.log`) - 2026-09-01절이 Lab 근사판
+(`tools/evaluate_dcp_huesatmap.py`)을 기각했던 과적합 패턴(자유도를
+늘릴수록 개선폭이 계속 커짐)이 여기서는 안 나타난다.
+
+**남은 레버(미실험)**: 1점대는 HueSatMap이 아니라 다른 축이 필요하다 -
+LookTable(3D), 조명별 분리 프로필, 또는 애초에 챠트 표본을 9장 이상으로
+늘리는 것. 어느 쪽도 이번 세션에서 측정하지 않았으므로 가능하다고
+주장하지 않는다.
+
+**배포 아님**: 배포된 `hybrid_engine/assets/profiles/hasselblad_x2dii_chart.dcp`
+는 Never-list이고 `tools/evaluate_dcp_huesatmap_full_srgb.py`는 어떤
+프로필도 쓰지 않는다. 설령 위 -6.65%(CI=[+0.1316,+0.2169])가 성립한다
+해도 배포는 별도 결정이며, 2026-09-01절이 남긴 실기기 미검증
+리스크(exiftool 구조 검증만으로는 Lightroom 렌더링을 확인 못 함)가
+그대로 남아 있다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_dcp_huesatmap_full_srgb`.
+
+## 후지 필름모드 분리력 - 같은 장면 묶음, 부트스트랩 CI 없음(리드) (2026-09-04)
+
+사용자가 준 리드("후지에 같은장면 필터만 바꿔서 찍은거 있음")로만 던질
+수 있는 질문을 쟀다: `brands/fuji.py`의 필름시뮬레이션 룩들이 카메라가
+실제로 만드는 모드 간 차이만큼 서로 벌어져 있는가. 보통은 장면이 전부
+달라 "모드 차이"와 "장면 차이"가 섞여 이 질문 자체가 안 선다.
+묶음은 `tools/find_fuji_same_scene_film_mode_groups.py`가 찾았고
+(리포트 `datasets/fuji/contributed/local-work-2026-08/same_scene_film_mode_groups.json`),
+측정은 `tools/evaluate_fuji_film_mode_separation.py`, 결과는
+`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`.
+
+**먼저, 이 절은 부트스트랩 CI를 내지 않는다.** 유효 묶음이 1개(11장)
+뿐이고 쌍들이 프레임을 공유해 독립 표본이 아니라 `summarize()`를 그대로
+쓸 수 없다. 따라서 아래는 **판정이 아니라 리드**이고, 확정하려면 같은
+장면 묶음을 더 모아야 한다(`hybrid_engine/CLAUDE.md`의 CI 규칙을 만족
+못 하므로 승자 선언을 하지 않는다).
+
+**대조군을 붙이며 해석이 두 번 뒤집혔다 - 그 과정이 이 절의 핵심이다.**
+
+1. 초판(`tools/evaluate_fuji_film_mode_separation.py`)은 같은 프레임에
+   두 룩을 적용한 거리(`model_same_frame_de00`)만 실제 JPEG 모드거리
+   (`ground_truth_de00`)와 비교했다. 그런데 실제 거리에는 프레이밍/노출
+   흔들림이 섞이고 룩 거리에는 안 섞여 비대칭이었다.
+2. 그래서 실제 거리와 **같은 프레임쌍**으로 룩 거리를 다시 냈더니
+   `film_mode_separation_report.json`의 `model_cross_frame_de00`이
+   18.292~23.383으로 나왔다(실행 확인됨) - 같은 파일의
+   `ground_truth_de00` 3.200~6.101의 몇 배라 "룩이 모드를 과하게
+   벌려놓는다"고 읽힐 수 있는 값이었다. 하지만 같은 프레임쌍에 **같은
+   룩**을 양쪽 적용하는 대조군을 안 뒀던 게 문제였다.
+3. 대조군을 넣자 `film_mode_separation_report.json`의
+   `model_same_look_control_de00`이 19.646~22.309로(실행 확인됨) 위
+   `model_cross_frame_de00`과 거의 같았다. 즉 그 숫자는 모드 분리력이
+   아니라 프레임 변동이었다.
+4. 마지막으로 룩을 안 씌운 neutral 렌더끼리의 거리를 기준선으로 재보니
+   `film_mode_separation_report.json`의
+   `neutral_baseline_cross_frame_de00`이 21.560~25.042였다(실행 확인됨).
+   **같은 파일 `look_frame_variation_amplification` 기준 룩의 증폭률은
+   0.89~1.31배다** - 룩이 변동을 키운 게 아니라, `tools/calibrate.py`의
+   `load_neutral_render()` 경로에 카메라의 AE/AWB에 해당하는 정규화가
+   없어서 입력 자체가 그만큼 달랐던 것이다(같은 장면 같은 모드의 카메라
+   JPEG끼리는 1.293 - 같은 파일 `within_mode_floor_de00`). **3번 직후
+   "룩이 프레임 변동을 크게 증폭한다"고 읽었던 해석은 이 기준선으로
+   반증됐다.**
+
+결론적으로 `model_cross_frame_de00` 계열은 입력 잡음이 신호를 압도해
+쓸 수 없고(위 `film_mode_separation_report.json` 기준 21~25 대 3~6),
+장면 요인이 0인 `model_same_frame_de00`만 정보를 준다.
+
+**유효한 묶음은 1개뿐이다.** 묶음 2는 실제 모드거리 2.680이 그 묶음의
+모드 내 바닥 3.072보다 작아 비교가 성립하지 않는다
+(`film_mode_separation_report.json`의
+`ground_truth_above_within_mode_floor: false`). 묶음 3은 Velvia에 대응
+함수가 없다. 아래는 묶음 1(GFX50S II 11장, 모드 내 바닥 1.293, n=19):
+
+| 모드 쌍 | 실제 JPEG 모드거리 | 룩 거리(same-frame) | 비율(CI 없음, 판정 아님) | 값 출처(실행 확인됨) |
+|---|---|---|---|---|
+| Classic Chrome vs Classic Negative | 6.101 (n=12) | 4.389 | **0.72** | `film_mode_separation_report.json` |
+| Classic Chrome vs Nostalgic Neg | 4.966 (n=6) | 6.381 | 1.28 | `film_mode_separation_report.json` |
+| Classic Negative vs Nostalgic Neg | 3.200 (n=18) | 9.192 | **2.87** | `film_mode_separation_report.json` |
+
+**읽는 법**: 실제 거리에는 프레이밍 흔들림(바닥 1.293,
+`film_mode_separation_report.json`의 `within_mode_floor_de00`)이 섞여
+있고 `model_same_frame_de00`에는 없으므로, 위 비율은 **하한**이다 -
+실제 비율은 이보다 높다.
+
+**가장 눈에 띄는 것**: `film_mode_separation_report.json` 기준
+`apply_classic_negative`와 `apply_nostalgic_neg`가 카메라가 그 두 모드를
+가르는 것보다 최소 2.87배 멀리 떨어져 있다. 반대로 Classic Chrome vs
+Classic Negative는 0.72로 오히려 덜 벌어져 있다(같은 파일). 즉 룩들이
+"구분이 안 된다"는 게 아니라 **구분의 크기가 모드쌍마다 어긋나 있다**.
+다만 위 CI 단서대로 이건 리드다.
+
+**부수 발견**: `film_mode_separation_report.json`의 묶음 3에서 Provia와
+Velvia의 실제 모드거리는 4.310으로 그 묶음 바닥 0.336보다 한참 위인데,
+`brands/fuji.py`에는 `apply_velvia`가 없다 - `tests/test_brands.py`의
+`FUJI_COLOR_PRESETS` 13개에 Velvia가 빠져 있다. 측정된 크기가 있는
+미구현 모드다.
+
+**배포 아님**: `apply_*`도 프로필도 수정하지 않았다. 측정만 했다.
+
+### 확장: GFX100RF 세트로 두 번째 유효 측정 (같은 날)
+
+위 리드를 판정으로 올리려면 묶음이 더 필요해서 두 스크립트에 세트 인자를
+붙이고 `datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08`에서
+다시 찾았다(그 세트의 필름모드는 Provia 51 / Reala ACE 11로, 둘 다
+`brands/fuji.py`에 대응 함수가 있다). 임계 0.45에서 묶음 1개(5장,
+Provia 2 + Reala ACE 3)가 나왔고 결과는
+`datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/film_mode_separation_report.json`
+에 있다(실행 확인됨).
+
+| 모드 쌍 | 세트 | 모드 내 바닥 | 실제 JPEG 모드거리 | 룩 거리(same-frame) | 비율(CI 없음, 판정 아님) |
+|---|---|---|---|---|---|
+| Provia vs Reala ACE | `dpreview-gfx100rf-preprod-2026-08` | 5.182 (n=4) | 9.702 (n=6) | 6.898 | **0.71** |
+
+**재현된 것 하나**: 이 세트에서도 룩의 증폭률은 1.07배였다(neutral 기준선
+10.448 → 룩 적용 후 11.209 -
+`datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/film_mode_separation_report.json`,
+실행 확인됨). 이는
+`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`
+의 0.89~1.31배와 같은 범위다 - **다른 카메라(GFX100RF vs GFX50S II),
+다른 세트, 다른 모드쌍에서 "룩이 프레임 변동을 증폭하지 않는다"가
+재현됐다.** 앞 절 4번 단계에서 오해석을 반증한 근거가 우연이 아니었다는
+뜻이다.
+
+**여전히 부트스트랩 CI는 못 낸다.** 유효 모드쌍이 4개(위 3개 + 이번 1개)로
+늘었을 뿐, 서로 다른 모드쌍이라 페어드 표본이 아니고 쌍끼리 프레임을
+공유한다. 등급은 그대로 리드다.
+
+**비율은 0.71~2.87로 흩어져 있다** - 앞 절 표
+(`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`)
+의 0.72/1.28/2.87과 이번 0.71을 합친 범위다. 한 방향으로 치우친 게
+아니라 모드쌍마다 과/부족이 갈린다는 앞 절의 관찰이 네 번째 데이터점
+에서도 유지된다. Provia vs Reala ACE의 0.71은 Classic Chrome vs
+Classic Negative의 0.72와 거의 같은 "덜 벌어짐" 쪽이다.
+
+**측정 방법의 한계 하나(기록)**: 이 세트의 모드 내 바닥 5.182는
+`datasets/fuji/contributed/local-work-2026-08/film_mode_separation_report.json`
+묶음 1의 1.293보다 훨씬 크다. dpreview 샘플 갤러리라 같은 장면이라도
+프레이밍 차이가 커서다. 바닥이 클수록 실제 모드거리가 부풀려져 비율이
+낮게 나오므로, 위 0.71은 특히 하한으로 읽어야 한다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.find_fuji_same_scene_film_mode_groups 0.45`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_film_mode_separation`,
+그리고 세트 인자를 준
+`... -m tools.find_fuji_same_scene_film_mode_groups 0.45 dpreview-gfx100rf-preprod-2026-08`,
+`... -m tools.evaluate_fuji_film_mode_separation dpreview-gfx100rf-preprod-2026-08`.
+
+### 후속: Velvia 미구현이 실제로 손해인가 - 신설 안 함, 여지만 측정 (같은 날)
+
+위에서 "측정된 크기가 있는 미구현 모드"로 남긴 Velvia를 바로 만들지 않고,
+**기존 룩으로 얼마나 커버되는지**부터 쟀다. 스크립트는
+`tools/evaluate_fuji_velvia_gap.py`이고, 대상 Velvia 페어 8쌍과 후보
+룩별 페어드 부호검정 + 부트스트랩 95% CI(20000회 고정 시드)는 전부
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`
+에 있다(실행 확인됨). 여기서는 같은 프레임의 raw/jpeg이라 화소가 정렬돼
+화소별 ΔE00을 쓰고 그 위에 부트스트랩 95% CI를 계산했다
+(`tools/evaluate_fuji_velvia_gap.py`의 `_mean_delta_e`/`summarize`, 실행
+확인됨) - 앞 절이 전역 평균 Lab을 썼던 것과 다른 점이다.
+
+| 후보 룩 | 평균 ΔE00 (출처 `velvia_gap_report.json`의 `paired_stats_vs_no_correction`, 실행 확인됨) | 승/패 | 부호검정 p | 부트스트랩 95% CI | 판정 |
+|---|---|---|---|---|---|
+| (무보정 neutral) | 15.7921 | — | — | — | 기준 |
+| `apply_classic_chrome` | **12.9159** | 8/0 | 0.0078 | [+2.2142,+3.6386] | 우세 |
+| `apply_provia` | 13.5652 | 6/2 | 0.2891 | [+0.4067,+4.2928] | 우세 |
+| `apply_reala_ace` | 15.7744 | 3/5 | 0.7266 | [-0.0244,+0.0629] | **판정 보류** |
+| `apply_astia` | 15.8431 | 2/6 | 0.2891 | [-0.0720,-0.0240] | 무보정 우세 |
+| `apply_nostalgic_neg` | 16.2704 | 0/8 | 0.0078 | [-0.5252,-0.4382] | 무보정 우세 |
+
+**의외의 결과 하나**: Velvia에 가장 가까운 기존 룩은 이름이 가까운
+`apply_provia`가 아니라 `apply_classic_chrome`이다 -
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`의
+`closest_existing_look` 기준 12.9159(CI [+2.2142,+3.6386], 8/0) vs
+13.5652(CI [+0.4067,+4.2928], 6/2), 실행 확인됨. `apply_provia`는 CI가
+0을 배제하긴 하지만 승패 6/2에 p=0.2891로 약하다.
+
+**여지는 크지 않다**: 이 룩 계열이 **자기 모드**에서 내는 통상 정확도를
+기준선으로 재보면,
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`의
+`benchmark` 필드 기준 `apply_provia`를 같은 세트의 Provia 68쌍에 적용했을
+때 11.7121이다(실행 확인됨). Velvia 잔여 12.9159와의 차이는 약 1.2 ΔE00
+인데 **이건 페어드 비교가 아니라 부트스트랩 CI를 낼 수 없다**(이미지
+집합이 서로 다르다). 그래서 유의성 주장이 아니라 "전용 함수가 가져갈
+몫의 대략적 상한"으로만 읽어야 한다.
+
+**결론(신설 안 함)**: `apply_velvia`를 만들면 되찾을 수 있는 폭이
+`datasets/fuji/contributed/local-work-2026-08/velvia_gap_report.json`
+기준 대략 1.2 ΔE00 수준이고(위와 같이 부트스트랩 CI 없는 대략치) 표본은
+8쌍이다. 새 `apply_*`를 배포 아티팩트에 추가하는 건 별도 결정이므로
+(`CLAUDE.md`의 "실험 결과를 자동으로 배포하지 않는다") 여기서는 측정만
+하고 `brands/fuji.py`를 건드리지 않았다. 만들 경우 목표선은 위 기준선
+11.7121이다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_velvia_gap`.
+
+## 후지 페어 오매칭 정정이 룩 측정치에 준 영향 - 재보정은 별도 결정 (2026-09-04)
+
+같은 날 `tools/fix_fuji_manifest_pairing.py`가 `local-work-2026-08`
+매니페스트에서 raw↔jpeg가 뒤바뀐 4쌍(8행)을 고쳤다. "8행이 틀렸다"만으로는
+재보정이 필요한지 알 수 없어서, 그 틀린 짝이 실제로 얼마나 큰 오차를
+싣고 있었는지 쟀다 - 스크립트 `tools/evaluate_fuji_pairing_fix_impact.py`,
+리포트
+`datasets/fuji/contributed/local-work-2026-08/pairing_fix_impact_report.json`
+(실행 확인됨). **바뀐 프레임이 모드당 1~4개뿐이라 부트스트랩 CI는 의미가
+없어 내지 않았고**, 아래는 성능 비교가 아니라 "정정 전에 보고되던 수치가
+얼마나 부풀려져 있었나"라는 편향 크기다.
+
+| 프레임 | 모드/룩 | 정정 전 짝 ΔE00 | 정정 후 짝 ΔE00 | 차이 (출처 `pairing_fix_impact_report.json`, CI 없음) |
+|---|---|---|---|---|
+| `DSCF9422.RAF` | Classic Chrome | 30.6299 | **11.6207** | +19.0092 |
+| `DSCF9316.RAF` | Classic Negative | 35.5300 | 20.0057 | +15.5244 |
+| `DSCF9328.RAF` | Classic Negative | 30.5569 | 16.6638 | +13.8930 |
+| `DSCF9391.RAF` | Classic Negative | 26.7573 | 13.0688 | +13.6885 |
+| `DSCF9358.RAF` | Classic Negative | 26.8279 | 20.4320 | +6.3958 |
+| `DSCF9341.RAF` | Nostalgic Neg | 14.7480 | 12.4865 | +2.2615 |
+| `DSCF9342.RAF` | Nostalgic Neg | 14.4823 | 12.5709 | +1.9114 |
+
+**7개 전부 정정 후 오차가 줄었다(7승 0패)** - 같은 리포트
+`pairing_fix_impact_report.json`의 `changed_frames_improved`/`worsened`
+기준이다(실행 확인됨, CI는 위 이유로 없음). 이건 성능 개선이 아니라,
+프리뷰 대조로 이미 확정했던 정정 방향을 룩 오차가 독립적으로 뒷받침한
+것이다.
+
+모드 평균의 이동폭은 아래와 같다 - 전부 같은 리포트
+`pairing_fix_impact_report.json`의 `mean_shift` 필드에서 전사했고
+부트스트랩 CI는 없다(실행 확인됨):
+
+| 모드 | 페어 수 | 정정 전 평균 ΔE00 | 정정 후 평균 ΔE00 | 이동 (출처 `pairing_fix_impact_report.json`, CI 없음) |
+|---|---|---|---|---|
+| Classic Negative | 47 | 16.3318 | 15.2786 | **+1.0532** |
+| Classic Chrome | 46 | 8.7704 | 8.3572 | +0.4132 |
+| Nostalgic Neg | 28 | 13.0095 | 12.8605 | +0.1490 |
+
+**재보정 판단 근거**: `apply_classic_negative`가 가장 크게 영향받았다 -
+`datasets/fuji/contributed/local-work-2026-08/pairing_fix_impact_report.json`
+기준 47쌍 중 4쌍(8.5%)이 오염돼 있었고 모드 평균이 1.0532만큼 부풀려져
+있었다(CI 없음, 실행 확인됨). `brands/fuji.py`의 그 룩 상수가
+`tools/fix_fuji_manifest_pairing.py`가 고친 그 4쌍의 영향을 받았을
+가능성이 있다는 뜻이다. 반면
+`datasets/fuji/contributed/local-work-2026-08/pairing_fix_impact_report.json`
+기준 `apply_classic_chrome`은 1쌍(이동 0.4132),
+`apply_nostalgic_neg`는 2쌍(이동 0.1490)으로 영향이 작다(CI 없음, 실행
+확인됨). **재보정 실행은 배포 결정이라 하지 않았다** - `brands/fuji.py`도
+프로필도 건드리지 않았다.
+
+**부수로 확인하고 기각한 것**: 이 세트를 훑을 때마다 뜨던
+`Premature end of JPEG file` 경고의 출처가
+`datasets/fuji/contributed/local-work-2026-08/jpeg/DSCF9414.JPG`임을
+찾았는데, 잘린 건 EOI 마커 수준이라 cv2가 8256x6192 전체를 정상
+디코드한다(균일 행 0개 - 잘린 JPEG 특유의 회색 띠가 없다, 실행 확인됨).
+데이터 문제가 아니어서 아무 조치도 하지 않았다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_pairing_fix_impact`.
+
+## 룩 LUT 굽는 방식 - 실사진 조건부 평균은 현재 방식보다 나쁘다 + 배포 리포트의 충실도 판정은 난수 이미지 탓 (2026-09-05)
+
+배포된 `hybrid_engine/assets/profiles/capture_one_look_iccs_report.json`은
+발급된 52장 중 **30장을 `faithful=false`** 로 기록하고, 원인을 "CLAHE 등
+적응형 연산은 점별 LUT에 담을 수 없다"는 포맷의 구조적 한계로 설명한다.
+한계 자체는 사실이지만 두 가지가 측정된 적이 없어서 잰다.
+
+1. 그 한계 **안에서** 현재 굽는 방식이 최선인가.
+2. 그 `faithful` 판정이 실제 사용 조건에서도 같은가.
+
+### 1. 조건부 평균 굽기 - 가설 기각
+
+현재 방식(`core.lut_export.bake_lut_from_function`)은 33³ 격자를 1089x33
+합성 이미지 하나로 펴서 룩에 통과시킨다. CLAHE 입장에서 그 이웃 분포는
+무지개 격자라 실사진과 무관하고, 적응형 성분이 임의 값으로 구워진다.
+비교 대상은 학습 사진에서 추정한 **조건부 평균**이다 - 점별 함수로 공간
+적응형 연산자를 근사할 때 MSE를 최소화하는 것이 입력값 조건부 기대값이라는
+성질을 쓴다(삼선형 가중치 splat이라 정확한 최소제곱해가 아니라 정규방정식의
+대각 근사다). 학습 사진이 닿지 않은 격자점은 현재 값을 유지했다 -
+공식 13장 중 학습 7장이 닿은 격자점은 35937개 중 **17841개**뿐이다.
+
+데이터는 공식 13장 JPEG(cdn.hasselblad.com), 학습 7 / held-out 6, 작업
+해상도 최대 1024px. 평가는 held-out 사진에서 LUT 경유와 룩 직접 호출
+사이의 ΔE00(CIEDE2000)이고, 적용은 캡처원/포토샵이 실제로 하는 **삼선형**
+보간이다(항등 LUT에서 원본을 최대오차 0으로 복원하는 것을 확인했다).
+성공 기준은 실행 전에 고정했다 - 부트스트랩 95% CI가 0을 제외하고
+부호검정이 같은 방향일 때만 개선.
+
+| 항목 | 값 (출처: `tools/evaluate_lut_bake_conditional_mean.py` 실행, 실행 확인됨) |
+|---|---|
+| 현재 방식 평균 ΔE00 | **4.8339** |
+| 조건부 평균 평균 ΔE00 | **5.2870** |
+| 개선폭 | **-9.4%** (조건부 평균이 나쁨) |
+| 승패 | 조건부 평균 5승 49패 |
+| 부호검정 p | 3.8914e-10 |
+| 부트스트랩 95% CI | **[-0.5944, -0.2874]** - 0을 음의 방향에서 제외 |
+| drop-one | -10.6% ~ -8.8% (방향 안 뒤집힘) |
+
+**판정: 현재 방식이 낫다.**
+
+**양성 대조는 예측과 반대로 나왔고, 그게 이유를 설명한다.** 설계할 때는
+"CLAHE를 안 쓰는 순수 점별 룩에서는 조건부 평균이 그 점의 정확한 상으로
+수렴하므로 두 방식이 같아져야 한다"고 적었다. 실제로는 반대다 - 룩
+소스에 `CLAHE`가 있는지로 갈라서 두 방식 차이를 그 룩의 효과로 나눈 값의
+평균을 보면:
+
+| 그룹 | n | 두 방식 차이 / 룩 효과 (출처: `report.json` 재집계, 실행 확인됨) |
+|---|---|---|
+| CLAHE 미사용(점별) | 25 | **0.2513** |
+| CLAHE 사용(적응형) | 29 | **0.0686** |
+
+점별 룩에서 **오히려 3.7배 더 벌어진다**. 조건부 평균이 그 점의 정확한
+상으로 수렴하지 않기 때문이다 - 삼선형 splat은 각 격자점에 그 이웃
+색공간의 출력을 가중 평균해 넣으므로, 참 매핑이 정확히 점별인 곳에서도
+평활 편향이 남는다. 현재 굽기는 바로 그런 곳에서 정확하다. 즉 이 실험이
+진 이유는 "적응형 성분을 잘 못 잡아서"가 아니라 **"점별 성분에서 잃는
+평활 편향이, 적응형 성분에서 얻는 것보다 크기 때문"** 이고, 위 두 줄이
+그 직접 증거다. (설계 문서에 적었던 수렴 예상은 틀렸다 - 조건부 평균
+자체는 MSE 최적이지만, splat 추정량은 그 조건부 평균의 평활된 근사다.)
+
+`hasselblad.apply_hncs`는 CLAHE를 쓰므로 이 대조의 점별 예시가 아니다
+(base 5.6847 / cond 5.9146 / 효과 6.5497). 굽는 코드는 바꾸지 않았다.
+
+룩별 held-out 평균(6장) 전체 표 - 통계를 다시 돌리지 않고 감사할 수 있게 전부 싣는다. `tests/test_evaluate_lut_bake_conditional_mean.py`가 이 표를 `summarize()`에 다시 먹여 위 수치를 재현한다:
+
+| 룩 | 현재 방식 ΔE00 | 조건부 평균 ΔE00 | 룩 효과 ΔE00 | 현재 faithful |
+|---|---|---|---|---|
+| `canon.apply_canon_look` | 5.0452 | 5.6662 | 4.6714 | X |
+| `canon.apply_canon_raw_look` | 6.7216 | 7.0180 | 16.6645 | O |
+| `canon_r1_raw.apply_canon_r1_raw_look` | 8.4457 | 8.1387 | 16.2116 | O |
+| `canon_r6iii_raw.apply_canon_r6iii_raw_look` | 6.9269 | 7.3116 | 16.4718 | O |
+| `fuji.apply_astia` | 0.7630 | 1.6266 | 2.1299 | O |
+| `fuji.apply_classic_chrome` | 5.0341 | 5.6335 | 4.5513 | X |
+| `fuji.apply_classic_chrome_v2` | 5.1400 | 5.7095 | 4.5505 | X |
+| `fuji.apply_classic_negative` | 0.7077 | 1.3535 | 5.8381 | O |
+| `fuji.apply_eterna_bleach_bypass` | 0.5642 | 0.8707 | 9.1126 | O |
+| `fuji.apply_eterna_cinema` | 0.6270 | 1.1299 | 8.2145 | O |
+| `fuji.apply_nostalgic_neg` | 2.0283 | 3.4691 | 4.1683 | O |
+| `fuji.apply_nostalgic_neg_v2` | 5.0446 | 5.6511 | 4.7574 | X |
+| `fuji.apply_nostalgic_neg_v3` | 5.1400 | 5.7095 | 4.5505 | X |
+| `fuji.apply_pro_neg_hi` | 3.3125 | 4.9354 | 4.5920 | O |
+| `fuji.apply_pro_neg_std` | 0.8313 | 1.6624 | 5.2431 | O |
+| `fuji.apply_provia` | 9.0204 | 9.7674 | 8.9984 | X |
+| `fuji.apply_reala_ace` | 0.2401 | 1.6476 | 0.5257 | O |
+| `fuji_provia_learned.apply_provia_learned` | 4.8207 | 4.9169 | 11.5526 | O |
+| `fuji_provia_matrix.apply_fuji_provia_matrix_look` | 8.4475 | 8.8358 | 14.1511 | O |
+| `hasselblad.apply_hncs` | 5.6847 | 5.9146 | 6.5497 | O |
+| `hasselblad.apply_hncs_video_frame` | 0.7447 | 1.7574 | 4.3368 | O |
+| `hasselblad_day.apply_hasselblad_day` | 4.1920 | 4.8849 | 4.3154 | O |
+| `hasselblad_learned.apply_hncs_learned` | 5.3625 | 5.2481 | 18.3870 | O |
+| `hasselblad_night.apply_hasselblad_night` | 1.7525 | 2.4502 | 2.4239 | O |
+| `hasselblad_x1d.apply_hncs_x1d` | 5.0622 | 5.3454 | 11.2109 | O |
+| `hasselblad_x1d50c.apply_hncs_x1d50c` | 5.3139 | 5.4604 | 8.7901 | O |
+| `hasselblad_x1dii50c.apply_hncs_x1dii50c` | 5.3122 | 5.4607 | 8.7953 | O |
+| `hasselblad_x2dii.apply_hncs_x2dii` | 5.1387 | 5.4831 | 10.4206 | O |
+| `leica.apply_leica_look` | 5.0335 | 5.6530 | 4.6853 | X |
+| `leica_raw.apply_leica_raw_look` | 5.1400 | 5.7095 | 4.5505 | X |
+| `leica_raw_learned.apply_leica_raw_learned` | 5.0154 | 5.2368 | 7.3499 | O |
+| `leica_raw_matrix.apply_leica_raw_matrix_look` | 5.6308 | 5.5858 | 7.6253 | O |
+| `nikon.apply_nikon_look` | 5.0428 | 5.6608 | 4.6696 | X |
+| `olympus.apply_olympus_look` | 5.0312 | 5.6540 | 4.7072 | X |
+| `panasonic.apply_panasonic_look` | 5.0104 | 5.6382 | 4.7607 | X |
+| `pentax.apply_pentax_look` | 5.0498 | 5.6582 | 4.6514 | X |
+| `phaseone.apply_phaseone_look` | 5.0207 | 5.6430 | 4.7346 | X |
+| `ricoh_gr.apply_ricoh_gr_look` | 5.0736 | 5.6738 | 4.5904 | X |
+| `sigma.apply_sigma_look` | 5.0309 | 5.6502 | 4.6951 | X |
+| `sigma_bf.apply_sigma_bf_look` | 8.9718 | 9.7156 | 9.0837 | O |
+| `sigma_bf_learned.apply_sigma_bf_learned` | 4.6309 | 4.7816 | 18.1308 | O |
+| `sigma_fpl.apply_sigma_fpl_look` | 5.1263 | 5.7023 | 4.5730 | X |
+| `sigma_fpl_learned.apply_sigma_fpl_learned` | 5.1754 | 5.4533 | 11.0736 | O |
+| `sigma_raw.apply_sigma_raw_look` | 9.0104 | 9.7571 | 9.0089 | X |
+| `sigma_raw_matrix.apply_sigma_raw_matrix_look` | 9.6544 | 8.2830 | 13.8434 | O |
+| `sony.apply_sony_look` | 5.0313 | 5.6494 | 4.6935 | X |
+| `sony_a7rvi.apply_sony_a7rvi_look` | 4.7952 | 5.4849 | 4.9152 | O |
+| `sony_a7rvi_learned.apply_sony_a7rvi_learned` | 3.6572 | 3.8742 | 11.7158 | O |
+| `sony_a7rvi_learned.apply_sony_a7rvi_learned_v2` | 3.3291 | 3.5565 | 11.6371 | O |
+| `sony_a7v.apply_sony_a7v_look` | 5.0985 | 5.7002 | 4.6448 | X |
+| `sony_a7v_learned.apply_sony_a7v_learned` | 4.1701 | 4.4039 | 9.7726 | O |
+| `sony_a7v_learned.apply_sony_a7v_learned_v2` | 4.0612 | 4.3550 | 9.9200 | O |
+| `sony_raw.apply_sony_raw_look` | 6.3323 | 7.6546 | 6.6890 | O |
+| `sony_raw_matrix.apply_sony_raw_matrix_look` | 8.4843 | 6.3049 | 13.4803 | O |
+
+### 2. 부산물 - 배포 리포트의 `faithful` 판정은 난수 이미지 때문이다
+
+위 측정에서 실사진+삼선형 기준 faithful이 54개 중 54개였는데, 배포 리포트는
+같은 정의로 22/52다. 리포트의 `_measure_fidelity`는 **64x64 난수 이미지**에
+**최근접** 보간으로 잰다 - 캡처원이 실제로 하는 건 실사진에 삼선형이라
+실사용과 두 겹으로 다르다. 어느 겹이 판정을 뒤집는지 리포트와 **같은
+단위(ΔBGR)** 로 2x2로 분리했다(`tools/audit_look_lut_fidelity_metric.py`).
+
+**먼저 재구현이 리포트를 그대로 재현하는지 확인했다**: 난수/최근접 조건에서
+리포트에 실린 52개 룩의 `lut_vs_direct_mean_abs_bgr`과 **52/52 일치,
+최대차 0.0000**(나머지 2개는 리포트가 건너뛴 기배포 룩이라 대조 대상이
+아니다). 즉 아래 표의 좌상단 칸은 리포트 그 자체다.
+
+| 조건 | faithful(오차<효과) | 평균 ΔBGR |
+|---|---|---|
+| 난수 / 최근접 **(리포트 조건)** | **23/54** | 16.34 |
+| 난수 / 삼선형 | 23/54 | 15.98 |
+| 실사진 / 최근접 | 50/54 | 13.30 |
+| 실사진 / 삼선형 **(실제 적용 조건)** | **54/54** | 12.92 |
+
+요인은 하나다. 난수/최근접에서 불충실이던 룩이 충실로 뒤집히는 수는
+**이미지 소스만 실사진으로 바꾸면 28개, 보간만 삼선형으로 바꾸면 0개**다.
+보간 차이는 평균 ΔBGR 0.3~0.4 수준으로 판정을 하나도 못 뒤집는다.
+
+**결론: "발급된 프로필 30장이 룩을 충실히 전달하지 못한다"는 배포 리포트의
+기록은 실사용 조건에서 성립하지 않는다.** 난수 이미지에서는 이웃 픽셀
+분포가 실사진과 전혀 달라 CLAHE가 극단적으로 반응하고, 그 조건에서만
+오차가 효과를 넘는다. 실사진에서는 54개 전부 오차 < 효과다.
+
+주의해서 읽어야 할 것: 이건 "LUT 근사가 정확하다"는 뜻이 **아니다**.
+실사진/삼선형에서도 평균 ΔBGR은 12.92로 작지 않고, ΔE00로는 평균 4.83이다.
+바뀐 건 "그 오차가 룩 자체의 효과보다 큰가"라는 리포트의 판정 기준
+쪽이다. 적응형 연산이 점별 LUT에 안 담긴다는 원래 한계 서술 자체는 여전히
+맞다.
+
+난수/최근접에서 불충실로 기록됐던 룩들이 실사용 조건에서 어떻게 되는지 전체 표(총 31개):
+
+| 룩 | 난수/최근접 오차 | 효과 | 실사진/삼선형 오차 | 효과 |
+|---|---|---|---|---|
+| `canon.apply_canon_look` | 19.53 | 16.34 | 13.53 | 15.23 |
+| `fuji.apply_classic_chrome` | 20.43 | 18.49 | 13.92 | 14.50 |
+| `fuji.apply_classic_chrome_v2` | 20.30 | 18.17 | 14.10 | 14.21 |
+| `fuji.apply_nostalgic_neg_v2` | 18.48 | 16.97 | 13.51 | 15.76 |
+| `fuji.apply_nostalgic_neg_v3` | 20.30 | 18.17 | 14.10 | 14.21 |
+| `fuji.apply_provia` | 23.12 | 18.17 | 26.78 | 28.33 |
+| `fuji_provia_learned.apply_provia_learned` | 18.90 | 16.31 | 12.96 | 32.13 |
+| `hasselblad_x1d.apply_hncs_x1d` | 22.97 | 14.26 | 13.32 | 30.34 |
+| `hasselblad_x1d50c.apply_hncs_x1d50c` | 19.79 | 15.45 | 14.00 | 23.97 |
+| `hasselblad_x1dii50c.apply_hncs_x1dii50c` | 19.77 | 15.43 | 13.98 | 24.01 |
+| `hasselblad_x2dii.apply_hncs_x2dii` | 22.43 | 12.41 | 13.34 | 28.30 |
+| `leica.apply_leica_look` | 19.10 | 15.83 | 13.47 | 15.44 |
+| `leica_raw.apply_leica_raw_look` | 20.30 | 18.17 | 14.10 | 14.21 |
+| `leica_raw_learned.apply_leica_raw_learned` | 20.22 | 12.82 | 13.55 | 21.06 |
+| `nikon.apply_nikon_look` | 19.47 | 16.20 | 13.54 | 15.25 |
+| `olympus.apply_olympus_look` | 19.18 | 15.80 | 13.44 | 15.51 |
+| `panasonic.apply_panasonic_look` | 18.66 | 16.09 | 13.31 | 15.90 |
+| `pentax.apply_pentax_look` | 19.50 | 16.23 | 13.58 | 15.16 |
+| `phaseone.apply_phaseone_look` | 18.87 | 15.87 | 13.38 | 15.73 |
+| `ricoh_gr.apply_ricoh_gr_look` | 19.88 | 17.07 | 13.73 | 14.74 |
+| `sigma.apply_sigma_look` | 19.05 | 15.83 | 13.45 | 15.50 |
+| `sigma_bf.apply_sigma_bf_look` | 22.90 | 17.92 | 26.43 | 28.71 |
+| `sigma_fpl.apply_sigma_fpl_look` | 20.26 | 18.12 | 14.01 | 14.38 |
+| `sigma_fpl_learned.apply_sigma_fpl_learned` | 20.09 | 19.55 | 14.01 | 30.95 |
+| `sigma_raw.apply_sigma_raw_look` | 23.08 | 18.12 | 26.69 | 28.40 |
+| `sony.apply_sony_look` | 19.04 | 15.83 | 13.45 | 15.50 |
+| `sony_a7rvi.apply_sony_a7rvi_look` | 17.91 | 16.92 | 12.54 | 17.22 |
+| `sony_a7v.apply_sony_a7v_look` | 20.14 | 18.01 | 13.85 | 14.73 |
+| `sony_a7v_learned.apply_sony_a7v_learned` | 16.00 | 9.97 | 10.50 | 30.88 |
+| `sony_a7v_learned.apply_sony_a7v_learned_v2` | 15.25 | 10.11 | 10.00 | 31.54 |
+| `sony_raw.apply_sony_raw_look` | 23.18 | 18.12 | 18.69 | 21.17 |
+
+**아무것도 재발급하지 않았다.** `capture_one_look_iccs_report.json`은
+배포 아티팩트(루트 `CLAUDE.md`의 never 목록)이고, 그 안의 `faithful`
+필드와 `limitation` 문구를 고치는 것은 배포 결정이라 사용자 승인 없이는
+하지 않는다. 위 측정은 그 판단 근거를 만든 것이다.
+
+재현:
+`python3 -m tools.evaluate_lut_bake_conditional_mean <13장JPEG폴더> report.json`,
+`python3 -m tools.audit_look_lut_fidelity_metric <13장JPEG폴더> metric_2x2.json`.
+JPEG는 `datasets/hasselblad/hasselblad_raw_jpeg_pairs.csv`의 `jpeg_url`에서
+받는다(공개 CDN, raw 불필요).
+## Classic Negative 재보정 - 기준은 통과했는데 기준이 틀린 걸 재고 있었다 (2026-09-05)
+
+사용자 승인("classic negative 재보정 ㄱㄱ")으로 `apply_classic_negative`를
+재보정했다. 결과부터: **현행 계열 재보정은 기각했고**, 검증된 다른
+파라미터 계열로 재적합한 v2 후보가 기준을 통과했다. `brands/fuji.py`와
+`hybrid_engine/assets/profiles/**`는 이 조사에서 하나도 수정하지 않았다 -
+v2 추가는 별도의 배포 결정이다.
+
+### 1. 현행 계열 재보정 - 기준 통과, 그러나 기각
+
+`tools/recalibrate_fuji_classic_negative.py`로 GFX50S II 47쌍에 3패스
+좌표하강 + 5-fold 교차검증을 돌렸다. 사전에 못 박은 기준("부트스트랩 95%
+CI가 0을 배제하고 신규가 우세할 때만 교체")은 통과했다 -
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_recalibration_report.json`
+기준 15.2250 -> 8.6978(+42.87%), 46승1패, 부호검정 p<0.0001, 부트스트랩
+95% CI [+5.7623, +7.2889].
+
+기각한 이유는 **네 파라미터가 전부 격자 경계**였기 때문이다:
+`sat_mult` 0.65->0.45(하한), `contrast_n` 1.4->1.0(하한),
+`black_lift` 0.03->0.12(상한), `white_point` 1.05->1.18(상한). 방향이
+"밝기 크게 올리고 · S커브 제거 · 채도 절반"이라, 필름 시뮬레이션을 다듬는
+게 아니라 무언가 전역 격차를 상수로 메우는 모양이었다.
+
+### 2. 원인 - 룩이 아니라 렌더였다
+
+`tools/diagnose_fuji_neutral_render_offset.py`로 룩을 전혀 안 씌운
+`load_neutral_render()` 출력과 카메라 JPEG의 전역 통계를 페어별로 비교했다.
+`datasets/fuji/contributed/local-work-2026-08/neutral_render_offset_classic_negative.json`
+기준 Lab L 중앙값이 +74.851(47/47쌍, 부호검정 p<0.0001, 부트스트랩 95% CI
+[+68.851, +80.191]), HSV S 평균이 -19.490(0/47쌍, CI [-22.964, -16.162])으로
+다섯 지표 전부 CI가 0을 배제했다. 원인은 `tools/calibrate.py`의
+`no_auto_bright=True`로, "무가공 중립 베이스라인"이라는 의도된 동작이다.
+
+auto-bright로 메워지는지도 확인했다.
+`tools/diagnose_fuji_autobright_vs_look.py`가 현행 상수를 고정한 채 렌더만
+바꿔서 잰 결과는
+`datasets/fuji/contributed/local-work-2026-08/autobright_vs_look_classic_negative.json`
+기준 15.2787 -> 11.4546(+25.03%, 36승11패, 부호검정 p=0.000346,
+부트스트랩 95% CI [+2.5116, +5.2239])다. auto-bright만으로도 재보정의
++42.87% 중 큰 부분(+25.03%p)을 설명한다. 다만 +17.84%p가 남으므로 이
+진단만으로 재보정 이득 전부를 렌더 노출이라고 단정할 수는 없다.
+
+**정정 (2026-09-06)**: 이 섹션의 이전 기록은 오래된 집계값이었다. 현재
+커밋된 JSON의 47쌍 통계로 교체했으며, 따라서 "재보정을 설명하지 못한다"와
+아래의 34%p 전체를 노출 보정으로 돌린 해석은 철회한다.
+
+### 3. 이 편향은 후지만의 것이 아니다
+
+`tools/diagnose_neutral_render_offset_by_brand.py`로 raw가 디스크에 남은
+네 세트에서 같은 다섯 지표를 쟀다.
+`datasets/neutral_render_offset_by_brand.json` 기준:
+
+| 세트 | n | lab_L_mean | lab_L_median | hsv_S_mean | white_p995 |
+|---|---|---|---|---|---|
+| fuji Classic Negative | 47 | +50.476 | +74.851 | -19.490 | +33.000 |
+| hasselblad x1d-x2d100c-restore | 55 | +43.694 | +50.073 | -11.886 | +45.182 |
+| hasselblad xcd-lenses | 145 | +49.119 | +53.931 | -9.227 | +49.686 |
+| sony a7v-preprod | 22 | +47.598 | +47.409 | +1.565 (보류) | +65.818 |
+| leica sl3p | 15 | +25.764 | +30.933 | -2.750 (보류) | +21.500 |
+
+같은 리포트 기준 `lab_L_mean`/`lab_L_median`/`white_p995`는 다섯 세트
+284쌍 전부에서 부호가 일치하고 부트스트랩 95% CI가 0을 배제한다 - **밝기
+격차는 전 브랜드 공통**이다. 반면 `hsv_S_mean`은 소니가 +1.565로 CI
+[-3.556, +6.450], 라이카가 -2.750으로 CI [-5.948, +0.541]이라 판정
+보류다 - **과채도는 후지·핫셀만의 특성**이고, 그래서 Classic Negative의
+`sat_mult`만 유독 하한으로 달아났다.
+
+파급: 이 저장소의 population fit ΔE00 **절대값**은 전부 "무가공 렌더 기준"
+이라는 단서가 붙는다. 룩 간 상대비교는 그대로 유효하다.
+
+### 4. 처방 - 검증된 계열로 재적합
+
+같은 세트를 같은 경로로 적합한 `apply_provia`,
+`apply_classic_chrome_v2`, `apply_nostalgic_neg_v3`는 전부
+`toe_lift=0.0`/`white_point=1.0`으로 수렴했다 - 밝기 리프트를 안 쓴다.
+`core.curve.film_curve`는 `white_point<=1.0`이라 구조적으로 밝기를 못
+올린다. 그래서 `tools/evaluate_fuji_classic_negative_v2_grid.py`로 CLAHE +
+`film_curve` 계열에 Classic Negative의 핵심인 채도 축을 붙여 재적합했다
+(`apply_classic_chrome` -> `_v2` 전례와 같은 형태).
+
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_grid_report.json`
+기준 5-fold 홀드아웃 15.2787 -> 12.3201(**+19.36%**), 46승1패, 부호검정
+p<0.0001, 부트스트랩 95% CI [+2.5039, +3.4143]으로 사전 기준을 통과했다.
+전체표본 상수는 `toe_lift=0.0`, `shoulder_start=0.82`, `white_point=1.0`,
+`sat_mult=0.20`이고 in-sample ΔE00 10.8968이다. 폴드별 선택은 네 축 모두
+5/5 만장일치로 격자 경계에 붙었다. 따라서 후보 우세 신호는 강하지만,
+경계 밖으로 계속 달아나는지 재확인해야 한다.
+
+**해석 (2026-09-06 정정 반영)**: 재보정의 +42.87%와 v2의 +19.36% 사이
+23.51%p를 전부 노출 보정이라고 볼 수 없다. 보정된 auto-bright 결과는
++25.03%p를 설명하지만, v2와 같은 선형 RGB 평가에서 모델 계열·채도 축의
+기여가 섞여 있다. 따라서 v2 후보가 우세하다는 결과와 재보정 이득을 노출과
+룩으로 완전히 분해하는 문제는 별개이며, 추가 통제 실험이 필요하다.
+
+### 5. 경계 재확인
+
+4의 상수가 네 축 모두 경계에 붙어서, 스스로 세운 "경계면 실패 신호" 기준대로
+`tools/probe_fuji_classic_negative_v2_boundary.py`로 각 축을 하나씩 경계 밖까지
+훑었다.
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_boundary_probe.json`
+기준 ΔE00은 10.8968이다. `toe_lift`는 하한 밖 -0.02/-0.04/-0.06/-0.08에서
+10.9014/10.9121/10.9227/10.9306으로 단조 악화해 진짜 최적점이다.
+반면 `shoulder_start`는 0.999까지 10.8777, `white_point`는 1.20까지
+10.8443으로 더 낮아지고, `sat_mult`도 0.15에서 10.8897로 소폭 개선된다.
+세 축 모두 경계가 최적을 가로막는 신호라서, v2 상수를 배포하지 않고 범위를
+넓힌 재적합과 auto-bright 통제를 선행한다(CI 없음, 전체표본 in-sample).
+
+### 부수 발견 - 소니 세트의 실효 표본은 62가 아니라 22이다
+
+3절을 돌리다 소니 `dpreview-a7v-preprod-2026-08` 62쌍 중 40개가 디코드
+실패하는 걸 발견했다. 손상이 아니다 - 전부 정상 TIFF 헤더에
+`exiftool -FileType`도 `ARW`다. `tools/audit_raw_decodability.py`로 전 세트를
+점검한 결과 `datasets/raw_decodability_audit.json` 기준 실패 40개는 전부
+`Sony Compressed RAW 2`(손실), 정상 22개는 전부
+`Sony Lossless Compressed RAW 2`로, LibRaw 0.22.1(rawpy 0.27.0)이 a7 V의
+손실 압축 ARW를 지원하지 않는 것이다. 나머지 8개 세트(후지 309, 핫셀 212,
+라이카 15)는 실패 0건이다.
+
+문제는 이게 조용하다는 점이다 - 대부분의 `evaluate_*.py`는 디코드 실패를
+건너뛰기만 해서, 소니 작업이 매니페스트 62행이 아니라 22쌍에서 돌아가고
+있었는데 아무 데도 그 숫자가 안 남았다. 감사 스크립트는 이상 시 종료코드
+1이라 다음 바디를 받을 때 자동으로 걸린다.
+
+### 6. 격자 확장 재실행 - shoulder_start/sat_mult 경계 해소, white_point만 설계상 상한 (2026-09-06)
+
+5절의 경계 재확인은 univariate 프로브(다른 세 축 고정)였다 - 결합적으로
+더 크게 달아날 가능성을 배제 못 한다는 지적(코덱스, `d5070e9`)에 따라
+`tools/evaluate_fuji_classic_negative_v2_grid.py`의 실제 5-fold 격자를
+`SHOULDER_STARTS` 상한 0.90->0.97, `SAT_MULTS` 하한 0.20->0.10으로 넓혀
+콤보 1540개->**2860개**로 전체 재실행했다(`white_point`는 노출 보정
+탈출구 방지 장치라 의도적으로 1.0 초과로 넓히지 않았다).
+
+`datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_grid_report.json`
+기준 5-fold 홀드아웃 15.2787 -> **12.3081**(+19.44%), 46승1패, 부호검정
+p<0.0001, 부트스트랩 95% CI [+2.5045, +3.4374] - 4절의 좁은 격자 결과
+(+19.36%, CI [+2.5039,+3.4143])와 사실상 동일하다. 전체표본 최종 상수는
+`toe_lift=0.0, shoulder_start=0.94, white_point=1.0, sat_mult=0.15`
+(in-sample ΔE00 10.8707, CI 없음 - 전체표본 단일 적합이라 페어드 비교
+대상이 없다). 폴드 선택은 5개 중 3개가 (0.94, 0.15), 2개가 (0.97, 0.20)로
+만장일치는 아니다.
+
+**결론**: `shoulder_start`(0.94, 격자 상한 0.97에 안 붙음)와 `sat_mult`
+(0.15, 격자 하한 0.10에 안 붙음) 둘 다 확장된 격자 **안쪽**의 값으로
+수렴했다 - 4절/5절에서 경계에 붙었던 건 격자가 좁아서였다는 뜻이다.
+`params_on_grid_edge`에 남은 축은 `toe_lift`(0.0 - 5절에서 이미 하한 밖으로
+갈수록 단조 악화하는 진짜 최적점으로 확인됨)와 `white_point`(1.0 -
+`WHITE_POINTS` 정의부에 넓히지 않기로 명시한 설계상 상한, 5절 프로브에서
+1.20까지 밀어도 이득이 -0.48%(10.8968->10.8443)로 작다고 이미 확인됨)뿐이다.
+둘 다 "탈출구"가 아니라 "설계상/실측상 진짜 경계"로 판정한다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`
+(콤보 2860개, ~2.5시간 소요 - `tools/CLAUDE.md`의 장기 실행 규칙대로 `nohup`+`Monitor`).
+
+### 권고
+
+`apply_classic_negative_v2` 추가를 제안한다 - 기존 `apply_classic_negative`는
+`brands/CLAUDE.md`대로 그대로 두고 나란히 둔다. **추가 실행은 배포 결정이라
+하지 않았다.** 현행 계열 재보정 결과(1절)는 채택하지 않는다.
+
+> **추가(2026-09-06, 6절)**: 5절에서 미뤄뒀던 "범위를 넓힌 재적합"을
+> 완료했다. shoulder_start/sat_mult 경계가 해소되어 v2 후보의 우세 신호가
+> 좁은 격자의 인공물이 아님을 확인했지만, 이 절 자체의 배포 보류 결정은
+> 그대로 유지한다 - 채택은 별개의 배포 결정이다.
+
+재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.probe_fuji_classic_negative_v2_boundary`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.diagnose_neutral_render_offset_by_brand`,
+`~/.hncs-hybrid-venv312/bin/python3 -m tools.audit_raw_decodability`.
+
+## 핫셀블라드 차용 파라미터(shoulder_start/clahe_clip) 재적합 - Leica/Sony 둘 다 null, 양성 대조로 방법 검증 (2026-09-06)
+
+population-fit 브랜드 10개(canon, leica, nikon, olympus, panasonic, pentax,
+phaseone, ricoh_gr, sigma, sony)가 `# 미검증 - 핫셀블라드 기본값 차용`이라고
+스스로 적어둔 채 `_SHOULDER_START=0.78`, `_CLAHE_CLIP=1.25`를 쓰고 있었다.
+raw+jpeg 페어를 로컬에 갖고 있어 재적합 가능한 건 Leica, Sony 둘뿐이었다
+(나머지 8개는 RAW 재수집 필요, 미착수).
+
+`tools/refit_borrowed_population_fit_params.py`(성공 기준은 그 파일
+docstring 16-20행에 사전 확정: LOO 홀드아웃 부트스트랩 95% CI 20000회
+고정 시드가 0을 배제하고 재적합이 우세할 때만 교체 권고)로 브랜드별
+`shoulder_start` x `clahe_clip` 2축 LOO를 돌렸다(`_TOE_LIFT`/`_WHITE_POINT`는
+실측값 그대로 고정).
+
+`datasets/refit_borrowed_leica.json`(n=15): 8.1163 -> 8.0432, 10승5패,
+부호검정 **p=0.3018**, CI [+0.0023, +0.1956](0을 아슬아슬하게 배제).
+전체표본 최종 `shoulder_start=0.999`(격자 상한이자 `film_curve` 자체의
+구조적 clamp 값), `clahe_clip=1.25`(현행과 동일). 15/15 폴드 만장일치로
+`shoulder_start`만 경계에 붙는다.
+
+`datasets/refit_borrowed_sony.json`(n=22, `tools/audit_raw_decodability.py`로
+확인된 디코드 가능 표본만): 16.5606 -> 16.3775, 13승9패, p=0.5235,
+CI [-0.1048, +0.4567] - 0을 포함해 **판정 보류**. 경계에 붙은 축 없음.
+
+**해석**: 자동 기준만 보면 Leica는 "통과"(CI가 0을 배제)지만, p=0.3018은
+부호검정 기준으로는 유의하지 않고 - CI가 0을 배제하는 것과 부호검정이
+유의한 것은 다른 질문이다 - 유일하게 움직인 축(`shoulder_start`)이
+`film_curve`의 실제 수학적 상한(0.999)에 정확히 붙는다. 이번 세션에서
+이미 두 번(Classic Negative v2 경계, Leica 1차 좁은 격자) "경계에 붙은
+결과는 좁은 격자 탓이거나 노출 보정 탈출구"였던 패턴과 정확히 같은 모양이다
+- 다만 이번엔 격자를 더 넓힐 수가 없다(0.999가 곧 코드의 진짜 한계). 그래서
+CI 통과를 그대로 "채택 권고"로 읽지 않는다. n=15가 작고 승/패도 10/5로
+근소해서, 데이터를 더 모으거나 Classic Negative에서 쓴 auto-bright 통제
+실험 없이는 신호와 노출 탈출구를 못 가른다. Sony는 애초에 CI가 0을 포함해
+더 명확히 판정 보류다.
+
+**양성 대조 검증**: 두 브랜드 모두 기준선을 일부러 틀린 값
+(`--control-shoulder`/`--control-clahe`)으로 바꾼 뒤 같은 도구로 돌려
+`datasets/refit_borrowed_leica_control.json`(8.1163 대신 10.1385 ->
+8.0432, +20.67%, 14승1패, p=0.0010, CI [+1.2863,+2.9960])과
+`datasets/refit_borrowed_sony_control.json`(17.1157 -> 16.3775, +4.31%,
+19승3패, p=0.0009, CI [+0.4344,+1.0455]) 둘 다 도구가 주입된 열화를
+정확히 잡아냈다 - null 결과가 도구의 둔감함 때문이 아니라는 확인이다.
+
+**권고**: Leica/Sony 둘 다 `brands/*.py` 상수를 교체하지 않는다. 나머지
+8개 브랜드(canon, nikon, sigma, olympus, panasonic, pentax, ricoh_gr,
+phaseone)는 raw+jpeg 페어가 없어 재적합 자체를 못 했다 - RAW 재수집이
+먼저다.
+
+재현:
+```
+~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_borrowed_population_fit_params \
+    --brand brands.leica --set datasets/leica/contributed/dpreview-sl3p-2026-08
+~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_borrowed_population_fit_params \
+    --brand brands.sony --set datasets/sony/contributed/dpreview-a7v-preprod-2026-08
+```
