@@ -11,7 +11,6 @@ camera 스키마, 하셀블라드 collect_local_pairs()와 같은 dedup 로직)�
   python3 -m tools.evaluate_expanded_clahe_shoulder_refit
 """
 import csv
-import itertools
 import math
 import os
 import subprocess

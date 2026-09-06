@@ -46,7 +46,7 @@ def fetch_exif_head(url, n_bytes=131072):
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = resp.read()
-    except Exception as e:
+    except Exception:
         return None, None, None
     import json
     import tempfile

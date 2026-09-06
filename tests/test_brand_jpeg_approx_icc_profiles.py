@@ -5,7 +5,6 @@
 와 같은 역할, 3브랜드 파라미터화."""
 import json
 import os
-import struct
 import sys
 import unittest
 

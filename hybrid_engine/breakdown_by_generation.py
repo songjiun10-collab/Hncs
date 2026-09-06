@@ -18,7 +18,7 @@ from hybrid_engine.calibrate_profile import _find_pairs as _official_find_pairs
 from hybrid_engine.calibrate_profile import _resize_max_dim, CALIB_MAX_DIM, _mean_loss
 from hybrid_engine.core import color_matrix
 from hybrid_engine.utils.io import decode_raw, load_image_linear
-from tools.calibrate import collect_local_pairs, _generation_for
+from tools.calibrate import collect_local_pairs
 
 
 def main():

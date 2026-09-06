@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from brands.sony import apply_sony_look
 from brands.sony.a7v import apply_sony_a7v_look
 from core.validation import is_image_array_usable
-from tools.calibrate import load_neutral_render, _resize_to_max_dim
+from tools.calibrate import load_neutral_render
 
 RAW_DIR = "/Users/songjiun/Documents/raw pair"
 MANIFEST = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),

@@ -3,9 +3,7 @@ import smoke test + unit test for the pure logic (SHA-256 matching, CSV
 writing), no network/browser dependency so this runs in CI."""
 import csv
 import hashlib
-import json
 import os
-import shutil
 import tempfile
 import unittest
 

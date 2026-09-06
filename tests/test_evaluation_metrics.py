@@ -20,7 +20,6 @@ class TestDeltaEStats(unittest.TestCase):
             delta_e_stats(a, b)
 
     def test_outlier_region_raises_p95_and_max_more_than_mean(self):
-        rng = np.random.default_rng(0)
         a = np.full((40, 40, 3), 0.4)
         b = a.copy()
         # 대부분 동일, 작은 영역만 크게 다르게 - p95/max가 mean보다 훨씬 커야 함

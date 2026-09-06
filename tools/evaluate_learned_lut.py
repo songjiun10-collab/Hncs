@@ -219,7 +219,6 @@ def main():
     print(f"\n=== {k}-fold 검증(LOO={'예' if k==n else '아니오'}) ===", flush=True)
     lut_des = np.zeros(n)
     for fi, held_out_idx in enumerate(fold_groups):
-        held_out = set(held_out_idx.tolist())
         train_target = total_target.copy()
         train_weight = total_weight.copy()
         for idx in held_out_idx:

@@ -19,7 +19,6 @@ import csv
 import itertools
 import math
 import os
-import sys
 import time
 
 import cv2
