@@ -10,13 +10,20 @@
 값이어야 한다 - macOS 로컬 환경에서 뽑으면 안 됨. `cv2.cvtColor(...,
 COLOR_BGR2HSV)` 왕복을 쓰는 함수(apply_pro_neg_std/pro_neg_hi/
 eterna_cinema/eterna_bleach_bypass/reala_ace/classic_negative,
-hasselblad_night)는 opencv 버전/플랫폼에 따라 최하위 비트가 달라져서
-로컬에서 뽑은 해시가 CI에서 재현 안 됨. 이 7개는 CI 기준 출력 픽셀 배열이
-보관돼 있지 않아 임의의 교차 플랫폼 허용오차를 만들지 않는다. 대신 커밋된 기준
-출력 fixture와 픽셀별로 비교한다. 허용오차 1은 문서화된 최하위 비트 차이의
-상한이며, 위치가 바뀐 출력이나 0 출력 같은 실제 회귀를 잡는다. Lab 전용
-CLAHE+LUT 함수는 전부 플랫폼 무관하게 일치해 정확한 해시를 계속 쓴다. 새 안정
-함수의 골든해시는 로컬에서 계산만 하지 말고 CI 실행 결과로 검증/교정할 것."""
+hasselblad_night)는 플랫폼(아키텍처)에 따라 최하위 비트가 달라져서
+로컬에서 뽑은 해시가 CI에서 재현 안 됨. 이 7개는 정확한 해시 대신 커밋된
+기준 출력 fixture와 픽셀별로 비교한다.
+
+**정정(2026-09-06, CI 적색 추적 중 발견)**: 허용오차를 1로 뒀는데 실측
+drift가 2라서 CI가 계속 깨졌다(`brands/`·`core/`·`requirements.txt`는 한 줄도
+안 바뀐 구간이었다 - 출력이 아니라 기준이 틀렸던 것). 실측값은
+`HSV_MAX_LSB_DRIFT` 정의부 주석의 표에 있다. 상한을 2로 넓히는 대신 "차이 나는
+픽셀 수" 상한(`HSV_MAX_DRIFTING_PIXELS`)을 같이 걸어 회귀 감지력을 유지한다 -
+실제 회귀는 수만 픽셀을 움직이지 24개에서 끝나지 않는다.
+
+Lab 전용 CLAHE+LUT 함수는 전부 플랫폼 무관하게 일치해 정확한 해시를 계속
+쓴다. 새 안정 함수의 골든해시는 로컬에서 계산만 하지 말고 CI 실행 결과로
+검증/교정할 것."""
 import hashlib
 import importlib
 from pathlib import Path
@@ -162,7 +169,31 @@ FUJI_PRESET_GOLDEN_HASHES = [
 
 # OpenCV's BGR→HSV→BGR uint8 conversion differs by platform at the least
 # significant bit. The committed arrays preserve position, so an output may
-# differ by only one LSB at every corresponding pixel.
+# differ by a couple of LSBs at a handful of corresponding pixels.
+#
+# 허용치는 실측이다(2026-09-06, `tools/generate_hsv_golden_fixture.py`가 만든
+# 커밋된 fixture vs 각 플랫폼 실제 출력). fixture는 macOS ARM에서 뽑혔고,
+# 같은 macOS ARM에서는 cv2 4.11.0/numpy 1.26.4와 고정 버전 cv2 5.0.0/numpy
+# 2.4.6 **둘 다 drift 0**이라 라이브러리 버전 문제가 아니라 아키텍처 차이다.
+# CI(Linux x86_64, python 3.11, cv2 5.0.0, numpy 2.4.6) 실측:
+#
+#   함수                        max   >0픽셀  >1픽셀   (전체 49,152픽셀)
+#   apply_pro_neg_std             2      7       3
+#   apply_pro_neg_hi              1     24       0
+#   apply_eterna_cinema           1      3       0
+#   apply_eterna_bleach_bypass    1     22       0
+#   apply_reala_ace               1      7       0
+#   apply_classic_negative        1     24       0
+#   apply_hasselblad_night        2     13       2
+#
+# 즉 최대 2 LSB, 그것도 49,152픽셀 중 최대 24개(0.05%)에서만. 이전 상한 1은
+# 이 실측보다 좁아서 CI가 계속 빨갰다(brands/·core/·requirements.txt는 한 줄도
+# 안 바뀐 채로 - 출력이 변한 게 아니라 기준이 틀렸던 것). 상한만 늘리면 회귀
+# 감지력이 떨어지므로 "희소성"도 같이 못 박는다: 진짜 회귀(상수 변경, 룩 교체,
+# 행 순열)는 수만 픽셀을 움직이지 24개 안에서 끝나지 않는다.
+HSV_MAX_LSB_DRIFT = 2
+HSV_MAX_DRIFTING_PIXELS = 128
+
 HSV_ROUND_TRIP_FUNCTIONS = [
     ("brands.fuji", "apply_pro_neg_std"),
     ("brands.fuji", "apply_pro_neg_hi"),
@@ -197,16 +228,25 @@ class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 self._assert_matches_reference(mod_name, fn_name, output)
 
-    def test_reference_check_accepts_clipped_one_lsb_variation(self):
-        for mod_name, fn_name in HSV_ROUND_TRIP_FUNCTIONS:
-            with self.subTest(brand=mod_name, fn=fn_name):
-                output = getattr(importlib.import_module(mod_name), fn_name)(
-                    make_test_image()
-                )
-                one_lsb_higher = np.minimum(output.astype(np.uint16) + 1, 255)
-                self._assert_matches_reference(
-                    mod_name, fn_name, one_lsb_higher.astype(np.uint8)
-                )
+    def test_drift_check_accepts_sparse_clipped_lsb_variation(self):
+        # 합성 배열로 검사기 자체의 성질만 본다 - 실제 출력에 +1을 더해
+        # fixture와 비교하면 이 테스트가 플랫폼 drift(CI 실측 최대 2)까지
+        # 같이 짊어져서, 검사기가 멀쩡해도 CI에서만 깨진다.
+        base = make_test_image()
+        drifted = base.astype(np.int16)
+        flat = drifted.reshape(-1)
+        flat[:24] = np.minimum(flat[:24] + HSV_MAX_LSB_DRIFT, 255)
+        self._assert_within_platform_drift(
+            "synthetic", drifted.astype(np.uint8), base
+        )
+
+    def test_drift_check_rejects_widespread_one_lsb_variation(self):
+        # 전 픽셀 +1은 최대치는 통과하지만 희소성 상한에 걸려야 한다 -
+        # 상한을 2로 넓히면서 잃을 뻔한 회귀 감지력이 여기서 지켜진다.
+        base = make_test_image()
+        everywhere = np.minimum(base.astype(np.uint16) + 1, 255).astype(np.uint8)
+        with self.assertRaises(AssertionError):
+            self._assert_within_platform_drift("synthetic", everywhere, base)
 
     def test_reference_check_rejects_row_permutation(self):
         mod_name, fn_name = HSV_ROUND_TRIP_FUNCTIONS[0]
@@ -239,13 +279,25 @@ class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
         expected = self.expected_outputs[fn_name]
         self.assertEqual(output.shape, expected.shape)
         self.assertEqual(output.dtype, expected.dtype)
-        pixel_difference = np.abs(
+        self._assert_within_platform_drift(
+            f"{mod_name}.{fn_name}", output, expected
+        )
+
+    def _assert_within_platform_drift(self, label, output, expected):
+        difference = np.abs(
             output.astype(np.int16) - expected.astype(np.int16)
-        ).max()
+        )
         self.assertLessEqual(
-            pixel_difference,
-            1,
-            f"{mod_name}.{fn_name} pixel output changed beyond one LSB",
+            int(difference.max()),
+            HSV_MAX_LSB_DRIFT,
+            f"{label} pixel output changed beyond "
+            f"{HSV_MAX_LSB_DRIFT} LSB",
+        )
+        self.assertLessEqual(
+            int((difference > 0).sum()),
+            HSV_MAX_DRIFTING_PIXELS,
+            f"{label} changed at more pixels than cross-platform LSB drift "
+            f"explains (실측 상한 24 / {difference.size})",
         )
 
 
