@@ -1,0 +1,37 @@
+{
+  "brand": "leica",
+  "camera": "Leica X (Typ 113)",
+  "n_images": 15,
+  "n_failed_detect": 0,
+  "images": [
+    "x113_536977.dng",
+    "x113_536979.dng",
+    "x113_536981.dng",
+    "x113_536983.dng",
+    "x113_536985.dng",
+    "x113_536987.dng",
+    "x113_536989.dng",
+    "x113_536991.dng",
+    "x113_536993.dng",
+    "x113_536995.dng",
+    "x113_536997.dng",
+    "x113_536999.dng",
+    "x113_537001.dng",
+    "x113_537003.dng",
+    "x113_537005.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 26.71150241808252,
+  "delta_e00_cv_mean": 11.94436518824353,
+  "delta_e00_improvement_pct": 55.28381368710389,
+  "delta_e00_bootstrap_ci95": [
+    10.931793866563634,
+    18.67200116360813
+  ],
+  "wins": 15,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.1873633994056445,
+  "rmse_xyz_cv_mean": 0.07908340814896216,
+  "rmse_xyz_improvement_pct": 57.79143183789839
+}

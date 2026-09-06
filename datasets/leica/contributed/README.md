@@ -7,11 +7,11 @@
 
 ## 왜 지금 이게 중요한가
 
-`brands/leica.py`(`apply_leica_look`)는 현재 **raw+jpeg 페어가 하나도
+`brands/leica/look.py`(`apply_leica_look`)는 현재 **raw+jpeg 페어가 하나도
 없다** - imaging-resource.com에서 모은 이미 그레이딩된 SOOC JPEG 45장
 (M9/X Vario/SL2)의 population 통계만으로 만든 1차 버전이다. 핫셀블라드
 v8/v9 단계(진짜 raw 기준 전/후 피팅인 v10~v12 이전)에 해당한다.
-`brands/leica.py` docstring이 명시한 미검증 항목:
+`brands/leica/look.py` docstring이 명시한 미검증 항목:
 
 - `toe_lift`/`white_point`만 population 타깃에서 직접 대입, 나머지
   (`shoulder_start`/`clahe_clip`)는 핫셀블라드 기본값을 그대로 가져다

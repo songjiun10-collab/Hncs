@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 
@@ -454,6 +455,44 @@ class TestDeltaE2000Weighted(unittest.TestCase):
         mine = delta_E_CIE2000_weighted(Lab_1, Lab_2, kL=1.0, kC=1.0, kH=1.0)
         np.testing.assert_allclose(mine, official, atol=1e-9)
 
+    def test_matches_colour_science_with_domain_range_scale_one(self):
+        """CIEDE2000 formula inputs must honour colour's active Lab domain."""
+        import colour
+
+        Lab_1 = np.array([[0.50, 0.02, -0.10]])
+        Lab_2 = np.array([[0.55, 0.00, -0.08]])
+        with colour.domain_range_scale("1"):
+            expected = colour.delta_E(Lab_1, Lab_2, method="CIE 2000")
+            actual = delta_E_CIE2000_weighted(Lab_1, Lab_2)
+
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
+    def test_calculates_when_colour_lacks_private_intermediate_helper(self):
+        """Weighted ΔE must import when the private helper is unavailable."""
+        import colour
+        import importlib.util
+        import sys
+        from pathlib import Path
+        from types import ModuleType
+
+        Lab_1 = np.array([[50.0, 2.6772, -79.7751]])
+        Lab_2 = np.array([[50.0, 0.0, -82.7485]])
+        expected = colour.delta_E(Lab_1, Lab_2, method="CIE 2000")
+
+        spec = importlib.util.spec_from_file_location(
+            "evaluate_without_private_helper",
+            Path(__file__).resolve().parents[1] / "hybrid_engine/utils/evaluate.py",
+        )
+        module = importlib.util.module_from_spec(spec)
+        public_delta_e = ModuleType("colour.difference.delta_e")
+        with patch.dict(sys.modules,
+                        {"colour.difference.delta_e": public_delta_e}):
+            spec.loader.exec_module(module)
+
+        actual = module.delta_E_CIE2000_weighted(Lab_1, Lab_2)
+
+        np.testing.assert_allclose(actual, expected, atol=1e-9)
+
     def test_matches_colour_science_textiles_at_kl2(self):
         import colour
         rng = np.random.default_rng(1)
@@ -905,6 +944,34 @@ class TestMatrixFeaturesMode(unittest.TestCase):
         # 여러 페어가 전부 같은 선형 변환을 공유하니 최선 조합의
         # leave-one-out 오차는 낮아야 한다.
         self.assertLess(loo_loss, 1.0)
+
+
+class TestFindPairsExcludesContaminated(unittest.TestCase):
+    """정정(2026-09-01): calibrate_profile._find_pairs()가 raw_calib_cache의
+    공식 13쌍 중 tools.calibrate._CONTAMINATED_OFFICIAL_PAIRS(Adobe
+    Photoshop/Lightroom Software EXIF가 찍힌 9쌍)를 실제로 걸러내는지 -
+    raw_calib_cache/는 CI에 없으므로(tests/CLAUDE.md) glob/exists를
+    모킹한다. tools.calibrate._resolve_pairs()의 동명 테스트
+    (tests/test_calibrate.py)와 짝을 이룬다."""
+
+    @patch("os.path.exists", return_value=True)
+    @patch("glob.glob")
+    def test_contaminated_official_pairs_excluded(self, mock_glob, mock_exists):
+        from hybrid_engine.calibrate_profile import _find_pairs, CACHE_DIR
+        from tools.calibrate import _CONTAMINATED_OFFICIAL_PAIRS
+        import os as os_module
+
+        clean = ["00378.jpg.3FR", "02709.jpg.fff"]
+        contaminated = [name.replace(".jpg", ".jpg.3FR")
+                        for name in list(_CONTAMINATED_OFFICIAL_PAIRS)[:3]]
+        mock_glob.side_effect = lambda pattern: (
+            [os_module.path.join(CACHE_DIR, f) for f in clean + contaminated]
+            if pattern.endswith("*.3FR") else [])
+
+        pairs = _find_pairs()
+        names = {os_module.path.basename(raw).rsplit(".", 1)[0] for raw, _ in pairs}
+        self.assertTrue(names.isdisjoint(_CONTAMINATED_OFFICIAL_PAIRS))
+        self.assertEqual(names, {"00378.jpg", "02709.jpg"})
 
 
 if __name__ == "__main__":

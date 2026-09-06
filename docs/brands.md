@@ -10,7 +10,7 @@ population-fit 방식으로 추가한 브랜드 중, 접근 자체가 브랜드�
 거의 동일해서(imaging-resource.com population + 5종 시그니처 분석) 각
 `brands/*.py` docstring에만 기록돼 있다.
 
-## 후지필름 (`brands/fuji.py`)
+## 후지필름 (`brands/fuji/look.py`)
 
 후지는 카메라에 내장된 필름시뮬레이션(Provia/Astia/Velvia/Classic
 Chrome/Pro Neg Std 등) 프리셋이 여러 개 있어서, 핫셀블라드와 다른
@@ -56,7 +56,7 @@ population 통계를 비교해서 각 프리셋이 실측과 같은 방향으로
   [measurements.md](measurements.md#fuji-gfx50s-ii-대량-추가---classic-chrome-신설-nostalgic-neg-교체-2026-08)
   참고.
 
-## 라이카 (`brands/leica.py`)
+## 라이카 (`brands/leica/look.py`)
 
 라이카는 후지식 다중 필름시뮬레이션이 없고, 핫셀블라드 공식 킷 같은
 raw+jpeg 페어 세트도 못 찾음 (dpreview/kenrockwell/photographyblog는
@@ -80,7 +80,7 @@ imaging-resource.com 카메라 리뷰 갤러리에서 미편집 SOOC JPEG 45장
   hue·채도 무조작 가정은 전부 핫셀블라드 값을 검증 없이 차용한 것.
   raw 페어를 구하면 제일 먼저 검증해야 할 부분
 
-## Phase One (`brands/phaseone.py`)
+## Phase One (`brands/phaseone/look.py`)
 
 Phase One 디지털백은 스튜디오/테더링 중심이라 컨슈머 카메라 같은
 인카메라 JPEG 엔진이 사실상 없음 - imaging-resource.com에서 받은 샘플
@@ -100,7 +100,7 @@ Phase One 디지털백은 스튜디오/테더링 중심이라 컨슈머 카메�
   population 타깃을 toe_lift/white_point에 직접 대입) - shoulder_start/
   clahe_clip/hue·채도 무조작 가정 미검증인 것도 동일
 
-## Pentax (`brands/pentax.py`)
+## Pentax (`brands/pentax/look.py`)
 
 imaging-resource.com 리뷰 갤러리(645Z 중형포맷 + K-1 풀프레임)에서
 미편집 SOOC JPEG 40장을 모음. EXIF Make="RICOH IMAGING COMPANY, LTD."
@@ -116,7 +116,7 @@ One 때와 마찬가지로 못 찾아서 population 통계만 사용.
 - `apply_pentax_look()`도 동일한 population-fit 방식, 동일한 미검증
   한계(shoulder_start/clahe_clip/hue·채도 무조작)
 
-## Ricoh GR (`brands/ricoh_gr.py`)
+## Ricoh GR (`brands/ricoh_gr/look.py`)
 
 imaging-resource.com 리뷰 갤러리(GR III + GR IIIx)에서 population 통계
 추출. 펜탁스와 같은 리코이미징 브랜드라 EXIF 패턴도 동일.

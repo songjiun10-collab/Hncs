@@ -24,7 +24,7 @@ def _load_driver_module():
 class TestListShippedLooks(unittest.TestCase):
     def test_includes_apply_hncs(self):
         looks = list_shipped_looks()
-        self.assertIn(("brands.hasselblad", "apply_hncs"), looks)
+        self.assertIn(("brands.hasselblad.look", "apply_hncs"), looks)
 
     def test_excludes_video_frame_variants(self):
         looks = list_shipped_looks()

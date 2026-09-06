@@ -1,0 +1,38 @@
+{
+  "brand": "leica",
+  "camera": "Leica T (Typ 701)",
+  "n_images": 16,
+  "n_failed_detect": 0,
+  "images": [
+    "t701_536897.dng",
+    "t701_536899.dng",
+    "t701_536901.dng",
+    "t701_536903.dng",
+    "t701_536905.dng",
+    "t701_536907.dng",
+    "t701_536909.dng",
+    "t701_536911.dng",
+    "t701_536913.dng",
+    "t701_536915.dng",
+    "t701_536917.dng",
+    "t701_536919.dng",
+    "t701_536921.dng",
+    "t701_536923.dng",
+    "t701_536925.dng",
+    "t701_536927.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 29.76991154947478,
+  "delta_e00_cv_mean": 11.4642081627554,
+  "delta_e00_improvement_pct": 61.49062067684356,
+  "delta_e00_bootstrap_ci95": [
+    13.872421109203527,
+    22.718827912720798
+  ],
+  "wins": 16,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.18856128850083592,
+  "rmse_xyz_cv_mean": 0.07213670049453969,
+  "rmse_xyz_improvement_pct": 61.74363196811742
+}

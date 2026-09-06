@@ -1,0 +1,42 @@
+{
+  "brand": "leica",
+  "camera": "Leica Q (Typ 116)",
+  "n_images": 20,
+  "n_failed_detect": 0,
+  "images": [
+    "q116_536571.dng",
+    "q116_536577.dng",
+    "q116_536581.dng",
+    "q116_536583.dng",
+    "q116_536585.dng",
+    "q116_536587.dng",
+    "q116_536595.dng",
+    "q116_536599.dng",
+    "q116_536604.dng",
+    "q116_536606.dng",
+    "q116_536609.dng",
+    "q116_536611.dng",
+    "q116_536613.dng",
+    "q116_536615.dng",
+    "q116_536617.dng",
+    "q116_536619.dng",
+    "q116_536621.dng",
+    "q116_536623.dng",
+    "q116_536625.dng",
+    "q116_536627.dng"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 27.171921873607083,
+  "delta_e00_cv_mean": 11.710457900996504,
+  "delta_e00_improvement_pct": 56.90235694232866,
+  "delta_e00_bootstrap_ci95": [
+    12.845085802522927,
+    18.14809111683172
+  ],
+  "wins": 20,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.2033779336822405,
+  "rmse_xyz_cv_mean": 0.08112670368457761,
+  "rmse_xyz_improvement_pct": 60.11037076847742
+}

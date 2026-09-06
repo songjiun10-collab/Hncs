@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import colour
@@ -41,7 +42,55 @@ class TestReferencePatches(unittest.TestCase):
         self.assertLess(max(r, g, b) - min(r, g, b), 0.06)
 
 
+class TestReferencePatchesXyz(unittest.TestCase):
+    _D50_XY = chart_baseline.D50_XY
+    _STD_A_XY = colour.CCS_ILLUMINANTS["CIE 1931 2 Degree Standard Observer"]["A"]
+
+    def test_matches_d50_helper_at_d50_target(self):
+        general = chart_baseline.reference_patches_xyz(self._D50_XY)
+        specific = chart_baseline.reference_patches_xyz_d50()
+        np.testing.assert_allclose(general, specific, atol=1e-9)
+
+    def test_white_patch_chromaticity_tracks_target_illuminant(self):
+        # 목표 백색점을 D50 대신 Standard Illuminant A로 바꾸면, 흰 패치의
+        # XYZ 색도(xy)가 D50 근처가 아니라 Standard A 근처로 이동해야
+        # 한다 - 이게 dual-illuminant 매트릭스가 자기 조명의 CCT를
+        # 스스로 복원하려면 성립해야 하는 전제.
+        white_idx = chart_baseline.PATCH_NAMES.index("white 9.5 (.05 D)")
+        xyz_a = chart_baseline.reference_patches_xyz(self._STD_A_XY)[white_idx]
+        x, y = colour.XYZ_to_xy(xyz_a)
+        self.assertAlmostEqual(x, self._STD_A_XY[0], delta=0.01)
+        self.assertAlmostEqual(y, self._STD_A_XY[1], delta=0.01)
+
+
 class TestDetectAndSample(unittest.TestCase):
+    def test_detector_without_set_color_chart_type_uses_process_chart_type(self):
+        """OpenCV 4.x passes MCC24 to process() instead of exposing the
+        unavailable setColorChartType() method."""
+        quads = np.arange(24 * 4 * 2, dtype=np.float32).reshape(24, 4, 2)
+
+        class Checker:
+            def getColorCharts(self):
+                return quads
+
+        class Detector:
+            def process(self, image, chart_type):
+                self.image = image
+                self.chart_type = chart_type
+                return True
+
+            def getListColorChecker(self):
+                return [Checker()]
+
+        detector = Detector()
+        bgr_u8 = np.zeros((10, 10, 3), dtype=np.uint8)
+        with patch.object(chart_baseline.cv2.mcc, "CCheckerDetector_create",
+                          return_value=detector):
+            actual = chart_baseline._detect_chart_bgr8(bgr_u8)
+
+        self.assertEqual(detector.chart_type, chart_baseline.cv2.mcc.MCC24)
+        np.testing.assert_array_equal(actual, quads)
+
     def test_recovers_known_colors_from_synthetic_chart(self):
         ref = chart_baseline.reference_patches_linear_srgb()
         linear = _synthetic_chart_linear(ref)

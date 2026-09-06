@@ -1,0 +1,135 @@
+{
+  "camera_model": "Hasselblad X2D II 100C",
+  "methodology": "v1(D50 고정 fit)의 구조적 편향(EVALUATION.md 실험3/4)을 고친 v2 - matrix_1은 D65 색도, matrix_2는 Standard Illuminant A 색도로 fit (chart_baseline.reference_patches_xyz()), 검증은 core/dcp_interpolate.py 실제 보간 + 보간후 추정조명->D50 색순응을 전 이미지(group1/group2/kmichels 전부)에 실제로 적용한 held-out end-to-end.",
+  "self_consistency": {
+    "group1_own_neutral_g": 0.9915574550306926,
+    "group2_own_neutral_g": 0.0175767460796826
+  },
+  "group1_daylight_like": {
+    "n": 9,
+    "images": [
+      "35ff05982f3240bbbae9ef388e078b80.3fr",
+      "3adaadfffee94520af873e66b14d9759.3fr",
+      "46d3c5eaae634db1ba1a3c493f1af2d9.3fr",
+      "580df9c78aa94bd396574456f6eae0d7.3fr",
+      "5a6a3cf45cc14d609bf6979d97d4ec56.3fr",
+      "7fbb1471e0cf4b22858cd9a161fb83a8.3fr",
+      "8f915834eeb14c058164bc409346b781.3fr",
+      "b3878b0a5d644b68950aa4695ca3cdbb.3fr",
+      "b70e2170025c415e9aab10f5e3e302ab.3fr"
+    ],
+    "calibration_illuminant": 21,
+    "reference_illuminant_xy": [
+      0.3127,
+      0.329
+    ],
+    "measured_native_neutral_g_normalized": [
+      0.3345404513869923,
+      1.0,
+      0.7218269266771231
+    ]
+  },
+  "group2_tungsten_like": {
+    "n": 7,
+    "images": [
+      "15f85e040bcc4699b617fe7631e0ecfc.3fr",
+      "1c35d03dbdc443dc96e47bf3ee10c817.3fr",
+      "5a0e96b3c7534572b4062302a33cec13.3fr",
+      "bb258292dfd943fc9995b917611330fb.3fr",
+      "bd2ffdbfd1e441bc9a93c115117e5054.3fr",
+      "c8e0ec65ab8841a5be01c7cb651638ec.3fr",
+      "f3da42aac2944357bd87685f9ae2ec1e.3fr"
+    ],
+    "calibration_illuminant": 17,
+    "reference_illuminant_xy": [
+      0.44758,
+      0.40745
+    ],
+    "measured_native_neutral_g_normalized": [
+      0.6451373068317159,
+      1.0,
+      0.33303672486903185
+    ]
+  },
+  "full25_held_out_end_to_end": {
+    "n": 25,
+    "global_burst_fair_mean": 15.832453211597024,
+    "real_interpolation_mean": 8.427546328280359,
+    "paired_diff_mean": 7.404906883316666,
+    "bootstrap_ci95": [
+      5.550903013712454,
+      9.279368839886569
+    ],
+    "wins": 25,
+    "losses": 0
+  },
+  "color_matrix_1": [
+    [
+      4.566216484599251,
+      1.9265040981276056,
+      0.23934284829606156
+    ],
+    [
+      0.28277875313544587,
+      1.9025238002602063,
+      -0.5109076287541597
+    ],
+    [
+      0.16805825607992622,
+      -0.7355179005404537,
+      3.643813757688329
+    ]
+  ],
+  "color_matrix_2": [
+    [
+      4.461228848079132,
+      1.6462673352884483,
+      0.1792340611166575
+    ],
+    [
+      1.211135417682522,
+      2.9177715329402654,
+      -0.5397441970363778
+    ],
+    [
+      -0.020846477803487036,
+      -0.7197874862896356,
+      5.263383157357966
+    ]
+  ],
+  "dcp_color_matrix_1": [
+    [
+      0.23702467687896983,
+      -0.04035286826146894,
+      -0.019077322665566013
+    ],
+    [
+      -0.2601319792512587,
+      0.6000291395419304,
+      0.13311588682026432
+    ],
+    [
+      -0.05204260880867813,
+      0.08678205208105744,
+      0.29435531400757997
+    ]
+  ],
+  "dcp_color_matrix_2": [
+    [
+      0.2665477526923934,
+      -0.11331230816375207,
+      -0.014440179895043734
+    ],
+    [
+      -0.15659231293154194,
+      0.4181915215842041,
+      0.05656905777736792
+    ],
+    [
+      -0.0251348276282982,
+      0.04674291512439977,
+      0.19628458766273518
+    ]
+  ],
+  "note": "사용자 승인(2026-09-04, 'D50 편향부터 고치고 재판단' -> '재배포 (권장)')으로 배포. 이전 버전은 dual_illuminant_report.json(v1)에 남아있다."
+}

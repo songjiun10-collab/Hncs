@@ -1,0 +1,42 @@
+{
+  "brand": "sigma",
+  "camera": "Sigma fp L",
+  "n_images": 20,
+  "n_failed_detect": 0,
+  "images": [
+    "sigma_fpl_iso100_2021_04_06_15_06_02.raw",
+    "sigma_fpl_iso100_2021_04_06_15_18_21.raw",
+    "sigma_fpl_iso12800_2021_04_06_15_08_43.raw",
+    "sigma_fpl_iso12800_2021_04_06_15_20_59.raw",
+    "sigma_fpl_iso1600_2021_04_06_15_07_40.raw",
+    "sigma_fpl_iso1600_2021_04_06_15_19_56.raw",
+    "sigma_fpl_iso200_2021_04_06_15_06_28.raw",
+    "sigma_fpl_iso200_2021_04_06_15_18_46.raw",
+    "sigma_fpl_iso25600_2021_04_06_15_10_00.raw",
+    "sigma_fpl_iso25600_2021_04_06_15_21_18.raw",
+    "sigma_fpl_iso3200_2021_04_06_15_07_58.raw",
+    "sigma_fpl_iso3200_2021_04_06_15_20_17.raw",
+    "sigma_fpl_iso400_2021_04_06_15_07_02.raw",
+    "sigma_fpl_iso400_2021_04_06_15_19_07.raw",
+    "sigma_fpl_iso51200_2021_04_06_15_12_31.raw",
+    "sigma_fpl_iso6400_2021_04_06_15_08_21.raw",
+    "sigma_fpl_iso6400_2021_04_06_15_20_37.raw",
+    "sigma_fpl_iso65535_2021_04_06_15_12_57.raw",
+    "sigma_fpl_iso800_2021_04_06_15_07_21.raw",
+    "sigma_fpl_iso800_2021_04_06_15_19_34.raw"
+  ],
+  "chroma_patch_weight": 3.0,
+  "k_folds": 5,
+  "delta_e00_no_correction_mean": 30.691600642502713,
+  "delta_e00_cv_mean": 11.904778802645904,
+  "delta_e00_improvement_pct": 61.21160658476774,
+  "delta_e00_bootstrap_ci95": [
+    16.080560297221293,
+    21.406034673199173
+  ],
+  "wins": 20,
+  "losses": 0,
+  "rmse_xyz_no_correction_mean": 0.2381477686632861,
+  "rmse_xyz_cv_mean": 0.08125204142993823,
+  "rmse_xyz_improvement_pct": 65.88167007148432
+}

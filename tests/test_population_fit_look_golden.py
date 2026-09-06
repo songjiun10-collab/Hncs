@@ -5,19 +5,30 @@
 않는다(그건 각 브랜드 docstring의 population 수치가 담당), 오직
 "이 리팩토링이 픽셀 출력을 하나도 안 바꿨는지"만 확인한다.
 
-**주의(2026-08, requirements.txt 버전 고정 작업 중 발견)**: 이 해시들은
-전부 CI(ubuntu-latest, requirements.txt에 고정된 정확한 버전)에서 뽑은
+**주의(2026-08, requirements.txt 버전 고정 작업 중 발견)**: 안정적인 함수의
+해시는 CI(ubuntu-latest, requirements.txt에 고정된 정확한 버전)에서 뽑은
 값이어야 한다 - macOS 로컬 환경에서 뽑으면 안 됨. `cv2.cvtColor(...,
 COLOR_BGR2HSV)` 왕복을 쓰는 함수(apply_pro_neg_std/pro_neg_hi/
 eterna_cinema/eterna_bleach_bypass/reala_ace/classic_negative,
-hasselblad_night)는 opencv 버전/플랫폼에 따라 최하위 비트가 달라져서
-로컬에서 뽑은 해시가 CI에서 재현 안 됨(Lab 전용 CLAHE+LUT 함수는 전부
-플랫폼 무관하게 일치 - 실제로 확인됨). 새 골든해시를 추가할 땐 로컬에서
-계산만 하지 말고 CI 실행 결과(실패 시 assertEqual 메시지의 "got" 값)로
+hasselblad_night)는 플랫폼(아키텍처)에 따라 최하위 비트가 달라져서
+로컬에서 뽑은 해시가 CI에서 재현 안 됨. 이 7개는 정확한 해시 대신 커밋된
+기준 출력 fixture와 픽셀별로 비교한다.
+
+**정정(2026-09-06, CI 적색 추적 중 발견)**: 허용오차를 1로 뒀는데 실측
+drift가 2라서 CI가 계속 깨졌다(`brands/`·`core/`·`requirements.txt`는 한 줄도
+안 바뀐 구간이었다 - 출력이 아니라 기준이 틀렸던 것). 실측값은
+`HSV_MAX_LSB_DRIFT` 정의부 주석의 표에 있다. 상한을 2로 넓히는 대신 "차이 나는
+픽셀 수" 상한(`HSV_MAX_DRIFTING_PIXELS`)을 같이 걸어 회귀 감지력을 유지한다 -
+실제 회귀는 수만 픽셀을 움직이지 24개에서 끝나지 않는다.
+
+Lab 전용 CLAHE+LUT 함수는 전부 플랫폼 무관하게 일치해 정확한 해시를 계속
+쓴다. 새 안정 함수의 골든해시는 로컬에서 계산만 하지 말고 CI 실행 결과로
 검증/교정할 것."""
 import hashlib
 import importlib
+from pathlib import Path
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -33,7 +44,7 @@ GOLDEN_HASHES = [
      "a2d38d6afbdae1926632f46c92685845a40d40ed0baa2f05eb3e70eee5b31fa9"),
     ("brands.leica", "apply_leica_look",
      "670068f031446c463196e409d99560b6fd972e56b8049f988b371fe8c9fd9ec0"),
-    ("brands.leica_raw", "apply_leica_raw_look",
+    ("brands.leica.raw", "apply_leica_raw_look",
      "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
     ("brands.nikon", "apply_nikon_look",
      "c47edaf79ecafd047b473ad44375044180475284527dfa0b87a643c604125c95"),
@@ -51,7 +62,7 @@ GOLDEN_HASHES = [
      "2544e61c01ec5c741168bda8506657711eda51a0c616e002f65d5b3a1bc1a5eb"),
     ("brands.sony", "apply_sony_look",
      "49ee7af2612f66aac66433c1e695cd32864b24cae1b542154a9edada379c3be9"),
-    ("brands.sony_a7v", "apply_sony_a7v_look",
+    ("brands.sony.a7v", "apply_sony_a7v_look",
      "0bb0bb82d4f1636dee43ffb4c64a98e26f639ff0292e2be51687d483c190d104"),
 ]
 
@@ -74,9 +85,9 @@ class TestPopulationFitLookGoldenHashes(unittest.TestCase):
 # 단독바디 apply_hncs_* 변형 2개
 # (docs/superpowers/plans/2026-08-09-hasselblad-body-variant-wrapper-consolidation.md)
 HASSELBLAD_BODY_GOLDEN_HASHES = [
-    ("brands.hasselblad_x1d50c", "apply_hncs_x1d50c",
+    ("brands.hasselblad.x1d50c", "apply_hncs_x1d50c",
      "a2f56608aab5a6c06f69f9e041467edbcfa37a605576df0e5e7d4eb2ea8f9267"),
-    ("brands.hasselblad_x2dii", "apply_hncs_x2dii",
+    ("brands.hasselblad.x2dii", "apply_hncs_x2dii",
      "e56aae33aeb387ea18efc03371567c1e0da55a3e4e6fca3c77fa54e2790058fa"),
 ]
 
@@ -117,12 +128,10 @@ HASSELBLAD_CORE_GOLDEN_HASHES = [
      "6751b7a521f97640edfa4db32386a9b14a85bbdb08474f9b2b27f0d74ccc74d5"),
     ("brands.hasselblad", "apply_hncs_video_frame",
      "4ef5e2e2eab5a198421f0d037d8d073a4d87c0212b0e40dfb7f9ef94d87be6fa"),
-    ("brands.hasselblad_learned", "apply_hncs_learned",
+    ("brands.hasselblad.learned", "apply_hncs_learned",
      "be576e1017a3e3319c2bf68f235ae976f91ede1ccd7842ac65ba54952fd152b8"),
-    ("brands.hasselblad_day", "apply_hasselblad_day",
+    ("brands.hasselblad.day", "apply_hasselblad_day",
      "508a5d8cf5b44586a5ba0767582d39a935bf5b90570b62137df708f31690ec32"),
-    ("brands.hasselblad_night", "apply_hasselblad_night",
-     "777ac69a5fe96f25dc6a4d32a5d66d7d0190b9ba90d1739fc8144c10e15f9d1e"),
 ]
 
 
@@ -149,26 +158,14 @@ class TestHasselbladCoreGoldenHashes(unittest.TestCase):
 FUJI_PRESET_GOLDEN_HASHES = [
     ("brands.fuji", "apply_astia",
      "9165582f2e4e3446651911dda3cacc53379a5a75b343093769e42eafb9e6d53e"),
-    ("brands.fuji", "apply_pro_neg_std",
-     "73e72b76e548ea4263f47c7ecdccca6d21216943e985966544d5d6b780147058"),
-    ("brands.fuji", "apply_pro_neg_hi",
-     "71b35662abb7fd9ada1c73161024093fd3e798ae5fdc1c4aed73f139dd8e69ce"),
-    ("brands.fuji", "apply_eterna_cinema",
-     "df87852f73f16a613bfafb8a202cd231a2ccfd6c153b1dd58187f4efa193484c"),
-    ("brands.fuji", "apply_eterna_bleach_bypass",
-     "d2c7f4748ed89378381ec87c3cd45bf41b19ce9b02d7b97db7a470bbb8c65a7f"),
     ("brands.fuji", "apply_nostalgic_neg",
      "e23ece30f93c022cc0b43b0614d49a230c550477c4e8aa5f2d842ddb8cd80648"),
-    ("brands.fuji", "apply_reala_ace",
-     "eaf7389de3d2d67d4f8d4c2bf3798642c21c83159a7a86290210128f8060c53d"),
     ("brands.fuji", "apply_acros",
      "604d6d87f6d0484735eb7328b56f97af91b5b701f5539d9a306d1f3d5f68b62f"),
     ("brands.fuji", "apply_monochrome",
      "293b6e6a130fbe2ae0f00ee6e3b4cb4e07e3f4f76e3bed912f0ba144f21cd207"),
-    ("brands.fuji", "apply_classic_negative",
-     "7bc972bbbbd0476f43292c830a6e3dc1924fddef87277b091ac496fdd653bebb"),
     ("brands.fuji", "apply_provia",
-     "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
+     "d4181b7caa6b0fe8891fc8b6097fb9af85bf7853250fb60ddb6e39d96bd128ab"),
     ("brands.fuji", "apply_classic_chrome",
      "3d79e020eadfda21fa347297208f208a89f81e21fae73da3cdfb11f1932ed0c1"),
     ("brands.fuji", "apply_nostalgic_neg_v2",
@@ -178,6 +175,140 @@ FUJI_PRESET_GOLDEN_HASHES = [
     ("brands.fuji", "apply_nostalgic_neg_v3",
      "d49fc298c2f78c3631b746c27a3f4f3b981ea144270e17ee2707e95e2bc85fd7"),
 ]
+
+
+# OpenCV's BGR→HSV→BGR uint8 conversion differs by platform at the least
+# significant bit. The committed arrays preserve position, so an output may
+# differ by a couple of LSBs at a handful of corresponding pixels.
+#
+# 허용치는 실측이다(2026-09-06, `tools/generate_hsv_golden_fixture.py`가 만든
+# 커밋된 fixture vs 각 플랫폼 실제 출력). fixture는 macOS ARM에서 뽑혔고,
+# 같은 macOS ARM에서는 cv2 4.11.0/numpy 1.26.4와 고정 버전 cv2 5.0.0/numpy
+# 2.4.6 **둘 다 drift 0**이라 라이브러리 버전 문제가 아니라 아키텍처 차이다.
+# CI(Linux x86_64, python 3.11, cv2 5.0.0, numpy 2.4.6) 실측:
+#
+#   함수                        max   >0픽셀  >1픽셀   (전체 49,152픽셀)
+#   apply_pro_neg_std             2      7       3
+#   apply_pro_neg_hi              1     24       0
+#   apply_eterna_cinema           1      3       0
+#   apply_eterna_bleach_bypass    1     22       0
+#   apply_reala_ace               1      7       0
+#   apply_classic_negative        1     24       0
+#   apply_hasselblad_night        2     13       2
+#
+# 즉 최대 2 LSB, 그것도 49,152픽셀 중 최대 24개(0.05%)에서만. 이전 상한 1은
+# 이 실측보다 좁아서 CI가 계속 빨갰다(brands/·core/·requirements.txt는 한 줄도
+# 안 바뀐 채로 - 출력이 변한 게 아니라 기준이 틀렸던 것). 상한만 늘리면 회귀
+# 감지력이 떨어지므로 "희소성"도 같이 못 박는다: 진짜 회귀(상수 변경, 룩 교체,
+# 행 순열)는 수만 픽셀을 움직이지 24개 안에서 끝나지 않는다.
+HSV_MAX_LSB_DRIFT = 2
+HSV_MAX_DRIFTING_PIXELS = 128
+
+HSV_ROUND_TRIP_FUNCTIONS = [
+    ("brands.fuji", "apply_pro_neg_std"),
+    ("brands.fuji", "apply_pro_neg_hi"),
+    ("brands.fuji", "apply_eterna_cinema"),
+    ("brands.fuji", "apply_eterna_bleach_bypass"),
+    ("brands.fuji", "apply_reala_ace"),
+    ("brands.fuji", "apply_classic_negative"),
+    ("brands.hasselblad.night", "apply_hasselblad_night"),
+]
+
+HSV_GOLDEN_FIXTURE = (
+    Path(__file__).with_name("fixtures") / "hsv_golden_outputs.npz"
+)
+
+
+class TestOpenCvHsvRoundTripGoldenBehavior(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with np.load(HSV_GOLDEN_FIXTURE, allow_pickle=False) as fixture:
+            cls.expected_outputs = {
+                fn_name: fixture[fn_name].copy()
+                for _, fn_name in HSV_ROUND_TRIP_FUNCTIONS
+            }
+
+    def test_reference_check_rejects_all_zero_hsv_round_trip_output(self):
+        mod_name, fn_name = HSV_ROUND_TRIP_FUNCTIONS[0]
+        mod = importlib.import_module(mod_name)
+        zeros = np.zeros((128, 128, 3), dtype=np.uint8)
+
+        with mock.patch.object(mod, fn_name, return_value=zeros):
+            output = getattr(mod, fn_name)(make_test_image())
+            with self.assertRaises(AssertionError):
+                self._assert_matches_reference(mod_name, fn_name, output)
+
+    def test_drift_check_accepts_sparse_clipped_lsb_variation(self):
+        # 합성 배열로 검사기 자체의 성질만 본다 - 실제 출력에 +1을 더해
+        # fixture와 비교하면 이 테스트가 플랫폼 drift(CI 실측 최대 2)까지
+        # 같이 짊어져서, 검사기가 멀쩡해도 CI에서만 깨진다.
+        base = make_test_image()
+        drifted = base.astype(np.int16)
+        flat = drifted.reshape(-1)
+        flat[:24] = np.minimum(flat[:24] + HSV_MAX_LSB_DRIFT, 255)
+        self._assert_within_platform_drift(
+            "synthetic", drifted.astype(np.uint8), base
+        )
+
+    def test_drift_check_rejects_widespread_one_lsb_variation(self):
+        # 전 픽셀 +1은 최대치는 통과하지만 희소성 상한에 걸려야 한다 -
+        # 상한을 2로 넓히면서 잃을 뻔한 회귀 감지력이 여기서 지켜진다.
+        base = make_test_image()
+        everywhere = np.minimum(base.astype(np.uint16) + 1, 255).astype(np.uint8)
+        with self.assertRaises(AssertionError):
+            self._assert_within_platform_drift("synthetic", everywhere, base)
+
+    def test_reference_check_rejects_row_permutation(self):
+        mod_name, fn_name = HSV_ROUND_TRIP_FUNCTIONS[0]
+        output = getattr(importlib.import_module(mod_name), fn_name)(
+            make_test_image()
+        )
+
+        with self.assertRaises(AssertionError):
+            self._assert_matches_reference(
+                mod_name, fn_name, np.roll(output, 1, axis=0)
+            )
+
+    def test_known_round_trip_looks_are_deterministic_uint8_images(self):
+        for mod_name, fn_name in HSV_ROUND_TRIP_FUNCTIONS:
+            with self.subTest(brand=mod_name, fn=fn_name):
+                fn = getattr(importlib.import_module(mod_name), fn_name)
+                first = fn(make_test_image())
+                second = fn(make_test_image())
+
+                self._assert_matches_reference(mod_name, fn_name, first)
+
+                pixel_difference = np.abs(
+                    first.astype(np.int16) - second.astype(np.int16)
+                ).max()
+                self.assertLessEqual(pixel_difference, 0)
+
+    def _assert_matches_reference(self, mod_name, fn_name, output):
+        self.assertEqual(output.shape, (128, 128, 3))
+        self.assertEqual(output.dtype, np.uint8)
+        expected = self.expected_outputs[fn_name]
+        self.assertEqual(output.shape, expected.shape)
+        self.assertEqual(output.dtype, expected.dtype)
+        self._assert_within_platform_drift(
+            f"{mod_name}.{fn_name}", output, expected
+        )
+
+    def _assert_within_platform_drift(self, label, output, expected):
+        difference = np.abs(
+            output.astype(np.int16) - expected.astype(np.int16)
+        )
+        self.assertLessEqual(
+            int(difference.max()),
+            HSV_MAX_LSB_DRIFT,
+            f"{label} pixel output changed beyond "
+            f"{HSV_MAX_LSB_DRIFT} LSB",
+        )
+        self.assertLessEqual(
+            int((difference > 0).sum()),
+            HSV_MAX_DRIFTING_PIXELS,
+            f"{label} changed at more pixels than cross-platform LSB drift "
+            f"explains (실측 상한 24 / {difference.size})",
+        )
 
 
 class TestFujiPresetGoldenHashes(unittest.TestCase):

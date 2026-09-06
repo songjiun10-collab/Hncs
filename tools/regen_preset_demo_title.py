@@ -19,10 +19,10 @@ BG = (24, 24, 24)
 
 
 def count_photo_mode_looks():
-    """brands/*.py의 사진용 apply_* 함수 개수 (video_frame 변형 제외).
+    """brands/<브랜드>/*.py의 사진용 apply_* 함수 개수 (video_frame 변형 제외).
     .claude/skills/run-hncs/driver.py의 shipped_looks()와 같은 기준."""
     n = 0
-    for f in sorted(glob.glob(os.path.join(ROOT, "brands", "*.py"))):
+    for f in sorted(glob.glob(os.path.join(ROOT, "brands", "*", "*.py"))):
         if f.endswith("__init__.py"):
             continue
         for node in ast.parse(open(f, encoding="utf-8").read()).body:
