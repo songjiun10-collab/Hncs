@@ -104,7 +104,6 @@ def main():
 
     neutral = {nm: _neutral_ratio(combined[nm]) for nm in names}
     R = np.array([neutral[nm][0] for nm in names])
-    B = np.array([neutral[nm][2] for nm in names])
 
     print(f"\n{'name':<40}{'R/G':>8}{'B/G':>8}{'src':>10}")
     for nm in names:

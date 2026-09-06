@@ -9,7 +9,6 @@
 다시 확인한다.
 """
 import json
-import math
 import os
 import sys
 import unittest

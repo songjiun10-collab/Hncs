@@ -131,7 +131,6 @@ def _fit_hue_table(pred_hsv_list, ref_h, ref_s):
 
 
 def _apply_hue_table(h, s, v, table):
-    centers = np.arange(N_DIVISIONS) * (360.0 / N_DIVISIONS)
     idx = h / (360.0 / N_DIVISIONS)
     i0 = np.floor(idx).astype(int) % N_DIVISIONS
     i1 = (i0 + 1) % N_DIVISIONS

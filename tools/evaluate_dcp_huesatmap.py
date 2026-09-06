@@ -24,7 +24,6 @@ patch 17(cyan)에서 a*(녹-적) 축으로 평균 +11.98 치우침(표준편차 
   python3 -m tools.evaluate_dcp_huesatmap
 """
 import glob
-import json
 import os
 import sys
 
@@ -87,7 +86,6 @@ def _fit_hue_table(pred_lab_list, ref_lab):
 def _apply_hue_table(pred_lab, table):
     """(24,3) Lab에 hue 테이블을 적용(선형 보간, 원형) - L/채도는 불변,
     a*,b*만 원점 기준 회전."""
-    centers = np.arange(N_DIVISIONS) * (360.0 / N_DIVISIONS)
     out = pred_lab.copy()
     for i in range(24):
         L, a, b = pred_lab[i]

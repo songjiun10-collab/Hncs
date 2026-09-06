@@ -36,7 +36,6 @@ class TestNormalizer(unittest.TestCase):
         # 장면: 대부분은 살짝 파란기가 도는 중성 회색, 소수의 픽셀만 강한
         # 주황색 광원(야경 가로등 상황의 축소판). robust 추정은 주황 광원을
         # 제외하고 회색 픽셀들의 파란기만 보정해야 한다.
-        rng = np.random.default_rng(2)
         img = np.empty((10, 10, 3))
         img[..., 0] = 0.28
         img[..., 1] = 0.30

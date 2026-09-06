@@ -67,7 +67,7 @@ def main():
                 target = load_target_linear(p["jpeg_path"], looked_lin.shape[:2])
                 de = mean_delta_e(looked_lin, target)
                 des.append(de)
-            except Exception as e:
+            except Exception:
                 fail += 1
         des = np.array(des)
         print(f"\n{cam}: n={len(des)} (실패 {fail})")

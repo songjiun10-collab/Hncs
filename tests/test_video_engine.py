@@ -360,7 +360,6 @@ class TestProcessVideoWithAudio(unittest.TestCase):
         self.addCleanup(setattr, tempfile, "tempdir", original_tempdir)
 
         input_path = os.path.join(self.tmpdir, "input.mp4")
-        output_path = os.path.join(self.tmpdir, "output.mp4")
         _make_synthetic_video_with_audio(input_path, duration=1, fps=24)
 
         # sabotage: point output_path at a directory that doesn't exist so mux_audio() fails

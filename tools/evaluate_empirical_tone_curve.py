@@ -24,7 +24,6 @@ import csv
 import os
 import sys
 
-import colour
 import cv2
 import numpy as np
 

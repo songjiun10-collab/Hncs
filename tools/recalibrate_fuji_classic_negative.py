@@ -39,7 +39,6 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import colour
 import cv2
 import numpy as np
 
