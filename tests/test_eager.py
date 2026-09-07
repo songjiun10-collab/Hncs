@@ -11,6 +11,7 @@ from hybrid_engine.evaluation.eager import (
     reconcile_sample_accounting,
     check_physical_sanity,
     classify_result,
+    evaluate_manifest_metrics,
 )
 
 
@@ -97,6 +98,38 @@ class TestSceneMetrics(unittest.TestCase):
         self.assertGreater(result["mean_improvement"], 0)
         self.assertLess(result["sign_test_p"], 0.05)
         self.assertEqual(len(result["ci95"]), 2)
+
+    def test_manifest_metrics_join_uses_one_row_per_scene(self):
+        manifest = [
+            {
+                "scene_id": "scene-1", "source_body": "a", "target_body": "b",
+                "illumination_id": "daylight", "source_path": "a.raw",
+                "target_path": "b.jpg", "source_sha256": "a" * 64,
+                "target_sha256": "b" * 64, "split": "lockbox", "evidence_tier": "C",
+            },
+            {
+                "scene_id": "scene-1", "source_body": "c", "target_body": "b",
+                "illumination_id": "daylight", "source_path": "c.raw",
+                "target_path": "b.jpg", "source_sha256": "c" * 64,
+                "target_sha256": "b" * 64, "split": "lockbox", "evidence_tier": "C",
+            },
+        ]
+        result = evaluate_manifest_metrics(
+            manifest, [{"scene_id": "scene-1", "baseline_delta_e00": 10, "candidate_delta_e00": 8}],
+            n_bootstrap=100, seed=0,
+        )
+        self.assertEqual(result["manifest"]["n_scenes"], 1)
+        self.assertEqual(result["paired"]["n_scenes"], 1)
+
+    def test_manifest_metrics_join_rejects_missing_scene_metric(self):
+        manifest = [{
+            "scene_id": "scene-1", "source_body": "a", "target_body": "b",
+            "illumination_id": "daylight", "source_path": "a.raw", "target_path": "b.jpg",
+            "source_sha256": "a" * 64, "target_sha256": "b" * 64,
+            "split": "evaluation", "evidence_tier": "C",
+        }]
+        with self.assertRaises(ValueError):
+            evaluate_manifest_metrics(manifest, [], n_bootstrap=100)
 
 
 class TestGatesAndSanity(unittest.TestCase):
