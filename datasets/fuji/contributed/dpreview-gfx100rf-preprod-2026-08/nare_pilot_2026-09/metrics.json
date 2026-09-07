@@ -1,0 +1,74 @@
+[
+  {
+    "scene_id": "gfx100rf-000",
+    "raw_delta_e00": 15.45525117180475,
+    "foundation_delta_e00": 15.45525117180475,
+    "candidate_delta_e00": 13.096105715156602
+  },
+  {
+    "scene_id": "gfx100rf-001",
+    "raw_delta_e00": 13.648456534165144,
+    "foundation_delta_e00": 13.648456534165144,
+    "candidate_delta_e00": 12.103432511952146
+  },
+  {
+    "scene_id": "gfx100rf-002",
+    "raw_delta_e00": 23.29834342886661,
+    "foundation_delta_e00": 23.29834342886661,
+    "candidate_delta_e00": 15.928850789373149
+  },
+  {
+    "scene_id": "gfx100rf-003",
+    "raw_delta_e00": 6.9514760478026085,
+    "foundation_delta_e00": 6.9514760478026085,
+    "candidate_delta_e00": 6.25698498362718
+  },
+  {
+    "scene_id": "gfx100rf-004",
+    "raw_delta_e00": 6.364833801949499,
+    "foundation_delta_e00": 6.364833801949499,
+    "candidate_delta_e00": 7.043681824993829
+  },
+  {
+    "scene_id": "gfx100rf-005",
+    "raw_delta_e00": 17.12117199727301,
+    "foundation_delta_e00": 17.12117199727301,
+    "candidate_delta_e00": 13.780183475230068
+  },
+  {
+    "scene_id": "gfx100rf-006",
+    "raw_delta_e00": 15.220989752966345,
+    "foundation_delta_e00": 15.220989752966345,
+    "candidate_delta_e00": 12.12588313517806
+  },
+  {
+    "scene_id": "gfx100rf-007",
+    "raw_delta_e00": 24.965165429958212,
+    "foundation_delta_e00": 24.965165429958212,
+    "candidate_delta_e00": 21.014939926753158
+  },
+  {
+    "scene_id": "gfx100rf-008",
+    "raw_delta_e00": 17.317191846004228,
+    "foundation_delta_e00": 17.317191846004228,
+    "candidate_delta_e00": 18.670038502654595
+  },
+  {
+    "scene_id": "gfx100rf-009",
+    "raw_delta_e00": 22.8918584074164,
+    "foundation_delta_e00": 22.8918584074164,
+    "candidate_delta_e00": 18.656647604079005
+  },
+  {
+    "scene_id": "gfx100rf-010",
+    "raw_delta_e00": 21.500253392741094,
+    "foundation_delta_e00": 21.500253392741094,
+    "candidate_delta_e00": 18.18150397093591
+  },
+  {
+    "scene_id": "gfx100rf-011",
+    "raw_delta_e00": 25.063241370325148,
+    "foundation_delta_e00": 25.063241370325148,
+    "candidate_delta_e00": 16.8346939176133
+  }
+]
