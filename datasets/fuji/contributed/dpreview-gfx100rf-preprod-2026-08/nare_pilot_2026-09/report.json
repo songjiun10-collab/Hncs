@@ -1,0 +1,206 @@
+{
+  "paired": {
+    "n_scenes": 12,
+    "mean_baseline": 17.483186098439422,
+    "mean_candidate": 14.474412196462252,
+    "mean_improvement": 3.0087739019771704,
+    "mean_improvement_pct": 17.209528543803227,
+    "ci95": [
+      1.4823333346127228,
+      4.567410448464822
+    ],
+    "sign_test_p": 0.03857421875,
+    "neutral_mean_improvement": null,
+    "chromatic_mean_improvement": null,
+    "per_scene": [
+      {
+        "scene_id": "gfx100rf-000",
+        "baseline_delta_e00": 15.45525117180475,
+        "candidate_delta_e00": 13.096105715156602,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 2.3591454566481485
+      },
+      {
+        "scene_id": "gfx100rf-001",
+        "baseline_delta_e00": 13.648456534165144,
+        "candidate_delta_e00": 12.103432511952146,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 1.5450240222129974
+      },
+      {
+        "scene_id": "gfx100rf-002",
+        "baseline_delta_e00": 23.29834342886661,
+        "candidate_delta_e00": 15.928850789373149,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 7.36949263949346
+      },
+      {
+        "scene_id": "gfx100rf-003",
+        "baseline_delta_e00": 6.9514760478026085,
+        "candidate_delta_e00": 6.25698498362718,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 0.6944910641754287
+      },
+      {
+        "scene_id": "gfx100rf-004",
+        "baseline_delta_e00": 6.364833801949499,
+        "candidate_delta_e00": 7.043681824993829,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": -0.6788480230443303
+      },
+      {
+        "scene_id": "gfx100rf-005",
+        "baseline_delta_e00": 17.12117199727301,
+        "candidate_delta_e00": 13.780183475230068,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 3.3409885220429416
+      },
+      {
+        "scene_id": "gfx100rf-006",
+        "baseline_delta_e00": 15.220989752966345,
+        "candidate_delta_e00": 12.12588313517806,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 3.095106617788284
+      },
+      {
+        "scene_id": "gfx100rf-007",
+        "baseline_delta_e00": 24.965165429958212,
+        "candidate_delta_e00": 21.014939926753158,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 3.950225503205054
+      },
+      {
+        "scene_id": "gfx100rf-008",
+        "baseline_delta_e00": 17.317191846004228,
+        "candidate_delta_e00": 18.670038502654595,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": -1.3528466566503674
+      },
+      {
+        "scene_id": "gfx100rf-009",
+        "baseline_delta_e00": 22.8918584074164,
+        "candidate_delta_e00": 18.656647604079005,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 4.235210803337395
+      },
+      {
+        "scene_id": "gfx100rf-010",
+        "baseline_delta_e00": 21.500253392741094,
+        "candidate_delta_e00": 18.18150397093591,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 3.318749421805183
+      },
+      {
+        "scene_id": "gfx100rf-011",
+        "baseline_delta_e00": 25.063241370325148,
+        "candidate_delta_e00": 16.8346939176133,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 8.228547452711847
+      }
+    ],
+    "manifest": {
+      "n_rows": 12,
+      "n_scenes": 12,
+      "lighting": [
+        "daylight"
+      ],
+      "scene_type": [
+        "natural_scene"
+      ]
+    },
+    "improvement_pct": 17.209528543803227,
+    "baseline_layers": [
+      "raw_decoder",
+      "colorimetric_foundation",
+      "appearance_candidate"
+    ],
+    "mean_foundation": 17.483186098439422,
+    "foundation_improvement_pct": 0.0,
+    "coverage": {
+      "lighting": [
+        "daylight"
+      ],
+      "scene_type": [
+        "natural_scene"
+      ]
+    },
+    "subgroups_passed": true,
+    "controls_passed": true,
+    "provenance_passed": true
+  },
+  "classification": {
+    "ship_gate_passed": false,
+    "checks": {
+      "scene_count": true,
+      "effect_threshold": true,
+      "ci_positive": true,
+      "sign_test": true,
+      "lighting_coverage": false,
+      "scene_coverage": false,
+      "subgroups": true,
+      "controls": true,
+      "provenance": true
+    },
+    "classification": "Inconclusive"
+  }
+}
