@@ -60,4 +60,14 @@ models/upscale/
 .claude/hooks/.subagent_dispatch_state/
 .claude/hooks/.recent_ask_user_question.json
 .claude/hooks/.execution_manager_state.json
+.codex/worktrees/
+.codex/hooks/.last_whole_branch_review_sha
+.codex/hooks/.pending_override.json
+.codex/hooks/.pending_medium_approval.json
+.codex/hooks/.pending_caution.json
+.codex/hooks/.pending_decision_record.json
+.codex/hooks/.pending_consensus.json
+.codex/hooks/.subagent_dispatch_state/
+.codex/hooks/.recent_ask_user_question.json
+.codex/hooks/.execution_manager_state.json
 .superpowers/

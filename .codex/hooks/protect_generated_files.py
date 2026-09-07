@@ -1,0 +1,1 @@
+../../.claude/hooks/protect_generated_files.py
