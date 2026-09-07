@@ -15,6 +15,11 @@ HNCS observes a manufacturer JPEG result \(J\). Its model target is therefore
 where \(R\) is RAW, \(I\) is illuminant/context, \(C\) is body/lens/capture
 metadata, and \(\theta\) is estimated appearance parameters.
 
+The primary execution protocol for real-photo appearance validation is
+[NARE](2026-09-08-nare-natural-scene-protocol.en.md). ColorChecker is supporting
+colorimetric evidence, and Protocol 2R is the same-physical-scene cross-camera
+extension.
+
 The allowed claim is only that an observed manufacturer rendering was reproduced
 for the data and evaluation scope. Reconstructing an internal manufacturer
 algorithm or generalizing beyond observed cameras, illumination, or scenes needs
