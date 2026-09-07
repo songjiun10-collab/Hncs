@@ -25,7 +25,6 @@ from brands.sony import apply_sony_look
 from brands.sony.a7v import apply_sony_a7v_look
 from tools.fit.calibrate import load_neutral_render
 from tools.fit.evaluation_common import (
-    _exif_film_mode,
     bgr_u8_to_linear,
     collect_contributed_pairs,
     load_target_linear,
