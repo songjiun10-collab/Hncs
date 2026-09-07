@@ -4,6 +4,10 @@ EAGER는 **Empirical Appearance Generalization, Evidence & Reconstruction**의
 약자다. HNCS의 경험적 제조사 JPEG 재현과 엄격한 색도학·데이터 계보·독립
 검증 규칙을 하나의 방법론으로 묶는다.
 
+실사진 appearance 검증의 메인 실행 프로토콜은 [NARE](2026-09-08-nare-natural-scene-protocol.md)다. ColorChecker는 supporting
+colorimetric evidence, Protocol 2R는 동일 물리 장면을 요구하는 교차 카메라
+확장으로 분리한다.
+
 ## 1. 주장 경계
 
 HNCS가 관측하는 것은 제조사 JPEG 결과 (J)다. 따라서 모델의 목표는
