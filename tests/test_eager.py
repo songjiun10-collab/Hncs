@@ -1,3 +1,7 @@
+import json
+import subprocess
+import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -12,6 +16,8 @@ from hybrid_engine.evaluation.eager import (
     check_physical_sanity,
     classify_result,
     evaluate_manifest_metrics,
+    validate_controls,
+    validate_robustness,
 )
 
 
@@ -173,6 +179,59 @@ class TestGatesAndSanity(unittest.TestCase):
         )
         self.assertFalse(classified["ship_gate_passed"])
         self.assertEqual(classified["classification"], "Exploratory")
+
+    def test_all_required_controls_must_be_present_and_true(self):
+        controls = {
+            "identity_baseline": True,
+            "target_reference_shuffle": True,
+            "source_label_shuffle": True,
+            "holdout_rerun": True,
+            "chart_positive_control": True,
+        }
+        self.assertEqual(validate_controls(controls)["passed"], True)
+        controls["source_label_shuffle"] = False
+        self.assertFalse(validate_controls(controls)["passed"])
+
+    def test_robustness_rejects_any_failing_stratum(self):
+        result = validate_robustness({"body-a": True, "tungsten": False})
+        self.assertFalse(result["passed"])
+        self.assertEqual(result["failures"], ["tungsten"])
+
+    def test_cli_emits_classified_report_from_json_inputs(self):
+        manifest = []
+        metrics = []
+        for index in range(6):
+            scene_id = f"scene-{index}"
+            manifest.append({
+                "scene_id": scene_id, "source_body": "source", "target_body": "target",
+                "illumination_id": "daylight", "source_path": f"{scene_id}.raw",
+                "target_path": f"{scene_id}.jpg", "source_sha256": "a" * 64,
+                "target_sha256": "b" * 64, "split": "lockbox", "evidence_tier": "C",
+            })
+            metrics.append({"scene_id": scene_id, "baseline_delta_e00": 10, "candidate_delta_e00": 8})
+        controls = {
+            "identity_baseline": True, "target_reference_shuffle": True,
+            "source_label_shuffle": True, "holdout_rerun": True,
+            "chart_positive_control": True,
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            paths = {}
+            for name, value in (("manifest", manifest), ("metrics", metrics),
+                                ("controls", controls), ("robustness", {"body": True})):
+                path = f"{directory}/{name}.json"
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(value, handle)
+                paths[name] = path
+            proc = subprocess.run(
+                [sys.executable, "-m", "hybrid_engine.evaluation.eager_cli",
+                 "--manifest", paths["manifest"], "--metrics", paths["metrics"],
+                 "--controls", paths["controls"], "--robustness", paths["robustness"],
+                 "--evidence-tier", "C", "--validation-passed", "--lockbox-passed"],
+                capture_output=True, text=True, check=True,
+            )
+        report = json.loads(proc.stdout)
+        self.assertEqual(report["classification"]["classification"], "Supported")
+        self.assertTrue(report["classification"]["ship_gate_passed"])
 
 
 if __name__ == "__main__":

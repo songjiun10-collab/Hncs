@@ -83,6 +83,8 @@ library/palace/street shots are not identifiable close-ups.*
 - `evaluation/eager.py` - executable EAGER evidence kernel: provenance-aware
   manifest checks, capture-group aggregation, paired uncertainty, sample
   accounting, physical sanity, and result classification
+- `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
+  metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
 - `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the
   EAGER Framework design and claim boundaries
 - `CLAUDE.md` (this directory) - rules for changes here

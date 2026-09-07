@@ -345,6 +345,41 @@ def check_physical_sanity(
     return {"passed": not failures, "failures": failures, **details}
 
 
+_REQUIRED_CONTROLS = (
+    "identity_baseline", "target_reference_shuffle", "source_label_shuffle",
+    "holdout_rerun", "chart_positive_control",
+)
+
+
+def validate_controls(controls: Mapping[str, Any]) -> dict[str, Any]:
+    """Require every pre-registered falsification/positive control."""
+
+    if not isinstance(controls, Mapping):
+        raise ValueError("controls must be a mapping of control name to boolean")
+    missing = [name for name in _REQUIRED_CONTROLS if name not in controls]
+    failures = [name for name in _REQUIRED_CONTROLS if controls.get(name) is not True]
+    return {
+        "passed": not missing and not failures,
+        "missing": missing,
+        "failures": failures,
+        "controls": {name: controls.get(name) for name in _REQUIRED_CONTROLS},
+    }
+
+
+def validate_robustness(strata: Mapping[str, Any]) -> dict[str, Any]:
+    """Require an explicit boolean result for every robustness stratum."""
+
+    if not isinstance(strata, Mapping) or not strata:
+        raise ValueError("robustness must contain at least one stratum")
+    missing_or_invalid = [name for name, value in strata.items() if value not in (True, False)]
+    failures = [name for name, value in strata.items() if value is False]
+    return {
+        "passed": not missing_or_invalid and not failures,
+        "failures": failures + missing_or_invalid,
+        "strata": dict(strata),
+    }
+
+
 def classify_result(
     result: Mapping[str, Any], evidence_tier: EvidenceTier | str,
     lockbox_passed: bool, external_replication: bool,
