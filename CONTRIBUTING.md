@@ -35,9 +35,15 @@ reuse it and run the install step to pick up newly added dependencies.
 Use the same interpreter for installation and tests: on macOS, bare
 `python3` can select the system Python instead of the project environment.
 
-`hybrid_engine.*` modules need Python 3.12 specifically (colour-science/
-numpy version pinning) — see `hybrid_engine/CLAUDE.md` if you're touching
-that directory. Everything else runs on 3.11+ (CI uses 3.11).
+`hybrid_engine.*` modules need Python>=3.11, not 3.12 specifically —
+`requirements.txt` pins `colour-science==0.4.7`, which requires
+Python>=3.11 (a default `python3` on 3.9 can only resolve
+colour-science 0.4.4, which is missing a function `hybrid_engine`
+imports at module level). `hybrid_engine/CLAUDE.md` uses a 3.12 venv
+because that's what was available on that machine when its default
+`python3` was 3.9, not because 3.12 is required — any 3.11+ interpreter
+works. See `hybrid_engine/CLAUDE.md` if you're touching that directory.
+Everything else runs on 3.11+ too (CI uses 3.11).
 
 CI (`.github/workflows/tests.yml`) runs the full suite on every push and
 PR — it must be green before review.

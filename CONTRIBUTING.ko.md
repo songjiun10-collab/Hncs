@@ -35,9 +35,15 @@ python3.12 -m venv .venv
 인터프리터로 실행한다. macOS에서는 `python3`만 쓰면 프로젝트 가상환경
 대신 시스템 Python이 선택될 수 있다.
 
-`hybrid_engine.*` 모듈은 Python 3.12가 따로 필요하다(colour-science/
-numpy 버전 고정 때문) - 이 디렉토리를 건드린다면 `hybrid_engine/CLAUDE.md`
-참고. 나머지는 3.11+에서 동작한다(CI는 3.11 사용).
+`hybrid_engine.*` 모듈은 Python>=3.11이 필요할 뿐, 3.12가 따로 필요한 건
+아니다 - `requirements.txt`가 고정한 `colour-science==0.4.7`이
+Python>=3.11을 요구한다(3.9 기본 `python3`로는 colour-science 0.4.4까지만
+설치되는데, 여기엔 `hybrid_engine`이 모듈 로드 시점에 바로 import하는
+함수가 빠져있다). `hybrid_engine/CLAUDE.md`가 3.12 venv를 쓰는 건 그
+머신의 기본 `python3`가 3.9였을 때 마침 3.12를 쓸 수 있어서였지 3.12가
+요구사항이라서가 아니다 - 3.11 이상이면 어느 인터프리터든 된다. 이
+디렉토리를 건드린다면 `hybrid_engine/CLAUDE.md` 참고. 나머지도 3.11+에서
+동작한다(CI는 3.11 사용).
 
 CI(`.github/workflows/tests.yml`)가 모든 push/PR에서 전체 테스트
 스위트를 돌린다 - 리뷰 전에 반드시 green이어야 한다.
