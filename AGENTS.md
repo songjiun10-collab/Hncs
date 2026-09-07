@@ -12,13 +12,18 @@ difference:
 ## Commit authorship
 
 ```bash
-git config user.email noreply@anthropic.com && git config user.name Codex
+git config user.email noreply@openai.com && git config user.name Codex
 ```
 
-Use `Codex`, not `Claude`, as `user.name` — everything else in
-`CLAUDE.md`'s "Every commit" section applies unchanged (rebase-exec to
-fix authorship on prior commits, retry-loop push, full suite green
-first).
+**정정(2026-09-07)**: 예전엔 `user.email`도 `noreply@anthropic.com`
+(Claude 쪽과 동일)이었다 - Codex는 OpenAI 툴인데 커밋이 Anthropic
+이메일을 달고 나가는 게 잘못이라 `noreply@openai.com`으로 바꿨다. 이제
+`user.name`(Codex vs Claude)과 `user.email`(openai.com vs
+anthropic.com) 둘 다 실행 주체를 가리킨다.
+
+Everything else in `CLAUDE.md`'s "Every commit" section applies unchanged
+(rebase-exec to fix authorship on prior commits, retry-loop push, full
+suite green first) - just substitute this email/name pair.
 
 ## Hooks
 
