@@ -24,7 +24,7 @@ from brands.fuji import apply_provia
 from brands.sigma.bf import apply_sigma_bf_look
 from core.validation import is_image_array_usable
 from tools.fit.calibrate import load_neutral_render
-from tools.fit.evaluate_expanded_clahe_shoulder_refit import collect_contributed_pairs, _exif_film_mode
+from tools.fit.evaluation_common import collect_contributed_pairs, _exif_film_mode
 
 NATIVE_MAX_DIM = 3000
 
