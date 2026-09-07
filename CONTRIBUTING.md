@@ -25,9 +25,15 @@ contribution are equally welcome: **code** and **data**.
 ### Setup
 
 ```bash
-pip install -r requirements.txt
-python3 -m unittest discover -s tests
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m unittest discover -s tests
 ```
+
+Run these commands from the repository root. If `.venv` already exists,
+reuse it and run the install step to pick up newly added dependencies.
+Use the same interpreter for installation and tests: on macOS, bare
+`python3` can select the system Python instead of the project environment.
 
 `hybrid_engine.*` modules need Python 3.12 specifically (colour-science/
 numpy version pinning) — see `hybrid_engine/CLAUDE.md` if you're touching

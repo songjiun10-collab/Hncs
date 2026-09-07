@@ -25,9 +25,15 @@
 ### 준비
 
 ```bash
-pip install -r requirements.txt
-python3 -m unittest discover -s tests
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m unittest discover -s tests
 ```
+
+저장소 루트에서 실행한다. `.venv`가 이미 있으면 재사용하고, 새로 추가된
+의존성을 반영하도록 설치 단계부터 실행한다. 설치와 테스트는 같은
+인터프리터로 실행한다. macOS에서는 `python3`만 쓰면 프로젝트 가상환경
+대신 시스템 Python이 선택될 수 있다.
 
 `hybrid_engine.*` 모듈은 Python 3.12가 따로 필요하다(colour-science/
 numpy 버전 고정 때문) - 이 디렉토리를 건드린다면 `hybrid_engine/CLAUDE.md`

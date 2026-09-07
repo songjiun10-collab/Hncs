@@ -143,6 +143,57 @@ models/       얼굴 검출 등에 쓰는 사전학습 모델
 docs/         상세 문서 (방법론/실측 결론/브랜드별 기록/파일별 설명) - CLAUDE.md
 ```
 
+```mermaid
+flowchart LR
+    INPUT["입력<br/>RAW / JPEG / 비디오"]
+
+    subgraph SHIPPED["배포 색감 계층"]
+        BRANDS["brands/<br/>12개 브랜드 패키지"]
+        APPLY["apply_* 함수<br/>브랜드·바디별 룩"]
+        CORE["core/<br/>공유 색 처리"]
+        OUTPUT["출력<br/>이미지 / .cube LUT"]
+    end
+
+    subgraph PIPELINES["독립 파이프라인"]
+        TOOLS["tools/cli/<br/>RAW→Log · 렌즈 · 비디오"]
+        PROFILES["DCP / ICC 내보내기"]
+    end
+
+    subgraph RESEARCH["연구·검증 계층"]
+        DATA["datasets/<br/>샘플 메타데이터와 manifest"]
+        FIT["tools/fit/<br/>캘리브레이션·그리드서치"]
+        EXP["tools/research/<br/>비교 실험·통계"]
+        DOCS["docs/<br/>측정 기록"]
+    end
+
+    subgraph HYBRID["카메라 간 변환 엔진"]
+        ENGINE["hybrid_engine/"]
+        DECODE["RAW / JPEG 디코드"]
+        TRANSFORM["매트릭스·톤 변환"]
+        EVAL["ΔE 평가"]
+    end
+
+    subgraph ACCESS["진입점·품질 관리"]
+        GUI["gui/<br/>Tkinter 앱"]
+        TESTS["tests/<br/>unittest + CI"]
+        AUDIT["tools/maintenance/<br/>무결성 감사"]
+    end
+
+    INPUT --> BRANDS --> APPLY --> CORE --> OUTPUT
+    INPUT --> TOOLS
+    INPUT --> ENGINE --> DECODE --> TRANSFORM --> EVAL
+    ENGINE --> PROFILES
+    DATA --> FIT --> DOCS
+    DATA --> EXP --> DOCS
+    FIT -. "검토된 결과" .-> BRANDS
+    GUI --> TOOLS
+    GUI --> BRANDS
+    BRANDS --> TESTS
+    CORE --> TESTS
+    ENGINE --> TESTS
+    AUDIT --> TESTS
+```
+
 각 영역의 `README.md`(있는 경우)는 사용법/예시를, `CLAUDE.md`는 그
 영역을 바꿀 때의 규칙을 다룬다. 파일별 상세 설명은
 [docs/project_structure.md](docs/project_structure.md) 참고.
