@@ -144,55 +144,51 @@ docs/         상세 문서 (방법론/실측 결론/브랜드별 기록/파일�
 ```
 
 ```mermaid
-flowchart LR
-    INPUT["입력<br/>RAW / JPEG / 비디오"]
-
-    subgraph SHIPPED["배포 색감 계층"]
-        BRANDS["brands/<br/>12개 브랜드 패키지"]
-        APPLY["apply_* 함수<br/>브랜드·바디별 룩"]
-        CORE["core/<br/>공유 색 처리"]
-        OUTPUT["출력<br/>이미지 / .cube LUT"]
-    end
-
-    subgraph PIPELINES["독립 파이프라인"]
-        TOOLS["tools/cli/<br/>RAW→Log · 렌즈 · 비디오"]
-        PROFILES["DCP / ICC 내보내기"]
-    end
-
-    subgraph RESEARCH["연구·검증 계층"]
-        DATA["datasets/<br/>샘플 메타데이터와 manifest"]
-        FIT["tools/fit/<br/>캘리브레이션·그리드서치"]
-        EXP["tools/research/<br/>비교 실험·통계"]
-        DOCS["docs/<br/>측정 기록"]
-    end
-
-    subgraph HYBRID["카메라 간 변환 엔진"]
-        ENGINE["hybrid_engine/"]
-        DECODE["RAW / JPEG 디코드"]
-        TRANSFORM["매트릭스·톤 변환"]
-        EVAL["ΔE 평가"]
-    end
-
-    subgraph ACCESS["진입점·품질 관리"]
+flowchart TB
+    subgraph RUNTIME["진입점과 공통 처리"]
+        direction TB
         GUI["gui/<br/>Tkinter 앱"]
-        TESTS["tests/<br/>unittest + CI"]
-        AUDIT["tools/maintenance/<br/>무결성 감사"]
+        CLI["tools/cli/<br/>RAW→Log · 렌즈 · 업스케일<br/>비디오 · LUT 내보내기"]
+        BRANDS["brands/<br/>12개 패키지 · apply_*"]
+        CORE["core/<br/>톤 · LUT · 이미지 헬퍼"]
+        HYBRID["hybrid_engine/<br/>변환과 캘리브레이션"]
+        GUI -->|"디코딩한 프리뷰 이미지"| BRANDS
+        GUI -->|"subprocess"| CLI
+        GUI -->|"subprocess"| HYBRID
+        CLI -->|"비디오 / LUT 룩 함수"| BRANDS
+        CLI -->|"처리 헬퍼"| CORE
+        BRANDS -->|"공통 헬퍼"| CORE
     end
 
-    INPUT --> BRANDS --> APPLY --> CORE --> OUTPUT
-    INPUT --> TOOLS
-    INPUT --> ENGINE --> DECODE --> TRANSFORM --> EVAL
-    ENGINE --> PROFILES
-    DATA --> FIT --> DOCS
-    DATA --> EXP --> DOCS
-    FIT -. "검토된 결과" .-> BRANDS
-    GUI --> TOOLS
-    GUI --> BRANDS
-    BRANDS --> TESTS
-    CORE --> TESTS
-    ENGINE --> TESTS
-    AUDIT --> TESTS
 ```
+
+```mermaid
+flowchart TB
+    subgraph RESEARCH["연구와 프로파일 생성"]
+        direction TB
+        DATA["datasets/<br/>메타데이터 · manifest · 로컬 페어"]
+        FIT["tools/fit/ · tools/research/<br/>피팅과 비교 실험"]
+        DOCS["docs/ · hybrid_engine/EVALUATION.md<br/>근거와 결정 기록"]
+        PROFILETOOLS["프로파일 생성 도구<br/>tools/x2dii/ · tools/capture_one/<br/>tools/fit_dpreview_studio_chart.py"]
+        WRITERS["core/dcp_export.py<br/>core/icc_export.py"]
+        PROFILES["DCP / ICC 파일"]
+        BRANDS["brands/<br/>배포 룩 함수"]
+        DATA -->|"참조 데이터"| FIT
+        FIT -->|"결과 기록"| DOCS
+        DOCS -. "배포 전 명시적 승인" .-> BRANDS
+        PROFILETOOLS -->|"포맷 작성 함수 호출"| WRITERS
+        WRITERS -->|"기록"| PROFILES
+    end
+
+```
+
+두 구조도는 주요 관계를 보여주며, 화살표 라벨로 호출과 데이터를 구분한다.
+`apply_*`는 디코딩된 이미지 배열을 받는다. RAW 디코드나 비디오 프레임
+추출은 호출부가 먼저 수행한다. 프로파일 도구는 `hybrid_engine/`의
+캘리브레이션 헬퍼를 재사용할 수 있고, 파일 포맷 작성 함수는 `core/`에 있다.
+CI는 감사 헬퍼 테스트를 포함한 unittest 스위트를 실행한다. 저장소 전체
+감사는 별도 명령으로도 실행한다:
+`python3 tools/maintenance/audit_repo_integrity.py`.
 
 각 영역의 `README.md`(있는 경우)는 사용법/예시를, `CLAUDE.md`는 그
 영역을 바꿀 때의 규칙을 다룬다. 파일별 상세 설명은
