@@ -1642,6 +1642,34 @@ WHOLE_BRANCH_REVIEW_SHA는 애초에 전역 플러그인 `_hook_common.py`엔
 세션에서 실제 `write_decision_record` 호출 → 가드 훅 allow 여부로
 확인할 것.
 
+### 위 수정이 Codex 쪽엔 안 갔던 문제 - 근본 수정으로 승격(2026-09-07)
+
+위 2026-09-04 수정은 `~/.claude/plugins/cache/hook/hook/0.1.0/hooks/_hook_common.py`에
+`_HOOKS_DIR = os.path.join(os.getcwd(), ".claude", "hooks")`를 하드코딩한
+**로컬 hotpatch**였다 - Claude Code용으로는 맞지만 (1) `.codex/hooks`가
+아니라 `.codex`가 필요한 Codex 쪽 캐시(`~/.codex/plugins/cache/hook/hook/0.1.0/hooks/_hook_common.py`)엔
+안 맞고, (2) 어느 쪽 캐시에도 아닌 업스트림 저장소
+(`github.com/songjiun10-collab/hook`) 자체엔 반영이 안 돼서 재설치·
+업데이트할 때마다 버그가 되살아나는 상태였다. Codex 인수인계 준비
+작업 중 실제로 `~/.codex/plugins/cache/hook/hook/0.1.0/hooks/_hook_common.py`를
+열어 확인해보니 여전히 옛 `os.path.dirname(os.path.abspath(__file__))`
+그대로였다 - 즉 지금 이 순간까지 Codex에서 `write_decision_record`를
+불렀다면 항상 잘못된 경로에 sentinel을 썼을 거라는 뜻.
+
+프로젝트 루트를 `os.getcwd()`로 잡는 부분은 그대로 두고(2026-09-04
+근거 유효), 도구별로 다른 하위 디렉토리 이름(`.claude/hooks` vs
+`.codex/hooks`)은 **이 파일 자신이 어느 플러그인 캐시에서 실행 중인지**
+(`__file__` 경로에 `.claude/plugins` 또는 `.codex/plugins`가 있는지)로
+판별하도록 일반화 - 하드코딩된 `.claude`를 걷어내서 이제 어느 도구
+캐시에 설치되든 자동으로 맞는 경로를 찾는다. 이 버전을 업스트림
+`hook` 저장소에 커밋·푸시(`78dfa23`, `main`)해서 다음 설치/업데이트부터
+자동으로 반영되게 했고, 두 로컬 캐시(`~/.claude/...`/`~/.codex/...`)에도
+동일 파일을 즉시 적용. 검증: `/tmp`에 가짜 `.claude/plugins/cache/...`와
+`.codex/plugins/cache/...` 경로를 만들어 임포트해서 양쪽 다 올바른
+`_HOOKS_DIR`을 내는 것 확인, 업스트림 저장소의 기존 테스트 스위트
+231개 중 이 리포와 동일한 사전 존재 에러 9개(mcp 모듈 미설치) 제외
+전부 통과.
+
 ## 로그 유지관리
 
 `violations_log.jsonl`/`override_audit.jsonl`/`learning_data.jsonl`(2026-08-16
