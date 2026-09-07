@@ -1,5 +1,9 @@
 # 반사실 없는 교차 카메라 일반화 평가 방법론 (Protocol 2R 설계)
 
+Protocol 2R는 [EAGER Framework](2026-09-08-eager-framework-design.md)의
+Layer B appearance residual을 검증하는 프로토콜이다. 색도학적 foundation,
+evidence tier, lockbox, artifact/validator 규칙은 EAGER를 따른다.
+
 ## 문제
 
 기존 Protocol 2는 Sony/Nikon/Canon의 `apply_*_look()`을 **같은 한 장의

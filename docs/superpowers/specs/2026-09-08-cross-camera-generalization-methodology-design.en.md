@@ -1,5 +1,10 @@
 # Counterfactual-free cross-camera generalization evaluation (Protocol 2R design)
 
+Protocol 2R validates the Layer B appearance residual of the [EAGER
+Framework](2026-09-08-eager-framework-design.en.md). Its colorimetric
+foundation, evidence tier, lockbox, artifact, and validator rules come from
+EAGER.
+
 ## Problem
 
 The original Protocol 2 applies Sony/Nikon/Canon `apply_*_look()` functions to
