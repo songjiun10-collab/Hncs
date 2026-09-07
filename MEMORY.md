@@ -136,15 +136,24 @@ Re-verified same-day, all real:
   0 errors, 15 skipped (exiftool-only, legitimate) confirmed after
   installing it. `requirements.txt` itself needed no change.
 
+**Same-day follow-up**: both items the previous snapshot flagged as "the
+user's call" got the user's call, later the same day. `.codex/hooks.json`
+was rewritten to repo-relative paths (verified: `.codex/hooks/*.py` are
+symlinks into `.claude/hooks/`, so `os.getcwd()`-based resolution works
+identically; a real invocation of `protect_never_touch.py` via the new
+relative path returned a valid JSON response). `AGENTS.md`'s Codex email
+turned out to be an actual mistake, not deliberate design as its own text
+implied - the user said so directly, so `noreply@anthropic.com` there is
+now `noreply@openai.com` (best guess matching Claude's `noreply@<its
+company>.com` pattern - user hasn't corrected it, but flag it here in
+case it's wrong).
+
 ## Open threads
 
 - `apply_classic_negative` recalibration is **decided by the user, not
   open work**: `hybrid_engine/EVALUATION.md` (2026-09-04) measured that
   4 of its 47 pairs were mis-paired and its mode mean was inflated by
   1.0532 ΔE00. Nothing in `brands/fuji.py` or the profiles was touched.
-- `.codex/hooks.json`'s hardcoded `/Users/songjiun/Hncs/...` paths and
-  `AGENTS.md`'s shared-email commit-identity convention are **the
-  user's call, not fixed here** - see the 2026-09-07 snapshot above.
 - Otherwise nothing tracked here as blocking; check
   `.superpowers/sdd/progress.md` for any in-flight
   subagent-driven-development plan before assuming a clean slate.
