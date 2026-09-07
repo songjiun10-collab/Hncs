@@ -150,6 +150,57 @@ models/       Pretrained models used for e.g. face detection
 docs/         Detailed docs (methodology / measurements / per-brand notes / file map) - CLAUDE.md
 ```
 
+```mermaid
+flowchart LR
+    INPUT["Input<br/>RAW / JPEG / video"]
+
+    subgraph SHIPPED["Shipped color layer"]
+        BRANDS["brands/<br/>12 brand packages"]
+        APPLY["apply_* functions<br/>brand/body looks"]
+        CORE["core/<br/>shared color processing"]
+        OUTPUT["Output<br/>image / .cube LUT"]
+    end
+
+    subgraph PIPELINES["Independent pipelines"]
+        TOOLS["tools/cli/<br/>RAW→Log · lens · video"]
+        PROFILES["DCP / ICC export"]
+    end
+
+    subgraph RESEARCH["Research and validation"]
+        DATA["datasets/<br/>sample metadata and manifests"]
+        FIT["tools/fit/<br/>calibration and grid search"]
+        EXP["tools/research/<br/>comparisons and statistics"]
+        DOCS["docs/<br/>measurement records"]
+    end
+
+    subgraph HYBRID["Cross-camera engine"]
+        ENGINE["hybrid_engine/"]
+        DECODE["RAW / JPEG decode"]
+        TRANSFORM["matrix and tone conversion"]
+        EVAL["ΔE evaluation"]
+    end
+
+    subgraph ACCESS["Entry points and quality"]
+        GUI["gui/<br/>Tkinter app"]
+        TESTS["tests/<br/>unittest + CI"]
+        AUDIT["tools/maintenance/<br/>integrity audits"]
+    end
+
+    INPUT --> BRANDS --> APPLY --> CORE --> OUTPUT
+    INPUT --> TOOLS
+    INPUT --> ENGINE --> DECODE --> TRANSFORM --> EVAL
+    ENGINE --> PROFILES
+    DATA --> FIT --> DOCS
+    DATA --> EXP --> DOCS
+    FIT -. "reviewed result" .-> BRANDS
+    GUI --> TOOLS
+    GUI --> BRANDS
+    BRANDS --> TESTS
+    CORE --> TESTS
+    ENGINE --> TESTS
+    AUDIT --> TESTS
+```
+
 Each area's own `README.md` (where present) covers usage/examples;
 `CLAUDE.md` covers the rules for changes there. See
 [docs/project_structure.en.md](docs/project_structure.en.md) for a full
