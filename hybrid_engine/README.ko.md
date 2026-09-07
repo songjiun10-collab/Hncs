@@ -114,4 +114,9 @@ World + LAB 톤/색 커브)을 썼다 - 후지의 필름 시뮬레이션 프리�
 - `EVALUATION.md` - 이 모듈의 전체 측정 기록(위 표뿐 아니라 번호가
   매겨진 모든 후속 실험)
 - `assets/luts/README.md` - 기각된 LUT 실험들의 상세 기록
+- `evaluation/eager.py` - provenance-aware manifest 검사, capture-group
+  집계, paired 불확실성, sample accounting, 물리적 sanity, 결과 분류를
+  실행하는 EAGER 검증 커널
+- `../docs/superpowers/specs/2026-09-08-eager-framework-design.md` -
+  EAGER Framework 설계와 주장 경계
 - `CLAUDE.md`(이 디렉토리) - 이곳 수정 규칙
