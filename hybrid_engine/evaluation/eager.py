@@ -233,6 +233,75 @@ def evaluate_paired(
     }
 
 
+def evaluate_manifest_metrics(
+    manifest_rows: Iterable[Mapping[str, Any]],
+    metric_rows: Iterable[Mapping[str, Any]],
+    n_bootstrap: int = 20_000,
+    seed: int = 0,
+) -> dict[str, Any]:
+    """Join a validated manifest to one precomputed metric row per scene.
+
+    Metric rows intentionally contain already-aligned target-reference errors;
+    rendering and ROI extraction stay in the caller so this kernel cannot
+    silently change image-processing policy.  Only ``evaluation`` and
+    ``lockbox`` scenes are eligible for the paired result.
+    """
+
+    manifest = list(manifest_rows)
+    manifest_summary = validate_manifest(manifest)
+    scene_metadata: dict[str, dict[str, str]] = {}
+    for row in manifest:
+        scene_metadata.setdefault(str(row["scene_id"]), {
+            "split": str(row["split"]),
+            "source_body": str(row["source_body"]),
+            "illumination_id": str(row["illumination_id"]),
+        })
+    eligible = {scene_id for scene_id, metadata in scene_metadata.items()
+                if metadata["split"] in {"evaluation", "lockbox"}}
+    by_scene: dict[str, Mapping[str, Any]] = {}
+    required = ("scene_id", "baseline_delta_e00", "candidate_delta_e00")
+    for index, row in enumerate(metric_rows, start=1):
+        missing = [key for key in required if not _nonempty(row.get(key))]
+        if missing:
+            raise ValueError(f"metric row {index} missing fields: {', '.join(missing)}")
+        scene_id = str(row["scene_id"])
+        if scene_id in by_scene:
+            raise ValueError(f"duplicate metric row for scene_id {scene_id!r}")
+        if scene_id not in eligible:
+            raise ValueError(f"metric row {index} is not an evaluation/lockbox scene: {scene_id!r}")
+        try:
+            baseline = float(row["baseline_delta_e00"])
+            candidate = float(row["candidate_delta_e00"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"metric row {index} has non-numeric ΔE00") from exc
+        if not np.isfinite([baseline, candidate]).all() or baseline < 0 or candidate < 0:
+            raise ValueError(f"metric row {index} has invalid ΔE00")
+        by_scene[scene_id] = row
+    missing_scenes = sorted(eligible - by_scene.keys())
+    if missing_scenes:
+        raise ValueError(f"metric rows missing eligible scenes: {', '.join(missing_scenes)}")
+
+    scene_metrics = []
+    for scene_id in sorted(eligible):
+        row = by_scene[scene_id]
+        metadata = scene_metadata[scene_id]
+        scene_metrics.append(SceneMetric(
+            scene_id=scene_id,
+            baseline_delta_e00=float(row["baseline_delta_e00"]),
+            candidate_delta_e00=float(row["candidate_delta_e00"]),
+            source_body=metadata["source_body"],
+            illumination_id=metadata["illumination_id"],
+            neutral_baseline=float(row["neutral_baseline"]) if _nonempty(row.get("neutral_baseline")) else None,
+            neutral_candidate=float(row["neutral_candidate"]) if _nonempty(row.get("neutral_candidate")) else None,
+            chromatic_baseline=float(row["chromatic_baseline"]) if _nonempty(row.get("chromatic_baseline")) else None,
+            chromatic_candidate=float(row["chromatic_candidate"]) if _nonempty(row.get("chromatic_candidate")) else None,
+        ))
+    return {
+        "manifest": manifest_summary,
+        "paired": evaluate_paired(scene_metrics, n_bootstrap=n_bootstrap, seed=seed),
+    }
+
+
 def check_physical_sanity(
     matrix: Any = None, tone_curve: Sequence[float] | None = None,
     clipping_ratio: float | None = None, lut: Any = None,
