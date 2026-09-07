@@ -186,7 +186,7 @@
     },
     "subgroups_passed": true,
     "controls_passed": true,
-    "provenance_passed": true
+    "provenance_passed": false
   },
   "classification": {
     "ship_gate_passed": false,
@@ -199,7 +199,7 @@
       "scene_coverage": false,
       "subgroups": true,
       "controls": true,
-      "provenance": true
+      "provenance": false
     },
     "classification": "Inconclusive"
   }
