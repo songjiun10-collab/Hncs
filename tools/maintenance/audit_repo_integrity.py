@@ -9,7 +9,9 @@
 
 1. `tools/`·`brands/`·`core/`의 모든 `*.py`가 `docs/project_structure.md`와
    `.en.md`에 등재돼 있는지 - `docs/CLAUDE.md`의 "새 파일 → 새 행, 양쪽
-   언어" 규칙.
+   언어" 규칙. 세 디렉토리 중 하나가 discovery에서 0개로 나오면 그 자체가
+   이상(등재 누락이 아니라 discovery가 깨진 것) - `_code_files()`가 실제로
+   두 번(brands/, tools/ 패키지화 때) 이 클래스로 조용히 무력화된 적 있다.
 2. `docs/*.md` ↔ `docs/*.en.md` 짝이 다 있는지 - 같은 문서의 병행성 규칙.
    `CLAUDE.md`는 문서가 아니라 영역 규칙 파일이라 제외한다.
 3. 두 `project_structure`의 표 행 수가 같은지 - 한쪽만 늘어난 커밋을 잡는다.
@@ -59,19 +61,24 @@ ASSET_REF = re.compile(r"[\"']([^\"'\s]*assets/[^\"'\s]+\.(?:json|dcp|icc|npy|cu
 
 
 def _code_files(root):
-    """root 바로 아래의 *.py와, 한 단계 하위 패키지 디렉토리 안의 *.py를
-    root 기준 상대경로로 돌려준다. brands/를 브랜드별 패키지로 묶은 뒤
-    (brands/hasselblad/look.py 등) os.listdir만으로는 브랜드 파일이 하나도
-    안 잡혀 이 등재 검사가 통째로 무력화되던 걸 고친 것 - 검사 대상이 0개면
-    조용히 전부 통과한다."""
+    """root 아래 모든 깊이의 *.py를 root 기준 상대경로로 돌려준다(재귀).
+
+    이전엔 "root 바로 아래 + 한 단계 하위 디렉토리"까지만 봤다 - brands/를
+    브랜드별 패키지로 묶은 뒤(brands/hasselblad/look.py 등) os.listdir만으론
+    브랜드 파일이 하나도 안 잡혀 이 등재 검사가 통째로 무력화된 적이 있어서
+    한 단계를 추가했었다. 그런데 2026-09-06에 tools/도
+    tools/data/verify_contributed_pairs.py처럼 서브패키지로 나뉘면서, 그
+    "한 단계"짜리 수정도 tools/data/x/y.py처럼 두 단계 이상 깊어지면 똑같이
+    조용히 무력화될 수 있는 구조였다(지금은 실제로 2단계 이상인 파일이
+    없어서 안 터졌을 뿐 - `check_asset_refs()`가 이미 쓰는 `os.walk`
+    재귀 방식으로 통일해 이 클래스의 버그 자체를 없앤다)."""
     out = []
-    for name in os.listdir(root):
-        path = os.path.join(root, name)
-        if name.endswith(".py") and name != "__init__.py":
-            out.append(name)
-        elif os.path.isdir(path) and not name.startswith((".", "__")):
-            out.extend(f"{name}/{sub}" for sub in os.listdir(path)
-                       if sub.endswith(".py") and sub != "__init__.py")
+    for dirpath, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if not d.startswith((".", "__"))]
+        rel_dir = os.path.relpath(dirpath, root)
+        for name in files:
+            if name.endswith(".py") and name != "__init__.py":
+                out.append(name if rel_dir == "." else f"{rel_dir}/{name}")
     return out
 
 
@@ -83,6 +90,13 @@ def check_registration():
     problems = []
     for d in CODE_DIRS:
         files = sorted(_code_files(os.path.join(BASE, d)))
+        # discovery가 조용히 0개를 찾고 "이상 없음"으로 통과하는 걸 막는
+        # 구조적 불변식 - brands/ 패키지 이동 때 실제로 벌어졌던 실패 클래스
+        # (위 _code_files() docstring 참고). 이 3개 디렉토리는 항상 코드가
+        # 있으므로 0개는 등재 누락이 아니라 discovery 자체가 깨졌다는 뜻.
+        if not files:
+            problems.append(f"{d}/에서 *.py를 하나도 못 찾음 - discovery 로직이"
+                            f" 깨졌을 가능성(등재 누락이 아님)")
         for f in files:
             if f"{d}/{f}" not in ko:
                 problems.append(f"project_structure.md 미등재: {d}/{f}")
