@@ -144,9 +144,9 @@ identically; a real invocation of `protect_never_touch.py` via the new
 relative path returned a valid JSON response). `AGENTS.md`'s Codex email
 turned out to be an actual mistake, not deliberate design as its own text
 implied - the user said so directly, so `noreply@anthropic.com` there is
-now `noreply@openai.com` (best guess matching Claude's `noreply@<its
-company>.com` pattern - user hasn't corrected it, but flag it here in
-case it's wrong).
+now `noreply@openai.com`, matching Claude's `noreply@<its company>.com`
+pattern - proposed as a best guess, user confirmed it (didn't correct it
+across several follow-up turns).
 
 ## Open threads
 
