@@ -22,4 +22,8 @@ correction) before the item gets acted on — nothing here has been applied.
 
 ## Entries
 
-(none yet)
+### 2026-09-08 — protect_push_safety — `git push -u origin develop`
+**Wanted to:** Publish local commit `569cb9a` that allows the documented Codex author email in the shared push-safety hook.
+**Why:** `AGENTS.md` requires `Codex <noreply@openai.com>`, while the active global hook still rejects that email and blocks the ordinary non-force push.
+**Urgency:** The branch is one commit ahead of `origin/develop`; no other repository work depends on publishing it.
+**Status:** pending
