@@ -80,4 +80,9 @@ library/palace/street shots are not identifiable close-ups.*
 - `EVALUATION.md` - the full measurement record for this module (every
   numbered follow-up experiment, not just the table above)
 - `assets/luts/README.md` - the rejected LUT experiments in detail
+- `evaluation/eager.py` - executable EAGER evidence kernel: provenance-aware
+  manifest checks, capture-group aggregation, paired uncertainty, sample
+  accounting, physical sanity, and result classification
+- `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the
+  EAGER Framework design and claim boundaries
 - `CLAUDE.md` (this directory) - rules for changes here
