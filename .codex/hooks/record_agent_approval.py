@@ -1,0 +1,1 @@
+../../.claude/hooks/record_agent_approval.py

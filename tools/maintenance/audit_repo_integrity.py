@@ -50,7 +50,7 @@ DOCS = os.path.join(BASE, "docs")
 PROFILES = os.path.join(BASE, "hybrid_engine", "assets", "profiles")
 CODE_DIRS = ["tools", "brands", "core"]
 # 영역 규칙 파일이지 번역 대상 문서가 아니다.
-NOT_BILINGUAL = {"CLAUDE.md"}
+NOT_BILINGUAL = {"CLAUDE.md", "AGENTS.md"}
 # 접두부에 공백을 허용하면 따옴표 안의 *명령 문자열*까지 경로로 잡힌다 -
 # tests/test_hooks_never_touch_bash.py의 "printf x > hybrid_engine/assets/
 # profiles/hasselblad_x2dii_chart.dcp"가 통째로 캡처돼 실재하는 파일을

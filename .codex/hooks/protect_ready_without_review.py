@@ -1,0 +1,1 @@
+../../.claude/hooks/protect_ready_without_review.py

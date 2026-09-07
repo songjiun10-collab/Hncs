@@ -1,0 +1,1 @@
+../../.claude/hooks/record_whole_branch_review.py
