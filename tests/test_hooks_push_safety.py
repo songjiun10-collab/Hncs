@@ -206,6 +206,17 @@ class TestHookEndToEnd(unittest.TestCase):
     def test_safe_push_allowed_end_to_end(self):
         self.assertEqual(self._run_hook("git push -u origin main"), "allow")
 
+    def test_codex_author_email_allowed_end_to_end(self):
+        """AGENTS.md의 Codex 명의(noreply@openai.com)도 허용한다."""
+        run = lambda *args: subprocess.run(  # noqa: E731
+            args, cwd=self.repo, capture_output=True, text=True, check=True)
+        run("git", "config", "user.email", "noreply@openai.com")
+        with open(os.path.join(self.repo, "f.txt"), "a") as f:
+            f.write("codex")
+        run("git", "add", "f.txt")
+        run("git", "commit", "-q", "-m", "codex author")
+        self.assertEqual(self._run_hook("git push -u origin main"), "allow")
+
     def test_non_push_command_allowed_end_to_end(self):
         self.assertEqual(self._run_hook("git status"), "allow")
 
