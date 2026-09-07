@@ -151,55 +151,51 @@ docs/         Detailed docs (methodology / measurements / per-brand notes / file
 ```
 
 ```mermaid
-flowchart LR
-    INPUT["Input<br/>RAW / JPEG / video"]
-
-    subgraph SHIPPED["Shipped color layer"]
-        BRANDS["brands/<br/>12 brand packages"]
-        APPLY["apply_* functions<br/>brand/body looks"]
-        CORE["core/<br/>shared color processing"]
-        OUTPUT["Output<br/>image / .cube LUT"]
-    end
-
-    subgraph PIPELINES["Independent pipelines"]
-        TOOLS["tools/cli/<br/>RAW→Log · lens · video"]
-        PROFILES["DCP / ICC export"]
-    end
-
-    subgraph RESEARCH["Research and validation"]
-        DATA["datasets/<br/>sample metadata and manifests"]
-        FIT["tools/fit/<br/>calibration and grid search"]
-        EXP["tools/research/<br/>comparisons and statistics"]
-        DOCS["docs/<br/>measurement records"]
-    end
-
-    subgraph HYBRID["Cross-camera engine"]
-        ENGINE["hybrid_engine/"]
-        DECODE["RAW / JPEG decode"]
-        TRANSFORM["matrix and tone conversion"]
-        EVAL["ΔE evaluation"]
-    end
-
-    subgraph ACCESS["Entry points and quality"]
+flowchart TB
+    subgraph RUNTIME["Entry points and shared processing"]
+        direction TB
         GUI["gui/<br/>Tkinter app"]
-        TESTS["tests/<br/>unittest + CI"]
-        AUDIT["tools/maintenance/<br/>integrity audits"]
+        CLI["tools/cli/<br/>RAW→Log · lens · upscale<br/>video · LUT export"]
+        BRANDS["brands/<br/>12 packages · apply_*"]
+        CORE["core/<br/>tone · LUT · image helpers"]
+        HYBRID["hybrid_engine/<br/>conversion and calibration"]
+        GUI -->|"decoded preview image"| BRANDS
+        GUI -->|"subprocess"| CLI
+        GUI -->|"subprocess"| HYBRID
+        CLI -->|"video / LUT look functions"| BRANDS
+        CLI -->|"processing helpers"| CORE
+        BRANDS -->|"shared helpers"| CORE
     end
 
-    INPUT --> BRANDS --> APPLY --> CORE --> OUTPUT
-    INPUT --> TOOLS
-    INPUT --> ENGINE --> DECODE --> TRANSFORM --> EVAL
-    ENGINE --> PROFILES
-    DATA --> FIT --> DOCS
-    DATA --> EXP --> DOCS
-    FIT -. "reviewed result" .-> BRANDS
-    GUI --> TOOLS
-    GUI --> BRANDS
-    BRANDS --> TESTS
-    CORE --> TESTS
-    ENGINE --> TESTS
-    AUDIT --> TESTS
 ```
+
+```mermaid
+flowchart TB
+    subgraph RESEARCH["Research and profile generation"]
+        direction TB
+        DATA["datasets/<br/>metadata · manifests · local pairs"]
+        FIT["tools/fit/ · tools/research/<br/>fitting and comparisons"]
+        DOCS["docs/ · hybrid_engine/EVALUATION.md<br/>evidence and decisions"]
+        PROFILETOOLS["Profile-generation tools<br/>tools/x2dii/ · tools/capture_one/<br/>tools/fit_dpreview_studio_chart.py"]
+        WRITERS["core/dcp_export.py<br/>core/icc_export.py"]
+        PROFILES["DCP / ICC files"]
+        BRANDS["brands/<br/>shipped look functions"]
+        DATA -->|"reference data"| FIT
+        FIT -->|"record results"| DOCS
+        DOCS -. "explicit approval before shipping" .-> BRANDS
+        PROFILETOOLS -->|"call format writers"| WRITERS
+        WRITERS -->|"write"| PROFILES
+    end
+
+```
+
+The diagrams show selected relationships; edge labels distinguish calls
+and data. `apply_*` takes decoded image arrays; callers decode RAW
+files or extract video frames first. Profile tools can reuse calibration
+helpers in `hybrid_engine/`; file-format writers live in `core/`.
+CI runs the unittest suite, including tests for the audit helpers. The full
+repository audit is also a standalone command:
+`python3 tools/maintenance/audit_repo_integrity.py`.
 
 Each area's own `README.md` (where present) covers usage/examples;
 `CLAUDE.md` covers the rules for changes there. See
