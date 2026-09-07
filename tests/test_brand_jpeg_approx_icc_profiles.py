@@ -48,11 +48,14 @@ def _shipped_generic_jpeg_approx_brands():
 
 
 class TestBrandJpegApproxIccProfiles(unittest.TestCase):
-    def test_at_least_one_brand_is_discovered(self):
-        # 글롭이 조용히 0개를 찾고 아래 서브테스트가 전부 빈 루프로
-        # "성공"하는 걸 막는 구조적 불변식 - 지금은 최소 4개(sony/sigma/
-        # leica/fuji) 있어야 한다.
-        self.assertGreaterEqual(len(_shipped_generic_jpeg_approx_brands()), 1)
+    def test_at_least_currently_known_brands_are_discovered(self):
+        # 글롭이 조용히 0개(혹은 일부만)를 찾고 아래 서브테스트가 그 축소된
+        # 집합만으로 "성공"하는 걸 막는 구조적 불변식. >=1로는 sony/sigma/
+        # leica/fuji 중 3개가 실수로 사라져도 통과한다 - 그래서 지금 실제로
+        # 배포된 4개를 하한으로 못박는다. 새 브랜드가 이 ICC를 배포하면
+        # 이 숫자를 올리는 게 맞다(하드코딩 브랜드 이름 목록이 아니라 "몇
+        # 개는 있어야 정상인가"라는 하한이라 목록 drift와는 다른 종류).
+        self.assertGreaterEqual(len(_shipped_generic_jpeg_approx_brands()), 4)
 
     def test_xyz_tags_match_composed_report_matrix(self):
         for brand in _shipped_generic_jpeg_approx_brands():

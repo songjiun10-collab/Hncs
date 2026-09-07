@@ -76,12 +76,75 @@ entries below; don't rewrite old ones.
   51 commits ahead of it and 113 behind, so the two have long diverged.
   Work landed directly on `develop`.
 
+## Snapshot (2026-09-07, branch `develop`) - correcting a false claim from commit 6676e97
+
+Commit `6676e97`'s message claimed `.codex/hooks.json`, `AGENTS.md`, and
+`CONTRIBUTING.md` "don't exist in this checkout" and that an external
+review describing them had fabricated or looked at a different repo.
+**That claim was wrong.** All three exist and were already on `develop`
+at the time (added by `641147b`/`58db9d7`, both ancestors of 6676e97's
+parent). What actually happened: an earlier turn checked for these files
+against a local checkout that hadn't yet fetched those commits (a
+concurrent push from another session landed them mid-session) - that
+check was honest for the state at the time, but the finding was then
+carried into a *later* commit message without re-verifying against the
+checkout that commit was actually built on. The lesson isn't "don't
+trust external reviews" - two of that same review's other findings
+(discovery recursion limit, missing Fuji ICC test) were real and fixed
+in that same commit. It's: a claim about repo state goes stale the
+moment another session might have pushed, and a commit message is
+permanent - re-check immediately before writing one, don't reuse a
+finding from earlier in the conversation. Not amending/force-pushing
+6676e97 (shared branch, already on origin) - this entry is the
+correction of record, same pattern as a dated correction blockquote in
+`docs/CLAUDE.md`.
+
+Re-verified same-day, all real:
+- `.codex/hooks.json` has ~20 hooks hardcoded to `/Users/songjiun/Hncs/...`
+  absolute paths - breaks if the checkout path or machine changes.
+  `.claude/settings.json` avoids this with relative paths / a
+  `$CLAUDE_PROJECT_DIR` var for the one script that needs an absolute
+  path. Not fixed here - guessing at Codex's hook-invocation env without
+  a way to test against the real Codex CLI risks silently breaking the
+  CRITICAL safety hooks (`protect_never_touch` etc.) for whoever actually
+  runs Codex on that machine. Flagged for the user instead.
+- `AGENTS.md` tells Codex to commit as `user.name Codex` +
+  `user.email noreply@anthropic.com` - real Codex commits in the log
+  (`f3e1e764`, `a8149e5b`, `1c600790`) match that exactly. This mirrors
+  this repo's own root `CLAUDE.md` convention for Claude (`user.name
+  Claude` + the same email) - looks like a deliberate "AI agent commits
+  share one email, name identifies the tool" policy the user set up
+  themselves, not a Codex-specific bug. Flagged rather than changed
+  unilaterally - it's a cross-repo identity policy, not a local fix.
+- `CONTRIBUTING.md`/`.ko.md` said `hybrid_engine.*` needs "Python 3.12
+  specifically" - real requirement is `colour-science==0.4.7` pinning
+  Python>=3.11; 3.12 was just what was available on the machine that
+  wrote `hybrid_engine/CLAUDE.md`'s venv instructions when its default
+  `python3` was 3.9. Fixed both files to say >=3.11.
+- `tests/test_brand_jpeg_approx_icc_profiles.py`'s new discovery-based
+  brand list asserted `>= 1` while its own comment said "4 currently" -
+  3 of 4 could vanish and the meta-test would still pass. Tightened to
+  `>= 4`, confirmed by mutation (removing one ICC drops the count to 3
+  and the assertion fails).
+- **The bigger one**: commits up to and including 6676e97 stated "error
+  9건은 pydantic 부재, 이 컨테이너 환경 문제" as if that were a fixed
+  baseline, violating `tests/CLAUDE.md`'s "full suite green before every
+  commit" - `pip install pydantic` in this exact container makes all 9
+  `test_must_hook_server` errors disappear (it's declared as `mcp`'s
+  transitive dependency in `requirements.txt`; this sandbox had just
+  never run `pip install -r requirements.txt` fully). 1349/1349 green,
+  0 errors, 15 skipped (exiftool-only, legitimate) confirmed after
+  installing it. `requirements.txt` itself needed no change.
+
 ## Open threads
 
 - `apply_classic_negative` recalibration is **decided by the user, not
   open work**: `hybrid_engine/EVALUATION.md` (2026-09-04) measured that
   4 of its 47 pairs were mis-paired and its mode mean was inflated by
   1.0532 ΔE00. Nothing in `brands/fuji.py` or the profiles was touched.
+- `.codex/hooks.json`'s hardcoded `/Users/songjiun/Hncs/...` paths and
+  `AGENTS.md`'s shared-email commit-identity convention are **the
+  user's call, not fixed here** - see the 2026-09-07 snapshot above.
 - Otherwise nothing tracked here as blocking; check
   `.superpowers/sdd/progress.md` for any in-flight
   subagent-driven-development plan before assuming a clean slate.
