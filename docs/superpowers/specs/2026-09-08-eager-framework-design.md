@@ -217,3 +217,19 @@ NumPy 계산을 비교한다. 동일 함수로 계산하고 동일 함수로 검
 
 이 분류는 shipped artifact 변경 권한이 아니다. deployment는 별도 사용자
 승인, renderer 검증, artifact integrity 검사를 거친다.
+
+## 12. 구현 상태
+
+`hybrid_engine/evaluation/eager.py`가 다음 계약을 실행한다.
+
+- manifest 필수 필드·SHA-256 형식·scene split 누수 검사
+- requested→evaluated와 제외 사유의 sample accounting reconciliation
+- 기술 반복을 scene-level 독립 단위로 접는 집계
+- paired bootstrap 95% CI와 exact sign test
+- neutral/chromatic subgroup·control·robustness를 포함한 ship gate 분류
+- matrix/tone/LUT의 finite·monotonic·clipping sanity 검사
+- `eager_cli.py`를 통한 manifest + metric/control JSON 재현 실행
+
+렌더러, ROI 추출, shuffle 실험 자체는 고의로 이 커널 밖에 둔다. CLI는
+그 결과를 읽고 판정할 뿐, lockbox를 열거나 golden artifact를 자동 생성하지
+않는다.

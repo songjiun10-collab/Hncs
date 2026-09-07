@@ -199,3 +199,20 @@ with one function is not independent verification.
 
 This classification does not authorize a shipped-artifact change. Deployment
 requires separate user approval, renderer checks, and artifact-integrity tests.
+
+## 12. Implementation status
+
+`hybrid_engine/evaluation/eager.py` now executes these contracts:
+
+- required manifest fields, SHA-256 format, and scene split leakage checks;
+- requested-to-evaluated sample accounting with exclusion reasons;
+- collapse of technical repeats into scene-level independent units;
+- paired bootstrap 95% CI and exact sign test;
+- ship-gate classification with neutral/chromatic subgroup, control, and
+  robustness checks;
+- finite, monotonic, and clipping sanity checks for matrix/tone/LUT candidates;
+- reproducible manifest + metric/control JSON evaluation through `eager_cli.py`.
+
+Rendering, ROI extraction, and the shuffle experiments deliberately remain
+outside this kernel. The CLI reads their recorded results and classifies them;
+it does not open the lockbox or regenerate golden artifacts.
