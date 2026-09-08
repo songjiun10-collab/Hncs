@@ -2,6 +2,20 @@
 
 [한국어](2026-09-09-evidence-receipt.md)
 
+> **Correction (2026-09-09, forged registry trust re-audit):** The completion
+> claims below do not establish independently authenticated execution. Adding
+> `trusted_provenance: true` and a fake receipt object bypassed both registry
+> checks. All five regression cases passed without rejection before the fix:
+> Verified/Supported with ship true/false, and Inconclusive with ship true.
+> The uploader now rejects Supported/Verified or ship=true before any write.
+> This is temporary fail-closed containment, not trusted ingestion. Research
+> uploads labelled Exploratory/Inconclusive/Rejected remain available.
+> Validating a signature against a submitter-selected public key does not
+> establish trust in that key. CLI classifications, actual RAW/JPEG file
+> verification, evaluator/config verification and independent replay still
+> need work. This change neither audits existing remote records nor prevents
+> direct database writes by a service-role credential holder.
+
 The attack in `0da0c44` and `3e27c7a` showed that the missing protection was not
 finite metrics or hash syntax. There was no binding from an external JSON report
 to the inputs, code and configuration that supposedly produced it.
