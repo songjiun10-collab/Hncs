@@ -88,14 +88,14 @@ def main():
 
         print(f"[{i + 1}/{len(rows)}] {lens}: {raw_name}", flush=True)
         try:
-            if not os.path.exists(jpg_dest):
-                _download_jpg(jpg_url, jpg_dest)
             if not os.path.exists(raw_dest):
                 got = _download_raw_via_browser(raw_url, raw_name, raw_dest)
                 if not got:
                     print("    RAW 다운로드 타임아웃, 스킵")
                     fail += 1
                     continue
+            if not os.path.exists(jpg_dest):
+                _download_jpg(jpg_url, jpg_dest)
 
             meta = _exif(raw_dest, ["Model", "ISO", "WhiteBalance", "DateTimeOriginal"])
             writer.writerow({
