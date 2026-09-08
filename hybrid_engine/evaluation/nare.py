@@ -54,6 +54,7 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
     required = ("raw_delta_e00", "foundation_delta_e00", "candidate_delta_e00")
     scene_metrics = []
     foundation = []
+    registration = []
     for scene_id in sorted(metadata):
         row = metrics[scene_id]
         if any(key not in row for key in required):
@@ -61,6 +62,9 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
         scene_metrics.append(SceneMetric(scene_id, float(row["raw_delta_e00"]),
                                          float(row["candidate_delta_e00"])))
         foundation.append(float(row["foundation_delta_e00"]))
+        diagnostic = row.get("registration")
+        registration.append(isinstance(diagnostic, Mapping)
+                            and {"ecc_correlation", "overlap_fraction"} <= set(diagnostic))
     paired = evaluate_paired(scene_metrics, n_bootstrap=n_bootstrap, seed=seed)
     raw_mean = paired["mean_baseline"]
     foundation_mean = sum(foundation) / len(foundation)
@@ -69,6 +73,7 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
             "baseline_layers": ["raw_decoder", "colorimetric_foundation", "appearance_candidate"],
             "mean_foundation": foundation_mean,
             "foundation_improvement_pct": 100 * (raw_mean - foundation_mean) / raw_mean,
+            "registration_passed": all(registration),
             "coverage": {"lighting": summary["lighting"], "scene_type": summary["scene_type"]},
             "picture_styles": summary["picture_styles"]}
 
@@ -85,6 +90,7 @@ def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
         "lighting_coverage": len(coverage.get("lighting", [])) >= 3,
         "scene_coverage": len(coverage.get("scene_type", [])) >= 3,
         "picture_style": len(picture_styles) == 1 and picture_styles[0] != "unknown",
+        "registration": bool(result.get("registration_passed", False)),
         "subgroups": bool(result.get("subgroups_passed", False)),
         "controls": bool(result.get("controls_passed", False)),
         "provenance": bool(result.get("provenance_passed", False)),

@@ -35,12 +35,14 @@ class TestNARE(unittest.TestCase):
         manifest = [row(f"s{i}", "daylight" if i < 3 else "tungsten",
                         "portrait" if i % 2 else "landscape") for i in range(6)]
         metrics = [{"scene_id": f"s{i}", "raw_delta_e00": 10,
-                    "foundation_delta_e00": 8, "candidate_delta_e00": 7}
+                    "foundation_delta_e00": 8, "candidate_delta_e00": 7,
+                    "registration": {"ecc_correlation": 0.9, "overlap_fraction": 0.99}}
                    for i in range(6)]
         result = evaluate_nare_metrics(manifest, metrics, n_bootstrap=200, seed=0)
         self.assertEqual(result["n_scenes"], 6)
         self.assertEqual(result["baseline_layers"], ["raw_decoder", "colorimetric_foundation", "appearance_candidate"])
         self.assertAlmostEqual(result["improvement_pct"], 30.0)
+        self.assertTrue(result["registration_passed"])
 
     def test_ship_gate_requires_three_lighting_and_scene_strata(self):
         result = {"n_scenes": 12, "improvement_pct": 10,
@@ -48,6 +50,7 @@ class TestNARE(unittest.TestCase):
                   "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
                                "scene_type": ["portrait", "landscape", "indoor"]},
                   "picture_styles": ["standard"],
+                  "registration_passed": True,
                   "subgroups_passed": True, "controls_passed": True,
                   "provenance_passed": True}
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
@@ -60,11 +63,21 @@ class TestNARE(unittest.TestCase):
                   "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
                                "scene_type": ["portrait", "landscape", "indoor"]},
                   "picture_styles": ["standard"], "subgroups_passed": True,
+                  "registration_passed": True,
                   "controls_passed": True, "provenance_passed": True}
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
         result["picture_styles"] = ["standard", "velvia"]
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
         result["picture_styles"] = ["unknown"]
+        self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
+
+    def test_ship_gate_requires_recorded_registration(self):
+        result = {"n_scenes": 12, "improvement_pct": 10, "ci95": [0.1, 2],
+                  "sign_test_p": 0.01,
+                  "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
+                               "scene_type": ["portrait", "landscape", "indoor"]},
+                  "picture_styles": ["standard"], "subgroups_passed": True,
+                  "controls_passed": True, "provenance_passed": True}
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
 
 
