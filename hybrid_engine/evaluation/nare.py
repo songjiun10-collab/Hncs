@@ -35,6 +35,7 @@ def validate_nare_manifest(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
         if prior != row["split"]:
             raise ValueError(f"scene_id {scene!r} appears in multiple splits")
     return {"n_rows": len(records), "n_scenes": len(scenes),
+            "n_sessions": len({str(row["session_id"]) for row in records}),
             "lighting": sorted({str(row["lighting"]) for row in records}),
             "scene_type": sorted({str(row["scene_type"]) for row in records})}
 

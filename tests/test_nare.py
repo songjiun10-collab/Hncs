@@ -19,7 +19,9 @@ def row(scene_id="s1", lighting="daylight", scene_type="portrait"):
 
 class TestNARE(unittest.TestCase):
     def test_manifest_requires_sooc_metadata_and_hashes(self):
-        self.assertEqual(validate_nare_manifest([row()])["n_scenes"], 1)
+        summary = validate_nare_manifest([row()])
+        self.assertEqual(summary["n_scenes"], 1)
+        self.assertEqual(summary["n_sessions"], 1)
         bad = row(); bad["picture_style"] = ""
         with self.assertRaises(ValueError):
             validate_nare_manifest([bad])
