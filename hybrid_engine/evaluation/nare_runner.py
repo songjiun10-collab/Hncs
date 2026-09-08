@@ -8,15 +8,17 @@ Registration, semantic masks, and spatial metrics remain separate NARE gates.
 from collections.abc import Callable, Iterable, Mapping
 from typing import Any
 
+import cv2
+
 from hybrid_engine.utils.evaluate import (
     bgr_u8_to_linear_rgb,
-    load_image_linear_for_evaluate,
     mean_delta_e,
 )
 from tools.fit.calibrate import load_neutral_render
 
 from .eager import sha256_file
 from .nare import validate_nare_manifest
+from .nare_registration import register_to_target
 
 
 ImageTransform = Callable[[Any], Any]
@@ -62,14 +64,20 @@ def run_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]], expected_pictur
         _verify_hash(row, "source_path", "source_sha256")
         _verify_hash(row, "target_path", "target_sha256")
         neutral = load_neutral_render(str(row["source_path"]), max_dim=max_dim)
-        target = load_image_linear_for_evaluate(str(row["target_path"]), neutral.shape)
-        raw_linear = bgr_u8_to_linear_rgb(neutral)
-        foundation_linear = bgr_u8_to_linear_rgb(foundation(neutral.copy()))
-        candidate_linear = bgr_u8_to_linear_rgb(candidate(neutral.copy()))
+        target = cv2.imread(str(row["target_path"]), cv2.IMREAD_COLOR)
+        if target is None:
+            raise ValueError(f"registration_failure: unreadable target JPEG: {row['target_path']}")
+        target = cv2.resize(target, (neutral.shape[1], neutral.shape[0]), interpolation=cv2.INTER_AREA)
+        neutral, valid, registration = register_to_target(neutral, target)
+        target_linear = bgr_u8_to_linear_rgb(target)[valid]
+        raw_linear = bgr_u8_to_linear_rgb(neutral)[valid]
+        foundation_linear = bgr_u8_to_linear_rgb(foundation(neutral.copy()))[valid]
+        candidate_linear = bgr_u8_to_linear_rgb(candidate(neutral.copy()))[valid]
         metrics.append({
             "scene_id": str(row["scene_id"]),
-            "raw_delta_e00": mean_delta_e(raw_linear, target),
-            "foundation_delta_e00": mean_delta_e(foundation_linear, target),
-            "candidate_delta_e00": mean_delta_e(candidate_linear, target),
+            "raw_delta_e00": mean_delta_e(raw_linear, target_linear),
+            "foundation_delta_e00": mean_delta_e(foundation_linear, target_linear),
+            "candidate_delta_e00": mean_delta_e(candidate_linear, target_linear),
+            "registration": registration,
         })
     return metrics

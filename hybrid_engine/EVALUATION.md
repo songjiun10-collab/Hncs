@@ -5001,3 +5001,17 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 `Inconclusive`다. per-scene artifact는
 `nare_provia_exploratory_metrics_1024px_2026-09.json`과
 `nare_provia_exploratory_report_1024px_2026-09.json`이다.
+
+> **정정(2026-09-08, registration preflight 추가)**: 위 51-frame 수치는
+> geometry registration 전의 exploratory probe였다. translation-only ECC
+> preflight(correlation >= 0.6, shift <= long-edge의 5%, valid overlap >= 90%)를
+> 적용하자 37개가 통과하고 14개는 `registration_failure`가 됐다. 따라서
+> 51개 aggregate는 NARE 결과로 해석하지 않는다. failure accounting은
+> `nare_provia_registration_preflight_512px_2026-09.json`에, 통과 pair의 새
+> frozen manifest와 512px 재측정은 `nare_provia_registered_*_2026-09.json`에
+> 저장했다. corrected 37-frame exploratory replay는 B0 ΔE00
+> **16.5211983452177** → C **11.989706008913075**, **+27.42835139205464%**,
+> scene bootstrap 95% CI **[+3.6717888562545196, +5.400666505888509]**,
+> 35승/2패, exact sign test **p=1.0244548320770264e-08**이다. 조명·scene
+> taxonomy, semantic/spatial subgroup, positive control 부재는 해소되지 않아
+> NARE classification은 계속 `Inconclusive`다.
