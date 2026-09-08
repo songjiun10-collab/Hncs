@@ -26,4 +26,14 @@ correction) before the item gets acted on — nothing here has been applied.
 **Wanted to:** Publish local commit `569cb9a` that allows the documented Codex author email in the shared push-safety hook.
 **Why:** `AGENTS.md` requires `Codex <noreply@openai.com>`, while the active global hook still rejects that email and blocks the ordinary non-force push.
 **Urgency:** The branch is one commit ahead of `origin/develop`; no other repository work depends on publishing it.
-**Status:** pending
+**Status:** resolved (2026-09-08) - `569cb9a` is already an ancestor of
+`origin/develop` (`git merge-base --is-ancestor 569cb9a HEAD` confirms it),
+so the push this entry describes already succeeded through some other
+path. Read the diff before closing this out: it narrows
+`protect_push_safety.py`'s single-email check to an allowlist
+(`noreply@anthropic.com` + `noreply@openai.com`, exactly the Codex email
+the user confirmed in this same conversation - see `AGENTS.md`'s
+2026-09-07 correction note), adds a real end-to-end test
+(`test_codex_author_email_allowed_end_to_end`) exercising the Codex
+identity through the actual hook, and doesn't loosen the gate beyond that
+- still a strict allowlist, not a wildcard. No further action needed.

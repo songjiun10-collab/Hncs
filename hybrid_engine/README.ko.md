@@ -139,6 +139,13 @@ World + LAB 톤/색 커브)을 썼다 - 후지의 필름 시뮬레이션 프리�
 - `evaluation/eager_cli.py` - manifest와 기록된 metric/control JSON에
   위 게이트를 적용하는 실행 명령(`python3 -m
   hybrid_engine.evaluation.eager_cli`)
+- `evaluation/supabase_sync.py` - `eager_cli.py`/`nare_cli.py`의 선택 플래그
+  `--sync-supabase`가 확정된(frozen) 리포트를 HNCS Supabase 연구 레지스트리에
+  upsert한다 - manifest/metrics 파일 해시로 키를 만들어서 같은 확정 입력을
+  다시 돌려도 멱등(idempotent)이다. 환경변수 `HNCS_SUPABASE_URL`(반드시
+  `https://`)과 `HNCS_SUPABASE_SERVICE_ROLE_KEY`가 필요하다 - 커맨드라인
+  인자로는 절대 안 받고, 리포트나 커밋되는 파일에도 안 남는다. 플래그를 안
+  쓰면 두 CLI 다 네트워크 접근이 전혀 없다.
 - `../docs/superpowers/specs/2026-09-08-eager-framework-design.md` -
   EAGER Framework 설계와 주장 경계
 - `CLAUDE.md`(이 디렉토리) - 이곳 수정 규칙
