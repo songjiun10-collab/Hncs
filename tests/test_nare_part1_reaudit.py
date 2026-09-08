@@ -77,7 +77,7 @@ class TestPart1Reaudit(unittest.TestCase):
                     continue
                 classification = result['classification']['classification']
                 if defect is None:
-                    self.assertEqual(classification, 'Verified')
+                    self.assertEqual(classification, 'Supported')
                 else:
                     self.assertNotIn(classification, ('Supported', 'Verified'))
 

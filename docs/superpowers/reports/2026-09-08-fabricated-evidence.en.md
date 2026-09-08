@@ -2,6 +2,14 @@
 
 [한국어](2026-09-08-fabricated-evidence.md)
 
+> **Correction (2026-09-08, trusted-provenance gate)**: The generic EAGER JSON
+> CLI now forces `trusted_provenance=False`, so the same fabricated bundle is
+> capped at `Supported` even when `--external-replication` is supplied. Only a
+> trusted execution caller can pass `trusted_provenance=True` to the classifier.
+> This is a fail-closed policy boundary, not cryptographic authentication; a
+> caller that is already trusted can still lie, and that trust boundary remains
+> explicitly documented.
+
 Baseline commit: `0da0c44086d0805e3ea87de536d66e1ed5a9c03f`.
 This experiment invokes the actual EAGER CLI in subprocesses without mocking
 classification, statistics or file reads. **The attack succeeds: fabricated

@@ -180,6 +180,28 @@ class TestGatesAndSanity(unittest.TestCase):
         self.assertFalse(classified["ship_gate_passed"])
         self.assertEqual(classified["classification"], "Exploratory")
 
+    def test_verified_requires_trusted_provenance_in_addition_to_replication(self):
+        result = {
+            "mean_improvement_pct": 8.0,
+            "ci95": [0.2, 2.0],
+            "sign_test_p": 0.01,
+            "neutral_mean_improvement": 0.5,
+            "chromatic_mean_improvement": 0.4,
+            "robustness_passed": True,
+            "controls_passed": True,
+        }
+        untrusted = classify_result(
+            result, EvidenceTier.C, lockbox_passed=True,
+            external_replication=True, validation_passed=True,
+        )
+        self.assertEqual(untrusted["classification"], "Supported")
+        trusted = classify_result(
+            result, EvidenceTier.C, lockbox_passed=True,
+            external_replication=True, validation_passed=True,
+            trusted_provenance=True,
+        )
+        self.assertEqual(trusted["classification"], "Verified")
+
     def test_all_required_controls_must_be_present_and_true(self):
         controls = {
             "identity_baseline": True,
@@ -226,11 +248,13 @@ class TestGatesAndSanity(unittest.TestCase):
                 [sys.executable, "-m", "hybrid_engine.evaluation.eager_cli",
                  "--manifest", paths["manifest"], "--metrics", paths["metrics"],
                  "--controls", paths["controls"], "--robustness", paths["robustness"],
-                 "--evidence-tier", "C", "--validation-passed", "--lockbox-passed"],
+                 "--evidence-tier", "C", "--validation-passed", "--lockbox-passed",
+                 "--external-replication"],
                 capture_output=True, text=True, check=True,
             )
         report = json.loads(proc.stdout)
         self.assertEqual(report["classification"]["classification"], "Supported")
+        self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
         self.assertTrue(report["classification"]["ship_gate_passed"])
 
 
