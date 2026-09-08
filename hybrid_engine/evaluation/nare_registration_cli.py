@@ -38,10 +38,17 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--manifest", required=True)
     parser.add_argument("--max-dim", type=int, default=512)
     parser.add_argument("--out", required=True)
+    parser.add_argument("--passed-manifest-out",
+                        help="write a frozen manifest containing only registration-passed rows")
     args = parser.parse_args(argv)
     manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
     report = build_report(manifest, max_dim=args.max_dim)
     Path(args.out).write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if args.passed_manifest_out:
+        passed = {record["scene_id"] for record in report["records"] if record["passed"]}
+        selected = [row for row in manifest if row["scene_id"] in passed]
+        Path(args.passed_manifest_out).write_text(json.dumps(selected, ensure_ascii=False, indent=2) + "\n",
+                                                   encoding="utf-8")
     print(f"NARE registration: {report['n_passed']}/{report['n_input']} passed")
 
 

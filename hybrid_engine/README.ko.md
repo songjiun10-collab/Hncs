@@ -131,6 +131,11 @@ World + LAB 톤/색 커브)을 썼다 - 후지의 필름 시뮬레이션 프리�
   --manifest provia.json --candidate provia --out metrics.json`. RAW를 디코드하기
   전에 양쪽 파일 해시를 확인하고 Provia 이외 또는 mixed-style evaluation row는
   거절한다.
+- `evaluation/nare_registration_cli.py` - metric 생성 전에 ECC correlation,
+  translation, valid overlap을 검사한다: `python3 -m
+  hybrid_engine.evaluation.nare_registration_cli --manifest candidate.json --out
+  registration.json --passed-manifest-out registered.json`. 이후 NARE metric은
+  이 명령이 만든 `registered.json`만 사용한다.
 - `evaluation/eager_cli.py` - manifest와 기록된 metric/control JSON에
   위 게이트를 적용하는 실행 명령(`python3 -m
   hybrid_engine.evaluation.eager_cli`)

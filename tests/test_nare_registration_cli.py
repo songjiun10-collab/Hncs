@@ -1,9 +1,12 @@
 import unittest
+import json
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
 
-from hybrid_engine.evaluation.nare_registration_cli import build_report
+from hybrid_engine.evaluation.nare_registration_cli import build_report, main
 
 
 def row(scene_id):
@@ -26,6 +29,20 @@ class TestNARERegistrationCLI(unittest.TestCase):
         self.assertEqual(report["n_input"], 2)
         self.assertEqual(report["n_passed"], 1)
         self.assertEqual(report["failure_counts"], {"correlation": 1})
+
+    def test_cli_writes_only_registration_passed_manifest_rows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            manifest = Path(directory) / "manifest.json"
+            report = Path(directory) / "report.json"
+            passed = Path(directory) / "passed.json"
+            manifest.write_text(json.dumps([row("a"), row("b")]), encoding="utf-8")
+            with patch("hybrid_engine.evaluation.nare_registration_cli.build_report",
+                       return_value={"n_input": 2, "n_passed": 1, "failure_counts": {},
+                                     "records": [{"scene_id": "a", "passed": True},
+                                                 {"scene_id": "b", "passed": False}]}):
+                main(["--manifest", str(manifest), "--out", str(report),
+                      "--passed-manifest-out", str(passed)])
+            self.assertEqual([item["scene_id"] for item in json.loads(passed.read_text())], ["a"])
 
 
 if __name__ == "__main__":
