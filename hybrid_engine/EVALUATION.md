@@ -5025,3 +5025,30 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > 방향·CI가 일치한다. `nare_provia_registered_metrics_1024px_2026-09.json`와
 > `nare_provia_registered_report_1024px_2026-09.json`에 per-scene 결과를
 > 고정했다.
+
+## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
+
+registration을 통과한 37개 scene을 11개 capture-date session으로 묶어
+leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해
+`shoulder_start ∈ {0.66, 0.70, 0.74, 0.78, 0.82}`와
+`clahe_clip ∈ {1.25, 2.0, 3.0}` grid를 선택하고, held-out session에는
+선택 결과를 한 번만 적용했다. 이 연구용 fit은 `apply_provia`나 shipped
+profile을 수정하지 않는다.
+
+현재 look의 scene-level 평균 ΔE00은 **11.989706008913075**, session-holdout
+후보는 **11.997309940688302**로 상대 변화가 **-0.06342050230067402%**였다.
+20,000회 scene bootstrap 95% CI는 **[-0.02051282700178119,
++0.00462789732822533]**, 개선 7 scene/악화 10 scene, exact paired sign test는
+**p=0.629058837890625**였다. CI가 0을 포함하고 sign test도 통과하지 못하므로
+후보를 fit하거나 배포하지 않는다. 현행 shipped Provia를 유지한다.
+
+재현:
+```
+~/.hncs-hybrid-venv312/bin/python3 -m tools.fuji.fit_nare_provia_session_holdout \
+  --manifest datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_registered_manifest_2026-09.json \
+  --candidate provia --max-dim 512 \
+  --out datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_session_holdout_fit_512px_2026-09.json
+```
+
+기계 판독 결과와 fold별 선택값은
+`nare_provia_session_holdout_fit_512px_2026-09.json`에 고정했다.
