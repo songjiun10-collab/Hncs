@@ -72,5 +72,6 @@ registry 등록도 수행하지 않았다. 임시 합성 입력과 CLI 전체 re
 ~/.hncs-hybrid-venv312/bin/python3 docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
 ```
 
-스크립트는 취약 동작이 존재함을 assert하는 공격 characterization이다.
-향후 차단이 구현되면 이 assertion은 실패해야 한다. 보안 통과 회귀 테스트가 아니다.
+문서에 기록된 원래 실행은 취약 동작의 historical characterization이다.
+현재 스크립트는 같은 합성 bundle을 다시 실행해 receipt 없는 결과가
+`Verified`로 올라가지 않는지를 assert하는 보안 회귀 probe로 갱신됐다.

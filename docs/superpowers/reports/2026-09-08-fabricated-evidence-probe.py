@@ -68,8 +68,13 @@ def run(root):
         Path(row['source_path']).unlink()
         Path(row['target_path']).unlink()
     result['all_image_files_missing'] = classify('missing')
+    # The pre-receipt attack reached Verified.  Keep the probe runnable as a
+    # regression check: current CLI behavior must cap these forged bundles at
+    # Supported because no trusted receipt was supplied.
     for key in ('intact_fabrication','all_source_hashes_wrong','all_image_files_missing'):
-        assert result[key]['classification']['classification'] == 'Verified', result[key]
+        classification = result[key]['classification']
+        assert classification['classification'] != 'Verified', result[key]
+        assert classification['checks']['trusted_provenance'] is False, result[key]
     assert result['replication_flag_removed']['classification']['classification'] == 'Supported'
     assert not result['honest_failed_control']['classification']['ship_gate_passed']
     return result
