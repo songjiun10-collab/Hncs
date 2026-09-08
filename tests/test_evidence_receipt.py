@@ -51,6 +51,8 @@ class TestEvidenceReceipt(unittest.TestCase):
             result = validate_receipt(receipt_path, paths, public_path)
             self.assertTrue(result["trusted"])
             self.assertEqual(result["run_id"], "run-1")
+            with self.assertRaisesRegex(ValueError, "git_sha"):
+                validate_receipt(receipt_path, paths, public_path, expected_git_sha="c" * 40)
 
     def test_metric_mutation_invalidates_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -115,6 +117,7 @@ class TestEvidenceReceipt(unittest.TestCase):
                 *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
                 "C", True, True, True, n_bootstrap=50,
                 receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
+                expected_git_sha="a" * 40,
             )
             self.assertEqual(report["classification"]["classification"], "Verified")
             changed_metrics = [dict(row) for row in metrics]
@@ -125,6 +128,7 @@ class TestEvidenceReceipt(unittest.TestCase):
                     *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
                     "C", True, True, True, n_bootstrap=50,
                     receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
+                    expected_git_sha="a" * 40,
                 )
 
 

@@ -98,7 +98,7 @@ def _decode_public_key(path: str | Path) -> Ed25519PublicKey:
 
 def validate_receipt(
     receipt_path: str | Path, artifact_paths: Mapping[str, str | Path],
-    public_key_path: str | Path,
+    public_key_path: str | Path, expected_git_sha: str | None = None,
 ) -> dict[str, Any]:
     """Validate signature and every artifact hash before trusting a run."""
     try:
@@ -110,6 +110,8 @@ def validate_receipt(
     if (not isinstance(receipt.get("git_sha"), str)
             or not _HEX_SHA.fullmatch(receipt["git_sha"].lower())):
         raise ValueError("receipt git_sha is missing or invalid")
+    if expected_git_sha is not None and receipt["git_sha"].lower() != expected_git_sha.lower():
+        raise ValueError("receipt git_sha does not match expected git_sha")
     if (not isinstance(receipt.get("evaluator_sha256"), str)
             or not _HEX64.fullmatch(receipt["evaluator_sha256"].lower())):
         raise ValueError("receipt evaluator_sha256 is missing or invalid")
