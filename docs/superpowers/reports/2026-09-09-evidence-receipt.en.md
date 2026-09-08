@@ -25,6 +25,7 @@ argument or any hash mismatch is rejected. Without a valid receipt,
 python -m hybrid_engine.evaluation.eager_cli \
   --manifest manifest.json --metrics metrics.json \
   --controls controls.json --robustness robustness.json \
+  --git-sha "$GIT_COMMIT_SHA" \
   --evidence-tier C --validation-passed --lockbox-passed \
   --external-replication \
   --receipt run.receipt.json --receipt-public-key ci-ed25519.pub

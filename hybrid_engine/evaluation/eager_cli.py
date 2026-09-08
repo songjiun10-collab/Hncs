@@ -42,6 +42,7 @@ def build_report(
     lockbox_passed: bool, external_replication: bool,
     n_bootstrap: int = 20_000, seed: int = 0,
     receipt_path: str | None = None, receipt_public_key_path: str | None = None,
+    expected_git_sha: str | None = None,
 ) -> dict[str, Any]:
     """Load JSON inputs, evaluate paired errors, and classify the evidence."""
 
@@ -64,11 +65,14 @@ def build_report(
     receipt = None
     trusted_provenance = False
     if receipt_path and receipt_public_key_path:
+        if not expected_git_sha:
+            raise ValueError("--git-sha is required when validating an Evidence Receipt")
         receipt = validate_receipt(
             receipt_path,
             {"manifest": manifest_path, "metrics": metrics_path,
              "controls": controls_path, "robustness": robustness_path},
             receipt_public_key_path,
+            expected_git_sha=expected_git_sha,
         )
         trusted_provenance = receipt["trusted"] is True
     paired = paired_report["paired"]
@@ -123,6 +127,7 @@ def main() -> None:
         args.evidence_tier, args.validation_passed, args.lockbox_passed,
         args.external_replication, n_bootstrap=args.bootstrap, seed=args.seed,
         receipt_path=args.receipt, receipt_public_key_path=args.receipt_public_key,
+        expected_git_sha=args.git_sha,
     )
     rendered = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
