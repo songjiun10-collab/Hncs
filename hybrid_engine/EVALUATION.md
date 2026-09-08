@@ -5015,3 +5015,13 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > 35승/2패, exact sign test **p=1.0244548320770264e-08**이다. 조명·scene
 > taxonomy, semantic/spatial subgroup, positive control 부재는 해소되지 않아
 > NARE classification은 계속 `Inconclusive`다.
+
+> **Scale 재확인(2026-09-08, registration 통과 37개)**: 같은 registration
+> passed manifest를 1024px long-edge에서 다시 평가했다. B0 평균 ΔE00
+> **16.699295353344418** → C **12.433394684534717**, 상대 개선
+> **+25.54539325490376%**, scene bootstrap 95% CI
+> **[+3.4045302682385996, +5.132902673708582]**, 35승/2패, exact sign test
+> **p=1.0244548320770264e-08**이다. 512px corrected replay의 +27.428%와
+> 방향·CI가 일치한다. `nare_provia_registered_metrics_1024px_2026-09.json`와
+> `nare_provia_registered_report_1024px_2026-09.json`에 per-scene 결과를
+> 고정했다.
