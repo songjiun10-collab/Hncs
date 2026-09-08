@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .nare import classify_nare_result, evaluate_nare_metrics
+from .evidence_receipt import validate_receipt
 from .supabase_sync import sync_evaluation_report
 
 
@@ -14,7 +15,10 @@ def _load(path: str) -> Any:
 
 
 def build_report(manifest_path: str, metrics_path: str, controls_path: str,
-                 n_bootstrap: int = 20_000, seed: int = 0) -> dict[str, Any]:
+                 n_bootstrap: int = 20_000, seed: int = 0, *,
+                 receipt_path: str | None = None,
+                 receipt_public_key_path: str | None = None,
+                 expected_git_sha: str | None = None) -> dict[str, Any]:
     paired = evaluate_nare_metrics(_load(manifest_path), _load(metrics_path),
                                    n_bootstrap=n_bootstrap, seed=seed)
     controls = _load(controls_path)
@@ -22,6 +26,21 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
         raise ValueError("NARE controls JSON must be an object")
     paired.update({key: controls.get(key, False) for key in
                    ("subgroups_passed", "controls_passed", "provenance_passed")})
+    trusted_provenance = False
+    if receipt_path is not None:
+        if receipt_public_key_path is None:
+            raise ValueError("NARE receipt validation requires --receipt-public-key")
+        if expected_git_sha is None:
+            raise ValueError("NARE receipt validation requires --git-sha")
+        validate_receipt(
+            receipt_path,
+            {"manifest": manifest_path, "metrics": metrics_path, "controls": controls_path},
+            receipt_public_key_path,
+            expected_git_sha=expected_git_sha,
+            required_artifacts=("manifest", "metrics", "controls"),
+        )
+        trusted_provenance = True
+    paired["trusted_provenance"] = trusted_provenance
     return {"paired": paired, "classification": classify_nare_result(paired)}
 
 
@@ -43,6 +62,10 @@ def main() -> None:
     parser.add_argument("--camera-model")
     parser.add_argument("--evidence-tier", choices=list("ABCDE"), default="C")
     parser.add_argument("--git-sha")
+    parser.add_argument("--receipt",
+                        help="signed evaluator receipt for the exact NARE artifacts")
+    parser.add_argument("--receipt-public-key",
+                        help="base64 Ed25519 public key for --receipt")
     args = parser.parse_args()
     if args.sync_supabase and not args.out:
         parser.error("--sync-supabase requires --out so the frozen report can be hashed")
@@ -50,7 +73,10 @@ def main() -> None:
         parser.error("--sync-supabase requires --candidate-name")
 
     report = build_report(args.manifest, args.metrics, args.controls,
-                          n_bootstrap=args.bootstrap, seed=args.seed)
+                          n_bootstrap=args.bootstrap, seed=args.seed,
+                          receipt_path=args.receipt,
+                          receipt_public_key_path=args.receipt_public_key,
+                          expected_git_sha=args.git_sha)
     rendered = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
         Path(args.out).write_text(rendered + "\n", encoding="utf-8")

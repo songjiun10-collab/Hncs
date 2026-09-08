@@ -89,8 +89,10 @@ class TestPart1Reaudit(unittest.TestCase):
         self.assertFalse(r['classification']['ship_gate_passed'])
         self.assertNotIn(r['classification']['classification'], ('Supported','Verified'))
 
-    def test_valid_report_still_supported(self):
-        self.assertTrue(report(*evidence())['classification']['ship_gate_passed'])
+    def test_plausible_report_without_receipt_stays_inconclusive(self):
+        result = report(*evidence())
+        self.assertFalse(result['classification']['ship_gate_passed'])
+        self.assertEqual(result['classification']['classification'], 'Inconclusive')
 
     def test_registration_shift_missing_scale_and_false_status_blocked(self):
         for change in ({'shift_x_px':10000}, {'passed':0}, {'passed':'false'},

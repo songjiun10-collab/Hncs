@@ -31,8 +31,11 @@ python -m hybrid_engine.evaluation.eager_cli \
   --receipt run.receipt.json --receipt-public-key ci-ed25519.pub
 ```
 
-The existing JSON CLI remains compatible through `Supported`. The fail-closed
-boundary is that JSON without a receipt cannot become `Verified`.
+The NARE CLI uses the same receipt boundary and checks a three-artifact chain for
+manifest, metrics and controls. External metrics without a receipt remain
+`Inconclusive`; only a signed receipt-backed run can become `Supported`. The
+existing EAGER JSON path remains compatible through `Supported`, while
+`Verified` requires a receipt.
 
 ## Verification
 
@@ -41,7 +44,9 @@ boundary is that JSON without a receipt cannot become `Verified`.
 - unsigned receipt: rejected
 - valid receipt-backed EAGER report: `Verified`
 - external-replication claim without receipt: `Supported`
-- full suite: 1,425 tests passed
+- plausible NARE metrics without a receipt: `Inconclusive`
+- valid receipt-backed NARE report: `Supported`
+- full suite: 1,429 tests passed
 
 ## Limitations
 
