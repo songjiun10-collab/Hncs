@@ -4989,3 +4989,15 @@ foundation control, C는 현행 `apply_provia`다.
 
 동결 manifest, per-scene metrics, control 상태와 report는 모두
 `../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_*_2026-09.json`에 기록했다.
+
+**Scale 재확인(2026-09-08)**: 같은 51 frame, 같은 frozen manifest와
+candidate를 1024px long-edge로 다시 RAW decode했다. B0 평균 ΔE00은
+**20.87315249324169**, C는 **17.887349289020122**, 상대 개선은
+**+14.304514879524367%**였다. scene bootstrap 95% CI는
+**[+2.197751632072092, +3.7788054935578597]**, 42승/9패,
+exact sign test **p=3.3888279489246997e-06**이다. 512px의 +14.987%와
+방향·CI 모두 일치한다. 그러나 이 재확인은 부족한 lighting/scene taxonomy,
+subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
+`Inconclusive`다. per-scene artifact는
+`nare_provia_exploratory_metrics_1024px_2026-09.json`과
+`nare_provia_exploratory_report_1024px_2026-09.json`이다.
