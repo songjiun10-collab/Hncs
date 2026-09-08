@@ -58,11 +58,12 @@ def run_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]], expected_pictur
     if max_dim <= 0:
         raise ValueError("max_dim must be positive")
     rows = _evaluation_rows(manifest_rows, expected_picture_style)
-    foundation = foundation or (lambda image: image)
-    metrics: list[dict[str, float | str]] = []
     for row in rows:
         _verify_hash(row, "source_path", "source_sha256")
         _verify_hash(row, "target_path", "target_sha256")
+    foundation = foundation or (lambda image: image)
+    metrics: list[dict[str, float | str]] = []
+    for row in rows:
         neutral = load_neutral_render(str(row["source_path"]), max_dim=max_dim)
         target = cv2.imread(str(row["target_path"]), cv2.IMREAD_COLOR)
         if target is None:
