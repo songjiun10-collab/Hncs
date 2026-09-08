@@ -21,7 +21,9 @@ class TestNARECLI(unittest.TestCase):
                 "split": "evaluation",
             })
             metrics.append({"scene_id": scene, "raw_delta_e00": 10,
-                            "foundation_delta_e00": 8, "candidate_delta_e00": 7})
+                            "foundation_delta_e00": 8, "candidate_delta_e00": 7,
+                            "registration": {"ecc_correlation": 0.9,
+                                             "overlap_fraction": 0.99}})
         controls = {"subgroups_passed": True, "controls_passed": True,
                     "provenance_passed": True}
         with tempfile.TemporaryDirectory() as directory:
