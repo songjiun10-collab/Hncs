@@ -1,8 +1,10 @@
 import base64
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
@@ -10,6 +12,7 @@ from hybrid_engine.evaluation.evidence_receipt import (
     build_receipt,
     sign_receipt,
     validate_receipt,
+    public_key_sha256,
 )
 from hybrid_engine.evaluation.eager_cli import build_report as eager_report
 
@@ -113,12 +116,24 @@ class TestEvidenceReceipt(unittest.TestCase):
                 timestamp="2026-09-09T00:00:00Z"), private, key_id="ci")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
-            report = eager_report(
-                *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
-                "C", True, True, True, n_bootstrap=50,
-                receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
-                expected_git_sha="a" * 40,
-            )
+            with patch.dict(os.environ, {}, clear=True):
+                untrusted = eager_report(
+                    *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                    "C", True, True, True, n_bootstrap=50,
+                    receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
+                    expected_git_sha="a" * 40,
+                )
+            self.assertEqual(untrusted["classification"]["classification"], "Supported")
+            with patch.dict(
+                    os.environ,
+                    {"HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256": public_key_sha256(public_path)},
+                    clear=False):
+                report = eager_report(
+                    *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                    "C", True, True, True, n_bootstrap=50,
+                    receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
+                    expected_git_sha="a" * 40,
+                )
             self.assertEqual(report["classification"]["classification"], "Verified")
             changed_metrics = [dict(row) for row in metrics]
             changed_metrics[0]["candidate_delta_e00"] = 7.9

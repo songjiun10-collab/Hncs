@@ -7,6 +7,7 @@ selection and image processing outside the statistical checker.
 
 import argparse
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -74,7 +75,17 @@ def build_report(
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
         )
-        trusted_provenance = receipt["trusted"] is True
+        trusted_key_sha256 = os.environ.get("HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256", "").strip()
+        if trusted_key_sha256:
+            validate_receipt(
+                receipt_path,
+                {"manifest": manifest_path, "metrics": metrics_path,
+                 "controls": controls_path, "robustness": robustness_path},
+                receipt_public_key_path,
+                expected_git_sha=expected_git_sha,
+                trusted_public_key_sha256=trusted_key_sha256,
+            )
+            trusted_provenance = receipt["trusted"] is True
     paired = paired_report["paired"]
     paired["controls_passed"] = controls["passed"]
     paired["robustness_passed"] = robustness["passed"]

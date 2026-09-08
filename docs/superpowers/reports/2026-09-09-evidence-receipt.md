@@ -11,6 +11,9 @@
 > 거절한다. 이는 임시 fail-closed 제한이며, 신뢰된 ingestion 구현이 아니다.
 > Exploratory/Inconclusive/Rejected 연구 업로드는 계속 가능하다.
 > 제출자가 지정한 공개키의 서명 검증은 그 키의 신뢰성을 보장하지 않는다.
+> EAGER CLI는 `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256`가 설정되고 공개키
+> fingerprint가 일치할 때만 receipt-backed `Verified`를 허용한다. 환경변수가
+> 없으면 같은 receipt도 `Supported`에 머문다.
 > CLI의 등급, RAW/JPEG 실파일 검증, evaluator/config 검증 및 독립 replay는
 > 여전히 별도 보강이 필요하다. 이 변경은 기존 원격 기록을 감사하거나
 > 정정하지 않으며 service-role 소유자의 직접 DB 쓰기도 방어하지 않는다.
@@ -34,6 +37,7 @@ receipt가 유효하지 않으면 `trusted_provenance=False`이며, `--external-
 `trusted_provenance=True`를 전달할 수 있다.
 
 ```bash
+export HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256="$(openssl dgst -sha256 -binary ci-ed25519.pub | xxd -p -c 256)"
 python -m hybrid_engine.evaluation.eager_cli \
   --manifest manifest.json --metrics metrics.json \
   --controls controls.json --robustness robustness.json \
@@ -58,7 +62,7 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 - receipt 없이 external replication만 주장한 report: `Supported`
 - NARE receipt 없는 plausible metrics: `Inconclusive`
 - NARE 유효 receipt-backed report: `Supported`
-- 전체 suite: 1,429개 통과
+- 전체 suite: 1,436개 통과 (현재 checkout 재실행)
 
 ## 한계
 
