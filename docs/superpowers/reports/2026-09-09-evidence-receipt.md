@@ -2,6 +2,19 @@
 
 [English](2026-09-09-evidence-receipt.en.md)
 
+> **정정(2026-09-09, registry 신뢰 선언 위조 재감사)**: 아래 완료 주장은
+> 독립 실행 인증을 입증하지 않는다. `trusted_provenance: true`와 가짜
+> receipt 객체만 추가하면 registry의 기존 검사 두 개를 모두 우회했다.
+> 회귀 테스트의 다섯 조합(Verified/Supported 각각 ship true/false,
+> Inconclusive + ship true)에서 수정 전 모두 예외 없이 통과했다.
+> 현재 uploader는 Supported/Verified 또는 ship=true 업로드를 쓰기 전에
+> 거절한다. 이는 임시 fail-closed 제한이며, 신뢰된 ingestion 구현이 아니다.
+> Exploratory/Inconclusive/Rejected 연구 업로드는 계속 가능하다.
+> 제출자가 지정한 공개키의 서명 검증은 그 키의 신뢰성을 보장하지 않는다.
+> CLI의 등급, RAW/JPEG 실파일 검증, evaluator/config 검증 및 독립 replay는
+> 여전히 별도 보강이 필요하다. 이 변경은 기존 원격 기록을 감사하거나
+> 정정하지 않으며 service-role 소유자의 직접 DB 쓰기도 방어하지 않는다.
+
 `0da0c44`와 `3e27c7a`의 공격에서 확인한 문제는 metric 숫자의 유한성이나
 파일 hash 형식이 아니었다. 외부 JSON이 어떤 입력·코드·설정으로 실제 생성됐는지
 검증할 연결고리가 없었다.

@@ -27,6 +27,27 @@ class _FakeClient:
 
 
 class TestSupabaseSync(unittest.TestCase):
+    def test_forged_trust_cannot_authorize_registry_promotion(self):
+        for label, ship in (("Verified", True), ("Verified", False),
+                            ("Supported", True), ("Supported", False),
+                            ("Inconclusive", True)):
+            with self.subTest(label=label, ship=ship), tempfile.TemporaryDirectory() as tmp:
+                manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+                metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+                report = {
+                    "paired": {"trusted_provenance": True, "per_scene": [
+                        {"scene_id": "s", "baseline_delta_e00": 2.,
+                         "candidate_delta_e00": 1.}]},
+                    "classification": {"classification": label, "ship_gate_passed": ship},
+                    "receipt": {"trusted": True, "replay_passed": True},
+                }
+                client = _FakeClient()
+                with self.assertRaisesRegex(ValueError, "independent verification"):
+                    sync_evaluation_report(
+                        report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                        manifest_path=manifest, metrics_path=metrics, client=client)
+                self.assertEqual(client.calls, [])
+
     def _write_json(self, root, name, value):
         path = Path(root) / name
         path.write_text(json.dumps(value), encoding="utf-8")
@@ -168,7 +189,7 @@ class TestSupabaseSync(unittest.TestCase):
                         "candidate_delta_e00": 1.0,
                     }],
                 },
-                "classification": {"ship_gate_passed": False, "classification": "Supported"},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
             }
             first = sync_evaluation_report(
                 report, protocol="EAGER", dataset_slug="d", candidate_name="c",

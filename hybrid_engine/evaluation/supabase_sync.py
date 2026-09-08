@@ -165,13 +165,14 @@ def sync_evaluation_report(
         raise ValueError("report paired.per_scene must be a row list")
 
     classification, ship_gate = _classification(report)
-    # The registry is a release-facing sink.  A caller must not be able to
-    # promote an externally supplied JSON report merely by setting a boolean;
-    # the evaluator receipt verifier records this fact in the paired result.
-    if ship_gate and paired.get("trusted_provenance") is not True:
-        raise ValueError("ship gate requires trusted provenance receipt")
-    if classification == "Verified" and paired.get("trusted_provenance") is not True:
-        raise ValueError("Verified classification requires trusted provenance receipt")
+    # This uploader has no independent verifier or protected trust root.
+    # JSON booleans (including receipt.trusted) cannot grant publication rights.
+    # Keep research uploads available, but fail closed on evidence promotion
+    # until an independently verified ingestion path exists.
+    if ship_gate or classification in {"Supported", "Verified"}:
+        raise ValueError(
+            "promotion requires independent verification of trusted provenance; "
+            "this uploader cannot publish Supported, Verified, or ship gates")
     manifest_sha = sha256_file(manifest_path)
     metrics_sha = sha256_file(metrics_path)
     controls_sha = sha256_file(controls_path) if controls_path else None
