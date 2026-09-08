@@ -46,6 +46,30 @@ class TestNareRunner(unittest.TestCase):
                                     "foundation_delta_e00": 8.0, "candidate_delta_e00": 7.0,
                                     "registration": {}}])
 
+    def test_candidate_receives_foundation_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = [_row(tmp)]
+            neutral = np.zeros((2, 2, 3), dtype=np.uint8)
+            foundation_input = []
+            candidate_input = []
+            def foundation(image):
+                foundation_input.append(image.copy())
+                return image + 1
+            def candidate(image):
+                candidate_input.append(image.copy())
+                return image
+            with patch("hybrid_engine.evaluation.nare_runner.load_neutral_render", return_value=neutral), \
+                 patch("hybrid_engine.evaluation.nare_runner.cv2.imread", return_value=neutral), \
+                 patch("hybrid_engine.evaluation.nare_runner.register_to_target",
+                       return_value=(neutral, np.ones((2, 2), dtype=bool),
+                                     {"ecc_correlation": .9, "overlap_fraction": .99})), \
+                 patch("hybrid_engine.evaluation.nare_runner.mean_delta_e", return_value=1.0):
+                run_nare_metrics(manifest, "F0/Standard (Provia)",
+                                 candidate=candidate, foundation=foundation, max_dim=512)
+            self.assertEqual(len(foundation_input), 1)
+            self.assertEqual(len(candidate_input), 1)
+            np.testing.assert_array_equal(candidate_input[0], foundation_input[0] + 1)
+
     def test_rejects_mixed_style_and_changed_input_before_decoding(self):
         with tempfile.TemporaryDirectory() as tmp:
             matching = _row(tmp, "scene-1")

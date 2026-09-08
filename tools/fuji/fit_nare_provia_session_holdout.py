@@ -6,6 +6,7 @@ held-out session, keeping the NARE scene unit from leaking across bursts.
 """
 
 import argparse
+import hashlib
 import json
 import math
 from collections import defaultdict
@@ -16,12 +17,38 @@ import numpy as np
 
 from brands.fuji import apply_provia
 from hybrid_engine.evaluation.nare_registration import register_to_target
+from hybrid_engine.evaluation.nare import validate_nare_manifest
 from hybrid_engine.utils.evaluate import bgr_u8_to_linear_rgb, mean_delta_e
 from tools.fit.calibrate import load_neutral_render
 
 
 GRID = [(shoulder, clip) for shoulder in (0.66, 0.70, 0.74, 0.78, 0.82)
         for clip in (1.25, 2.0, 3.0)]
+
+
+def _sha256(path: str) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _validate_fit_manifest(manifest: list[dict]) -> None:
+    validate_nare_manifest(manifest)
+    if any(row["split"] != "evaluation" for row in manifest):
+        raise ValueError("session-holdout fit accepts evaluation rows only; lockbox is held out")
+    scene_ids = [str(row["scene_id"]) for row in manifest]
+    if len(scene_ids) != len(set(scene_ids)):
+        raise ValueError("session-holdout fit manifest contains duplicate scene IDs")
+    styles = {str(row["picture_style"]).strip() for row in manifest}
+    if styles != {"F0/Standard (Provia)"}:
+        raise ValueError("session-holdout fit requires the fixed Provia picture style")
+    for row in manifest:
+        for path_key, hash_key in (("source_path", "source_sha256"),
+                                   ("target_path", "target_sha256")):
+            if _sha256(row[path_key]) != str(row[hash_key]).lower():
+                raise ValueError(f"{path_key.replace('_path', '')} hash does not match frozen manifest")
 
 
 def _load_frame(row: dict, max_dim: int) -> dict:
@@ -42,6 +69,7 @@ def _score(frame: dict, shoulder: float, clip: float) -> float:
 
 
 def fit(manifest: list[dict], max_dim: int = 512) -> dict:
+    _validate_fit_manifest(manifest)
     frames = [_load_frame(row, max_dim) for row in manifest]
     by_session: dict[str, list[dict]] = defaultdict(list)
     for frame in frames:
@@ -93,6 +121,7 @@ def fit(manifest: list[dict], max_dim: int = 512) -> dict:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Fit Provia parameters with session holdout")
     parser.add_argument("--manifest", required=True)
+    parser.add_argument("--candidate", choices=("provia",), default="provia")
     parser.add_argument("--max-dim", type=int, default=512)
     parser.add_argument("--out", required=True)
     args = parser.parse_args(argv)

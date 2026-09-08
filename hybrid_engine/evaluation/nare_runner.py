@@ -72,8 +72,9 @@ def run_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]], expected_pictur
         neutral, valid, registration = register_to_target(neutral, target)
         target_linear = bgr_u8_to_linear_rgb(target)[valid]
         raw_linear = bgr_u8_to_linear_rgb(neutral)[valid]
-        foundation_linear = bgr_u8_to_linear_rgb(foundation(neutral.copy()))[valid]
-        candidate_linear = bgr_u8_to_linear_rgb(candidate(neutral.copy()))[valid]
+        foundation_image = foundation(neutral.copy())
+        foundation_linear = bgr_u8_to_linear_rgb(foundation_image)[valid]
+        candidate_linear = bgr_u8_to_linear_rgb(candidate(foundation_image.copy()))[valid]
         metrics.append({
             "scene_id": str(row["scene_id"]),
             "raw_delta_e00": mean_delta_e(raw_linear, target_linear),
