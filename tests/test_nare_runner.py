@@ -35,13 +35,16 @@ class TestNareRunner(unittest.TestCase):
             neutral = np.zeros((2, 2, 3), dtype=np.uint8)
             target = np.zeros((2, 2, 3), dtype=np.float64)
             with patch("hybrid_engine.evaluation.nare_runner.load_neutral_render", return_value=neutral), \
-                 patch("hybrid_engine.evaluation.nare_runner.load_image_linear_for_evaluate", return_value=target), \
+                 patch("hybrid_engine.evaluation.nare_runner.cv2.imread", return_value=neutral), \
+                 patch("hybrid_engine.evaluation.nare_runner.register_to_target",
+                       return_value=(neutral, np.ones((2, 2), dtype=bool), {})), \
                  patch("hybrid_engine.evaluation.nare_runner.mean_delta_e", side_effect=[9.0, 8.0, 7.0]):
                 metrics = run_nare_metrics(manifest, "F0/Standard (Provia)",
                                            candidate=lambda image: image,
                                            foundation=lambda image: image, max_dim=512)
         self.assertEqual(metrics, [{"scene_id": "scene-1", "raw_delta_e00": 9.0,
-                                    "foundation_delta_e00": 8.0, "candidate_delta_e00": 7.0}])
+                                    "foundation_delta_e00": 8.0, "candidate_delta_e00": 7.0,
+                                    "registration": {}}])
 
     def test_rejects_mixed_style_and_changed_input_before_decoding(self):
         with tempfile.TemporaryDirectory() as tmp:
