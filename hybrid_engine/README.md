@@ -89,6 +89,8 @@ library/palace/street shots are not identifiable close-ups.*
   preflight that accepts a pair only when capture time, make, model, and ISO
   occur exactly once on both sides; run it before fitting with
   `python3 -m hybrid_engine.evaluation.nare_pairs_cli raw jpeg --output preflight.json`
+  and add `--manifest-out candidate.json --contributor <name>` to preserve
+  hashes and capture EXIF in a candidate manifest before scene labels are set
 - `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
   metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
 - `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the
