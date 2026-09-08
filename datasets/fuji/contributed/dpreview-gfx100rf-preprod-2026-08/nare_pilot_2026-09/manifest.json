@@ -1,7 +1,7 @@
 [
   {
     "scene_id": "gfx100rf-000",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-03-21",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/0580613730.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/1778077762.jpg",
@@ -14,7 +14,7 @@
   },
   {
     "scene_id": "gfx100rf-001",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-02-13",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/6176168150.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/0578597801.jpg",
@@ -27,7 +27,7 @@
   },
   {
     "scene_id": "gfx100rf-002",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-03-02",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/8548293381.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/1513160714.jpg",
@@ -40,7 +40,7 @@
   },
   {
     "scene_id": "gfx100rf-003",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-03-18",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/2766701437.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/2940886710.jpg",
@@ -53,7 +53,7 @@
   },
   {
     "scene_id": "gfx100rf-004",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-02-15",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/0896370210.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/1773859048.jpg",
@@ -66,7 +66,7 @@
   },
   {
     "scene_id": "gfx100rf-005",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-02-19",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/3107671942.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/8702813792.jpg",
@@ -79,7 +79,7 @@
   },
   {
     "scene_id": "gfx100rf-006",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-03-18",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/4064000393.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/2340134015.jpg",
@@ -92,7 +92,7 @@
   },
   {
     "scene_id": "gfx100rf-007",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-02-19",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/9610375653.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/3356762806.jpg",
@@ -105,7 +105,7 @@
   },
   {
     "scene_id": "gfx100rf-008",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-02-13",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/1971074947.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/0160382086.jpg",
@@ -118,7 +118,7 @@
   },
   {
     "scene_id": "gfx100rf-009",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-03-19",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/7428003447.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/2912994472.jpg",
@@ -131,7 +131,7 @@
   },
   {
     "scene_id": "gfx100rf-010",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-02-16",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/5752840668.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/3536145055.jpg",
@@ -144,7 +144,7 @@
   },
   {
     "scene_id": "gfx100rf-011",
-    "session_id": "dpreview-gfx100rf-preprod-2026-08",
+    "session_id": "dpreview-gfx100rf-2025-03-18",
     "contributor": "dpreview",
     "source_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw/9387470801.raf",
     "target_path": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg/0082438666.jpg",
