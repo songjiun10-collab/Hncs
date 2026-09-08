@@ -85,6 +85,10 @@ library/palace/street shots are not identifiable close-ups.*
   accounting, physical sanity, and result classification
 - `evaluation/nare.py` / `evaluation/nare_cli.py` - primary natural-scene
   RAW/SOOC-JPEG appearance contract and runnable three-layer evaluation
+- `evaluation/nare_pairs.py` / `evaluation/nare_pairs_cli.py` - strict intake
+  preflight that accepts a pair only when capture time, make, model, and ISO
+  occur exactly once on both sides; run it before fitting with
+  `python3 -m hybrid_engine.evaluation.nare_pairs_cli raw jpeg --output preflight.json`
 - `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
   metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
 - `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the
