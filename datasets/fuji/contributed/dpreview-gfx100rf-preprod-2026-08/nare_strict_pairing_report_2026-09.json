@@ -1,0 +1,26 @@
+{
+  "protocol": "NARE Natural-scene Appearance Reconstruction Evaluation",
+  "input": {
+    "raw_dir": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw",
+    "jpeg_dir": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg"
+  },
+  "strict_capture_key": ["DateTimeOriginal", "Make", "Model", "ISO"],
+  "result": {
+    "raw_input_count": 63,
+    "jpeg_input_count": 63,
+    "strict_pair_count": 63,
+    "unmatched_raw_count": 0,
+    "unmatched_jpeg_count": 0,
+    "invalid_raw_count": 0,
+    "invalid_jpeg_count": 0,
+    "ambiguous_key_count": 0
+  },
+  "nare_eligibility": {
+    "pairing": "passed",
+    "independent_scene_grouping": "not_recorded",
+    "picture_style": "unknown",
+    "lighting_coverage": ["daylight"],
+    "decision": "Do not upgrade the existing NARE pilot claim. Pairing is complete, but scene grouping, picture style provenance, and multi-lighting coverage remain required."
+  },
+  "reproduction": "~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_pairs_cli datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/raw datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/jpeg --output /tmp/gfx100rf-nare-preflight.json"
+}
