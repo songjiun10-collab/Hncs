@@ -47,10 +47,24 @@ class TestNARE(unittest.TestCase):
                   "ci95": [0.1, 2], "sign_test_p": 0.01,
                   "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
                                "scene_type": ["portrait", "landscape", "indoor"]},
+                  "picture_styles": ["standard"],
                   "subgroups_passed": True, "controls_passed": True,
                   "provenance_passed": True}
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
         result["coverage"]["lighting"] = ["daylight"]
+        self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
+
+    def test_ship_gate_rejects_mixed_or_unknown_picture_style(self):
+        result = {"n_scenes": 12, "improvement_pct": 10,
+                  "ci95": [0.1, 2], "sign_test_p": 0.01,
+                  "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
+                               "scene_type": ["portrait", "landscape", "indoor"]},
+                  "picture_styles": ["standard"], "subgroups_passed": True,
+                  "controls_passed": True, "provenance_passed": True}
+        self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
+        result["picture_styles"] = ["standard", "velvia"]
+        self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
+        result["picture_styles"] = ["unknown"]
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
 
 

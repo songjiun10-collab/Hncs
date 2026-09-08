@@ -57,7 +57,10 @@ catastrophic regression.
 The minimum gate is sufficient independent scenes, at least 5% mean improvement,
 scene bootstrap CI lower bound above zero, paired sign test, no major subgroup
 regression, controls, and provenance/accounting. Appearance claims require at
-least three lighting conditions and three scene categories. Use the EAGER accounting
+least three lighting conditions and three scene categories. For a single appearance
+candidate (for example, a Provia reconstruction), evaluate exactly one known Picture
+Style. An aggregate containing `unknown` or multiple FilmModes cannot pass the ship
+gate; evaluate each Style as a separate candidate. Use the EAGER accounting
 reasons `decode_failure`, `pair_mismatch`, `registration_failure`, `edited_jpeg`,
 `wrong_picture_style`, `metadata_missing`, `duplicate_scene`, `motion_mismatch`,
 `insufficient_overlap`, `clipping_excess`, and `unsupported_raw`.
