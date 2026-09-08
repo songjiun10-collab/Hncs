@@ -37,7 +37,8 @@ def validate_nare_manifest(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     return {"n_rows": len(records), "n_scenes": len(scenes),
             "n_sessions": len({str(row["session_id"]) for row in records}),
             "lighting": sorted({str(row["lighting"]) for row in records}),
-            "scene_type": sorted({str(row["scene_type"]) for row in records})}
+            "scene_type": sorted({str(row["scene_type"]) for row in records}),
+            "picture_styles": sorted({str(row["picture_style"]) for row in records})}
 
 
 def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
@@ -68,12 +69,14 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
             "baseline_layers": ["raw_decoder", "colorimetric_foundation", "appearance_candidate"],
             "mean_foundation": foundation_mean,
             "foundation_improvement_pct": 100 * (raw_mean - foundation_mean) / raw_mean,
-            "coverage": {"lighting": summary["lighting"], "scene_type": summary["scene_type"]}}
+            "coverage": {"lighting": summary["lighting"], "scene_type": summary["scene_type"]},
+            "picture_styles": summary["picture_styles"]}
 
 
 def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
                          min_improvement_pct: float = 5.0) -> dict[str, Any]:
     coverage = result.get("coverage", {})
+    picture_styles = [str(style).strip().lower() for style in result.get("picture_styles", [])]
     checks = {
         "scene_count": int(result.get("n_scenes", 0)) >= min_scenes,
         "effect_threshold": float(result.get("improvement_pct", 0)) >= min_improvement_pct,
@@ -81,6 +84,7 @@ def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
         "sign_test": float(result.get("sign_test_p", 1)) < 0.05,
         "lighting_coverage": len(coverage.get("lighting", [])) >= 3,
         "scene_coverage": len(coverage.get("scene_type", [])) >= 3,
+        "picture_style": len(picture_styles) == 1 and picture_styles[0] != "unknown",
         "subgroups": bool(result.get("subgroups_passed", False)),
         "controls": bool(result.get("controls_passed", False)),
         "provenance": bool(result.get("provenance_passed", False)),

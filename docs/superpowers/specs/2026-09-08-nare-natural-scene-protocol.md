@@ -80,6 +80,9 @@ saturation 등 각 robustness stratum에서 catastrophic regression을 검사한
 최소 ship gate는 독립 scene 수, 평균 개선 5% 이상, scene bootstrap CI 하한 > 0,
 paired sign test, 주요 subgroup 무악화, controls, provenance/accounting이다.
 appearance claim에는 최소 3 lighting condition과 3 scene category를 요구한다.
+단일 appearance 후보(예: Provia 재현)는 알려진 **하나의** Picture Style만
+평가에 넣는다. `unknown` 또는 여러 FilmMode를 합친 aggregate는 ship gate를
+통과할 수 없다; 각 Style은 별도 candidate/평가로 분리한다.
 
 ## 7. 실패 분류와 accounting
 
