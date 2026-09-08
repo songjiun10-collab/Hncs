@@ -182,6 +182,25 @@ class TestSupabaseSync(unittest.TestCase):
             )
         self.assertEqual(first["run_key"], second["run_key"])
 
+    def test_ship_gate_cannot_be_synced_without_trusted_provenance(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s", "split": "evaluation"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report = {
+                "paired": {
+                    "n_scenes": 1,
+                    "per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                   "candidate_delta_e00": 1.0}],
+                },
+                "classification": {"ship_gate_passed": True, "classification": "Supported"},
+            }
+            with self.assertRaisesRegex(ValueError, "trusted provenance"):
+                sync_evaluation_report(
+                    report, protocol="EAGER", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, git_sha="abcdef1",
+                    client=_FakeClient(),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
