@@ -78,6 +78,54 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
             "picture_styles": summary["picture_styles"]}
 
 
+def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
+                             required: Iterable[str] = ("skin", "sky", "foliage",
+                                                         "neutral", "saturated",
+                                                         "shadow", "highlight"),
+                             catastrophic_regression_pct: float = 15.0) -> dict[str, Any]:
+    """Aggregate semantic-region metrics and fail closed on missing regions.
+
+    Each metric row must contain ``subgroups[name]`` with baseline and candidate
+    ``*_delta_e00`` values. A positive improvement means candidate error fell;
+    a regression beyond the configured percentage is catastrophic.
+    """
+    if catastrophic_regression_pct < 0:
+        raise ValueError("catastrophic_regression_pct must be non-negative")
+    rows = list(metric_rows)
+    required = tuple(dict.fromkeys(str(name) for name in required))
+    groups: dict[str, dict[str, list[float]]] = {
+        name: {"baseline": [], "candidate": []} for name in required
+    }
+    missing: set[str] = set()
+    for row in rows:
+        subgroups = row.get("subgroups", {})
+        for name in required:
+            values = subgroups.get(name) if isinstance(subgroups, Mapping) else None
+            if not isinstance(values, Mapping) or "baseline_delta_e00" not in values or "candidate_delta_e00" not in values:
+                missing.add(name)
+                continue
+            groups[name]["baseline"].append(float(values["baseline_delta_e00"]))
+            groups[name]["candidate"].append(float(values["candidate_delta_e00"]))
+    summary: dict[str, dict[str, Any]] = {}
+    catastrophic = []
+    for name in required:
+        baseline = groups[name]["baseline"]
+        candidate = groups[name]["candidate"]
+        if not baseline:
+            missing.add(name)
+            continue
+        baseline_mean = sum(baseline) / len(baseline)
+        candidate_mean = sum(candidate) / len(candidate)
+        improvement_pct = 100 * (baseline_mean - candidate_mean) / baseline_mean if baseline_mean else 0.0
+        summary[name] = {"n": len(baseline), "baseline_mean": baseline_mean,
+                         "candidate_mean": candidate_mean, "improvement_pct": improvement_pct}
+        if improvement_pct < -catastrophic_regression_pct:
+            catastrophic.append(name)
+    return {"groups": summary, "missing_groups": sorted(missing),
+            "catastrophic_regressions": sorted(catastrophic),
+            "passed": not missing and not catastrophic}
+
+
 def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
                          min_improvement_pct: float = 5.0) -> dict[str, Any]:
     coverage = result.get("coverage", {})

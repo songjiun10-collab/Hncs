@@ -136,6 +136,10 @@ World + LAB 톤/색 커브)을 썼다 - 후지의 필름 시뮬레이션 프리�
   hybrid_engine.evaluation.nare_registration_cli --manifest candidate.json --out
   registration.json --passed-manifest-out registered.json`. 이후 NARE metric은
   이 명령이 만든 `registered.json`만 사용한다.
+- `evaluation/nare.py:summarize_nare_subgroups` - semantic 영역별
+  baseline/candidate ΔE00을 집계하고, 필요한 영역이 빠졌거나 catastrophic
+  threshold를 넘은 regression이 있으면 fail closed한다. runner가 mask를
+  임의로 만들지는 않으므로 실사진 run은 실제 mask metric을 제공해야 한다.
 - `evaluation/eager_cli.py` - manifest와 기록된 metric/control JSON에
   위 게이트를 적용하는 실행 명령(`python3 -m
   hybrid_engine.evaluation.eager_cli`)

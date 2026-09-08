@@ -4,6 +4,7 @@ from hybrid_engine.evaluation.nare import (
     evaluate_nare_metrics,
     validate_nare_manifest,
     classify_nare_result,
+    summarize_nare_subgroups,
 )
 
 
@@ -79,6 +80,23 @@ class TestNARE(unittest.TestCase):
                   "picture_styles": ["standard"], "subgroups_passed": True,
                   "controls_passed": True, "provenance_passed": True}
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
+
+    def test_subgroups_require_all_requested_regions_and_block_catastrophic_loss(self):
+        metrics = [
+            {"scene_id": "s1", "subgroups": {
+                "skin": {"baseline_delta_e00": 10, "candidate_delta_e00": 8},
+                "sky": {"baseline_delta_e00": 10, "candidate_delta_e00": 11},
+            }},
+            {"scene_id": "s2", "subgroups": {
+                "skin": {"baseline_delta_e00": 12, "candidate_delta_e00": 9},
+                "sky": {"baseline_delta_e00": 8, "candidate_delta_e00": 20},
+            }},
+        ]
+        result = summarize_nare_subgroups(metrics, required=("skin", "sky"),
+                                          catastrophic_regression_pct=25)
+        self.assertAlmostEqual(result["groups"]["skin"]["improvement_pct"], 22.727272727272727)
+        self.assertFalse(result["passed"])
+        self.assertIn("sky", result["catastrophic_regressions"])
 
 
 if __name__ == "__main__":
