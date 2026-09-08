@@ -1,3 +1,4 @@
+import hashlib
 import unittest
 
 from hybrid_engine.evaluation.nare import (
@@ -12,7 +13,8 @@ def row(scene_id="s1", lighting="daylight", scene_type="portrait"):
     return {
         "scene_id": scene_id, "session_id": "session-1", "contributor": "p1",
         "source_path": f"{scene_id}.raw", "target_path": f"{scene_id}.jpg",
-        "source_sha256": "a" * 64, "target_sha256": "b" * 64,
+        "source_sha256": hashlib.sha256(f"raw-{scene_id}".encode()).hexdigest(),
+        "target_sha256": hashlib.sha256(f"jpeg-{scene_id}".encode()).hexdigest(),
         "picture_style": "standard", "lighting": lighting,
         "scene_type": scene_type, "split": "evaluation",
     }
@@ -37,7 +39,8 @@ class TestNARE(unittest.TestCase):
                         "portrait" if i % 2 else "landscape") for i in range(6)]
         metrics = [{"scene_id": f"s{i}", "raw_delta_e00": 10,
                     "foundation_delta_e00": 8, "candidate_delta_e00": 7,
-                    "registration": {"ecc_correlation": 0.9, "overlap_fraction": 0.99}}
+                    "registration": {"ecc_correlation": 0.9, "overlap_fraction": 0.99,
+                                     "shift_x_px": 0, "shift_y_px": 0, "long_edge_px": 512}}
                    for i in range(6)]
         result = evaluate_nare_metrics(manifest, metrics, n_bootstrap=200, seed=0)
         self.assertEqual(result["n_scenes"], 6)

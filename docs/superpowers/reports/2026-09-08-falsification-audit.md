@@ -2,6 +2,11 @@
 
 [English](2026-09-08-falsification-audit.en.md)
 
+> **정정(2026-09-08, Part 1 재감사)**: 최초 수정은 불완전했다.
+> 새로운 report 경로 우회가 Supported/Verified에 도달했다.
+> [재감사](2026-09-08-part1-reaudit.md)에 재현 결함·수정·회귀 테스트와
+> 남은 증거 진실성의 신뢰 경계를 기록했다.
+
 대상: develop 43c5ee8d4acdd1883a64356063dc93b557884b47. 로컬 Python 3.12 venv.
 판정: 렌더러의 기본 실행은 확인됐지만 NARE Supported/ship 판정을 배포 근거로 신뢰할 수 없다.
 이 감사는 구현을 수정하지 않고 재현 반례와 주장 한계를 기록한다.

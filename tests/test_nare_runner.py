@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+import cv2
 
 from hybrid_engine.evaluation.nare_runner import run_nare_metrics
 from hybrid_engine.evaluation.nare_runner_cli import main
@@ -17,8 +18,8 @@ def _hash(path):
 def _row(tmp, scene_id="scene-1", picture_style="F0/Standard (Provia)"):
     raw = Path(tmp) / f"{scene_id}.RAF"
     jpeg = Path(tmp) / f"{scene_id}.JPG"
-    raw.write_bytes(b"raw")
-    jpeg.write_bytes(b"jpeg")
+    raw.write_bytes(f"raw-{scene_id}".encode())
+    jpeg.write_bytes(f"jpeg-{scene_id}".encode())
     return {
         "scene_id": scene_id, "session_id": "capture-2026-09-08",
         "contributor": "test", "source_path": str(raw), "target_path": str(jpeg),
@@ -29,6 +30,29 @@ def _row(tmp, scene_id="scene-1", picture_style="F0/Standard (Provia)"):
 
 
 class TestNareRunner(unittest.TestCase):
+    def test_inplace_transforms_preserve_baselines_and_compose_once(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = [_row(tmp)]
+            target = np.full((8, 8, 3), 120, dtype=np.uint8)
+            cv2.imwrite(manifest[0]['target_path'], target)
+            manifest[0]['target_sha256'] = _hash(manifest[0]['target_path'])
+            neutral = np.full_like(target, 40)
+            def foundation(image):
+                image += 40
+                return image
+            def candidate(image):
+                image += 40
+                return image
+            with patch('hybrid_engine.evaluation.nare_runner.load_neutral_render', return_value=neutral), \
+                 patch('hybrid_engine.evaluation.nare_runner.register_to_target',
+                       side_effect=lambda source, target: (source, np.ones((8, 8), dtype=bool), {})):
+                result = run_nare_metrics(manifest, 'F0/Standard (Provia)',
+                                          foundation=foundation, candidate=candidate)[0]
+            self.assertGreater(result['raw_delta_e00'], result['foundation_delta_e00'])
+            self.assertGreater(result['foundation_delta_e00'], 0)
+            self.assertAlmostEqual(result['candidate_delta_e00'], 0)
+            np.testing.assert_array_equal(neutral, np.full_like(target, 40))
+
     def test_measures_three_layers_after_hash_and_style_validation(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = [_row(tmp)]

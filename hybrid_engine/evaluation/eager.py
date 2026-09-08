@@ -10,7 +10,7 @@ without turning synthetic or pixel-level repeats into independent evidence.
 from dataclasses import asdict, dataclass
 from enum import Enum
 from hashlib import sha256
-from math import comb
+from math import comb, isfinite
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -144,6 +144,13 @@ def aggregate_scene_metrics(metrics: Iterable[SceneMetric]) -> list[SceneMetric]
     for metric in metrics:
         if not _nonempty(metric.scene_id):
             raise ValueError("scene_id must be non-empty")
+        for key in ("baseline_delta_e00", "candidate_delta_e00", "neutral_baseline",
+                    "neutral_candidate", "chromatic_baseline", "chromatic_candidate"):
+            value = getattr(metric, key)
+            if value is None and key not in ("baseline_delta_e00", "candidate_delta_e00"):
+                continue
+            if not _valid_number(value) or value < 0:
+                raise ValueError(f"scene {metric.scene_id!r} has invalid {key}")
         groups.setdefault(metric.scene_id, []).append(metric)
 
     def mean_optional(values: Sequence[float | None]) -> float | None:
@@ -276,6 +283,9 @@ def evaluate_manifest_metrics(
             raise ValueError(f"metric row {index} has non-numeric ΔE00") from exc
         if not np.isfinite([baseline, candidate]).all() or baseline < 0 or candidate < 0:
             raise ValueError(f"metric row {index} has invalid ΔE00")
+        for key in ("neutral_baseline", "neutral_candidate", "chromatic_baseline", "chromatic_candidate"):
+            if _nonempty(row.get(key)) and (not _valid_number(row[key]) or row[key] < 0):
+                raise ValueError(f"metric row {index} has invalid {key}")
         by_scene[scene_id] = row
     missing_scenes = sorted(eligible - by_scene.keys())
     if missing_scenes:
@@ -371,13 +381,22 @@ def validate_robustness(strata: Mapping[str, Any]) -> dict[str, Any]:
 
     if not isinstance(strata, Mapping) or not strata:
         raise ValueError("robustness must contain at least one stratum")
-    missing_or_invalid = [name for name, value in strata.items() if value not in (True, False)]
+    missing_or_invalid = [name for name, value in strata.items() if type(value) is not bool]
     failures = [name for name, value in strata.items() if value is False]
     return {
         "passed": not missing_or_invalid and not failures,
         "failures": failures + missing_or_invalid,
         "strata": dict(strata),
     }
+
+
+def _valid_number(value: Any) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and isfinite(value)
+
+
+def _positive_ci(value: Any) -> bool:
+    return (isinstance(value, (list, tuple)) and len(value) == 2
+            and all(_valid_number(v) for v in value) and 0 < value[0] <= value[1])
 
 
 def classify_result(
@@ -389,16 +408,20 @@ def classify_result(
 
     tier = evidence_tier if isinstance(evidence_tier, EvidenceTier) else EvidenceTier(str(evidence_tier).upper())
     ci = result.get("ci95", (None, None))
-    ci_positive = (len(ci) == 2 and ci[0] is not None and float(ci[0]) > 0)
-    sign_passed = result.get("sign_test_p") is not None and float(result["sign_test_p"]) < 0.05
-    effect_passed = (result.get("mean_improvement_pct") is not None and
-                     float(result["mean_improvement_pct"]) >= 5.0)
+    ci_positive = _positive_ci(ci)
+    sign = result.get("sign_test_p")
+    effect = result.get("mean_improvement_pct")
+    sign_passed = _valid_number(sign) and 0 <= sign < 0.05
+    effect_passed = _valid_number(effect) and effect >= 5.0
     subgroup_passed = all(
-        result.get(key) is None or float(result[key]) >= 0
+        result.get(key) is None or (_valid_number(result[key]) and result[key] >= 0)
         for key in ("neutral_mean_improvement", "chromatic_mean_improvement")
     )
-    controls_passed = bool(result.get("controls_passed", False))
-    robustness_passed = bool(result.get("robustness_passed", False))
+    controls_passed = result.get("controls_passed") is True
+    robustness_passed = result.get("robustness_passed") is True
+    validation_passed = validation_passed is True
+    lockbox_passed = lockbox_passed is True
+    external_replication = external_replication is True
     tier_supports_ship = tier in {EvidenceTier.A, EvidenceTier.B, EvidenceTier.C}
     ship_gate_passed = all((validation_passed, lockbox_passed, ci_positive, sign_passed,
                             effect_passed, subgroup_passed, controls_passed,

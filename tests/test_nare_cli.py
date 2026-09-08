@@ -15,7 +15,7 @@ class TestNARECLI(unittest.TestCase):
             manifest.append({
                 "scene_id": scene, "session_id": f"session-{i}", "contributor": f"p{i%2}",
                 "source_path": f"{scene}.raw", "target_path": f"{scene}.jpg",
-                "source_sha256": "a" * 64, "target_sha256": "b" * 64,
+                "source_sha256": f"{i:064x}", "target_sha256": f"{i+100:064x}",
                 "picture_style": "standard", "lighting": ["daylight", "tungsten", "mixed"][i % 3],
                 "scene_type": ["portrait", "landscape", "indoor"][i % 3],
                 "split": "evaluation",
@@ -23,7 +23,9 @@ class TestNARECLI(unittest.TestCase):
             metrics.append({"scene_id": scene, "raw_delta_e00": 10,
                             "foundation_delta_e00": 8, "candidate_delta_e00": 7,
                             "registration": {"ecc_correlation": 0.9,
-                                             "overlap_fraction": 0.99},
+                                             "overlap_fraction": 0.99,
+                                             "shift_x_px": 0, "shift_y_px": 0,
+                                             "long_edge_px": 512},
                             "subgroups": {
                                 name: {"baseline_delta_e00": 10,
                                        "candidate_delta_e00": 9}

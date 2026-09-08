@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 import cv2
 import numpy as np
@@ -7,6 +8,16 @@ from hybrid_engine.evaluation.nare_registration import inspect_registration, reg
 
 
 class TestNARERegistration(unittest.TestCase):
+    def test_nonfinite_ecc_cannot_pass_inspection_or_registration(self):
+        source = np.zeros((80, 80, 3), dtype=np.uint8)
+        for correlation in (float('nan'), float('inf')):
+            with self.subTest(correlation=correlation), patch(
+                    'hybrid_engine.evaluation.nare_registration.cv2.findTransformECC',
+                    return_value=(correlation, np.eye(2, 3, dtype=np.float32))):
+                with self.assertRaisesRegex(ValueError, 'registration_failure'):
+                    register_to_target(source, source)
+                self.assertFalse(inspect_registration(source, source)['passed'])
+
     def test_recovers_small_translation_and_returns_valid_overlap(self):
         source = np.zeros((80, 80, 3), dtype=np.uint8)
         cv2.rectangle(source, (20, 20), (50, 55), (120, 180, 220), -1)

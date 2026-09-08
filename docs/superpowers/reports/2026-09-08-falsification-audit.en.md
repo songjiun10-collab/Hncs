@@ -2,6 +2,11 @@
 
 [한국어](2026-09-08-falsification-audit.md)
 
+> **Correction (2026-09-08, Part 1 re-audit)**: The first repairs were incomplete.
+> Fresh report-path bypasses still reached Supported/Verified. See the
+> [re-audit](2026-09-08-part1-reaudit.en.md) for reproduced defects, repairs,
+> regression tests and the remaining evidence-authenticity boundary.
+
 Target: develop 43c5ee8d4acdd1883a64356063dc93b557884b47; local Python 3.12 venv.
 Verdict: basic rendering works, but the current NARE Supported/ship decision is not reliable enough
 to authorize release. This audit records counterexamples without changing production behavior.
