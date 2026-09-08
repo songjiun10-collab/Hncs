@@ -2,6 +2,7 @@ opencv-contrib-python==5.0.0.93
 numpy==2.4.6
 rawpy==0.27.0
 requests==2.34.2
+cryptography==50.0.1
 gdown==6.1.0
 colour-science==0.4.7
 scikit-image==0.26.0
