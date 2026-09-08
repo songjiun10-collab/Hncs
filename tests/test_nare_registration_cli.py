@@ -1,4 +1,5 @@
 import unittest
+import hashlib
 import json
 import tempfile
 from pathlib import Path
@@ -12,7 +13,8 @@ from hybrid_engine.evaluation.nare_registration_cli import build_report, main
 def row(scene_id):
     return {"scene_id": scene_id, "session_id": "s", "contributor": "c",
             "source_path": f"{scene_id}.RAF", "target_path": f"{scene_id}.JPG",
-            "source_sha256": "a" * 64, "target_sha256": "b" * 64,
+            "source_sha256": hashlib.sha256(f"raw-{scene_id}".encode()).hexdigest(),
+            "target_sha256": hashlib.sha256(f"jpeg-{scene_id}".encode()).hexdigest(),
             "picture_style": "F0/Standard (Provia)", "lighting": "daylight",
             "scene_type": "natural_scene", "split": "evaluation"}
 

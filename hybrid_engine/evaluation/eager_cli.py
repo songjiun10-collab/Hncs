@@ -43,12 +43,18 @@ def build_report(
 ) -> dict[str, Any]:
     """Load JSON inputs, evaluate paired errors, and classify the evidence."""
 
+    manifest = _records(_load_json(manifest_path), "manifest")
     paired_report = evaluate_manifest_metrics(
-        _records(_load_json(manifest_path), "manifest"),
+        manifest,
         _records(_load_json(metrics_path), "metrics"),
         n_bootstrap=n_bootstrap,
         seed=seed,
     )
+    requested_tier = EvidenceTier(evidence_tier.upper())
+    evaluated_tiers = {str(row["evidence_tier"]).upper() for row in manifest
+                       if row["split"] in {"evaluation", "lockbox"}}
+    if any(tier > requested_tier.value for tier in evaluated_tiers):
+        raise ValueError("requested evidence tier is stronger than evaluated manifest evidence")
     controls = validate_controls(_load_json(controls_path))
     robustness = validate_robustness(_load_json(robustness_path))
     paired = paired_report["paired"]
@@ -57,7 +63,7 @@ def build_report(
     paired_report["controls"] = controls
     paired_report["robustness"] = robustness
     paired_report["classification"] = classify_result(
-        paired, EvidenceTier(evidence_tier.upper()),
+        paired, requested_tier,
         lockbox_passed=lockbox_passed,
         external_replication=external_replication,
         validation_passed=validation_passed,

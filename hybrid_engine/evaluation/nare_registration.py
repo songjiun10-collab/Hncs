@@ -49,6 +49,8 @@ def register_to_target(source_bgr: np.ndarray, target_bgr: np.ndarray, *,
                                                   cv2.MOTION_TRANSLATION, criteria, None, 5)
     except cv2.error as error:
         raise ValueError(f"registration_failure: ECC did not converge ({error})") from error
+    if not np.isfinite(correlation) or not np.isfinite(warp).all():
+        raise ValueError("registration_failure: nonfinite ECC result")
     shift_x, shift_y = float(warp[0, 2]), float(warp[1, 2])
     shift_limit = max(height, width) * max_shift_fraction
     if correlation < min_correlation or np.hypot(shift_x, shift_y) > shift_limit:
@@ -62,4 +64,5 @@ def register_to_target(source_bgr: np.ndarray, target_bgr: np.ndarray, *,
     if overlap < min_overlap:
         raise ValueError("registration_failure: valid-overlap threshold failed")
     return aligned, valid, {"ecc_correlation": float(correlation), "overlap_fraction": overlap,
-                            "shift_x_px": shift_x, "shift_y_px": shift_y}
+                            "shift_x_px": shift_x, "shift_y_px": shift_y,
+                            "long_edge_px": max(height, width)}

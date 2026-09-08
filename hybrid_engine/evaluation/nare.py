@@ -6,9 +6,10 @@ remain explicit caller inputs.
 """
 
 import math
+from statistics import mean
 from typing import Any, Iterable, Mapping
 
-from .eager import SceneMetric, evaluate_paired
+from .eager import SceneMetric, evaluate_paired, _positive_ci, _valid_number
 
 _REQUIRED = ("scene_id", "session_id", "contributor", "source_path", "target_path",
              "source_sha256", "target_sha256", "picture_style", "lighting",
@@ -17,6 +18,8 @@ _SPLITS = {"discovery", "validation", "evaluation", "lockbox"}
 
 
 def _finite_nonnegative(value: Any, label: str) -> float:
+    if not _valid_number(value):
+        raise ValueError(f"NARE {label} must be finite and non-negative")
     try:
         number = float(value)
     except (TypeError, ValueError) as error:
@@ -29,18 +32,25 @@ def _finite_nonnegative(value: Any, label: str) -> float:
 def _registration_is_valid(diagnostic: Any) -> bool:
     if not isinstance(diagnostic, Mapping):
         return False
-    if diagnostic.get("passed") is False:
+    if "passed" in diagnostic and diagnostic["passed"] is not True:
+        return False
+    if diagnostic.get("failure_reason"):
+        return False
+    keys = ("ecc_correlation", "overlap_fraction", "shift_x_px", "shift_y_px", "long_edge_px")
+    if not all(_valid_number(diagnostic.get(key)) for key in keys):
         return False
     try:
         correlation = float(diagnostic["ecc_correlation"])
         overlap = float(diagnostic["overlap_fraction"])
-        shift_x = float(diagnostic.get("shift_x_px", 0.0))
-        shift_y = float(diagnostic.get("shift_y_px", 0.0))
+        shift_x = float(diagnostic["shift_x_px"])
+        shift_y = float(diagnostic["shift_y_px"])
+        long_edge = float(diagnostic["long_edge_px"])
     except (KeyError, TypeError, ValueError):
         return False
     if not all(math.isfinite(value) for value in (correlation, overlap, shift_x, shift_y)):
         return False
-    return 0.6 <= correlation <= 1.0 and 0.9 <= overlap <= 1.0
+    return (0.6 <= correlation <= 1.0 and 0.9 <= overlap <= 1.0
+            and long_edge > 0 and math.hypot(shift_x, shift_y) <= long_edge * 0.05)
 
 
 def validate_nare_manifest(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
@@ -48,8 +58,10 @@ def validate_nare_manifest(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     if not records:
         raise ValueError("NARE manifest must contain at least one row")
     scenes: dict[str, str] = {}
+    scene_metadata = {}
+    content_scenes = {key: {} for key in ("source_sha256", "target_sha256")}
     for index, row in enumerate(records, 1):
-        missing = [key for key in _REQUIRED if not str(row.get(key, "")).strip()]
+        missing = [key for key in _REQUIRED if not isinstance(row.get(key), str) or not row[key].strip()]
         if missing:
             raise ValueError(f"NARE row {index} missing fields: {', '.join(missing)}")
         if row["split"] not in _SPLITS:
@@ -58,10 +70,20 @@ def validate_nare_manifest(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             value = str(row[key]).lower()
             if len(value) != 64 or any(char not in "0123456789abcdef" for char in value):
                 raise ValueError(f"NARE row {index} has invalid {key}")
-        scene = str(row["scene_id"])
+        scene = row["scene_id"]
+        if scene != scene.strip() or row["session_id"] != row["session_id"].strip():
+            raise ValueError("NARE scene/session IDs must not have surrounding whitespace")
         prior = scenes.setdefault(scene, str(row["split"]))
         if prior != row["split"]:
             raise ValueError(f"scene_id {scene!r} appears in multiple splits")
+        signature = tuple(row[key].strip().casefold() for key in
+                          ("session_id", "contributor", "picture_style", "lighting", "scene_type"))
+        if scene_metadata.setdefault(scene, signature) != signature:
+            raise ValueError(f"NARE conflicting metadata for scene {scene!r}")
+        for key, seen in content_scenes.items():
+            digest = row[key].lower()
+            if seen.setdefault(digest, scene) != scene:
+                raise ValueError(f"NARE duplicate {key} assigned to different scenes")
     return {"n_rows": len(records), "n_scenes": len(scenes),
             "n_sessions": len({str(row["session_id"]) for row in records}),
             "lighting": sorted({str(row["lighting"]) for row in records}),
@@ -102,17 +124,20 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
         registration.append(_registration_is_valid(diagnostic))
     paired = evaluate_paired(scene_metrics, n_bootstrap=n_bootstrap, seed=seed)
     raw_mean = paired["mean_baseline"]
-    foundation_mean = sum(foundation) / len(foundation)
+    foundation_mean = mean(foundation)
+    foundation_improvement = 100 * (1 - foundation_mean / raw_mean) if raw_mean else None
+    if foundation_improvement is not None and not math.isfinite(foundation_improvement):
+        raise ValueError("NARE foundation improvement is not finite")
     subgroup_metrics = summarize_nare_subgroups(metric_records)
     evaluated_rows = [row for row in manifest if row["split"] in {"evaluation", "lockbox"}]
-    evaluated_lighting = sorted({str(row["lighting"]) for row in evaluated_rows})
-    evaluated_scene_type = sorted({str(row["scene_type"]) for row in evaluated_rows})
-    evaluated_styles = sorted({str(row["picture_style"]) for row in evaluated_rows})
+    evaluated_lighting = sorted({row["lighting"].strip().casefold() for row in evaluated_rows})
+    evaluated_scene_type = sorted({row["scene_type"].strip().casefold() for row in evaluated_rows})
+    evaluated_styles = sorted({row["picture_style"].strip().casefold() for row in evaluated_rows})
     return {**paired, "manifest": summary,
             "improvement_pct": paired["mean_improvement_pct"],
             "baseline_layers": ["raw_decoder", "colorimetric_foundation", "appearance_candidate"],
             "mean_foundation": foundation_mean,
-            "foundation_improvement_pct": 100 * (raw_mean - foundation_mean) / raw_mean,
+            "foundation_improvement_pct": foundation_improvement,
             "registration_passed": all(registration),
             "subgroup_metrics": subgroup_metrics,
             "subgroup_metrics_passed": subgroup_metrics["passed"],
@@ -131,10 +156,12 @@ def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
     ``*_delta_e00`` values. A positive improvement means candidate error fell;
     a regression beyond the configured percentage is catastrophic.
     """
-    if catastrophic_regression_pct < 0:
+    if not _valid_number(catastrophic_regression_pct) or catastrophic_regression_pct < 0:
         raise ValueError("catastrophic_regression_pct must be non-negative")
     rows = list(metric_rows)
     required = tuple(dict.fromkeys(str(name) for name in required))
+    if not required or any(not name.strip() for name in required):
+        raise ValueError("required subgroups must not be empty")
     groups: dict[str, dict[str, list[float]]] = {
         name: {"baseline": [], "candidate": []} for name in required
     }
@@ -158,12 +185,13 @@ def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
         if not baseline:
             missing.add(name)
             continue
-        baseline_mean = sum(baseline) / len(baseline)
-        candidate_mean = sum(candidate) / len(candidate)
-        improvement_pct = 100 * (baseline_mean - candidate_mean) / baseline_mean if baseline_mean else 0.0
+        baseline_mean = mean(baseline)
+        candidate_mean = mean(candidate)
+        improvement_pct = 100 * (1 - candidate_mean / baseline_mean) if baseline_mean else None
         summary[name] = {"n": len(baseline), "baseline_mean": baseline_mean,
                          "candidate_mean": candidate_mean, "improvement_pct": improvement_pct}
-        if (baseline_mean == 0 and candidate_mean > 0) or improvement_pct < -catastrophic_regression_pct:
+        if ((baseline_mean == 0 and candidate_mean > 0)
+                or (improvement_pct is not None and improvement_pct < -catastrophic_regression_pct)):
             catastrophic.append(name)
     return {"groups": summary, "missing_groups": sorted(missing),
             "catastrophic_regressions": sorted(catastrophic),
@@ -173,20 +201,26 @@ def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
 def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
                          min_improvement_pct: float = 5.0) -> dict[str, Any]:
     coverage = result.get("coverage", {})
-    picture_styles = [str(style).strip().lower() for style in result.get("picture_styles", [])]
+    def labels(value):
+        if not isinstance(value, (list, tuple)) or not all(isinstance(v, str) for v in value):
+            return set()
+        return {v.strip().casefold() for v in value} - {"", "unknown", "none", "null", "n/a"}
+    picture_styles = labels(result.get("picture_styles", []))
+    count, effect, sign = (result.get(key) for key in ("n_scenes", "improvement_pct", "sign_test_p"))
+    coverage = coverage if isinstance(coverage, Mapping) else {}
     checks = {
-        "scene_count": int(result.get("n_scenes", 0)) >= min_scenes,
-        "effect_threshold": float(result.get("improvement_pct", 0)) >= min_improvement_pct,
-        "ci_positive": bool(result.get("ci95")) and float(result["ci95"][0]) > 0,
-        "sign_test": float(result.get("sign_test_p", 1)) < 0.05,
-        "lighting_coverage": len(coverage.get("lighting", [])) >= 3,
-        "scene_coverage": len(coverage.get("scene_type", [])) >= 3,
-        "picture_style": len(picture_styles) == 1 and picture_styles[0] != "unknown",
-        "registration": bool(result.get("registration_passed", False)),
-        "subgroups": bool(result.get("subgroups_passed", False))
-        and bool(result.get("subgroup_metrics_passed", False)),
-        "controls": bool(result.get("controls_passed", False)),
-        "provenance": bool(result.get("provenance_passed", False)),
+        "scene_count": type(count) is int and count >= min_scenes,
+        "effect_threshold": _valid_number(effect) and effect >= min_improvement_pct,
+        "ci_positive": _positive_ci(result.get("ci95")),
+        "sign_test": _valid_number(sign) and 0 <= sign < 0.05,
+        "lighting_coverage": len(labels(coverage.get("lighting"))) >= 3,
+        "scene_coverage": len(labels(coverage.get("scene_type"))) >= 3,
+        "picture_style": len(picture_styles) == 1 and len(result.get("picture_styles", [])) == 1,
+        "registration": result.get("registration_passed") is True,
+        "subgroups": result.get("subgroups_passed") is True
+        and result.get("subgroup_metrics_passed") is True,
+        "controls": result.get("controls_passed") is True,
+        "provenance": result.get("provenance_passed") is True,
     }
     return {"ship_gate_passed": all(checks.values()), "checks": checks,
             "classification": "Supported" if all(checks.values()) else "Inconclusive"}
