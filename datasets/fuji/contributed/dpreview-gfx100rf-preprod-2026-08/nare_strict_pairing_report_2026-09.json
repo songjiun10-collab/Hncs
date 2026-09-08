@@ -17,6 +17,8 @@
   },
   "nare_eligibility": {
     "pairing": "passed",
+    "session_dates_observed": 14,
+    "pilot_session_dates_observed": 8,
     "independent_scene_grouping": "not_recorded",
     "picture_style": "unknown",
     "lighting_coverage": ["daylight"],

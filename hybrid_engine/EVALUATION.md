@@ -4937,6 +4937,12 @@ SHA-256, EXIF와 수치는
 `DateTimeOriginal`, Make, Model, ISO key로 정확히 한 번씩 일치했다:
 **63 strict pairs**, unmatched 0/0, invalid EXIF 0/0, ambiguous key 0이다.
 
+EXIF DateTimeOriginal 날짜 기준으로 이 63쌍은 14개 capture date에 걸친다.
+기존 12-scene NARE pilot은 그중 8개 date에서 뽑혔으므로, pilot manifest의
+`session_id`도 잘못된 단일 preprod ID 대신 실제 capture date로 정정했다.
+다만 날짜는 session의 보수적 proxy일 뿐, 같은 날짜의 서로 다른 독립 장면을
+자동으로 판별하지는 않는다.
+
 이는 기존 12-scene NARE pilot의 pairing 근거를 강화하지만, pilot의
 `picture_style=unknown`, 전체 `lighting=daylight`, `scene_type=natural_scene`
 한 종류라는 제한을 바꾸지는 않는다. 63개를 독립 scene 63개로 세거나
