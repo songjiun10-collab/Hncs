@@ -97,6 +97,11 @@ library/palace/street shots are not identifiable close-ups.*
   hybrid_engine.evaluation.nare_runner_cli --manifest provia.json --candidate
   provia --out metrics.json`. It verifies both file hashes and rejects every
   non-Provia or mixed-style evaluation row before RAW decoding.
+- `evaluation/nare_registration_cli.py` - inspect ECC correlation, translation,
+  and valid overlap before metric generation: `python3 -m
+  hybrid_engine.evaluation.nare_registration_cli --manifest candidate.json --out
+  registration.json --passed-manifest-out registered.json`. Only use the emitted
+  `registered.json` for the subsequent NARE metric run.
 - `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
   metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
 - `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the
