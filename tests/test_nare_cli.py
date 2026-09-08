@@ -23,7 +23,13 @@ class TestNARECLI(unittest.TestCase):
             metrics.append({"scene_id": scene, "raw_delta_e00": 10,
                             "foundation_delta_e00": 8, "candidate_delta_e00": 7,
                             "registration": {"ecc_correlation": 0.9,
-                                             "overlap_fraction": 0.99}})
+                                             "overlap_fraction": 0.99},
+                            "subgroups": {
+                                name: {"baseline_delta_e00": 10,
+                                       "candidate_delta_e00": 9}
+                                for name in ("skin", "sky", "foliage", "neutral",
+                                             "saturated", "shadow", "highlight")
+                            }})
         controls = {"subgroups_passed": True, "controls_passed": True,
                     "provenance_passed": True}
         with tempfile.TemporaryDirectory() as directory:

@@ -104,8 +104,9 @@ library/palace/street shots are not identifiable close-ups.*
   `registered.json` for the subsequent NARE metric run.
 - `evaluation/nare.py:summarize_nare_subgroups` - aggregate semantic-region
   baseline/candidate ΔE00 and fail closed when required regions are missing or
-  a region regresses past the catastrophic threshold. The runner does not invent
-  masks; a real-photo run must provide them as metric-row evidence.
+  a region regresses past the catastrophic threshold. `evaluate_nare_metrics`
+  wires this summary into the ship gate. The runner does not invent masks; a
+  real-photo run must provide them as metric-row evidence.
 - `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
   metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
 - `evaluation/supabase_sync.py` - opt-in `--sync-supabase` flag on
