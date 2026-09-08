@@ -79,6 +79,7 @@ From the repository root:
 ~/.hncs-hybrid-venv312/bin/python3 docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
 ```
 
-The script asserts the presence of vulnerable behavior as attack characterization.
-Those assertions should fail after a future defense is implemented; they are
-not security-pass regression tests.
+The report above records the original vulnerable run as historical
+characterization. The current script replays the same synthetic bundle and
+asserts that an unreceipted result cannot reach `Verified`, so it now serves as
+a security regression probe.
