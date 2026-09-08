@@ -105,10 +105,22 @@ class TestNARE(unittest.TestCase):
                   "registration_passed": True,
                   "subgroup_metrics_passed": True,
                   "subgroups_passed": True, "controls_passed": True,
-                  "provenance_passed": True}
+                  "provenance_passed": True, "trusted_provenance": True}
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
         result["coverage"]["lighting"] = ["daylight"]
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
+
+    def test_ship_gate_rejects_unreceipted_plausible_metrics(self):
+        result = {"n_scenes": 12, "improvement_pct": 10,
+                  "ci95": [0.1, 2], "sign_test_p": 0.01,
+                  "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
+                               "scene_type": ["portrait", "landscape", "indoor"]},
+                  "picture_styles": ["standard"], "subgroups_passed": True,
+                  "registration_passed": True, "subgroup_metrics_passed": True,
+                  "controls_passed": True, "provenance_passed": True}
+        report = classify_nare_result(result)
+        self.assertFalse(report["ship_gate_passed"])
+        self.assertFalse(report["checks"]["trusted_provenance"])
 
     def test_ship_gate_rejects_mixed_or_unknown_picture_style(self):
         result = {"n_scenes": 12, "improvement_pct": 10,
@@ -118,7 +130,8 @@ class TestNARE(unittest.TestCase):
                   "picture_styles": ["standard"], "subgroups_passed": True,
                   "registration_passed": True,
                   "subgroup_metrics_passed": True,
-                  "controls_passed": True, "provenance_passed": True}
+                  "controls_passed": True, "provenance_passed": True,
+                  "trusted_provenance": True}
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
         result["picture_styles"] = ["standard", "velvia"]
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])

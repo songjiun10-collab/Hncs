@@ -45,9 +45,10 @@ def build_receipt(
     artifact_paths: Mapping[str, str | Path], *, git_sha: str,
     evaluator_sha256: str, command: list[str], run_id: str,
     timestamp: str, parent_run_id: str | None = None,
+    required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
 ) -> dict[str, Any]:
     """Create an unsigned receipt from the artifacts actually on disk."""
-    missing = [name for name in _REQUIRED_ARTIFACTS if name not in artifact_paths]
+    missing = [name for name in required_artifacts if name not in artifact_paths]
     if missing:
         raise ValueError(f"receipt missing artifact paths: {', '.join(missing)}")
     if not isinstance(command, list) or not command or not all(isinstance(v, str) and v for v in command):
@@ -99,6 +100,7 @@ def _decode_public_key(path: str | Path) -> Ed25519PublicKey:
 def validate_receipt(
     receipt_path: str | Path, artifact_paths: Mapping[str, str | Path],
     public_key_path: str | Path, expected_git_sha: str | None = None,
+    required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
 ) -> dict[str, Any]:
     """Validate signature and every artifact hash before trusting a run."""
     try:
@@ -140,7 +142,7 @@ def validate_receipt(
     artifacts = receipt.get("artifacts")
     if not isinstance(artifacts, dict):
         raise ValueError("receipt artifacts are missing")
-    missing = [name for name in _REQUIRED_ARTIFACTS if name not in artifacts or name not in artifact_paths]
+    missing = [name for name in required_artifacts if name not in artifacts or name not in artifact_paths]
     if missing:
         raise ValueError(f"receipt artifacts missing: {', '.join(missing)}")
     for name, path in artifact_paths.items():

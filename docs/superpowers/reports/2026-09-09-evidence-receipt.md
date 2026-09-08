@@ -30,8 +30,11 @@ python -m hybrid_engine.evaluation.eager_cli \
   --receipt run.receipt.json --receipt-public-key ci-ed25519.pub
 ```
 
-기존 JSON CLI는 `Supported`까지의 호환성을 유지한다. receipt 없는 JSON만으로
-`Verified`를 만들 수 없게 한 것이 핵심 fail-closed 경계다.
+NARE CLI도 같은 receipt 경계를 사용하며 manifest, metrics, controls 세 artifact의
+hash chain을 검증한다. 따라서 receipt 없는 외부 metrics JSON은 `Inconclusive`로
+남고, 서명된 receipt를 검증한 실행만 `Supported`가 될 수 있다. EAGER의 기존
+JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에는 receipt가
+필요하다.
 
 ## 검증 결과
 
@@ -40,7 +43,9 @@ python -m hybrid_engine.evaluation.eager_cli \
 - unsigned receipt: 실패
 - 유효 receipt가 있는 EAGER report: `Verified`
 - receipt 없이 external replication만 주장한 report: `Supported`
-- 전체 suite: 1,425개 통과
+- NARE receipt 없는 plausible metrics: `Inconclusive`
+- NARE 유효 receipt-backed report: `Supported`
+- 전체 suite: 1,429개 통과
 
 ## 한계
 
