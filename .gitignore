@@ -50,6 +50,9 @@ eval_reports/
 models/upscale/
 .DS_Store
 .venv/
+.env
+.env.*
+!.env.example
 .claude/worktrees/
 .claude/hooks/.last_whole_branch_review_sha
 .claude/hooks/.pending_override.json

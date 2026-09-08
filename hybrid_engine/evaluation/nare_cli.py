@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .nare import classify_nare_result, evaluate_nare_metrics
+from .supabase_sync import sync_evaluation_report
 
 
 def _load(path: str) -> Any:
@@ -32,7 +33,22 @@ def main() -> None:
     parser.add_argument("--bootstrap", type=int, default=20_000)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out")
+    parser.add_argument("--sync-supabase", action="store_true",
+                        help="sync the frozen report to the HNCS Supabase registry")
+    parser.add_argument("--dataset-slug",
+                        help="Supabase dataset slug; defaults to the manifest directory name")
+    parser.add_argument("--candidate-name",
+                        help="candidate identifier required with --sync-supabase")
+    parser.add_argument("--brand")
+    parser.add_argument("--camera-model")
+    parser.add_argument("--evidence-tier", choices=list("ABCDE"), default="C")
+    parser.add_argument("--git-sha")
     args = parser.parse_args()
+    if args.sync_supabase and not args.out:
+        parser.error("--sync-supabase requires --out so the frozen report can be hashed")
+    if args.sync_supabase and not args.candidate_name:
+        parser.error("--sync-supabase requires --candidate-name")
+
     report = build_report(args.manifest, args.metrics, args.controls,
                           n_bootstrap=args.bootstrap, seed=args.seed)
     rendered = json.dumps(report, ensure_ascii=False, indent=2)
@@ -40,6 +56,29 @@ def main() -> None:
         Path(args.out).write_text(rendered + "\n", encoding="utf-8")
     else:
         print(rendered)
+
+    if args.sync_supabase:
+        result = sync_evaluation_report(
+            report,
+            protocol="NARE",
+            dataset_slug=args.dataset_slug or Path(args.manifest).parent.name,
+            candidate_name=args.candidate_name,
+            manifest_path=args.manifest,
+            metrics_path=args.metrics,
+            controls_path=args.controls,
+            report_path=args.out,
+            evidence_tier=args.evidence_tier,
+            brand=args.brand,
+            camera_model=args.camera_model,
+            git_sha=args.git_sha,
+            bootstrap_draws=args.bootstrap,
+            bootstrap_seed=args.seed,
+        )
+        print(
+            "Supabase sync: "
+            f"{result['classification']}, scenes={result['n_scenes']}, "
+            f"run_key={result['run_key']}"
+        )
 
 
 if __name__ == "__main__":

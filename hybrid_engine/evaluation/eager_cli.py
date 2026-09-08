@@ -1,6 +1,6 @@
 """Run an EAGER paired evaluation from manifest and metric JSON files.
 
-Rendering and ROI extraction remain explicit inputs.  This command only joins
+Rendering and ROI extraction remain explicit inputs. This command only joins
 their recorded results and applies the evidence gates, which keeps model
 selection and image processing outside the statistical checker.
 """
@@ -17,6 +17,7 @@ from .eager import (
     validate_controls,
     validate_robustness,
 )
+from .supabase_sync import sync_evaluation_report
 
 
 def _load_json(path: str) -> Any:
@@ -77,7 +78,21 @@ def main() -> None:
     parser.add_argument("--bootstrap", type=int, default=20_000)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out")
+    parser.add_argument("--sync-supabase", action="store_true",
+                        help="sync the frozen report to the HNCS Supabase registry")
+    parser.add_argument("--dataset-slug",
+                        help="Supabase dataset slug; defaults to the manifest directory name")
+    parser.add_argument("--candidate-name",
+                        help="candidate identifier required with --sync-supabase")
+    parser.add_argument("--brand")
+    parser.add_argument("--camera-model")
+    parser.add_argument("--git-sha")
     args = parser.parse_args()
+    if args.sync_supabase and not args.out:
+        parser.error("--sync-supabase requires --out so the frozen report can be hashed")
+    if args.sync_supabase and not args.candidate_name:
+        parser.error("--sync-supabase requires --candidate-name")
+
     report = build_report(
         args.manifest, args.metrics, args.controls, args.robustness,
         args.evidence_tier, args.validation_passed, args.lockbox_passed,
@@ -88,6 +103,31 @@ def main() -> None:
         Path(args.out).write_text(rendered + "\n", encoding="utf-8")
     else:
         print(rendered)
+
+    if args.sync_supabase:
+        result = sync_evaluation_report(
+            report,
+            protocol="EAGER",
+            dataset_slug=args.dataset_slug or Path(args.manifest).parent.name,
+            candidate_name=args.candidate_name,
+            manifest_path=args.manifest,
+            metrics_path=args.metrics,
+            controls_path=args.controls,
+            robustness_path=args.robustness,
+            report_path=args.out,
+            evidence_tier=args.evidence_tier,
+            brand=args.brand,
+            camera_model=args.camera_model,
+            git_sha=args.git_sha,
+            external_replication=args.external_replication,
+            bootstrap_draws=args.bootstrap,
+            bootstrap_seed=args.seed,
+        )
+        print(
+            "Supabase sync: "
+            f"{result['classification']}, scenes={result['n_scenes']}, "
+            f"run_key={result['run_key']}"
+        )
 
 
 if __name__ == "__main__":
