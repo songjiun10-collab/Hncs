@@ -13,6 +13,7 @@ _HOOKS_DIR = os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), ".claude", "hooks")
 sys.path.insert(0, _HOOKS_DIR)
 import protect_test_coverage as hook  # noqa: E402
+from tests._hook_subprocess import run_hook
 
 
 class TestProtectTestCoverageEndToEnd(unittest.TestCase):
@@ -56,16 +57,7 @@ class TestProtectTestCoverageEndToEnd(unittest.TestCase):
         os.environ.pop("HNCS_HOOK_DECISION_RECORD_SENTINEL", None)
 
     def _run_hook(self, command, agent_id=None):
-        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
-        if agent_id:
-            payload["agent_id"] = agent_id
-            payload["agent_type"] = "general-purpose"
-        proc = subprocess.run(
-            [sys.executable, hook.__file__], cwd=self.repo, input=json.dumps(payload),
-            env=self._env, capture_output=True, text=True, timeout=15,
-        )
-        out = json.loads(proc.stdout)
-        return out["hookSpecificOutput"]["permissionDecision"]
+        return run_hook(hook, self.repo, self._env, command, agent_id=agent_id)
 
     def test_new_tools_file_without_test_asks(self):
         """HIGH tier, direct call: ask(), not deny - see
