@@ -59,6 +59,22 @@ class TestNareRunner(unittest.TestCase):
                 run_nare_metrics([matching], "F0/Standard (Provia)",
                                  candidate=lambda image: image)
 
+    def test_later_row_hash_mismatch_is_caught_before_any_row_is_decoded(self):
+        """모듈 docstring의 계약("verifies the frozen source hashes ...
+        before decoding any RAW file")이 다중 row에서도 실제로 지켜지는지 -
+        고치기 전엔 3번째 row 해시가 깨져도 1·2번 row는 이미 디코드된 뒤에
+        실패했다."""
+        with tempfile.TemporaryDirectory() as tmp:
+            rows = [_row(tmp, f"scene-{i}") for i in range(1, 4)]
+            Path(rows[2]["source_path"]).write_bytes(b"corrupted")
+            with patch("hybrid_engine.evaluation.nare_runner.load_neutral_render") as decode:
+                with self.assertRaisesRegex(ValueError, "source hash"):
+                    run_nare_metrics(rows, "F0/Standard (Provia)",
+                                     candidate=lambda image: image)
+                self.assertEqual(decode.call_count, 0,
+                                 "앞선 row가 손상된 뒤쪽 row보다 먼저 디코드됨 - "
+                                 "hash 검증이 배치 전체보다 먼저 끝나지 않음")
+
     def test_cli_writes_metrics_for_fixed_candidate(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest, output = Path(tmp) / "manifest.json", Path(tmp) / "metrics.json"
