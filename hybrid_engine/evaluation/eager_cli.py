@@ -67,6 +67,7 @@ def build_report(
         lockbox_passed=lockbox_passed,
         external_replication=external_replication,
         validation_passed=validation_passed,
+        trusted_provenance=False,
     )
     return paired_report
 

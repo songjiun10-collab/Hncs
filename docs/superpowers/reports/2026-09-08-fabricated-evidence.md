@@ -2,6 +2,13 @@
 
 [English](2026-09-08-fabricated-evidence.en.md)
 
+> **정정(2026-09-08, trusted-provenance gate)**: 일반 EAGER JSON CLI는 이제
+> `trusted_provenance=False`를 강제한다. 따라서 같은 가짜 bundle에
+> `--external-replication`을 넣어도 최대 `Supported`다. classifier의
+> `trusted_provenance=True`는 신뢰된 실행 caller만 전달할 수 있다.
+> 이는 암호학적 인증이 아니라 fail-closed 정책 경계이며, 이미 신뢰된 caller가
+> 거짓말하는 문제는 남아 있고 보고서에 명시한다.
+
 기준 commit: `0da0c44086d0805e3ea87de536d66e1ed5a9c03f`.
 실제 EAGER CLI subprocess를 호출했다. classifier/통계/파일 읽기를 mock하지 않았다.
 결과: **공격 성공. 가짜 증거가 Verified에 도달한다.**

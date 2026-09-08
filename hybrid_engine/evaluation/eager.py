@@ -402,9 +402,14 @@ def _positive_ci(value: Any) -> bool:
 def classify_result(
     result: Mapping[str, Any], evidence_tier: EvidenceTier | str,
     lockbox_passed: bool, external_replication: bool,
-    validation_passed: bool,
+    validation_passed: bool, trusted_provenance: bool = False,
 ) -> dict[str, Any]:
-    """Apply the EAGER evidence and ship gates to a paired result."""
+    """Apply EAGER gates; ``Verified`` additionally needs trusted provenance.
+
+    Precomputed JSON reports can establish a Supported result, but they cannot
+    self-attest that an independent execution produced their metrics. Only a
+    trusted runner may pass ``trusted_provenance=True``.
+    """
 
     tier = evidence_tier if isinstance(evidence_tier, EvidenceTier) else EvidenceTier(str(evidence_tier).upper())
     ci = result.get("ci95", (None, None))
@@ -422,6 +427,7 @@ def classify_result(
     validation_passed = validation_passed is True
     lockbox_passed = lockbox_passed is True
     external_replication = external_replication is True
+    trusted_provenance = trusted_provenance is True
     tier_supports_ship = tier in {EvidenceTier.A, EvidenceTier.B, EvidenceTier.C}
     ship_gate_passed = all((validation_passed, lockbox_passed, ci_positive, sign_passed,
                             effect_passed, subgroup_passed, controls_passed,
@@ -432,7 +438,7 @@ def classify_result(
         classification = "Rejected"
     elif not ship_gate_passed:
         classification = "Inconclusive"
-    elif lockbox_passed and external_replication:
+    elif lockbox_passed and external_replication and trusted_provenance:
         classification = "Verified"
     else:
         classification = "Supported"
@@ -450,6 +456,7 @@ def classify_result(
             "controls": controls_passed,
             "robustness": robustness_passed,
             "tier_supports_ship": tier_supports_ship,
+            "trusted_provenance": trusted_provenance,
         },
     }
 
