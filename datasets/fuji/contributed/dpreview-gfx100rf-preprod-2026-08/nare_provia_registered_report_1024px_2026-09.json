@@ -1,0 +1,514 @@
+{
+  "paired": {
+    "n_scenes": 37,
+    "mean_baseline": 16.699295353344418,
+    "mean_candidate": 12.433394684534717,
+    "mean_improvement": 4.265900668809702,
+    "mean_improvement_pct": 25.54539325490376,
+    "ci95": [
+      3.4045302682385996,
+      5.132902673708582
+    ],
+    "sign_test_p": 1.0244548320770264e-08,
+    "neutral_mean_improvement": null,
+    "chromatic_mean_improvement": null,
+    "per_scene": [
+      {
+        "scene_id": "gfx100rf-000",
+        "baseline_delta_e00": 19.866852175247303,
+        "candidate_delta_e00": 13.658999320880833,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 6.20785285436647
+      },
+      {
+        "scene_id": "gfx100rf-001",
+        "baseline_delta_e00": 13.755165067993627,
+        "candidate_delta_e00": 12.249882148841467,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 1.50528291915216
+      },
+      {
+        "scene_id": "gfx100rf-004",
+        "baseline_delta_e00": 20.677676395227724,
+        "candidate_delta_e00": 17.223907920012735,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 3.4537684752149893
+      },
+      {
+        "scene_id": "gfx100rf-005",
+        "baseline_delta_e00": 20.046540381072475,
+        "candidate_delta_e00": 12.60198043870481,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 7.444559942367665
+      },
+      {
+        "scene_id": "gfx100rf-006",
+        "baseline_delta_e00": 20.662138116795507,
+        "candidate_delta_e00": 14.178930207924752,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 6.483207908870755
+      },
+      {
+        "scene_id": "gfx100rf-007",
+        "baseline_delta_e00": 24.1407854152961,
+        "candidate_delta_e00": 16.861436964953086,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 7.279348450343015
+      },
+      {
+        "scene_id": "gfx100rf-009",
+        "baseline_delta_e00": 21.019405180926515,
+        "candidate_delta_e00": 15.914759834809443,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 5.104645346117072
+      },
+      {
+        "scene_id": "gfx100rf-010",
+        "baseline_delta_e00": 21.687800377450685,
+        "candidate_delta_e00": 21.17684809445206,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 0.5109522829986268
+      },
+      {
+        "scene_id": "gfx100rf-013",
+        "baseline_delta_e00": 7.49929541404694,
+        "candidate_delta_e00": 6.117613890998526,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 1.3816815230484139
+      },
+      {
+        "scene_id": "gfx100rf-015",
+        "baseline_delta_e00": 20.129285761061794,
+        "candidate_delta_e00": 12.322789124198836,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 7.806496636862958
+      },
+      {
+        "scene_id": "gfx100rf-016",
+        "baseline_delta_e00": 17.242241368100558,
+        "candidate_delta_e00": 13.96801634261928,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 3.274225025481279
+      },
+      {
+        "scene_id": "gfx100rf-017",
+        "baseline_delta_e00": 16.34453214112493,
+        "candidate_delta_e00": 10.467030409894626,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 5.8775017312303035
+      },
+      {
+        "scene_id": "gfx100rf-018",
+        "baseline_delta_e00": 19.47759476497667,
+        "candidate_delta_e00": 14.067240946991086,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 5.410353817985582
+      },
+      {
+        "scene_id": "gfx100rf-020",
+        "baseline_delta_e00": 17.961146219814967,
+        "candidate_delta_e00": 12.520116668913815,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 5.441029550901153
+      },
+      {
+        "scene_id": "gfx100rf-022",
+        "baseline_delta_e00": 4.554527492102012,
+        "candidate_delta_e00": 4.878931497518567,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": -0.32440400541655556
+      },
+      {
+        "scene_id": "gfx100rf-026",
+        "baseline_delta_e00": 16.251709684120847,
+        "candidate_delta_e00": 10.355179154324942,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 5.896530529795905
+      },
+      {
+        "scene_id": "gfx100rf-027",
+        "baseline_delta_e00": 11.927130064076085,
+        "candidate_delta_e00": 9.048966824999438,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 2.878163239076647
+      },
+      {
+        "scene_id": "gfx100rf-028",
+        "baseline_delta_e00": 15.288964327435423,
+        "candidate_delta_e00": 12.332459460085701,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 2.9565048673497216
+      },
+      {
+        "scene_id": "gfx100rf-029",
+        "baseline_delta_e00": 13.511288274227073,
+        "candidate_delta_e00": 7.404724593571836,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 6.1065636806552375
+      },
+      {
+        "scene_id": "gfx100rf-030",
+        "baseline_delta_e00": 7.0467455050573315,
+        "candidate_delta_e00": 6.543063670690745,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 0.5036818343665868
+      },
+      {
+        "scene_id": "gfx100rf-031",
+        "baseline_delta_e00": 20.774278854894664,
+        "candidate_delta_e00": 11.751304946658015,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 9.022973908236649
+      },
+      {
+        "scene_id": "gfx100rf-032",
+        "baseline_delta_e00": 21.481239710848243,
+        "candidate_delta_e00": 13.381607002579933,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 8.09963270826831
+      },
+      {
+        "scene_id": "gfx100rf-033",
+        "baseline_delta_e00": 21.014149707096525,
+        "candidate_delta_e00": 15.765342168608095,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 5.24880753848843
+      },
+      {
+        "scene_id": "gfx100rf-034",
+        "baseline_delta_e00": 19.57501931371023,
+        "candidate_delta_e00": 12.575575872561357,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 6.9994434411488715
+      },
+      {
+        "scene_id": "gfx100rf-035",
+        "baseline_delta_e00": 17.095852036254996,
+        "candidate_delta_e00": 10.520305211509145,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 6.575546824745851
+      },
+      {
+        "scene_id": "gfx100rf-040",
+        "baseline_delta_e00": 17.38851264284263,
+        "candidate_delta_e00": 12.68767423227066,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 4.70083841057197
+      },
+      {
+        "scene_id": "gfx100rf-041",
+        "baseline_delta_e00": 23.858179615314395,
+        "candidate_delta_e00": 16.854287839755376,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 7.003891775559019
+      },
+      {
+        "scene_id": "gfx100rf-042",
+        "baseline_delta_e00": 19.55114543010626,
+        "candidate_delta_e00": 14.291860189272517,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 5.2592852408337425
+      },
+      {
+        "scene_id": "gfx100rf-043",
+        "baseline_delta_e00": 25.075002544122682,
+        "candidate_delta_e00": 16.817191265490326,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 8.257811278632357
+      },
+      {
+        "scene_id": "gfx100rf-044",
+        "baseline_delta_e00": 10.50606187814154,
+        "candidate_delta_e00": 8.3158168709568,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 2.190245007184741
+      },
+      {
+        "scene_id": "gfx100rf-045",
+        "baseline_delta_e00": 10.818249108132775,
+        "candidate_delta_e00": 9.085508744682187,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 1.7327403634505885
+      },
+      {
+        "scene_id": "gfx100rf-046",
+        "baseline_delta_e00": 7.650572382221749,
+        "candidate_delta_e00": 7.391554928572296,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 0.25901745364945317
+      },
+      {
+        "scene_id": "gfx100rf-047",
+        "baseline_delta_e00": 10.232043188103779,
+        "candidate_delta_e00": 7.5744930400720545,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 2.6575501480317243
+      },
+      {
+        "scene_id": "gfx100rf-048",
+        "baseline_delta_e00": 6.237247934566793,
+        "candidate_delta_e00": 3.998082237746215,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 2.239165696820578
+      },
+      {
+        "scene_id": "gfx100rf-050",
+        "baseline_delta_e00": 19.008502424965837,
+        "candidate_delta_e00": 19.847979997315853,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": -0.8394775723500167
+      },
+      {
+        "scene_id": "gfx100rf-051",
+        "baseline_delta_e00": 19.872968613408485,
+        "candidate_delta_e00": 17.6715285639357,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 2.2014400494727866
+      },
+      {
+        "scene_id": "gfx100rf-052",
+        "baseline_delta_e00": 18.64407856285733,
+        "candidate_delta_e00": 17.612612700411415,
+        "source_body": "",
+        "illumination_id": "",
+        "neutral_baseline": null,
+        "neutral_candidate": null,
+        "chromatic_baseline": null,
+        "chromatic_candidate": null,
+        "improvement": 1.0314658624459163
+      }
+    ],
+    "manifest": {
+      "n_rows": 37,
+      "n_scenes": 37,
+      "n_sessions": 11,
+      "lighting": [
+        "daylight"
+      ],
+      "scene_type": [
+        "natural_scene"
+      ],
+      "picture_styles": [
+        "F0/Standard (Provia)"
+      ]
+    },
+    "improvement_pct": 25.54539325490376,
+    "baseline_layers": [
+      "raw_decoder",
+      "colorimetric_foundation",
+      "appearance_candidate"
+    ],
+    "mean_foundation": 16.699295353344418,
+    "foundation_improvement_pct": 0.0,
+    "coverage": {
+      "lighting": [
+        "daylight"
+      ],
+      "scene_type": [
+        "natural_scene"
+      ]
+    },
+    "picture_styles": [
+      "F0/Standard (Provia)"
+    ],
+    "subgroups_passed": false,
+    "controls_passed": false,
+    "provenance_passed": true
+  },
+  "classification": {
+    "ship_gate_passed": false,
+    "checks": {
+      "scene_count": true,
+      "effect_threshold": true,
+      "ci_positive": true,
+      "sign_test": true,
+      "lighting_coverage": false,
+      "scene_coverage": false,
+      "picture_style": true,
+      "subgroups": false,
+      "controls": false,
+      "provenance": true
+    },
+    "classification": "Inconclusive"
+  }
+}
