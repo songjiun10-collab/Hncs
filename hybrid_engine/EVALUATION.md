@@ -4929,3 +4929,18 @@ SHA-256, EXIF와 수치는
 ~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_pairs_cli \
     <raw-dir> <jpeg-dir> --output preflight.json
 ```
+
+## GFX100RF NARE pool strict pairing - 63/63, coverage는 아직 부족 (2026-09-08)
+
+`datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/`의 실제 RAW/JPEG
+폴더를 같은 strict scanner로 다시 검사했다. 63 RAW와 63 JPEG가 모두
+`DateTimeOriginal`, Make, Model, ISO key로 정확히 한 번씩 일치했다:
+**63 strict pairs**, unmatched 0/0, invalid EXIF 0/0, ambiguous key 0이다.
+
+이는 기존 12-scene NARE pilot의 pairing 근거를 강화하지만, pilot의
+`picture_style=unknown`, 전체 `lighting=daylight`, `scene_type=natural_scene`
+한 종류라는 제한을 바꾸지는 않는다. 63개를 독립 scene 63개로 세거나
+NARE 결과를 갱신하지 않았다. scene grouping과 picture-style provenance,
+다른 조명 strata가 확보되기 전에는 현재 Inconclusive 판정을 유지한다.
+기계가 읽는 검사 수치는
+`../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_strict_pairing_report_2026-09.json`에 기록했다.
