@@ -91,6 +91,12 @@ library/palace/street shots are not identifiable close-ups.*
   `python3 -m hybrid_engine.evaluation.nare_pairs_cli raw jpeg --output preflight.json`
   and add `--manifest-out candidate.json --contributor <name>` to preserve
   hashes and capture EXIF in a candidate manifest before scene labels are set
+- `evaluation/nare_runner.py` / `evaluation/nare_runner_cli.py` - generate the
+  three per-scene ΔE00 layers from frozen RAW/SOOC-JPEG inputs. The current CLI
+  supports the fixed Fuji Provia target only: `python3 -m
+  hybrid_engine.evaluation.nare_runner_cli --manifest provia.json --candidate
+  provia --out metrics.json`. It verifies both file hashes and rejects every
+  non-Provia or mixed-style evaluation row before RAW decoding.
 - `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
   metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
 - `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the

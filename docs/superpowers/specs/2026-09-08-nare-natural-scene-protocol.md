@@ -64,6 +64,12 @@ B1 = colorimetric foundation only
 C  = HNCS appearance candidate
 ```
 
+수치는 고정 manifest에서 재생성한다. `nare_runner_cli`는 현재 Fuji Provia
+candidate에 대해 source/target SHA-256을 다시 확인하고, `F0/Standard (Provia)`
+한 가지 style의 evaluation/lockbox row만 RAW 디코드한다. foundation을 따로
+제공하지 않으면 identity foundation control을 기록하며, 이를 별도
+colorimetric foundation 검증이라고 해석하면 안 된다.
+
 scene별 `d_s = E_baseline,s - E_candidate,s`를 계산하고 scene만 resample하는
 paired bootstrap과 exact sign test를 적용한다. pixel bootstrap은 금지한다.
 native-ish와 1024px long-edge(또는 50%) 두 scale을 평가해 color와 spatial
