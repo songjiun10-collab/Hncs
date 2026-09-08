@@ -124,6 +124,14 @@ class TestEvidenceReceipt(unittest.TestCase):
                     expected_git_sha="a" * 40,
                 )
             self.assertEqual(untrusted["classification"]["classification"], "Supported")
+            with patch.dict(os.environ, {"HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256": "0" * 64}, clear=True):
+                with self.assertRaisesRegex(ValueError, "not trusted"):
+                    eager_report(
+                        *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                        "C", True, True, True, n_bootstrap=50,
+                        receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
+                        expected_git_sha="a" * 40,
+                    )
             with patch.dict(
                     os.environ,
                     {"HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256": public_key_sha256(public_path)},
