@@ -22,6 +22,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), ".claude", "hooks"))
 import protect_push_safety as hook  # noqa: E402
+from tests._hook_subprocess import run_hook
 
 
 def _is_force_push(command):
@@ -172,17 +173,7 @@ class TestHookEndToEnd(unittest.TestCase):
         shutil.rmtree(self._log_dir, ignore_errors=True)
 
     def _run_hook(self, command, agent_id=None):
-        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
-        if agent_id:
-            payload["agent_id"] = agent_id
-            payload["agent_type"] = "general-purpose"
-        proc = subprocess.run(
-            [sys.executable, hook.__file__],
-            cwd=self.repo, input=json.dumps(payload), env=self._env,
-            capture_output=True, text=True, timeout=15,
-        )
-        out = json.loads(proc.stdout)
-        return out["hookSpecificOutput"]["permissionDecision"]
+        return run_hook(hook, self.repo, self._env, command, agent_id=agent_id)
 
     def _write_decision_record(self, target):
         sys.modules.pop("_hook_common", None)
