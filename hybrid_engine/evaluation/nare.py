@@ -48,7 +48,8 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
     summary = validate_nare_manifest(manifest)
     metadata = {str(row["scene_id"]): row for row in manifest
                 if row["split"] in {"evaluation", "lockbox"}}
-    metrics = {str(row.get("scene_id")): row for row in metric_rows}
+    metric_records = list(metric_rows)
+    metrics = {str(row.get("scene_id")): row for row in metric_records}
     if set(metrics) != set(metadata):
         raise ValueError("NARE metric scene IDs must exactly match evaluation/lockbox scenes")
     required = ("raw_delta_e00", "foundation_delta_e00", "candidate_delta_e00")
@@ -68,12 +69,15 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
     paired = evaluate_paired(scene_metrics, n_bootstrap=n_bootstrap, seed=seed)
     raw_mean = paired["mean_baseline"]
     foundation_mean = sum(foundation) / len(foundation)
+    subgroup_metrics = summarize_nare_subgroups(metric_records)
     return {**paired, "manifest": summary,
             "improvement_pct": paired["mean_improvement_pct"],
             "baseline_layers": ["raw_decoder", "colorimetric_foundation", "appearance_candidate"],
             "mean_foundation": foundation_mean,
             "foundation_improvement_pct": 100 * (raw_mean - foundation_mean) / raw_mean,
             "registration_passed": all(registration),
+            "subgroup_metrics": subgroup_metrics,
+            "subgroup_metrics_passed": subgroup_metrics["passed"],
             "coverage": {"lighting": summary["lighting"], "scene_type": summary["scene_type"]},
             "picture_styles": summary["picture_styles"]}
 
@@ -139,7 +143,8 @@ def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
         "scene_coverage": len(coverage.get("scene_type", [])) >= 3,
         "picture_style": len(picture_styles) == 1 and picture_styles[0] != "unknown",
         "registration": bool(result.get("registration_passed", False)),
-        "subgroups": bool(result.get("subgroups_passed", False)),
+        "subgroups": bool(result.get("subgroups_passed", False))
+        and bool(result.get("subgroup_metrics_passed", False)),
         "controls": bool(result.get("controls_passed", False)),
         "provenance": bool(result.get("provenance_passed", False)),
     }

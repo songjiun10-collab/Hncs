@@ -44,6 +44,7 @@ class TestNARE(unittest.TestCase):
         self.assertEqual(result["baseline_layers"], ["raw_decoder", "colorimetric_foundation", "appearance_candidate"])
         self.assertAlmostEqual(result["improvement_pct"], 30.0)
         self.assertTrue(result["registration_passed"])
+        self.assertFalse(result["subgroup_metrics_passed"])
 
     def test_ship_gate_requires_three_lighting_and_scene_strata(self):
         result = {"n_scenes": 12, "improvement_pct": 10,
@@ -52,6 +53,7 @@ class TestNARE(unittest.TestCase):
                                "scene_type": ["portrait", "landscape", "indoor"]},
                   "picture_styles": ["standard"],
                   "registration_passed": True,
+                  "subgroup_metrics_passed": True,
                   "subgroups_passed": True, "controls_passed": True,
                   "provenance_passed": True}
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
@@ -65,6 +67,7 @@ class TestNARE(unittest.TestCase):
                                "scene_type": ["portrait", "landscape", "indoor"]},
                   "picture_styles": ["standard"], "subgroups_passed": True,
                   "registration_passed": True,
+                  "subgroup_metrics_passed": True,
                   "controls_passed": True, "provenance_passed": True}
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
         result["picture_styles"] = ["standard", "velvia"]
