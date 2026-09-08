@@ -47,6 +47,13 @@ appearance candidate. Compute scene-level `d_s = E_baseline,s - E_candidate,s`,
 then use scene-only paired bootstrap and exact sign testing; pixel bootstrap is
 forbidden. Evaluate native-ish and 1024px (or 50%) scales.
 
+Regenerate numbers from a frozen manifest. For the current Fuji Provia
+candidate, `nare_runner_cli` rechecks source and target SHA-256 values and
+decodes only evaluation/lockbox rows with the single style
+`F0/Standard (Provia)`. When no foundation transform is supplied, it records
+an identity-foundation control; that is not evidence for a separately fitted
+colorimetric foundation.
+
 Use unseen-image, unseen-scene, unseen-session, unseen-contributor, unseen-body,
 and unseen-camera-model levels in increasing strength. Keep all derivatives of one
 scene in one split. Check lighting, scene, DR, ISO, skin, and saturation strata for
