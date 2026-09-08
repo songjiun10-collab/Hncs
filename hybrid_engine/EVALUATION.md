@@ -4950,3 +4950,42 @@ NARE 결과를 갱신하지 않았다. scene grouping과 picture-style provenanc
 다른 조명 strata가 확보되기 전에는 현재 Inconclusive 판정을 유지한다.
 기계가 읽는 검사 수치는
 `../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_strict_pairing_report_2026-09.json`에 기록했다.
+
+## GFX100RF Provia NARE exploratory replay - +14.987%, ship 판정 보류 (2026-09-08)
+
+새 `hybrid_engine.evaluation.nare_runner_cli`로 같은 GFX100RF strict pool을
+다시 읽었다. EXIF `FilmMode=F0/Standard (Provia)`인 51 RAW/SOOC JPEG만
+선택했고, Reala ACE 11개와 FilmMode unknown 1개는 포함하지 않았다. 각 input의
+SHA-256을 frozen manifest와 재확인한 뒤 rawpy 0.27.0의
+`use_camera_wb=True`, `no_auto_bright=True`, sRGB형 gamma decode로 512px
+long-edge에 렌더했다. B0은 이 neutral RAW decode, B1은 명시적인 identity
+foundation control, C는 현행 `apply_provia`다.
+
+51 frame의 수치는 B0 평균 ΔE00 **20.714990929015055**, C 평균 ΔE00
+**17.61033402431603**, scene-level 평균차 **+3.1046569046990222**,
+상대 개선 **+14.987488603484707%**였다. C가 더 낮은 ΔE00인 frame은 42개,
+더 높은 frame은 9개였고, 20,000회 scene bootstrap 95% CI는
+**[+2.3120971492751248, +3.9058458129832943]**, exact paired sign test는
+**p=3.3888279489246997e-06**였다.
+
+이는 실제 RAW→SOOC JPEG replay의 강한 exploratory evidence이지만 **ship
+결과는 아니다**. 이 public pre-production pool은 `daylight` 하나와
+`natural_scene` 하나로만 라벨되어 3-lighting/3-scene-category gate를 통과하지
+못했고, semantic/spatial subgroup과 positive control도 아직 없다. 51 frame은
+12 capture date에 걸치지만, 날짜를 독립 scene으로 자동 간주하지 않는다.
+따라서 NARE report는 `Inconclusive`를 유지한다.
+
+재현:
+```
+~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_runner_cli \
+  --manifest datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_manifest_2026-09.json \
+  --candidate provia --max-dim 512 \
+  --out /tmp/gfx100rf-provia-metrics.json
+~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_cli \
+  --manifest datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_manifest_2026-09.json \
+  --metrics /tmp/gfx100rf-provia-metrics.json \
+  --controls datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_controls_2026-09.json
+```
+
+동결 manifest, per-scene metrics, control 상태와 report는 모두
+`../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_*_2026-09.json`에 기록했다.
