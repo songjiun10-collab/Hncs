@@ -104,6 +104,14 @@ library/palace/street shots are not identifiable close-ups.*
   `registered.json` for the subsequent NARE metric run.
 - `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
   metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
+- `evaluation/supabase_sync.py` - opt-in `--sync-supabase` flag on
+  `eager_cli.py`/`nare_cli.py` upserts the frozen report to the HNCS
+  Supabase research registry, keyed by a hash of the manifest/metrics
+  files so re-running the same frozen inputs is idempotent. Needs
+  `HNCS_SUPABASE_URL` (must be `https://`) and
+  `HNCS_SUPABASE_SERVICE_ROLE_KEY` in the environment - never on the
+  command line, never written to a report or committed file. Skip the
+  flag entirely to run either CLI with no network access at all.
 - `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the
   EAGER Framework design and claim boundaries
 - `CLAUDE.md` (this directory) - rules for changes here
