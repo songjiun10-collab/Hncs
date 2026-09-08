@@ -4904,3 +4904,28 @@ Model 문자열을 그대로 씀(Leica SL3-P/하셀블라드 X2D II 선례와 �
 caveat). 파일명은 바디까지 명시(`sigma_fpl_chart`/`ricoh_gr_griv_chart`/
 `olympus_om3_chart`/`pentax_k3iii_chart`) - 같은 브랜드의 다른 바디를
 나중에 추가해도 충돌 안 나도록.
+
+## NARE 공개 샘플 intake - Fujifilm X-T100 한 쌍은 피팅 불가 (2026-09-08)
+
+실사진 제조사 appearance 검증용 NARE의 첫 공개 샘플 intake로
+[Mirrorless Comparison X-T100 sample gallery](https://mirrorlesscomparison.com/galleries/fujifilm-xt100-sample-shots/)가 연결한 RAW/JPEG를 받았다. 파일명 유사성으로 짝을 만들지 않고
+`evaluation.nare_pairs_cli`의 strict key(촬영시각, Make, Model, ISO가 양쪽에
+정확히 한 번씩 존재)로 검사했다. 3 RAW/4 JPEG 중 `DSCF0138.RAF`와
+`DSCF0138.JPG` 한 쌍만 통과했다. EXIF는 모두 `2018:08:19 22:16:43`,
+FUJIFILM X-T100, ISO 200, `F0/Standard (Provia)`, Kelvin WB다.
+
+이 한 쌍을 rawpy 0.27.0(`use_camera_wb=True`, `no_auto_bright=True`)으로
+512×512에 렌더하고 `apply_provia`를 적용한 exploratory probe는 raw 기준
+ΔE00 **13.392764584526887**, candidate **13.815155932672752**,
+즉 **−0.4223913481458652 / −3.15387719600379%**였다. 그러나 이는 NARE
+평가나 피팅 결과가 아니다. 독립 scene이 1개뿐이고 daylight 하나,
+natural-scene 하나라서 12-scene, 3-lighting, 3-scene-category gate를 전부
+충족하지 못한다. 이후 피팅/배포의 근거로 쓰지 않는다. 정확한 다운로드 URL,
+SHA-256, EXIF와 수치는
+`../datasets/fuji/contributed/mirrorlesscomparison-xt100-2018-08/nare_preflight_2026-09.json`에 기록했다.
+
+재현(이미지는 의도적으로 git에 넣지 않음):
+```
+~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_pairs_cli \
+    <raw-dir> <jpeg-dir> --output preflight.json
+```
