@@ -123,6 +123,8 @@ World + LAB 톤/색 커브)을 썼다 - 후지의 필름 시뮬레이션 프리�
   제조사, 바디, ISO가 양쪽에서 정확히 한 번씩만 일치할 때만 pair로 받는
   strict intake preflight. 피팅 전 `python3 -m
   hybrid_engine.evaluation.nare_pairs_cli raw jpeg --output preflight.json`으로 실행한다.
+  `--manifest-out candidate.json --contributor <name>`을 추가하면 장면 라벨을
+  붙이기 전에도 해시와 촬영 EXIF를 candidate manifest에 보존한다.
 - `evaluation/eager_cli.py` - manifest와 기록된 metric/control JSON에
   위 게이트를 적용하는 실행 명령(`python3 -m
   hybrid_engine.evaluation.eager_cli`)

@@ -11,6 +11,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Iterable
 
+from .eager import sha256_file
+
 
 _REQUIRED = ("DateTimeOriginal", "Make", "Model", "ISO")
 _RAW_EXTENSIONS = {".3fr", ".arw", ".cr2", ".cr3", ".dng", ".nef", ".orf", ".raf", ".rw2"}
@@ -23,7 +25,8 @@ def _read_exif_many(paths: Iterable[str]) -> dict[str, dict]:
     if not paths:
         return {}
     completed = subprocess.run(
-        ["exiftool", "-json", "-DateTimeOriginal", "-Make", "-Model", "-ISO", *paths],
+        ["exiftool", "-json", "-DateTimeOriginal", "-Make", "-Model", "-ISO",
+         "-LensModel", "-ExposureTime", "-WhiteBalance", "-FilmMode", *paths],
         capture_output=True, text=True, timeout=60, check=False,
     )
     if completed.returncode or not completed.stdout.strip():
@@ -88,3 +91,41 @@ def scan_pair_directories(raw_dir: str | Path, jpeg_dir: str | Path) -> dict:
                   if path.is_file() and path.suffix.lower() in _JPEG_EXTENSIONS]
     report = find_strict_pairs(raw_paths, jpeg_paths)
     return {"raw_input_count": len(raw_paths), "jpeg_input_count": len(jpeg_paths), **report}
+
+
+def build_nare_manifest(pairs: Iterable[dict], *, contributor: str, lighting: str,
+                        scene_type: str, split: str = "evaluation",
+                        scene_prefix: str = "scene") -> list[dict]:
+    """Build a NARE manifest while retaining file hashes and capture EXIF.
+
+    ``lighting`` and ``scene_type`` intentionally remain caller-supplied:
+    they are photographic labels, not metadata that can be safely inferred.
+    Unknown values are retained explicitly for the provenance gate to reject.
+    """
+    pairs = list(pairs)
+    paths = [path for pair in pairs for path in (pair["raw_path"], pair["jpeg_path"])]
+    metadata = _read_exif_many(paths)
+    rows = []
+    for index, pair in enumerate(pairs):
+        raw_path, jpeg_path = pair["raw_path"], pair["jpeg_path"]
+        raw_meta, jpeg_meta = metadata.get(raw_path, {}), metadata.get(jpeg_path, {})
+        timestamp = str(raw_meta.get("DateTimeOriginal") or jpeg_meta.get("DateTimeOriginal") or "")
+        capture_date = timestamp.split(" ", 1)[0].replace(":", "-") or "unknown"
+        rows.append({
+            "scene_id": f"{scene_prefix}-{index:03d}",
+            "session_id": f"capture-{capture_date}",
+            "contributor": contributor,
+            "source_path": raw_path,
+            "target_path": jpeg_path,
+            "source_sha256": sha256_file(raw_path),
+            "target_sha256": sha256_file(jpeg_path),
+            "picture_style": str(jpeg_meta.get("FilmMode") or raw_meta.get("FilmMode") or "unknown"),
+            "lighting": lighting,
+            "scene_type": scene_type,
+            "split": split,
+            "lens": str(raw_meta.get("LensModel") or jpeg_meta.get("LensModel") or "unknown"),
+            "exposure": str(raw_meta.get("ExposureTime") or jpeg_meta.get("ExposureTime") or "unknown"),
+            "white_balance": str(raw_meta.get("WhiteBalance") or jpeg_meta.get("WhiteBalance") or "unknown"),
+            "iso": str(raw_meta.get("ISO") or jpeg_meta.get("ISO") or "unknown"),
+        })
+    return rows
