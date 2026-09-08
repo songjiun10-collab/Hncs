@@ -15,6 +15,9 @@
 > verification, evaluator/config verification and independent replay still
 > need work. This change neither audits existing remote records nor prevents
 > direct database writes by a service-role credential holder.
+> The EAGER CLI now requires `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256` to match
+> the supplied key before a receipt-backed run can become `Verified`; without
+> that protected fingerprint the same receipt remains `Supported`.
 
 The attack in `0da0c44` and `3e27c7a` showed that the missing protection was not
 finite metrics or hash syntax. There was no binding from an external JSON report
@@ -36,6 +39,7 @@ argument or any hash mismatch is rejected. Without a valid receipt,
 `trusted_provenance=True` to the classifier.
 
 ```bash
+export HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256="$(openssl dgst -sha256 -binary ci-ed25519.pub | xxd -p -c 256)"
 python -m hybrid_engine.evaluation.eager_cli \
   --manifest manifest.json --metrics metrics.json \
   --controls controls.json --robustness robustness.json \
@@ -60,7 +64,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,429 tests passed
+- full suite: 1,436 tests passed (rerun on the current checkout)
 
 ## Limitations
 

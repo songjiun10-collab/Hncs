@@ -41,6 +41,17 @@ def sha256_file(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def public_key_sha256(path: str | Path) -> str:
+    """Return the fingerprint of the raw Ed25519 public-key bytes."""
+    try:
+        raw = base64.b64decode(Path(path).read_text(encoding="ascii").strip(), validate=True)
+    except (OSError, UnicodeError, ValueError, binascii.Error) as error:
+        raise ValueError("receipt public key is invalid") from error
+    if len(raw) != 32:
+        raise ValueError("receipt public key is invalid")
+    return sha256(raw).hexdigest()
+
+
 def build_receipt(
     artifact_paths: Mapping[str, str | Path], *, git_sha: str,
     evaluator_sha256: str, command: list[str], run_id: str,
@@ -101,6 +112,7 @@ def validate_receipt(
     receipt_path: str | Path, artifact_paths: Mapping[str, str | Path],
     public_key_path: str | Path, expected_git_sha: str | None = None,
     required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
+    trusted_public_key_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Validate signature and every artifact hash before trusting a run."""
     try:
@@ -139,6 +151,12 @@ def validate_receipt(
         _decode_public_key(public_key_path).verify(signed_bytes, _canonical(unsigned))
     except (InvalidSignature, ValueError) as error:
         raise ValueError("receipt signature verification failed") from error
+    if trusted_public_key_sha256 is not None:
+        if (not isinstance(trusted_public_key_sha256, str)
+                or not _HEX64.fullmatch(trusted_public_key_sha256.lower())):
+            raise ValueError("trusted receipt public-key fingerprint is invalid")
+        if public_key_sha256(public_key_path) != trusted_public_key_sha256.lower():
+            raise ValueError("receipt public key is not trusted")
     artifacts = receipt.get("artifacts")
     if not isinstance(artifacts, dict):
         raise ValueError("receipt artifacts are missing")
