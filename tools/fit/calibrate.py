@@ -160,6 +160,15 @@ def gray_stats(img):
     return dict(b2=np.percentile(gray, 2), w995=np.percentile(gray, 99.5), dark_pct=dark_pct)
 
 
+def _pair_error(d, s):
+    """run_grid_search*() 세 함수가 각자 중첩 정의로 들고 있던 동일한
+    오차식 - 하이라이트(w995) 항상 포함, 섀도우(b2)는 유효할 때만."""
+    err = (s['w995'] - d['target']['w995']) ** 2
+    if d['shadow_valid']:
+        err += (s['b2'] - d['target']['b2']) ** 2
+    return err
+
+
 # ============================================================
 # grid_search: apply_hncs 파라미터 그리드서치 (v10/v11)
 # ============================================================
@@ -203,11 +212,7 @@ def run_grid_search():
     if not dataset:
         return
 
-    def pair_error(d, s):
-        err = (s['w995'] - d['target']['w995']) ** 2
-        if d['shadow_valid']:
-            err += (s['b2'] - d['target']['b2']) ** 2
-        return err
+    pair_error = _pair_error
 
     # --- 그리드서치 (전역 노출 리프트 포함) ---
     best = None
@@ -287,11 +292,7 @@ def run_grid_search_loo():
     if not dataset:
         return
 
-    def pair_error(d, s):
-        err = (s['w995'] - d['target']['w995']) ** 2
-        if d['shadow_valid']:
-            err += (s['b2'] - d['target']['b2']) ** 2
-        return err
+    pair_error = _pair_error
 
     combos = _grid_search_combos()
     print(f"\n{len(combos)}개 파라미터 조합 x {n}쌍 - 오차 행렬 계산중...")
@@ -370,11 +371,7 @@ def run_grid_search_loo_per_generation(min_n=10):
     if not dataset:
         return
 
-    def pair_error(d, s):
-        err = (s['w995'] - d['target']['w995']) ** 2
-        if d['shadow_valid']:
-            err += (s['b2'] - d['target']['b2']) ** 2
-        return err
+    pair_error = _pair_error
 
     combos = _grid_search_combos()
     print(f"\n{len(combos)}개 파라미터 조합 x {n}쌍 - 오차 행렬 계산중...")

@@ -7,7 +7,25 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.fit.calibrate import _CONTAMINATED_OFFICIAL_PAIRS, _generation_for, _resolve_pairs
+from tools.fit.calibrate import (
+    _CONTAMINATED_OFFICIAL_PAIRS, _generation_for, _pair_error, _resolve_pairs,
+)
+
+
+class TestPairError(unittest.TestCase):
+    """run_grid_search()/run_grid_search_loo()/run_grid_search_loo_per_generation()가
+    각자 중첩 정의로 들고 있던 동일한 오차식을 _pair_error()로 통합한 것 -
+    섀도우(b2) 항은 shadow_valid일 때만 더해진다."""
+
+    def test_highlight_only_when_shadow_invalid(self):
+        d = {'target': {'w995': 90.0, 'b2': 5.0}, 'shadow_valid': False}
+        s = {'w995': 92.0, 'b2': 50.0}
+        self.assertAlmostEqual(_pair_error(d, s), (92.0 - 90.0) ** 2)
+
+    def test_highlight_plus_shadow_when_shadow_valid(self):
+        d = {'target': {'w995': 90.0, 'b2': 5.0}, 'shadow_valid': True}
+        s = {'w995': 92.0, 'b2': 7.0}
+        self.assertAlmostEqual(_pair_error(d, s), (92.0 - 90.0) ** 2 + (7.0 - 5.0) ** 2)
 
 
 class TestResolvePairsExcludesContaminated(unittest.TestCase):
