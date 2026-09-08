@@ -17,6 +17,7 @@ from .eager import (
     validate_controls,
     validate_robustness,
 )
+from .evidence_receipt import validate_receipt
 from .supabase_sync import sync_evaluation_report
 
 
@@ -40,6 +41,7 @@ def build_report(
     robustness_path: str, evidence_tier: str, validation_passed: bool,
     lockbox_passed: bool, external_replication: bool,
     n_bootstrap: int = 20_000, seed: int = 0,
+    receipt_path: str | None = None, receipt_public_key_path: str | None = None,
 ) -> dict[str, Any]:
     """Load JSON inputs, evaluate paired errors, and classify the evidence."""
 
@@ -57,6 +59,18 @@ def build_report(
         raise ValueError("requested evidence tier is stronger than evaluated manifest evidence")
     controls = validate_controls(_load_json(controls_path))
     robustness = validate_robustness(_load_json(robustness_path))
+    if bool(receipt_path) != bool(receipt_public_key_path):
+        raise ValueError("--receipt and --receipt-public-key must be supplied together")
+    receipt = None
+    trusted_provenance = False
+    if receipt_path and receipt_public_key_path:
+        receipt = validate_receipt(
+            receipt_path,
+            {"manifest": manifest_path, "metrics": metrics_path,
+             "controls": controls_path, "robustness": robustness_path},
+            receipt_public_key_path,
+        )
+        trusted_provenance = receipt["trusted"] is True
     paired = paired_report["paired"]
     paired["controls_passed"] = controls["passed"]
     paired["robustness_passed"] = robustness["passed"]
@@ -67,8 +81,10 @@ def build_report(
         lockbox_passed=lockbox_passed,
         external_replication=external_replication,
         validation_passed=validation_passed,
-        trusted_provenance=False,
+        trusted_provenance=trusted_provenance,
     )
+    if receipt is not None:
+        paired_report["evidence_receipt"] = receipt
     return paired_report
 
 
@@ -82,6 +98,8 @@ def main() -> None:
     parser.add_argument("--validation-passed", action="store_true")
     parser.add_argument("--lockbox-passed", action="store_true")
     parser.add_argument("--external-replication", action="store_true")
+    parser.add_argument("--receipt", help="signed Evidence Receipt from a trusted evaluator")
+    parser.add_argument("--receipt-public-key", help="base64 Ed25519 public key for --receipt")
     parser.add_argument("--bootstrap", type=int, default=20_000)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out")
@@ -104,6 +122,7 @@ def main() -> None:
         args.manifest, args.metrics, args.controls, args.robustness,
         args.evidence_tier, args.validation_passed, args.lockbox_passed,
         args.external_replication, n_bootstrap=args.bootstrap, seed=args.seed,
+        receipt_path=args.receipt, receipt_public_key_path=args.receipt_public_key,
     )
     rendered = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
