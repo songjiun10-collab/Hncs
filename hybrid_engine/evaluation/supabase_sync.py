@@ -170,6 +170,8 @@ def sync_evaluation_report(
     # the evaluator receipt verifier records this fact in the paired result.
     if ship_gate and paired.get("trusted_provenance") is not True:
         raise ValueError("ship gate requires trusted provenance receipt")
+    if classification == "Verified" and paired.get("trusted_provenance") is not True:
+        raise ValueError("Verified classification requires trusted provenance receipt")
     manifest_sha = sha256_file(manifest_path)
     metrics_sha = sha256_file(metrics_path)
     controls_sha = sha256_file(controls_path) if controls_path else None
