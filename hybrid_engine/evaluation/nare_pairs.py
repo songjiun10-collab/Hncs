@@ -17,16 +17,19 @@ _RAW_EXTENSIONS = {".3fr", ".arw", ".cr2", ".cr3", ".dng", ".nef", ".orf", ".raf
 _JPEG_EXTENSIONS = {".jpg", ".jpeg"}
 
 
-def _read_exif(path: str) -> dict:
-    """Read only fields needed for an exact same-capture key."""
+def _read_exif_many(paths: Iterable[str]) -> dict[str, dict]:
+    """Read strict-key EXIF fields for a folder in one exiftool process."""
+    paths = sorted(map(str, paths))
+    if not paths:
+        return {}
     completed = subprocess.run(
-        ["exiftool", "-json", "-DateTimeOriginal", "-Make", "-Model", "-ISO", path],
+        ["exiftool", "-json", "-DateTimeOriginal", "-Make", "-Model", "-ISO", *paths],
         capture_output=True, text=True, timeout=60, check=False,
     )
     if completed.returncode or not completed.stdout.strip():
         return {}
     records = json.loads(completed.stdout)
-    return records[0] if records else {}
+    return {str(record.get("SourceFile")): record for record in records}
 
 
 def _capture_key(metadata: dict) -> tuple[str, str, str, str] | None:
@@ -44,12 +47,15 @@ def find_strict_pairs(raw_paths: Iterable[str], jpeg_paths: Iterable[str]) -> di
     ordering: burst frames and edited exports must never create a false NARE
     sample pair.
     """
+    raw_paths, jpeg_paths = list(raw_paths), list(jpeg_paths)
     raw_by_key, jpeg_by_key = defaultdict(list), defaultdict(list)
     invalid_raw, invalid_jpeg = [], []
+    all_paths = list(map(str, raw_paths)) + list(map(str, jpeg_paths))
+    metadata = _read_exif_many(all_paths)
     for paths, destination, invalid in ((raw_paths, raw_by_key, invalid_raw),
                                         (jpeg_paths, jpeg_by_key, invalid_jpeg)):
         for path in sorted(map(str, paths)):
-            key = _capture_key(_read_exif(path))
+            key = _capture_key(metadata.get(path, {}))
             if key is None:
                 invalid.append(path)
             else:
