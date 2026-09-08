@@ -46,6 +46,53 @@ class TestNARE(unittest.TestCase):
         self.assertTrue(result["registration_passed"])
         self.assertFalse(result["subgroup_metrics_passed"])
 
+    def test_evaluation_rejects_invalid_registration_values(self):
+        manifest = [row(f"s{i}") for i in range(2)]
+        metrics = [{"scene_id": f"s{i}", "raw_delta_e00": 10,
+                    "foundation_delta_e00": 8, "candidate_delta_e00": 7,
+                    "registration": {"ecc_correlation": -1,
+                                      "overlap_fraction": 0,
+                                      "shift_x_px": 0, "shift_y_px": 0}}
+                   for i in range(2)]
+        result = evaluate_nare_metrics(manifest, metrics, n_bootstrap=20)
+        self.assertFalse(result["registration_passed"])
+
+    def test_evaluation_rejects_duplicate_metric_scene_ids(self):
+        manifest = [row("s1")]
+        metric = {"scene_id": "s1", "raw_delta_e00": 10,
+                  "foundation_delta_e00": 8, "candidate_delta_e00": 7,
+                  "registration": {"ecc_correlation": .9,
+                                    "overlap_fraction": .99}}
+        with self.assertRaisesRegex(ValueError, "duplicate"):
+            evaluate_nare_metrics(manifest, [metric, dict(metric)], n_bootstrap=20)
+
+    def test_evaluation_coverage_uses_evaluated_rows_only(self):
+        manifest = [row(f"s{i}", "daylight", "landscape") for i in range(3)]
+        for i, lighting in enumerate(("tungsten", "mixed"), 3):
+            extra = row(f"s{i}", lighting, ("portrait", "indoor")[i - 3])
+            extra["split"] = "discovery"
+            manifest.append(extra)
+        metrics = [{"scene_id": f"s{i}", "raw_delta_e00": 10,
+                    "foundation_delta_e00": 8, "candidate_delta_e00": 7,
+                    "registration": {"ecc_correlation": .9,
+                                      "overlap_fraction": .99}}
+                   for i in range(3)]
+        result = evaluate_nare_metrics(manifest, metrics, n_bootstrap=20)
+        self.assertEqual(result["coverage"]["lighting"], ["daylight"])
+
+    def test_subgroups_reject_nonfinite_and_zero_baseline_regression(self):
+        bad = [{"scene_id": "s1", "subgroups": {
+            name: {"baseline_delta_e00": 0, "candidate_delta_e00": 100}
+            for name in ("skin", "sky")}}]
+        result = summarize_nare_subgroups(bad, required=("skin", "sky"))
+        self.assertFalse(result["passed"])
+        self.assertIn("skin", result["catastrophic_regressions"])
+        nan = [{"scene_id": "s1", "subgroups": {
+            name: {"baseline_delta_e00": 1, "candidate_delta_e00": float("nan")}
+            for name in ("skin", "sky")}}]
+        with self.assertRaisesRegex(ValueError, "finite"):
+            summarize_nare_subgroups(nan, required=("skin", "sky"))
+
     def test_ship_gate_requires_three_lighting_and_scene_strata(self):
         result = {"n_scenes": 12, "improvement_pct": 10,
                   "ci95": [0.1, 2], "sign_test_p": 0.01,

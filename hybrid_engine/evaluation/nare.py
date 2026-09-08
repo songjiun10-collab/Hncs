@@ -5,6 +5,7 @@ three-layer errors at the independent scene level. Rendering and registration
 remain explicit caller inputs.
 """
 
+import math
 from typing import Any, Iterable, Mapping
 
 from .eager import SceneMetric, evaluate_paired
@@ -13,6 +14,33 @@ _REQUIRED = ("scene_id", "session_id", "contributor", "source_path", "target_pat
              "source_sha256", "target_sha256", "picture_style", "lighting",
              "scene_type", "split")
 _SPLITS = {"discovery", "validation", "evaluation", "lockbox"}
+
+
+def _finite_nonnegative(value: Any, label: str) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"NARE {label} must be finite and non-negative") from error
+    if not math.isfinite(number) or number < 0:
+        raise ValueError(f"NARE {label} must be finite and non-negative")
+    return number
+
+
+def _registration_is_valid(diagnostic: Any) -> bool:
+    if not isinstance(diagnostic, Mapping):
+        return False
+    if diagnostic.get("passed") is False:
+        return False
+    try:
+        correlation = float(diagnostic["ecc_correlation"])
+        overlap = float(diagnostic["overlap_fraction"])
+        shift_x = float(diagnostic.get("shift_x_px", 0.0))
+        shift_y = float(diagnostic.get("shift_y_px", 0.0))
+    except (KeyError, TypeError, ValueError):
+        return False
+    if not all(math.isfinite(value) for value in (correlation, overlap, shift_x, shift_y)):
+        return False
+    return 0.6 <= correlation <= 1.0 and 0.9 <= overlap <= 1.0
 
 
 def validate_nare_manifest(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
@@ -49,7 +77,10 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
     metadata = {str(row["scene_id"]): row for row in manifest
                 if row["split"] in {"evaluation", "lockbox"}}
     metric_records = list(metric_rows)
-    metrics = {str(row.get("scene_id")): row for row in metric_records}
+    metric_ids = [str(row.get("scene_id")) for row in metric_records]
+    if len(metric_ids) != len(set(metric_ids)):
+        raise ValueError("NARE metric rows contain duplicate scene IDs")
+    metrics = dict(zip(metric_ids, metric_records))
     if set(metrics) != set(metadata):
         raise ValueError("NARE metric scene IDs must exactly match evaluation/lockbox scenes")
     required = ("raw_delta_e00", "foundation_delta_e00", "candidate_delta_e00")
@@ -60,16 +91,23 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
         row = metrics[scene_id]
         if any(key not in row for key in required):
             raise ValueError(f"NARE metric row {scene_id!r} missing baseline layer")
-        scene_metrics.append(SceneMetric(scene_id, float(row["raw_delta_e00"]),
-                                         float(row["candidate_delta_e00"])))
-        foundation.append(float(row["foundation_delta_e00"]))
+        raw_delta = _finite_nonnegative(row["raw_delta_e00"], f"raw_delta_e00[{scene_id}]")
+        foundation_delta = _finite_nonnegative(row["foundation_delta_e00"],
+                                               f"foundation_delta_e00[{scene_id}]")
+        candidate_delta = _finite_nonnegative(row["candidate_delta_e00"],
+                                              f"candidate_delta_e00[{scene_id}]")
+        scene_metrics.append(SceneMetric(scene_id, raw_delta, candidate_delta))
+        foundation.append(foundation_delta)
         diagnostic = row.get("registration")
-        registration.append(isinstance(diagnostic, Mapping)
-                            and {"ecc_correlation", "overlap_fraction"} <= set(diagnostic))
+        registration.append(_registration_is_valid(diagnostic))
     paired = evaluate_paired(scene_metrics, n_bootstrap=n_bootstrap, seed=seed)
     raw_mean = paired["mean_baseline"]
     foundation_mean = sum(foundation) / len(foundation)
     subgroup_metrics = summarize_nare_subgroups(metric_records)
+    evaluated_rows = [row for row in manifest if row["split"] in {"evaluation", "lockbox"}]
+    evaluated_lighting = sorted({str(row["lighting"]) for row in evaluated_rows})
+    evaluated_scene_type = sorted({str(row["scene_type"]) for row in evaluated_rows})
+    evaluated_styles = sorted({str(row["picture_style"]) for row in evaluated_rows})
     return {**paired, "manifest": summary,
             "improvement_pct": paired["mean_improvement_pct"],
             "baseline_layers": ["raw_decoder", "colorimetric_foundation", "appearance_candidate"],
@@ -78,8 +116,8 @@ def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
             "registration_passed": all(registration),
             "subgroup_metrics": subgroup_metrics,
             "subgroup_metrics_passed": subgroup_metrics["passed"],
-            "coverage": {"lighting": summary["lighting"], "scene_type": summary["scene_type"]},
-            "picture_styles": summary["picture_styles"]}
+            "coverage": {"lighting": evaluated_lighting, "scene_type": evaluated_scene_type},
+            "picture_styles": evaluated_styles}
 
 
 def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
@@ -108,8 +146,10 @@ def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
             if not isinstance(values, Mapping) or "baseline_delta_e00" not in values or "candidate_delta_e00" not in values:
                 missing.add(name)
                 continue
-            groups[name]["baseline"].append(float(values["baseline_delta_e00"]))
-            groups[name]["candidate"].append(float(values["candidate_delta_e00"]))
+            groups[name]["baseline"].append(_finite_nonnegative(
+                values["baseline_delta_e00"], f"subgroups[{name}].baseline_delta_e00"))
+            groups[name]["candidate"].append(_finite_nonnegative(
+                values["candidate_delta_e00"], f"subgroups[{name}].candidate_delta_e00"))
     summary: dict[str, dict[str, Any]] = {}
     catastrophic = []
     for name in required:
@@ -123,7 +163,7 @@ def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
         improvement_pct = 100 * (baseline_mean - candidate_mean) / baseline_mean if baseline_mean else 0.0
         summary[name] = {"n": len(baseline), "baseline_mean": baseline_mean,
                          "candidate_mean": candidate_mean, "improvement_pct": improvement_pct}
-        if improvement_pct < -catastrophic_regression_pct:
+        if (baseline_mean == 0 and candidate_mean > 0) or improvement_pct < -catastrophic_regression_pct:
             catastrophic.append(name)
     return {"groups": summary, "missing_groups": sorted(missing),
             "catastrophic_regressions": sorted(catastrophic),
