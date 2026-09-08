@@ -119,6 +119,10 @@ World + LAB 톤/색 커브)을 썼다 - 후지의 필름 시뮬레이션 프리�
   실행하는 EAGER 검증 커널
 - `evaluation/nare.py` / `evaluation/nare_cli.py` - 메인 실사진 RAW/SOOC JPEG
   appearance 계약과 3층 평가 실행기
+- `evaluation/nare_pairs.py` / `evaluation/nare_pairs_cli.py` - 촬영시각,
+  제조사, 바디, ISO가 양쪽에서 정확히 한 번씩만 일치할 때만 pair로 받는
+  strict intake preflight. 피팅 전 `python3 -m
+  hybrid_engine.evaluation.nare_pairs_cli raw jpeg --output preflight.json`으로 실행한다.
 - `evaluation/eager_cli.py` - manifest와 기록된 metric/control JSON에
   위 게이트를 적용하는 실행 명령(`python3 -m
   hybrid_engine.evaluation.eager_cli`)
