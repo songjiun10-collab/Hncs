@@ -284,6 +284,22 @@ class TestSupabaseSync(unittest.TestCase):
                     manifest_path=manifest, metrics_path=metrics, git_sha="abc1234",
                     client=_FakeClient())
 
+    def test_invalid_scene_metrics_are_rejected_before_any_registry_write(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": float("nan")}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            client = _FakeClient()
+            with self.assertRaisesRegex(ValueError, "ΔE values"):
+                sync_evaluation_report(
+                    report, protocol="EAGER", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, client=client)
+            self.assertEqual(client.calls, [])
+
     def test_ship_gate_cannot_be_synced_without_trusted_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s", "split": "evaluation"}])
