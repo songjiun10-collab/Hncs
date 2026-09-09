@@ -48,7 +48,16 @@ python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad \
 
 ## Protocol 2: Cross-camera generalization (타깃: hasselblad)
 
-소스: fuji(실제 RAW, `raw_calib_cache_fuji/`) + sony/nikon/canon(합성 -
+> **정정(2026-09-09, 실행 경로)**: `evaluation/cross_camera.py`는 이제
+> `raw_calib_cache_fuji/`뿐 아니라 `datasets/fuji/contributed/*/raw/`도 검색한다.
+> 현재 환경에서 Fuji RAW 329개가 발견되지만, 이 Protocol 2 분포 probe는
+> 소스별 대표 RAW 1개만 평가하므로 `n_sources=1`을 Fuji 전체 일반화 증거로
+> 읽으면 안 된다. `--real-only`는 Sony/Nikon/Canon 합성 소스를 제외하고
+> 실제 RAW가 없으면 fail-closed한다. 전체 scene/session 일반화 주장은 NARE
+> scene-level 평가로 별도 수행해야 한다.
+
+소스: fuji(실제 RAW, legacy `raw_calib_cache_fuji/` 또는
+`datasets/fuji/contributed/*/raw/`) + sony/nikon/canon(합성 -
 공통 테스트 사진에 `apply_*_look()` 적용, **진짜 카메라 데이터 아님**).
 
 | 소스 | 경로 | 변환 전 b2 | 변환 후 b2 | 변환 전 노이즈σ | 변환 후 노이즈σ |
