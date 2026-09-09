@@ -122,6 +122,7 @@ def run_generalization(target_brand, base_image_path=None, target_profile=None,
         results["fuji"] = {
             "path": "raw_direct (HybridCameraEngine, no brand inversion needed)",
             "is_real_raw": True,
+            "raw_file_count": len(raw_files),
             "pre_stats": image_stats(source_render),
             "post_stats": image_stats(converted_u8),
             "pre_noise_sigma": _noise_sigma(source_render),
@@ -178,12 +179,17 @@ def _convergence_summary(results):
     post_noise = [r["post_noise_sigma"] for r in results.values()]
     real_sources = [name for name, result in results.items() if result.get("is_real_raw") is True]
     synthetic_sources = [name for name, result in results.items() if result.get("is_real_raw") is not True]
+    real_raw_file_counts = {
+        name: int(result.get("raw_file_count", 0)) for name, result in results.items()
+        if result.get("is_real_raw") is True
+    }
     return {
         "n_sources": len(results),
         # Protocol 2R requires same-physical-scene target references. This
         # legacy distribution probe has neither, so it is never a ship claim.
         "classification": "Exploratory",
         "real_raw_sources": real_sources,
+        "real_raw_file_counts": real_raw_file_counts,
         "synthetic_sources_excluded_from_claim": synthetic_sources,
         "post_b2_std_across_sources": float(np.std(post_b2)),
         "post_w995_std_across_sources": float(np.std(post_w995)),
@@ -223,6 +229,9 @@ def main():
 
     summary = _convergence_summary(results)
     print("분류: Exploratory (Protocol 2R 일반화/ship 근거로 사용 금지)")
+    if summary["real_raw_file_counts"]:
+        print(f"실제 RAW 파일 수(현재 구현은 소스별 대표 1개를 평가): "
+              f"{summary['real_raw_file_counts']}")
     print(f"\n=== 수렴성 요약 (n={summary['n_sources']}) ===")
     print(f"변환 후 소스 간 b2 표준편차: {summary['post_b2_std_across_sources']:.2f} "
           f"(작을수록 잘 수렴)")
