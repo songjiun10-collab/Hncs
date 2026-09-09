@@ -89,7 +89,8 @@ def _hasselblad_download(url, path, max_dim=2000):
         scale = max_dim / max(h, w)
         if scale < 1:
             img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
-        cv2.imwrite(path, img, [cv2.IMWRITE_JPEG_QUALITY, 92])
+        if not cv2.imwrite(path, img, [cv2.IMWRITE_JPEG_QUALITY, 92]):
+            return False, "write"
         return True, None
     except Exception as e:
         print(f"  실패: {url} -> {e}")
