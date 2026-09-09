@@ -114,9 +114,9 @@ class TestExtractFeatures(unittest.TestCase):
 
     def test_circular_hue_wraps_correctly(self):
         records = [
-            self._sample_record(filename="a.jpg", hue_mean=359.0),
-            self._sample_record(filename="b.jpg", hue_mean=1.0),
-            self._sample_record(filename="c.jpg", hue_mean=180.0),
+            self._sample_record(filename="a.jpg", hue_mean=179.5),
+            self._sample_record(filename="b.jpg", hue_mean=0.5),
+            self._sample_record(filename="c.jpg", hue_mean=90.0),
         ]
         X, names = extract_features(records, feature_set="tone_color_gamut")
         cos_i, sin_i = names.index("hue_cos"), names.index("hue_sin")

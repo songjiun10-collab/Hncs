@@ -16,8 +16,19 @@ _SRGB = colour.RGB_COLOURSPACES["sRGB"]
 
 
 def _to_lab(rgb_linear):
-    xyz = colour.RGB_to_XYZ(rgb_linear, _SRGB, apply_cctf_decoding=False)
-    return colour.XYZ_to_Lab(xyz)
+    # Evaluation thresholds and SSIM constants below use reference-scale Lab
+    # (L*=0..100).  Freeze Colour's domain locally so unrelated caller state
+    # cannot silently change metric semantics.
+    with colour.domain_range_scale("reference"):
+        xyz = colour.RGB_to_XYZ(rgb_linear, _SRGB, apply_cctf_decoding=False)
+        return colour.XYZ_to_Lab(xyz)
+
+
+def _delta_e(lab_a, lab_b, method):
+    # colour.delta_E is also domain-range aware; keep it on the same frozen
+    # contract as _to_lab even when a caller has selected domain scale "1".
+    with colour.domain_range_scale("reference"):
+        return np.asarray(colour.delta_E(lab_a, lab_b, method=method))
 
 
 def delta_e_stats(rgb_a_linear, rgb_b_linear, method="CIE 2000"):
@@ -27,7 +38,7 @@ def delta_e_stats(rgb_a_linear, rgb_b_linear, method="CIE 2000"):
         raise ValueError(f"shape mismatch: {rgb_a_linear.shape} vs {rgb_b_linear.shape}")
     lab_a = _to_lab(rgb_a_linear).reshape(-1, 3)
     lab_b = _to_lab(rgb_b_linear).reshape(-1, 3)
-    d = np.asarray(colour.delta_E(lab_a, lab_b, method=method))
+    d = _delta_e(lab_a, lab_b, method)
     return {
         "mean": float(np.mean(d)),
         "median": float(np.median(d)),
@@ -42,7 +53,7 @@ def delta_e_by_zone(rgb_a_linear, rgb_b_linear, method="CIE 2000"):
     없으면 해당 구간은 None."""
     lab_a = _to_lab(rgb_a_linear).reshape(-1, 3)
     lab_b = _to_lab(rgb_b_linear).reshape(-1, 3)
-    d = np.asarray(colour.delta_E(lab_a, lab_b, method=method))
+    d = _delta_e(lab_a, lab_b, method)
     L = lab_a[:, 0]
 
     zones = {
@@ -83,7 +94,7 @@ def ssim_L(rgb_a_linear, rgb_b_linear):
     L_a = _to_lab(rgb_a_linear)[..., 0].astype(np.float64)
     L_b = _to_lab(rgb_b_linear)[..., 0].astype(np.float64)
 
-    data_range = 100.0  # L*는 [0, 100]
+    data_range = 100.0  # reference-scale L*는 [0, 100]
     c1 = (0.01 * data_range) ** 2
     c2 = (0.03 * data_range) ** 2
 
