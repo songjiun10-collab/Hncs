@@ -157,8 +157,15 @@ def _convergence_summary(results):
     post_sat = [r["post_stats"]["sat"] for r in results.values()]
     pre_noise = [r["pre_noise_sigma"] for r in results.values()]
     post_noise = [r["post_noise_sigma"] for r in results.values()]
+    real_sources = [name for name, result in results.items() if result.get("is_real_raw") is True]
+    synthetic_sources = [name for name, result in results.items() if result.get("is_real_raw") is not True]
     return {
         "n_sources": len(results),
+        # Protocol 2R requires same-physical-scene target references. This
+        # legacy distribution probe has neither, so it is never a ship claim.
+        "classification": "Exploratory",
+        "real_raw_sources": real_sources,
+        "synthetic_sources_excluded_from_claim": synthetic_sources,
         "post_b2_std_across_sources": float(np.std(post_b2)),
         "post_w995_std_across_sources": float(np.std(post_w995)),
         "post_sat_std_across_sources": float(np.std(post_sat)),
@@ -190,6 +197,7 @@ def main():
               f"pre_noise={r['pre_noise_sigma']:.3f} -> post_noise={r['post_noise_sigma']:.3f}")
 
     summary = _convergence_summary(results)
+    print("분류: Exploratory (Protocol 2R 일반화/ship 근거로 사용 금지)")
     print(f"\n=== 수렴성 요약 (n={summary['n_sources']}) ===")
     print(f"변환 후 소스 간 b2 표준편차: {summary['post_b2_std_across_sources']:.2f} "
           f"(작을수록 잘 수렴)")
