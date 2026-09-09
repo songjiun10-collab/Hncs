@@ -210,6 +210,20 @@ def sync_evaluation_report(
                 or abs(improvement - (baseline - candidate))
                 > 1e-9 * max(1.0, abs(baseline), abs(candidate))):
             raise ValueError("report per_scene ΔE values are invalid")
+    aggregate_keys = ("mean_baseline", "mean_candidate", "mean_improvement", "mean_improvement_pct")
+    if any(key in paired for key in aggregate_keys):
+        if not all(key in paired for key in aggregate_keys):
+            raise ValueError("report aggregate metrics are incomplete")
+        aggregate = tuple(float(paired[key]) for key in aggregate_keys)
+        expected_baseline = sum(float(row["baseline_delta_e00"]) for row in per_scene) / len(per_scene) if per_scene else 0.0
+        expected_candidate = sum(float(row["candidate_delta_e00"]) for row in per_scene) / len(per_scene) if per_scene else 0.0
+        expected_improvement = sum(float(row.get("improvement", float(row["baseline_delta_e00"]) - float(row["candidate_delta_e00"]))) for row in per_scene) / len(per_scene) if per_scene else 0.0
+        expected_pct = 100.0 * expected_improvement / expected_baseline if expected_baseline else 0.0
+        expected = (expected_baseline, expected_candidate, expected_improvement, expected_pct)
+        if (not all(math.isfinite(value) and value >= 0 for value in aggregate)
+                or any(abs(actual - wanted) > 1e-9 * max(1.0, abs(wanted))
+                       for actual, wanted in zip(aggregate, expected))):
+            raise ValueError("report aggregate metrics do not match per_scene")
     n_scenes = paired.get("n_scenes")
     if n_scenes is not None and (type(n_scenes) is not int or n_scenes != len(report_ids)):
         raise ValueError("report n_scenes must match per_scene row count")

@@ -300,6 +300,24 @@ class TestSupabaseSync(unittest.TestCase):
                     manifest_path=manifest, metrics_path=metrics, client=client)
             self.assertEqual(client.calls, [])
 
+    def test_inconsistent_aggregate_metrics_are_rejected_before_registry_write(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report = {
+                "paired": {"mean_baseline": 99.0, "mean_candidate": 1.0,
+                            "mean_improvement": 98.0, "mean_improvement_pct": 98.99,
+                            "per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            client = _FakeClient()
+            with self.assertRaisesRegex(ValueError, "aggregate metrics"):
+                sync_evaluation_report(
+                    report, protocol="EAGER", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, client=client)
+            self.assertEqual(client.calls, [])
+
     def test_ship_gate_cannot_be_synced_without_trusted_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s", "split": "evaluation"}])
