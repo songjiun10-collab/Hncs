@@ -66,7 +66,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,463 tests passed (rerun on the current checkout)
+- full suite: 1,465 tests passed (rerun on the current checkout)
 
 ## NARE trusted-runner re-audit (2026-09-09)
 
@@ -76,7 +76,7 @@ fingerprint are pinned in the environment. A formally valid receipt signed by
 an arbitrary Ed25519 key still passes the hash-chain check but remains
 `trusted_provenance=False` and `Inconclusive`. Only matching both fingerprints
 can reach the `Supported` path. The regression coverage is two
-`tests.test_nare_cli` tests; the full suite now passes 1,463 tests.
+`tests.test_nare_cli` tests; the full suite now passes 1,465 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
@@ -130,3 +130,9 @@ Supabase sync also matches metrics artifact scene IDs to the manifest and report
 NARE sync rejects numeric substitution when metrics raw/candidate ΔE values differ from the report per-scene values.
 
 Evidence Receipts now sign bootstrap/seed in `run_config` and reject any CLI execution whose configuration does not match exactly.
+
+EAGER receipts also sign evidence tier and validation, lockbox, and external-replication gate inputs alongside bootstrap/seed.
+
+Supabase sync also reconciles EAGER baseline/candidate ΔE values with the report, blocking the same numeric substitution attack there.
+
+The Supabase registry now rejects abbreviated git SHAs so execution identity is always bound to a full 40-character commit.

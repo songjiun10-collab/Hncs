@@ -21,11 +21,6 @@ from .evidence_receipt import validate_receipt
 from .supabase_sync import sync_evaluation_report
 
 
-_PROMOTION_ATTESTATIONS = (
-    "validation_passed", "lockbox_passed", "external_replication",
-)
-
-
 def _load_json(path: str) -> Any:
     with open(path, encoding="utf-8") as handle:
         return json.load(handle)
@@ -67,10 +62,12 @@ def build_report(
     robustness = validate_robustness(_load_json(robustness_path))
     if bool(receipt_path) != bool(receipt_public_key_path):
         raise ValueError("--receipt and --receipt-public-key must be supplied together")
-
     receipt = None
     trusted_provenance = False
-    requested_attestations = {
+    receipt_run_config = {
+        "bootstrap": n_bootstrap,
+        "seed": seed,
+        "evidence_tier": evidence_tier.upper(),
         "validation_passed": validation_passed is True,
         "lockbox_passed": lockbox_passed is True,
         "external_replication": external_replication is True,
@@ -84,22 +81,13 @@ def build_report(
              "controls": controls_path, "robustness": robustness_path},
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
-            expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
+            expected_run_config=receipt_run_config,
         )
-        if receipt["evidence_tier"] != requested_tier.value:
-            raise ValueError("receipt evidence_tier does not match requested evidence tier")
-        signed_attestations = receipt["attestations"]
-        missing = [name for name in _PROMOTION_ATTESTATIONS
-                   if name not in signed_attestations]
-        if missing:
-            raise ValueError(
-                "Evidence Receipt missing promotion attestations: " + ", ".join(missing))
-        for name in _PROMOTION_ATTESTATIONS:
-            if signed_attestations[name] != requested_attestations[name]:
-                raise ValueError(
-                    f"receipt attestation {name} does not match requested value")
+        # A local caller controls its environment, command line, working tree,
+        # and supplied key.  Signature validity therefore cannot establish an
+        # independent promotion authority here.  Verified needs a separate
+        # trusted-runner path outside this CLI.
         trusted_provenance = False
-
     paired = paired_report["paired"]
     paired["controls_passed"] = controls["passed"]
     paired["robustness_passed"] = robustness["passed"]

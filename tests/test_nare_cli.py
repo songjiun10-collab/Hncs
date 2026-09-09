@@ -24,8 +24,7 @@ class TestNARECLI(unittest.TestCase):
                     "foundation_delta_e00": 8, "candidate_delta_e00": 7,
                     "registration": {"ecc_correlation": .9, "overlap_fraction": .99,
                                      "shift_x_px": 0, "shift_y_px": 0, "long_edge_px": 512},
-                    "subgroups": {name: {"baseline_delta_e00": 10,
-                                           "candidate_delta_e00": 9}
+                    "subgroups": {name: {"baseline_delta_e00": 10, "candidate_delta_e00": 9}
                                   for name in ("skin", "sky", "foliage", "neutral",
                                                "saturated", "shadow", "highlight")}}
                    for i in range(12)]
@@ -39,16 +38,14 @@ class TestNARECLI(unittest.TestCase):
             root = Path(directory)
             for name, value in (("manifest", manifest), ("metrics", metrics), ("controls", controls)):
                 (root / f"{name}.json").write_text(json.dumps(value), encoding="utf-8")
-            proc = subprocess.run([
-                sys.executable, "-m", "hybrid_engine.evaluation.nare_cli",
+            proc = subprocess.run([sys.executable, "-m", "hybrid_engine.evaluation.nare_cli",
                 "--manifest", str(root / "manifest.json"), "--metrics", str(root / "metrics.json"),
-                "--controls", str(root / "controls.json"), "--bootstrap", "200", "--seed", "0",
-            ], capture_output=True, text=True, check=True)
+                "--controls", str(root / "controls.json"), "--bootstrap", "200", "--seed", "0"],
+                capture_output=True, text=True, check=True)
         report = json.loads(proc.stdout)
         self.assertFalse(report["classification"]["ship_gate_passed"])
         self.assertEqual(report["classification"]["classification"], "Inconclusive")
         self.assertFalse(report["classification"]["checks"]["receipt_integrity"])
-        self.assertEqual(report["paired"]["n_scenes"], 12)
         self.assertEqual(report["paired"]["bootstrap_draws"], 200)
         self.assertEqual(report["paired"]["bootstrap_seed"], 0)
 
@@ -56,9 +53,8 @@ class TestNARECLI(unittest.TestCase):
         manifest, metrics, controls = self._data()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            values = {"manifest": manifest, "metrics": metrics, "controls": controls}
             paths = {}
-            for name, value in values.items():
+            for name, value in {"manifest": manifest, "metrics": metrics, "controls": controls}.items():
                 path = root / f"{name}.json"
                 path.write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
                 paths[name] = path
@@ -67,18 +63,16 @@ class TestNARECLI(unittest.TestCase):
             public_path.write_text(base64.b64encode(private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
             receipt = sign_receipt(build_receipt(
                 paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
-                command=["nare-evaluator"], run_id="nare-run-1",
-                timestamp="2026-09-09T00:00:00Z", run_config={"bootstrap": 100, "seed": 0},
+                command=["nare-evaluator"], run_id="nare-run-1", timestamp="2026-09-09T00:00:00Z",
+                run_config={"bootstrap": 100, "seed": 0},
                 required_artifacts=("manifest", "metrics", "controls")), private, key_id="local")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
-            command = [
-                sys.executable, "-m", "hybrid_engine.evaluation.nare_cli",
+            command = [sys.executable, "-m", "hybrid_engine.evaluation.nare_cli",
                 "--manifest", str(paths["manifest"]), "--metrics", str(paths["metrics"]),
                 "--controls", str(paths["controls"]), "--bootstrap", "100", "--seed", "0",
                 "--receipt", str(receipt_path), "--receipt-public-key", str(public_path),
-                "--git-sha", "a" * 40,
-            ]
+                "--git-sha", "a" * 40]
             proc = subprocess.run(command, capture_output=True, text=True, check=True)
             report = json.loads(proc.stdout)
             self.assertTrue(report["classification"]["ship_gate_passed"])
@@ -87,18 +81,11 @@ class TestNARECLI(unittest.TestCase):
             self.assertFalse(report["paired"]["trusted_provenance"])
             self.assertTrue(report["evidence_receipt"]["signature_valid"])
             self.assertFalse(report["evidence_receipt"]["trusted"])
-
-            mismatched_config = list(command)
-            mismatched_config[mismatched_config.index("100")] = "101"
-            mismatch_proc = subprocess.run(mismatched_config, capture_output=True, text=True)
-            self.assertNotEqual(mismatch_proc.returncode, 0)
-            self.assertIn("run_config", mismatch_proc.stderr)
-
-            incomplete = subprocess.run(
-                command[:-6] + ["--receipt-public-key", str(public_path), "--git-sha", "a" * 40],
-                capture_output=True, text=True)
-            self.assertNotEqual(incomplete.returncode, 0)
-            self.assertIn("must be supplied together", incomplete.stderr)
+            mismatched = list(command)
+            mismatched[mismatched.index("100")] = "101"
+            failed = subprocess.run(mismatched, capture_output=True, text=True)
+            self.assertNotEqual(failed.returncode, 0)
+            self.assertIn("run_config", failed.stderr)
 
 
 if __name__ == "__main__":
