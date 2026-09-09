@@ -19,7 +19,7 @@ import numpy as np
 from core.dcp_export import write_dcp
 from core.icc_export import write_icc_matrix_trc_profile
 from tools.maintenance.audit_repo_integrity import (
-    check_nare_registered_metrics, check_profiles, dcp_header_problems,
+    check_nare_registered_metrics, check_nare_registered_reports, check_profiles, dcp_header_problems,
     icc_header_problems,
 )
 
@@ -192,6 +192,26 @@ class TestNareRegisteredMetrics(unittest.TestCase):
             with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
                 self.assertEqual(len(check_nare_registered_metrics()), 1)
 
+
+class TestNareRegisteredReports(unittest.TestCase):
+    def test_bootstrap_configuration_is_required(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({"paired": {"bootstrap_draws": True, "bootstrap_seed": "0"}}, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertEqual(len(problems), 1)
+
+    def test_valid_bootstrap_configuration_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({"paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0}}, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(check_nare_registered_reports(), [])
 
 if __name__ == "__main__":
     unittest.main()
