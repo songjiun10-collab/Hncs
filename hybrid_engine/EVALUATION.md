@@ -5050,6 +5050,11 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > **Inconclusive**였다. lighting/scene coverage, semantic subgroup, controls,
 > provenance가 충족되지 않았고, 따라서 metric 생성 성공을 ship gate 통과로
 > 해석하지 않는다.
+> 반면 51-scene exploratory manifest를 현재 512px registration에 다시 넣으면
+> **37/51만 통과하고 14 scene은 correlation/translation/overlap 실패**로
+> 제외된다. 따라서 기존 51-scene exploratory metrics는 strict runner의
+> 재현 가능한 registered evidence가 아니며, 새 registration 결과를
+> `nare_provia_exploratory_registration_512px_2026-09.json`에 보존했다.
 
 registration을 통과한 37개 scene을 11개 capture-date session으로 묶어
 leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해
