@@ -69,6 +69,15 @@ class TestRunGeneralizationSyntheticOnly(unittest.TestCase):
             self.assertFalse(results[brand]["is_real_raw"])
             self.assertIn("b2", results[brand]["post_stats"])
 
+    def test_real_only_requires_a_real_raw_source(self):
+        import tempfile
+        import cv2
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
+            cv2.imwrite(f.name, _test_image())
+            with patch("hybrid_engine.evaluation.cross_camera.glob.glob", return_value=[]):
+                with self.assertRaisesRegex(RuntimeError, "no real RAW source"):
+                    run_generalization("hasselblad", f.name, include_synthetic=False)
+
 
 if __name__ == "__main__":
     unittest.main()

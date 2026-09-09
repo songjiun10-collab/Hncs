@@ -40,6 +40,8 @@ nikon.py docstring), 각 브랜드의 apply_*_look()을 공통 테스트 사진�
 버전의 알려진 한계로만 기록.
 
   python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad --base-image photo.jpg
+  # 실제 RAW만 허용하는 실행(합성 소스가 없으면 fail closed)
+  python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad --real-only
 """
 import argparse
 import glob
@@ -85,14 +87,10 @@ def _noise_sigma(img_bgr):
     return estimate_noise_sigma(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY).astype(np.float64))
 
 
-def run_generalization(target_brand, base_image_path, target_profile=None):
+def run_generalization(target_brand, base_image_path=None, target_profile=None,
+                       include_synthetic=True):
     if target_brand not in BRAND_FUNCS:
         raise ValueError(f"알 수 없는 타깃 브랜드: {target_brand}")
-
-    base_img = cv2.imread(base_image_path)
-    if base_img is None:
-        raise FileNotFoundError(base_image_path)
-    base_img = _resize_max_dim(base_img, 1200)
 
     results = {}
 
@@ -122,18 +120,29 @@ def run_generalization(target_brand, base_image_path, target_profile=None):
     else:
         print("  fuji: RAW 없음(raw_calib_cache_fuji/), 스킵")
 
-    # 합성 소스 경로 (Sony/Nikon/Canon) - real RAW 없어서 apply_*_look()으로 근사
-    for brand in _SYNTHETIC_SOURCES:
-        source_img = BRAND_FUNCS[brand](base_img)
-        converted = convert_between_brands(source_img, brand, target_brand)
-        results[brand] = {
-            "path": "synthetic (apply_*_look on common test image, NOT real camera data)",
-            "is_real_raw": False,
-            "pre_stats": image_stats(source_img),
-            "post_stats": image_stats(converted),
-            "pre_noise_sigma": _noise_sigma(source_img),
-            "post_noise_sigma": _noise_sigma(converted),
-        }
+    if include_synthetic:
+        if not base_image_path:
+            raise ValueError("base_image_path is required when synthetic sources are enabled")
+        base_img = cv2.imread(base_image_path)
+        if base_img is None:
+            raise FileNotFoundError(base_image_path)
+        base_img = _resize_max_dim(base_img, 1200)
+
+        # 합성 소스 경로 (Sony/Nikon/Canon) - real RAW 없어서 apply_*_look()으로 근사
+        for brand in _SYNTHETIC_SOURCES:
+            source_img = BRAND_FUNCS[brand](base_img)
+            converted = convert_between_brands(source_img, brand, target_brand)
+            results[brand] = {
+                "path": "synthetic (apply_*_look on common test image, NOT real camera data)",
+                "is_real_raw": False,
+                "pre_stats": image_stats(source_img),
+                "post_stats": image_stats(converted),
+                "pre_noise_sigma": _noise_sigma(source_img),
+                "post_noise_sigma": _noise_sigma(converted),
+            }
+
+    if not results:
+        raise RuntimeError("no real RAW source found for Protocol 2R real-only evaluation")
 
     return results
 
@@ -181,15 +190,21 @@ def main():
     parser = argparse.ArgumentParser(
         description="Protocol 2: 소스 카메라 간 hybrid_engine 변환 결과 수렴성 평가")
     parser.add_argument("--target", required=True, help="타깃 브랜드 (예: hasselblad)")
-    parser.add_argument("--base-image", required=True,
+    parser.add_argument("--base-image",
                          help="합성 소스(Sony/Nikon/Canon)를 만들 공통 테스트 사진 경로")
+    parser.add_argument("--real-only", action="store_true",
+                        help="합성 소스를 제외하고 발견된 실제 RAW만 평가")
     parser.add_argument("--out", default=None, help="JSON 리포트 저장 경로")
     args = parser.parse_args()
 
     print(f"Cross-camera generalization 평가 중... (target={args.target})")
-    print("주의: fuji만 실제 RAW, sony/nikon/canon은 apply_*_look 합성 소스(진짜 카메라 데이터 아님)\n")
+    if args.real_only:
+        print("모드: real-only (합성 소스 제외)\n")
+    else:
+        print("주의: fuji만 실제 RAW, sony/nikon/canon은 apply_*_look 합성 소스(진짜 카메라 데이터 아님)\n")
 
-    results = run_generalization(args.target, args.base_image)
+    results = run_generalization(args.target, args.base_image,
+                                 include_synthetic=not args.real_only)
     for src, r in results.items():
         tag = "REAL RAW" if r["is_real_raw"] else "synthetic"
         print(f"  {src:8s} [{tag:9s}] pre b2={r['pre_stats']['b2']:6.1f} -> "
