@@ -60,28 +60,26 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 - signed receipt의 정상 hash chain: 통과
 - metrics 변경 후 receipt 검증: 실패
 - unsigned receipt: 실패
-- 유효 receipt가 있는 EAGER report: `Verified`
+- 유효 receipt가 있는 로컬 EAGER report: `Supported`
 - receipt 없이 external replication만 주장한 report: `Supported`
 - NARE receipt 없는 plausible metrics: `Inconclusive`
 - NARE 유효 receipt-backed report: `Supported`
 - 전체 suite: 1,468개 통과 (현재 checkout 재실행)
 
-## NARE trusted-runner 재감사 (2026-09-09)
+## provenance trust 경계 재감사 (2026-09-09)
 
-NARE CLI도 이제 EAGER와 동일하게 trusted receipt public-key fingerprint와
-evaluator fingerprint가 환경에 pin되어 있을 때만 receipt를 provenance gate에
-반영한다. 임의 Ed25519 키로 서명한, 형식상 유효한 receipt는 hash chain 검증을
-통과해도 `trusted_provenance=False` 및 `Inconclusive`로 남는다. 두 fingerprint를
-모두 일치시킨 실행만 `Supported` 경로에 들어간다. 회귀 검증은 `tests.test_nare_cli`
-2개이며 전체 suite는 1,468개 통과했다.
+로컬 EAGER CLI는 서명·artifact integrity와 signer authority를 분리한다. 유효한
+receipt는 `signature_valid=True`와 `trusted=False`를 반환하므로 로컬 실행은
+`Supported`까지이며 `Verified`에는 도달하지 않는다. NARE는 `receipt_integrity`를
+`Supported` gate로 사용하고 `trusted_provenance`를 주장하지 않는다. 회귀 검증은
+`tests.test_nare_cli`이며 전체 suite는 1,468개 통과했다.
 
 또한 NARE CLI의 `--receipt`와 `--receipt-public-key`는 이제 반드시 함께
 지정해야 한다. 한쪽만 지정한 호출은 receipt를 묵살한 채 진행하지 않고 즉시
 실패한다.
 
-receipt의 `git_sha`도 이제 축약형을 받지 않고 40자리 full commit SHA만 받는다.
-짧은 revision 표기는 registry 메타데이터에만 남기고, 실행 provenance identity에는
-사용하지 않는다.
+receipt와 registry sync의 `git_sha`는 축약형을 받지 않고 40자리 full commit SHA만
+받는다.
 
 추가로 registry sync의 `ship_gate_passed`, `provenance_passed`,
 `external_replication`은 이제 Python truthiness가 아니라 JSON boolean `true`만
