@@ -77,7 +77,7 @@ the retained summary explicitly identifies itself as a SYNTHETIC attack.
 From the repository root:
 
 ```bash
-~/.hncs-hybrid-venv312/bin/python3 docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
+.venv/bin/python docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
 ```
 
 The original `Verified` result is retained as historical characterization from
