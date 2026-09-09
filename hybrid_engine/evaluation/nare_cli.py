@@ -43,6 +43,7 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
             required_artifacts=("manifest", "metrics", "controls"),
+            expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
         )
         trusted_key_sha256 = os.environ.get("HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256", "").strip()
         trusted_evaluator_sha256 = os.environ.get("HNCS_TRUSTED_EVALUATOR_SHA256", "").strip()
@@ -58,6 +59,7 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
                 trusted_public_key_sha256=trusted_key_sha256,
                 trusted_evaluator_sha256=trusted_evaluator_sha256,
                 required_artifacts=("manifest", "metrics", "controls"),
+                expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
             )
             trusted_provenance = True
     paired["trusted_provenance"] = trusted_provenance

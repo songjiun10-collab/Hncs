@@ -92,6 +92,7 @@ class TestNARECLI(unittest.TestCase):
                 paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
                 command=["nare-evaluator"], run_id="nare-run-1",
                 timestamp="2026-09-09T00:00:00Z",
+                run_config={"bootstrap": 100, "seed": 0},
                 required_artifacts=("manifest", "metrics", "controls")), private, key_id="ci")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
@@ -109,6 +110,12 @@ class TestNARECLI(unittest.TestCase):
             self.assertFalse(report["classification"]["ship_gate_passed"])
             self.assertEqual(report["classification"]["classification"], "Inconclusive")
             self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
+
+            mismatched_config = list(command)
+            mismatched_config[mismatched_config.index("100")] = "101"
+            mismatch_proc = subprocess.run(mismatched_config, capture_output=True, text=True)
+            self.assertNotEqual(mismatch_proc.returncode, 0)
+            self.assertIn("run_config", mismatch_proc.stderr)
 
             incomplete = subprocess.run(
                 command[:-6] + ["--receipt-public-key", str(public_path),

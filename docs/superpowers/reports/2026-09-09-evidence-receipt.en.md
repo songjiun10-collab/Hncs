@@ -128,3 +128,5 @@ Supabase sync now rejects report scenes absent from the manifest, duplicate scen
 Supabase sync also matches metrics artifact scene IDs to the manifest and report, preventing metrics from another split from being inserted.
 
 NARE sync rejects numeric substitution when metrics raw/candidate ΔE values differ from the report per-scene values.
+
+Evidence Receipts now sign bootstrap/seed in `run_config` and reject any CLI execution whose configuration does not match exactly.
