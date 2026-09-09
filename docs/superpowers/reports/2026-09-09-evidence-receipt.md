@@ -97,10 +97,11 @@ registered report audit는 classification label이 허용된 값인지와
 
 ## 한계
 
-이 계층은 “지정된 artifact와 evaluator identity를 trusted runner가 서명했다”는
-것을 인증한다. 데이터가 현실을 정직하게 표현하는지, evaluator가 내부에서 올바른
-코드를 실행했는지까지 수학적으로 증명하지 않는다. Ed25519 private key를 가진
-trusted runner가 거짓말하면 이 계층도 거짓을 인증할 수 있다. 따라서 private key는
+이 계층은 “지정된 artifact와 evaluator identity를 receipt 서명자가 서명했다”는
+것을 인증한다. 공개키가 별도 trust anchor로 고정되지 않은 local receipt는
+signer authority를 증명하지 않으며, 데이터가 현실을 정직하게 표현하는지나
+evaluator가 내부에서 올바른 코드를 실행했는지도 수학적으로 증명하지 않는다.
+Ed25519 private key를 가진 trusted runner가 거짓말하면 이 계층도 거짓을 인증할 수 있다. 따라서 private key는
 GitHub CI 같은 별도 실행 환경에 두고, local run은 최대 `Supported`로 제한해야 한다.
 
 서명 private key를 저장소나 report에 넣지 않았다. 이번 변경은 production look/profile,

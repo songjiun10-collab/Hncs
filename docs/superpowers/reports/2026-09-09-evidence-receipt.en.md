@@ -101,10 +101,11 @@ registered.
 
 ## Limitations
 
-This layer authenticates that a trusted runner signed the specified artifacts
-and evaluator identity. It does not mathematically prove that the data truthfully
-represents reality or that the evaluator internally ran the right algorithm. A
-trusted runner holding the Ed25519 private key can still sign a lie. Keep that
+This layer authenticates that the receipt signer signed the specified artifacts
+and evaluator identity. A local receipt whose public key is not pinned to an
+independent trust anchor does not prove signer authority. It also does not
+mathematically prove that the data truthfully represents reality or that the evaluator
+internally ran the right algorithm. A trusted runner holding the Ed25519 private key can still sign a lie. Keep that
 private key in a separate runner such as GitHub CI and cap local runs at
 `Supported`.
 
