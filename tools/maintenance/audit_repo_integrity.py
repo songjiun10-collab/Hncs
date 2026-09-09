@@ -449,6 +449,12 @@ def check_nare_selection_sensitivity():
             valid = isinstance(artifact, dict) and artifact.get("schema") == schema \
                 and isinstance(artifact.get("source_develop_sha"), str) \
                 and sha_pattern.fullmatch(artifact["source_develop_sha"]) is not None
+            if valid and os.path.exists(os.path.join(BASE, ".git")):
+                commit_check = subprocess.run(
+                    ["git", "cat-file", "-e", artifact["source_develop_sha"] + "^{commit}"],
+                    cwd=BASE, capture_output=True, check=False,
+                )
+                valid = commit_check.returncode == 0
             inputs = artifact.get("inputs") if isinstance(artifact, dict) else None
             required_inputs = ("exploratory_metrics_512px", "registration_512px",
                                "registered_report_512px", "registered_report_1024px")
