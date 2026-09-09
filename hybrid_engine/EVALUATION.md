@@ -5057,6 +5057,9 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > `nare_provia_exploratory_registration_512px_2026-09.json`에 보존했다.
 > 별도 EXIF strict-pair preflight는 raw/jpeg **63/63**을 짝지었으므로,
 > 이 14건은 pairing 누락이 아니라 geometry/registration gate에서 제외된 것이다.
+> 실패 row를 EXIF로 대조하면 RAW는 4000×3000인데 JPEG가 8736×8736,
+> 11648×4304 같은 crop/aspect-ratio 변형인 사례가 포함되어 있다. 이는
+> 색 오차로 환산하면 안 되며, registration failure로 남기는 것이 맞다.
 
 registration을 통과한 37개 scene을 11개 capture-date session으로 묶어
 leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해
