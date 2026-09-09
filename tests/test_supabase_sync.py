@@ -336,6 +336,22 @@ class TestSupabaseSync(unittest.TestCase):
                     report, protocol="NARE", dataset_slug="d", candidate_name="c",
                     manifest_path=manifest, metrics_path=metrics, client=_FakeClient())
 
+    def test_nare_scene_lineage_rejects_metrics_value_substitution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s1"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s1",
+                                                               "raw_delta_e00": 99.0,
+                                                               "candidate_delta_e00": 1.0}])
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s1", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            with self.assertRaisesRegex(ValueError, "values do not match"):
+                sync_evaluation_report(
+                    report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, client=_FakeClient())
+
 
 if __name__ == "__main__":
     unittest.main()

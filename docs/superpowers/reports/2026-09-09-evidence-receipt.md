@@ -64,7 +64,7 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 - receipt 없이 external replication만 주장한 report: `Supported`
 - NARE receipt 없는 plausible metrics: `Inconclusive`
 - NARE 유효 receipt-backed report: `Supported`
-- 전체 suite: 1,462개 통과 (현재 checkout 재실행)
+- 전체 suite: 1,463개 통과 (현재 checkout 재실행)
 
 ## NARE trusted-runner 재감사 (2026-09-09)
 
@@ -73,7 +73,7 @@ evaluator fingerprint가 환경에 pin되어 있을 때만 receipt를 provenance
 반영한다. 임의 Ed25519 키로 서명한, 형식상 유효한 receipt는 hash chain 검증을
 통과해도 `trusted_provenance=False` 및 `Inconclusive`로 남는다. 두 fingerprint를
 모두 일치시킨 실행만 `Supported` 경로에 들어간다. 회귀 검증은 `tests.test_nare_cli`
-2개이며 전체 suite는 1,462개 통과했다.
+2개이며 전체 suite는 1,463개 통과했다.
 
 또한 NARE CLI의 `--receipt`와 `--receipt-public-key`는 이제 반드시 함께
 지정해야 한다. 한쪽만 지정한 호출은 receipt를 묵살한 채 진행하지 않고 즉시
@@ -120,3 +120,5 @@ report와 대응하는 registered metrics가 함께 있으면 scene ID 순서와
 Supabase sync는 manifest에 없는 scene, 중복 scene ID, 그리고 `n_scenes` 불일치 report를 registry에 쓰기 전에 거부한다.
 
 Supabase sync는 metrics artifact의 scene ID도 manifest·report와 일치하는지 확인해 다른 split의 metrics 삽입을 막는다.
+
+NARE sync는 metrics의 raw/candidate ΔE가 report per-scene 값과 다르면 수치 substitution으로 거부한다.
