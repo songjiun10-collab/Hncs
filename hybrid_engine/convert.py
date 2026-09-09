@@ -49,7 +49,10 @@ def main():
 
     print(f"{source} 시그니처 역산 -> {args.target} 재적용 중...")
     out = convert_between_brands(img, source, args.target)
-    cv2.imwrite(args.output, out, [cv2.IMWRITE_JPEG_QUALITY, 92])
+    saved = cv2.imwrite(args.output, out, [cv2.IMWRITE_JPEG_QUALITY, 92])
+    if not saved:
+        print(f"이미지를 저장하지 못함: {args.output}", file=sys.stderr)
+        sys.exit(1)
     print(f"저장: {args.output}")
 
 
