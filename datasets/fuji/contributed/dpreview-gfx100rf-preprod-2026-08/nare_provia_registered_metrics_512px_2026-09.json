@@ -65,19 +65,6 @@
     }
   },
   {
-    "scene_id": "gfx100rf-007",
-    "raw_delta_e00": 24.03010832591789,
-    "foundation_delta_e00": 24.03010832591789,
-    "candidate_delta_e00": 16.793388508294967,
-    "registration": {
-      "ecc_correlation": 0.7600342103155959,
-      "overlap_fraction": 0.9824116759138382,
-      "shift_x_px": 0.5477405190467834,
-      "shift_y_px": -6.120152473449707,
-      "long_edge_px": 512
-    }
-  },
-  {
     "scene_id": "gfx100rf-009",
     "raw_delta_e00": 20.846678819950952,
     "foundation_delta_e00": 20.846678819950952,
@@ -87,19 +74,6 @@
       "overlap_fraction": 1.0,
       "shift_x_px": 0.20871980488300323,
       "shift_y_px": 0.2993977963924408,
-      "long_edge_px": 512
-    }
-  },
-  {
-    "scene_id": "gfx100rf-010",
-    "raw_delta_e00": 20.817338955010612,
-    "foundation_delta_e00": 20.817338955010612,
-    "candidate_delta_e00": 20.131162257130754,
-    "registration": {
-      "ecc_correlation": 0.6681529446571121,
-      "overlap_fraction": 0.998046875,
-      "shift_x_px": -0.598763644695282,
-      "shift_y_px": 0.39256495237350464,
       "long_edge_px": 512
     }
   },
@@ -438,45 +412,6 @@
       "overlap_fraction": 0.9954410084856397,
       "shift_x_px": -0.8955133557319641,
       "shift_y_px": 1.3495378494262695,
-      "long_edge_px": 512
-    }
-  },
-  {
-    "scene_id": "gfx100rf-050",
-    "raw_delta_e00": 18.805929122425027,
-    "foundation_delta_e00": 18.805929122425027,
-    "candidate_delta_e00": 19.318431921748445,
-    "registration": {
-      "ecc_correlation": 0.697887954936079,
-      "overlap_fraction": 0.9682961406657964,
-      "shift_x_px": -10.646394729614258,
-      "shift_y_px": 4.013105392456055,
-      "long_edge_px": 512
-    }
-  },
-  {
-    "scene_id": "gfx100rf-051",
-    "raw_delta_e00": 19.536922628813628,
-    "foundation_delta_e00": 19.536922628813628,
-    "candidate_delta_e00": 16.895244030571405,
-    "registration": {
-      "ecc_correlation": 0.8160897662594955,
-      "overlap_fraction": 0.964170610313316,
-      "shift_x_px": 13.248461723327637,
-      "shift_y_px": -0.7943134903907776,
-      "long_edge_px": 512
-    }
-  },
-  {
-    "scene_id": "gfx100rf-052",
-    "raw_delta_e00": 18.27663832332503,
-    "foundation_delta_e00": 18.27663832332503,
-    "candidate_delta_e00": 16.844055221737225,
-    "registration": {
-      "ecc_correlation": 0.8665237880687995,
-      "overlap_fraction": 0.9843342036553525,
-      "shift_x_px": 5.828471660614014,
-      "shift_y_px": 0.18102610111236572,
       "long_edge_px": 512
     }
   }
