@@ -97,6 +97,14 @@ registered report audit는 classification label이 허용된 값인지와
 
 ## 한계
 
+> **현재 fabricated-but-consistent probe (2026-09-09)**: sensitivity artifact가
+> 참조하는 네 입력 JSON을 전부 synthetic 내용으로 바꾸고 `input_sha256`도 다시
+> 계산하면 integrity schema는 통과한다. 이는 검증 실패가 아니라 의도된 경계다.
+> 이 audit는 지정된 bytes와 기록된 hash의 일치를 확인할 뿐, 입력이 실제 사진
+> corpus인지, evaluator가 올바른 계산을 수행했는지 판정하지 않는다. 따라서
+> 독립 실행 환경의 receipt 서명과 실제 RAW runner replay가 없으면 이 결과를
+> 현실성 또는 photographic accuracy의 증거로 승격할 수 없다.
+
 이 계층은 “지정된 artifact와 evaluator identity를 receipt 서명자가 서명했다”는
 것을 인증한다. 공개키가 별도 trust anchor로 고정되지 않은 local receipt는
 signer authority를 증명하지 않으며, 데이터가 현실을 정직하게 표현하는지나
