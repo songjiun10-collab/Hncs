@@ -68,6 +68,13 @@ def run_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]], expected_pictur
         target = cv2.imread(str(row["target_path"]), cv2.IMREAD_COLOR)
         if target is None:
             raise ValueError(f"registration_failure: unreadable target JPEG: {row['target_path']}")
+        neutral_ratio = neutral.shape[1] / neutral.shape[0]
+        target_ratio = target.shape[1] / target.shape[0]
+        if abs(target_ratio - neutral_ratio) > 1e-3:
+            raise ValueError(
+                "registration_failure: source and target aspect ratios differ "
+                f"({neutral_ratio:.6f} vs {target_ratio:.6f})"
+            )
         target = cv2.resize(target, (neutral.shape[1], neutral.shape[0]), interpolation=cv2.INTER_AREA)
         neutral, valid, registration = register_to_target(neutral, target)
         target_linear = bgr_u8_to_linear_rgb(target)[valid]
