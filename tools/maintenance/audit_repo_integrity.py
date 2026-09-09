@@ -271,10 +271,13 @@ def check_nare_registered_metrics():
                 problems.append(f"NARE metrics 행 목록 아님: {os.path.relpath(path, BASE)}")
                 continue
             n_rows += len(rows)
+            match = re.search(r"registered_metrics_(\d+)px", name)
+            expected_scale = int(match.group(1)) if match else None
             for row in rows:
                 registration = row.get("registration") if isinstance(row, dict) else None
                 scale = registration.get("long_edge_px") if isinstance(registration, dict) else None
-                if type(scale) is not int or scale <= 0:
+                if (type(scale) is not int or scale <= 0
+                        or (expected_scale is not None and scale != expected_scale)):
                     problems.append(
                         f"NARE registration scale 누락: {os.path.relpath(path, BASE)}"
                     )
