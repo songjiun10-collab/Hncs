@@ -1,8 +1,8 @@
 """Signed provenance receipts for evidence-producing evaluation runs.
 
-Receipts bind the exact input artifacts and evaluator identity to a run. They
-do not prove that the captured data represents reality; they prove which
-artifacts a trusted runner claimed to execute and sign.
+Receipts bind exact input artifacts and evaluator identity to a run. A valid
+signature establishes integrity under the supplied key; it does not by itself
+make that key an independently trusted promotion authority.
 """
 
 from __future__ import annotations
@@ -122,7 +122,7 @@ def validate_receipt(
     trusted_evaluator_sha256: str | None = None,
     expected_run_config: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Validate signature and every artifact hash before trusting a run."""
+    """Validate signature and artifact hashes without asserting signer authority."""
     try:
         receipt = json.loads(Path(receipt_path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -147,7 +147,7 @@ def validate_receipt(
                 or not _HEX64.fullmatch(trusted_evaluator_sha256.lower())):
             raise ValueError("trusted evaluator fingerprint is invalid")
         if receipt["evaluator_sha256"].lower() != trusted_evaluator_sha256.lower():
-            raise ValueError("receipt evaluator is not trusted")
+            raise ValueError("receipt evaluator does not match expected fingerprint")
     if (not isinstance(receipt.get("command"), list)
             or not receipt["command"]
             or not all(isinstance(value, str) and value for value in receipt["command"])
@@ -173,9 +173,9 @@ def validate_receipt(
     if trusted_public_key_sha256 is not None:
         if (not isinstance(trusted_public_key_sha256, str)
                 or not _HEX64.fullmatch(trusted_public_key_sha256.lower())):
-            raise ValueError("trusted receipt public-key fingerprint is invalid")
+            raise ValueError("expected receipt public-key fingerprint is invalid")
         if public_key_sha256(public_key_path) != trusted_public_key_sha256.lower():
-            raise ValueError("receipt public key is not trusted")
+            raise ValueError("receipt public key does not match expected fingerprint")
     artifacts = receipt.get("artifacts")
     if not isinstance(artifacts, dict):
         raise ValueError("receipt artifacts are missing")
@@ -191,5 +191,7 @@ def validate_receipt(
             raise ValueError(f"receipt {name} artifact hash does not match")
     if not isinstance(receipt.get("run_id"), str) or not receipt["run_id"].strip():
         raise ValueError("receipt run_id is missing")
-    return {"trusted": True, "run_id": receipt["run_id"],
-            "key_id": signature.get("key_id"), "git_sha": receipt.get("git_sha")}
+    return {"signature_valid": True, "trusted": False,
+            "run_id": receipt["run_id"], "key_id": signature.get("key_id"),
+            "git_sha": receipt.get("git_sha"),
+            "evaluator_sha256": receipt["evaluator_sha256"].lower()}
