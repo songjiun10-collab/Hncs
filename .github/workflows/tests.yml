@@ -8,7 +8,12 @@ jobs:
   unittest:
     runs-on: ubuntu-latest
     steps:
+      # Provenance audits intentionally verify that frozen source_develop_sha
+      # values resolve to real commits. actions/checkout defaults to a shallow
+      # clone, which makes valid historical SHAs look missing under git cat-file.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
