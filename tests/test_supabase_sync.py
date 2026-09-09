@@ -322,6 +322,20 @@ class TestSupabaseSync(unittest.TestCase):
                             report, protocol="NARE", dataset_slug="d", candidate_name="c",
                             manifest_path=manifest, metrics_path=metrics, client=_FakeClient())
 
+    def test_scene_lineage_rejects_metrics_artifact_from_another_split(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s1"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "different"}])
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s1", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            with self.assertRaisesRegex(ValueError, "metrics, manifest"):
+                sync_evaluation_report(
+                    report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, client=_FakeClient())
+
 
 if __name__ == "__main__":
     unittest.main()

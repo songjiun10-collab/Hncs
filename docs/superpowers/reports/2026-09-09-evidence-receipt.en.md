@@ -66,7 +66,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,461 tests passed (rerun on the current checkout)
+- full suite: 1,462 tests passed (rerun on the current checkout)
 
 ## NARE trusted-runner re-audit (2026-09-09)
 
@@ -76,7 +76,7 @@ fingerprint are pinned in the environment. A formally valid receipt signed by
 an arbitrary Ed25519 key still passes the hash-chain check but remains
 `trusted_provenance=False` and `Inconclusive`. Only matching both fingerprints
 can reach the `Supported` path. The regression coverage is two
-`tests.test_nare_cli` tests; the full suite now passes 1,461 tests.
+`tests.test_nare_cli` tests; the full suite now passes 1,462 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
@@ -124,3 +124,5 @@ The registered-metrics audit also rejects duplicate scene IDs, NaN or negative Î
 When a sibling registered-metrics file exists, the audit cross-checks its scene ID order and contents against the report.
 
 Supabase sync now rejects report scenes absent from the manifest, duplicate scene IDs, and `n_scenes` mismatches before any registry write.
+
+Supabase sync also matches metrics artifact scene IDs to the manifest and report, preventing metrics from another split from being inserted.

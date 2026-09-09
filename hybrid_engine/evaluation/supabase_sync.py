@@ -158,6 +158,7 @@ def sync_evaluation_report(
         raise ValueError("dataset_slug and candidate_name must be non-empty")
 
     manifest_rows = _records(manifest_path)
+    metrics_rows = _records(metrics_path)
     paired = report.get("paired")
     if not isinstance(paired, Mapping):
         raise ValueError("report must contain a paired object")
@@ -174,6 +175,12 @@ def sync_evaluation_report(
         raise ValueError("report per_scene scene_id values must be non-empty and unique")
     if not set(report_ids).issubset(set(manifest_ids)):
         raise ValueError("report per_scene contains scene_id absent from manifest")
+    metrics_ids = [str(row.get("scene_id", "")).strip() for row in metrics_rows]
+    if (any(not scene_id for scene_id in metrics_ids)
+            or len(metrics_ids) != len(set(metrics_ids))):
+        raise ValueError("metrics scene_id values must be non-empty and unique")
+    if metrics_ids != manifest_ids or metrics_ids != report_ids:
+        raise ValueError("metrics, manifest, and report scene_id values must match")
     n_scenes = paired.get("n_scenes")
     if n_scenes is not None and (type(n_scenes) is not int or n_scenes != len(report_ids)):
         raise ValueError("report n_scenes must match per_scene row count")
