@@ -56,6 +56,14 @@ def _load_frame(row: dict, max_dim: int) -> dict:
     target = cv2.imread(row["target_path"], cv2.IMREAD_COLOR)
     if target is None:
         raise ValueError(f"unreadable target: {row['target_path']}")
+    source_ratio = neutral.shape[1] / neutral.shape[0]
+    target_ratio = target.shape[1] / target.shape[0]
+    ratio_error = abs(target_ratio / source_ratio - 1.0)
+    if ratio_error > 0.01:
+        raise ValueError(
+            "registration_failure: source and target aspect ratios differ "
+            f"({source_ratio:.6f} vs {target_ratio:.6f}, error={ratio_error:.3%})"
+        )
     target = cv2.resize(target, (neutral.shape[1], neutral.shape[0]), interpolation=cv2.INTER_AREA)
     aligned, valid, registration = register_to_target(neutral, target)
     return {"scene_id": row["scene_id"], "session_id": row["session_id"],
