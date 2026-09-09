@@ -195,8 +195,8 @@ def bootstrap_mean_ci(
     values = np.asarray(list(differences), dtype=float)
     if values.ndim != 1 or values.size == 0:
         raise ValueError("differences must contain at least one value")
-    if n_bootstrap <= 0:
-        raise ValueError("n_bootstrap must be positive")
+    if type(n_bootstrap) is not int or n_bootstrap <= 0:
+        raise ValueError("n_bootstrap must be a positive integer")
     rng = np.random.default_rng(seed)
     samples = np.empty(n_bootstrap, dtype=float)
     for index in range(n_bootstrap):
