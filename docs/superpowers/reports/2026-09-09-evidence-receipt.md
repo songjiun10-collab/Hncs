@@ -64,7 +64,7 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 - receipt 없이 external replication만 주장한 report: `Supported`
 - NARE receipt 없는 plausible metrics: `Inconclusive`
 - NARE 유효 receipt-backed report: `Supported`
-- 전체 suite: 1,468개 통과 (현재 checkout 재실행)
+- 전체 suite: 1,469개 통과 (현재 checkout 재실행)
 
 ## provenance trust 경계 재감사 (2026-09-09)
 
@@ -72,7 +72,7 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 receipt는 `signature_valid=True`와 `trusted=False`를 반환하므로 로컬 실행은
 `Supported`까지이며 `Verified`에는 도달하지 않는다. NARE는 `receipt_integrity`를
 `Supported` gate로 사용하고 `trusted_provenance`를 주장하지 않는다. 회귀 검증은
-`tests.test_nare_cli`이며 전체 suite는 1,468개 통과했다.
+`tests.test_nare_cli`이며 전체 suite는 1,469개 통과했다.
 
 또한 NARE CLI의 `--receipt`와 `--receipt-public-key`는 이제 반드시 함께
 지정해야 한다. 한쪽만 지정한 호출은 receipt를 묵살한 채 진행하지 않고 즉시
@@ -136,3 +136,5 @@ Supabase sync는 aggregate mean/%도 per-scene에서 재계산해 일치하지 �
 Supabase sync는 ci95의 유한·정렬 범위와 sign-test p의 [0,1] 범위도 network write 전에 검사한다.
 
 Supabase sync는 report에 기록된 bootstrap draws/seed와 호출 설정이 다르면 registry write를 거부한다.
+
+Supabase sync는 서로 다른 split을 한 manifest에 섞은 report를 `split=None`으로 숨기지 못하게 거부한다.
