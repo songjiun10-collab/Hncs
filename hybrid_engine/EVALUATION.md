@@ -5045,6 +5045,14 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > `nare_provia_registered_*_2026-09.json`에 덮어썼고 두 report 모두
 > `Inconclusive`다. 이는 기존 37-scene 수치를 그대로 재사용할 수 없다는
 > 정정이며, color metric 개선이나 ship 승인 주장을 강화하지 않는다.
+> 새 512px report는 B0 **15.931793794298834** → C
+> **11.051151262196903**, 상대 개선 **+30.634607722882166%**, 95% CI
+> **[+3.9863925883616704, +5.738710855086144]**, sign test
+> **p=1.5366822481155396e-08**다. 1024px는 B0 **16.078743521242657** → C
+> **11.464537406459886**, 상대 개선 **+28.697554063765285%**, 95% CI
+> **[+3.7250394275085563, +5.463555638740317]**다. 두 결과 모두 coverage,
+> subgroup, controls, provenance/trusted-runner gate가 부족해 ship 판정은
+> `Inconclusive`로 유지된다.
 
 ## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
 
