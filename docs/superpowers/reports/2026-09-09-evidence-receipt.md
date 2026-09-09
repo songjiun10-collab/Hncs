@@ -64,7 +64,7 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 - receipt 없이 external replication만 주장한 report: `Supported`
 - NARE receipt 없는 plausible metrics: `Inconclusive`
 - NARE 유효 receipt-backed report: `Supported`
-- 전체 suite: 1,474개 통과 (현재 checkout 재실행)
+- 전체 suite: 1,475개 통과 (현재 checkout 재실행)
 
 ## provenance trust 경계 재감사 (2026-09-09)
 
@@ -72,7 +72,7 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 receipt는 `signature_valid=True`와 `trusted=False`를 반환하므로 로컬 실행은
 `Supported`까지이며 `Verified`에는 도달하지 않는다. NARE는 `receipt_integrity`를
 `Supported` gate로 사용하고 `trusted_provenance`를 주장하지 않는다. 회귀 검증은
-`tests.test_nare_cli`이며 전체 suite는 1,474개 통과했다.
+`tests.test_nare_cli`이며 전체 suite는 1,475개 통과했다.
 
 또한 NARE CLI의 `--receipt`와 `--receipt-public-key`는 이제 반드시 함께
 지정해야 한다. 한쪽만 지정한 호출은 receipt를 묵살한 채 진행하지 않고 즉시
@@ -144,5 +144,7 @@ report_path가 없어도 Supabase run_key가 canonical report hash를 포함해 
 report_path를 주면 파일의 parsed canonical JSON이 report mapping과 일치해야 하며, 어느 한쪽이라도 바뀌면 network write 전에 거부한다.
 
 검증한 report bytes를 run key와 artifact digest에도 재사용해, 검증 직후 path가 바뀌어 기록된 identity가 달라지는 TOCTOU를 막는다.
+
+잘못된 UTF-8 receipt/report도 일반 validation error로 거부하며 registry write 전에 멈춘다.
 
 실제 32-scene registered NARE report도 fake registry client preflight를 통과했으며, candidate가 나쁜 scene의 음수 improvement를 정상적으로 보존한다.
