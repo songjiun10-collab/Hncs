@@ -419,6 +419,9 @@ def check_nare_selection_sensitivity():
         return (isinstance(value, (int, float)) and not isinstance(value, bool)
                 and math.isfinite(float(value)))
 
+    def nonnegative(value):
+        return finite(value) and float(value) >= 0
+
     def ci(value):
         return (isinstance(value, list) and len(value) == 2
                 and all(finite(item) for item in value) and value[0] <= value[1])
@@ -475,10 +478,10 @@ def check_nare_selection_sensitivity():
                     if not isinstance(row, dict):
                         valid = False
                         continue
-                    required = ("mean_baseline_delta_e00", "mean_candidate_delta_e00",
-                                "mean_absolute_improvement_delta_e00",
-                                "aggregate_relative_improvement_pct")
-                    valid = valid and all(finite(row.get(key)) for key in required) \
+                    valid = valid and all(nonnegative(row.get(key)) for key in
+                                         ("mean_baseline_delta_e00", "mean_candidate_delta_e00",
+                                          "mean_absolute_improvement_delta_e00")) \
+                        and finite(row.get("aggregate_relative_improvement_pct")) \
                         and type(row.get("wins")) is int and row["wins"] >= 0 \
                         and type(row.get("losses")) is int and row["losses"] >= 0 \
                         and close(row["mean_absolute_improvement_delta_e00"],
@@ -501,10 +504,10 @@ def check_nare_selection_sensitivity():
                     report = reports.get(scale)
                     valid = valid and isinstance(report, dict) \
                         and type(report.get("n_scenes")) is int and report["n_scenes"] > 0 \
-                        and all(finite(report.get(key)) for key in
+                        and all(nonnegative(report.get(key)) for key in
                                 ("mean_baseline_delta_e00", "mean_candidate_delta_e00",
-                                 "mean_absolute_improvement_delta_e00",
-                                 "aggregate_relative_improvement_pct")) \
+                                 "mean_absolute_improvement_delta_e00")) \
+                        and finite(report.get("aggregate_relative_improvement_pct")) \
                         and ci(report.get("bootstrap_95ci_absolute_improvement")) \
                         and close(report["mean_absolute_improvement_delta_e00"],
                                   report["mean_baseline_delta_e00"] - report["mean_candidate_delta_e00"]) \
