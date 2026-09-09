@@ -39,6 +39,7 @@ Lightroom이 프로필을 못 읽던 실제 원인이었다). 즉 7번만으로�
 
   python3 -m tools.maintenance.audit_repo_integrity
 """
+import hashlib
 import json
 import math
 import os
@@ -426,6 +427,13 @@ def check_nare_selection_sensitivity():
         return (isinstance(value, list) and len(value) == 2
                 and all(finite(item) for item in value) and value[0] <= value[1])
 
+    def file_sha256(path):
+        digest = hashlib.sha256()
+        with open(path, "rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
     def close(actual, expected):
         return finite(actual) and finite(expected) \
             and abs(float(actual) - float(expected)) <= 1e-9 * max(1.0, abs(float(expected)))
@@ -460,14 +468,20 @@ def check_nare_selection_sensitivity():
                                "registered_report_512px", "registered_report_1024px")
             if isinstance(inputs, dict):
                 artifact_dir = os.path.realpath(root)
+                input_hashes = artifact.get("input_sha256") if isinstance(artifact, dict) else None
+                valid = valid and isinstance(input_hashes, dict)
                 for key in required_inputs:
                     value = inputs.get(key)
-                    if not isinstance(value, str) or not value.strip() or os.path.isabs(value):
+                    expected_hash = input_hashes.get(key) if isinstance(input_hashes, dict) else None
+                    if (not isinstance(value, str) or not value.strip() or os.path.isabs(value)
+                            or not isinstance(expected_hash, str)
+                            or re.fullmatch(r"[0-9a-fA-F]{64}", expected_hash) is None):
                         valid = False
                         continue
                     candidate = os.path.realpath(os.path.join(root, value))
                     valid = valid and os.path.commonpath((artifact_dir, candidate)) == artifact_dir \
-                        and os.path.isfile(candidate)
+                        and os.path.isfile(candidate) \
+                        and file_sha256(candidate) == expected_hash.lower()
             else:
                 valid = False
             if isinstance(gate, dict):
