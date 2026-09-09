@@ -91,6 +91,9 @@ Registry sync also requires literal JSON boolean `true` for
 truthiness is no longer accepted. Fabricated values such as `"false"` cannot
 pollute the stored complete or ship state.
 
+NARE reports now also record `bootstrap_draws` and `bootstrap_seed` in the
+`paired` result, binding the metrics to the statistical configuration used.
+
 ## Limitations
 
 This layer authenticates that a trusted runner signed the specified artifacts

@@ -88,6 +88,9 @@ receipt의 `git_sha`도 이제 축약형을 받지 않고 40자리 full commit S
 승인한다. 문자열 `"false"` 같은 fabricated 값은 저장 상태를 complete/ship으로
 오염시키지 않는다.
 
+NARE report의 `paired` 결과에도 `bootstrap_draws`와 `bootstrap_seed`를 기록해
+metrics와 통계 설정이 함께 고정되도록 했다.
+
 ## 한계
 
 이 계층은 “지정된 artifact와 evaluator identity를 trusted runner가 서명했다”는

@@ -55,6 +55,8 @@ class TestNARECLI(unittest.TestCase):
         self.assertEqual(report["classification"]["classification"], "Inconclusive")
         self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
         self.assertEqual(report["paired"]["n_scenes"], 12)
+        self.assertEqual(report["paired"]["bootstrap_draws"], 200)
+        self.assertEqual(report["paired"]["bootstrap_seed"], 0)
 
     def test_cli_accepts_only_a_matching_signed_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
