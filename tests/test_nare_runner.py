@@ -97,6 +97,21 @@ class TestNareRunner(unittest.TestCase):
             self.assertEqual(len(candidate_input), 1)
             np.testing.assert_array_equal(candidate_input[0], foundation_input[0] + 1)
 
+    def test_rejects_aspect_ratio_mismatch_before_registration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = [_row(tmp)]
+            neutral = np.zeros((2, 2, 3), dtype=np.uint8)
+            target = np.zeros((2, 3, 3), dtype=np.uint8)
+            with patch("hybrid_engine.evaluation.nare_runner.load_neutral_render",
+                       return_value=neutral), \
+                 patch("hybrid_engine.evaluation.nare_runner.cv2.imread",
+                       return_value=target), \
+                 patch("hybrid_engine.evaluation.nare_runner.register_to_target") as register:
+                with self.assertRaisesRegex(ValueError, "aspect ratios differ"):
+                    run_nare_metrics(manifest, "F0/Standard (Provia)",
+                                     candidate=lambda image: image)
+                register.assert_not_called()
+
     def test_rejects_mixed_style_and_changed_input_before_decoding(self):
         with tempfile.TemporaryDirectory() as tmp:
             matching = _row(tmp, "scene-1")
