@@ -305,9 +305,14 @@ def check_nare_registered_reports():
             paired = report.get("paired") if isinstance(report, dict) else None
             draws = paired.get("bootstrap_draws") if isinstance(paired, dict) else None
             seed = paired.get("bootstrap_seed") if isinstance(paired, dict) else None
-            if type(draws) is not int or draws <= 0 or type(seed) is not int:
+            classification = report.get("classification") if isinstance(report, dict) else None
+            label = classification.get("classification") if isinstance(classification, dict) else None
+            ship_gate = classification.get("ship_gate_passed") if isinstance(classification, dict) else None
+            if (type(draws) is not int or draws <= 0 or type(seed) is not int
+                    or label not in {"Verified", "Supported", "Inconclusive", "Rejected", "Exploratory"}
+                    or type(ship_gate) is not bool):
                 problems.append(
-                    f"NARE bootstrap 설정 누락: {os.path.relpath(path, BASE)}"
+                    f"NARE report schema 누락: {os.path.relpath(path, BASE)}"
                 )
     print(f"  등록 NARE reports {n_files}개 bootstrap schema 확인")
     return problems
