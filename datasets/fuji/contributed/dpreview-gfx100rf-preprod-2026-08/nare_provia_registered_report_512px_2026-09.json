@@ -1,15 +1,15 @@
 {
   "paired": {
-    "n_scenes": 37,
-    "mean_baseline": 16.5211983452177,
-    "mean_candidate": 11.989706008913075,
-    "mean_improvement": 4.531492336304628,
-    "mean_improvement_pct": 27.42835139205464,
+    "n_scenes": 32,
+    "mean_baseline": 15.931793794298834,
+    "mean_candidate": 11.051151262196903,
+    "mean_improvement": 4.880642532101932,
+    "mean_improvement_pct": 30.634607722882166,
     "ci95": [
-      3.6717888562545196,
-      5.400666505888509
+      4.011210519540545,
+      5.751105594570313
     ],
-    "sign_test_p": 1.0244548320770264e-08,
+    "sign_test_p": 1.5366822481155396e-08,
     "neutral_mean_improvement": null,
     "chromatic_mean_improvement": null,
     "per_scene": [
@@ -74,18 +74,6 @@
         "improvement": 6.7336949370979955
       },
       {
-        "scene_id": "gfx100rf-007",
-        "baseline_delta_e00": 24.03010832591789,
-        "candidate_delta_e00": 16.793388508294967,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 7.236719817622923
-      },
-      {
         "scene_id": "gfx100rf-009",
         "baseline_delta_e00": 20.846678819950952,
         "candidate_delta_e00": 15.228457300990467,
@@ -96,18 +84,6 @@
         "chromatic_baseline": null,
         "chromatic_candidate": null,
         "improvement": 5.618221518960485
-      },
-      {
-        "scene_id": "gfx100rf-010",
-        "baseline_delta_e00": 20.817338955010612,
-        "candidate_delta_e00": 20.131162257130754,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 0.6861766978798585
       },
       {
         "scene_id": "gfx100rf-013",
@@ -420,48 +396,12 @@
         "chromatic_baseline": null,
         "chromatic_candidate": null,
         "improvement": 2.28913412548859
-      },
-      {
-        "scene_id": "gfx100rf-050",
-        "baseline_delta_e00": 18.805929122425027,
-        "candidate_delta_e00": 19.318431921748445,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": -0.5125027993234177
-      },
-      {
-        "scene_id": "gfx100rf-051",
-        "baseline_delta_e00": 19.536922628813628,
-        "candidate_delta_e00": 16.895244030571405,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 2.6416785982422226
-      },
-      {
-        "scene_id": "gfx100rf-052",
-        "baseline_delta_e00": 18.27663832332503,
-        "candidate_delta_e00": 16.844055221737225,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 1.4325831015878059
       }
     ],
     "manifest": {
-      "n_rows": 37,
-      "n_scenes": 37,
-      "n_sessions": 11,
+      "n_rows": 32,
+      "n_scenes": 32,
+      "n_sessions": 10,
       "lighting": [
         "daylight"
       ],
@@ -472,14 +412,14 @@
         "F0/Standard (Provia)"
       ]
     },
-    "improvement_pct": 27.42835139205464,
+    "improvement_pct": 30.634607722882166,
     "baseline_layers": [
       "raw_decoder",
       "colorimetric_foundation",
       "appearance_candidate"
     ],
-    "mean_foundation": 16.5211983452177,
-    "foundation_improvement_pct": 0.0,
+    "mean_foundation": 15.931793794298835,
+    "foundation_improvement_pct": -2.220446049250313e-14,
     "registration_passed": true,
     "subgroup_metrics": {
       "groups": {},

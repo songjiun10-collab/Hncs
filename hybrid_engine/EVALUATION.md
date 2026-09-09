@@ -5035,6 +5035,17 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > `nare_provia_registered_report_1024px_2026-09.json`에 per-scene 결과를
 > 고정했다.
 
+> **정정(2026-09-09, runner geometry gate 재감사)**: 위 preflight도 target을
+> source render 크기로 무조건 resize한 뒤 ECC를 수행하고 있어 aspect-ratio가
+> 다른 crop/panorama를 통과시키는 결함이 있었다. runner와 preflight에 동일한
+> 상대 aspect-ratio gate(1% 이하 허용)를 적용해 재실행한 결과 exploratory
+> 51개 중 **32개만 통과**, 19개는 geometry mismatch로 제외됐다. 기존 registered
+> manifest의 37행 중 5행(`gfx100rf-007`, `010`, `050`, `051`, `052`)도 이
+> 재감사에서 제거했다. 새 32-scene manifest, 512/1024px metrics와 reports를
+> `nare_provia_registered_*_2026-09.json`에 덮어썼고 두 report 모두
+> `Inconclusive`다. 이는 기존 37-scene 수치를 그대로 재사용할 수 없다는
+> 정정이며, color metric 개선이나 ship 승인 주장을 강화하지 않는다.
+
 ## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
 
 > **재실행 확인(2026-09-09)**: 현재 checkout의 registered manifest 37행을
