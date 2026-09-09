@@ -170,7 +170,11 @@ class TestNareRegisteredMetrics(unittest.TestCase):
             path = os.path.join(directory, "nare_registered_metrics_512px.json")
             with open(path, "w", encoding="utf-8") as handle:
                 import json
-                json.dump([{"scene_id": "s", "registration": {"long_edge_px": 512}}], handle)
+                json.dump([{"scene_id": "s", "raw_delta_e00": 1.0,
+                            "foundation_delta_e00": 1.0, "candidate_delta_e00": 0.5,
+                            "registration": {"long_edge_px": 512,
+                                              "overlap_fraction": 1.0,
+                                              "ecc_correlation": 0.9}}], handle)
             with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
                 self.assertEqual(check_nare_registered_metrics(), [])
 
@@ -191,6 +195,30 @@ class TestNareRegisteredMetrics(unittest.TestCase):
                 json.dump([{"scene_id": "s", "registration": {"long_edge_px": 1024}}], handle)
             with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
                 self.assertEqual(len(check_nare_registered_metrics()), 1)
+
+    def test_metrics_require_unique_scene_ids_and_finite_registration_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            duplicate_path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            invalid_path = os.path.join(directory, "nare_registered_metrics_1024px.json")
+            with open(duplicate_path, "w", encoding="utf-8") as handle:
+                import json
+                row = {"scene_id": "s", "raw_delta_e00": 1.0,
+                       "foundation_delta_e00": 1.0, "candidate_delta_e00": 0.5,
+                       "registration": {"long_edge_px": 512,
+                                         "overlap_fraction": 1.0,
+                                         "ecc_correlation": 0.9}}
+                json.dump([row, dict(row)], handle)
+            with open(invalid_path, "w", encoding="utf-8") as handle:
+                import json
+                row = {"scene_id": "other", "raw_delta_e00": 1.0,
+                       "foundation_delta_e00": 1.0, "candidate_delta_e00": float("nan"),
+                       "registration": {"long_edge_px": 1024,
+                                         "overlap_fraction": 1.1,
+                                         "ecc_correlation": 0.9}}
+                json.dump([row], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_metrics()
+            self.assertEqual(len(problems), 2)
 
 
 class TestNareRegisteredReports(unittest.TestCase):

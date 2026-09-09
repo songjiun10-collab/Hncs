@@ -274,15 +274,40 @@ def check_nare_registered_metrics():
             n_rows += len(rows)
             match = re.search(r"registered_metrics_(\d+)px", name)
             expected_scale = int(match.group(1)) if match else None
+            scene_ids = []
             for row in rows:
+                scene_id = row.get("scene_id") if isinstance(row, dict) else None
+                scene_ids.append(scene_id)
                 registration = row.get("registration") if isinstance(row, dict) else None
                 scale = registration.get("long_edge_px") if isinstance(registration, dict) else None
-                if (type(scale) is not int or scale <= 0
+                deltas = tuple(row.get(key) for key in
+                               ("raw_delta_e00", "foundation_delta_e00", "candidate_delta_e00"))
+                overlap = registration.get("overlap_fraction") if isinstance(registration, dict) else None
+                correlation = registration.get("ecc_correlation") if isinstance(registration, dict) else None
+                finite_metrics = all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                                     and math.isfinite(float(value)) and value >= 0 for value in deltas)
+                valid_registration = (
+                    isinstance(overlap, (int, float)) and not isinstance(overlap, bool)
+                    and math.isfinite(float(overlap)) and 0 <= overlap <= 1
+                    and isinstance(correlation, (int, float)) and not isinstance(correlation, bool)
+                    and math.isfinite(float(correlation)) and -1 <= correlation <= 1
+                )
+                if (not isinstance(scene_id, str) or not scene_id.strip()
+                        or type(scale) is not int or scale <= 0
                         or (expected_scale is not None and scale != expected_scale)):
                     problems.append(
                         f"NARE registration scale 누락: {os.path.relpath(path, BASE)}"
                     )
                     break
+                if not finite_metrics or not valid_registration:
+                    problems.append(
+                        f"NARE metrics 값 무효: {os.path.relpath(path, BASE)}"
+                    )
+                    break
+            if len(scene_ids) != len(set(scene_ids)):
+                problems.append(
+                    f"NARE metrics scene_id 중복: {os.path.relpath(path, BASE)}"
+                )
     print(f"  등록 NARE metrics {n_files}개 / {n_rows}행 schema 확인")
     return problems
 
