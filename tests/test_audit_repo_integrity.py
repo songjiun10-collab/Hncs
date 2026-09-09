@@ -258,5 +258,24 @@ class TestNareRegisteredReports(unittest.TestCase):
                 problems = check_nare_registered_reports()
             self.assertEqual(len(problems), 1)
 
+    def test_report_aggregates_must_match_per_scene_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({
+                    "paired": {
+                        "bootstrap_draws": 20_000, "bootstrap_seed": 0, "n_scenes": 1,
+                        "mean_baseline": 10.0, "mean_candidate": 8.0,
+                        "mean_improvement": 1.0, "mean_improvement_pct": 10.0,
+                        "per_scene": [{"scene_id": "s1", "baseline_delta_e00": 10.0,
+                                       "candidate_delta_e00": 8.0, "improvement": 2.0}],
+                    },
+                    "classification": {"classification": "Inconclusive", "ship_gate_passed": False},
+                }, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertEqual(len(problems), 1)
+
 if __name__ == "__main__":
     unittest.main()
