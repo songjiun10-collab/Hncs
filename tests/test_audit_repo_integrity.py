@@ -18,8 +18,10 @@ import numpy as np
 
 from core.dcp_export import write_dcp
 from core.icc_export import write_icc_matrix_trc_profile
-from tools.maintenance.audit_repo_integrity import (check_profiles, dcp_header_problems,
-                                        icc_header_problems)
+from tools.maintenance.audit_repo_integrity import (
+    check_nare_registered_metrics, check_profiles, dcp_header_problems,
+    icc_header_problems,
+)
 
 _CM1 = np.array([[0.9, -0.2, -0.1], [-0.3, 1.2, 0.05], [0.02, -0.25, 0.8]])
 _NATIVE_TO_XYZ = np.array([[0.6, 0.3, 0.02], [0.2, 0.7, 0.1], [0.15, 0.05, 0.7]])
@@ -149,6 +151,28 @@ class TestCheckProfilesSkipsWithoutExiftool(unittest.TestCase):
                  patch("builtins.open", side_effect=open_profile):
                 self.assertIsNone(check_profiles())
             self.assertTrue(handle.was_closed)
+
+
+class TestNareRegisteredMetrics(unittest.TestCase):
+    def test_registration_scale_is_required(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "s", "registration": {}}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_metrics()
+            self.assertEqual(len(problems), 1)
+            self.assertIn("registration scale 누락", problems[0])
+
+    def test_valid_registration_scale_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "s", "registration": {"long_edge_px": 512}}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(check_nare_registered_metrics(), [])
 
 
 if __name__ == "__main__":

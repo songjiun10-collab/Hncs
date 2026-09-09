@@ -50,6 +50,7 @@ import sys
 BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DOCS = os.path.join(BASE, "docs")
 PROFILES = os.path.join(BASE, "hybrid_engine", "assets", "profiles")
+DATASETS = os.path.join(BASE, "datasets")
 CODE_DIRS = ["tools", "brands", "core"]
 # 영역 규칙 파일이지 번역 대상 문서가 아니다.
 NOT_BILINGUAL = {"CLAUDE.md", "AGENTS.md"}
@@ -250,11 +251,44 @@ def check_profiles():
     return problems
 
 
+def check_nare_registered_metrics():
+    """Ensure frozen registered NARE metrics retain registration scale metadata."""
+
+    problems, n_files, n_rows = [], 0, 0
+    for root, _, files in os.walk(DATASETS):
+        for name in sorted(files):
+            if not name.endswith(".json") or "registered_metrics_" not in name:
+                continue
+            path = os.path.join(root, name)
+            n_files += 1
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    rows = json.load(handle)
+            except (OSError, json.JSONDecodeError) as exc:
+                problems.append(f"NARE metrics JSON 파싱 실패: {os.path.relpath(path, BASE)}: {exc}")
+                continue
+            if not isinstance(rows, list):
+                problems.append(f"NARE metrics 행 목록 아님: {os.path.relpath(path, BASE)}")
+                continue
+            n_rows += len(rows)
+            for row in rows:
+                registration = row.get("registration") if isinstance(row, dict) else None
+                if not isinstance(registration, dict) or not isinstance(
+                        registration.get("long_edge_px"), int):
+                    problems.append(
+                        f"NARE registration scale 누락: {os.path.relpath(path, BASE)}"
+                    )
+                    break
+    print(f"  등록 NARE metrics {n_files}개 / {n_rows}행 schema 확인")
+    return problems
+
+
 def main():
     all_problems, skipped = [], []
     for title, fn in [("문서 등재", check_registration),
                       ("한/영 문서 짝", check_doc_pairs),
                       ("assets 참조", check_asset_refs),
+                      ("NARE metrics", check_nare_registered_metrics),
                       ("프로필 헤더", check_profile_headers),
                       ("프로필 무결성", check_profiles)]:
         print(f"[{title}]")
