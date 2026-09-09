@@ -23,6 +23,7 @@ class TestConvergenceSummary(unittest.TestCase):
         }
         summary = _convergence_summary(results)
         self.assertEqual(summary["classification"], "Exploratory")
+        self.assertEqual(summary["real_raw_file_counts"], {})
         self.assertEqual(summary["synthetic_sources_excluded_from_claim"], ["sony", "nikon"])
         self.assertEqual(summary["post_b2_std_across_sources"], 0.0)
         self.assertEqual(summary["post_w995_std_across_sources"], 0.0)
