@@ -339,7 +339,7 @@ class TestNareSelectionSensitivity(unittest.TestCase):
             "registration_gate": {"n_input": 3, "n_passed": 2, "n_failed": 1,
                                    "n_aspect_ratio_failed": 1, "n_geometry_failed": 0},
             "selection_sensitivity": {
-                "pass_minus_fail_mean_absolute_improvement_delta_e00": 1.0,
+                "pass_minus_fail_mean_absolute_improvement_delta_e00": 2.0,
                 "bootstrap_95ci": [0.1, 2.0],
                 "two_sided_permutation_p": 0.01,
                 "bootstrap_draws": 100,
@@ -347,13 +347,28 @@ class TestNareSelectionSensitivity(unittest.TestCase):
                 "seed_absolute": 0,
                 "seed_relative": 1,
             },
+            "pre_registration_exploratory_metrics": {
+                "all_51": {"mean_baseline_delta_e00": 20.0, "mean_candidate_delta_e00": 16.0,
+                            "mean_absolute_improvement_delta_e00": 4.0,
+                            "aggregate_relative_improvement_pct": 20.0, "wins": 2, "losses": 1},
+                "registration_pass_32": {"mean_baseline_delta_e00": 18.0, "mean_candidate_delta_e00": 14.0,
+                                         "mean_absolute_improvement_delta_e00": 4.0,
+                                         "aggregate_relative_improvement_pct": 22.22222222222222,
+                                         "wins": 2, "losses": 0},
+                "registration_fail_19": {"mean_baseline_delta_e00": 24.0, "mean_candidate_delta_e00": 22.0,
+                                          "mean_absolute_improvement_delta_e00": 2.0,
+                                          "aggregate_relative_improvement_pct": 8.333333333333332,
+                                          "wins": 0, "losses": 1},
+            },
             "post_registration_current_reports": {
                 "512px": {"n_scenes": 2, "mean_baseline_delta_e00": 10.0,
                           "mean_candidate_delta_e00": 8.0,
+                          "mean_absolute_improvement_delta_e00": 2.0,
                           "aggregate_relative_improvement_pct": 20.0,
                           "bootstrap_95ci_absolute_improvement": [1.0, 3.0]},
                 "1024px": {"n_scenes": 2, "mean_baseline_delta_e00": 10.0,
                            "mean_candidate_delta_e00": 8.0,
+                           "mean_absolute_improvement_delta_e00": 2.0,
                            "aggregate_relative_improvement_pct": 20.0,
                            "bootstrap_95ci_absolute_improvement": [1.0, 3.0]},
             },
@@ -373,6 +388,8 @@ class TestNareSelectionSensitivity(unittest.TestCase):
             lambda payload: payload["registration_gate"].update(n_passed=3),
             lambda payload: payload["selection_sensitivity"].update(bootstrap_95ci=[2.0, 1.0]),
             lambda payload: payload["selection_sensitivity"].update(two_sided_permutation_p="0.01"),
+            lambda payload: payload["post_registration_current_reports"]["512px"].update(
+                mean_absolute_improvement_delta_e00=99.0),
         ):
             with self.subTest(mutate=mutate), tempfile.TemporaryDirectory() as directory:
                 payload = self._payload()
