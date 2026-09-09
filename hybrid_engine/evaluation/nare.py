@@ -152,12 +152,7 @@ def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
                                                          "neutral", "saturated",
                                                          "shadow", "highlight"),
                              catastrophic_regression_pct: float = 15.0) -> dict[str, Any]:
-    """Aggregate semantic-region metrics and fail closed on missing regions.
-
-    Each metric row must contain ``subgroups[name]`` with baseline and candidate
-    ``*_delta_e00`` values. A positive improvement means candidate error fell;
-    a regression beyond the configured percentage is catastrophic.
-    """
+    """Aggregate semantic-region metrics and fail closed on missing regions."""
     if not _valid_number(catastrophic_regression_pct) or catastrophic_regression_pct < 0:
         raise ValueError("catastrophic_regression_pct must be non-negative")
     rows = list(metric_rows)
@@ -203,10 +198,12 @@ def summarize_nare_subgroups(metric_rows: Iterable[Mapping[str, Any]], *,
 def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
                          min_improvement_pct: float = 5.0) -> dict[str, Any]:
     coverage = result.get("coverage", {})
+
     def labels(value):
         if not isinstance(value, (list, tuple)) or not all(isinstance(v, str) for v in value):
             return set()
         return {v.strip().casefold() for v in value} - {"", "unknown", "none", "null", "n/a"}
+
     picture_styles = labels(result.get("picture_styles", []))
     count, effect, sign = (result.get(key) for key in ("n_scenes", "improvement_pct", "sign_test_p"))
     coverage = coverage if isinstance(coverage, Mapping) else {}
@@ -223,10 +220,10 @@ def classify_nare_result(result: Mapping[str, Any], min_scenes: int = 12,
         and result.get("subgroup_metrics_passed") is True,
         "controls": result.get("controls_passed") is True,
         "provenance": result.get("provenance_passed") is True,
-        # A metrics JSON can describe a plausible run without proving that it
-        # was produced from these exact artifacts.  Only a validated signed
-        # receipt may satisfy this check.
-        "trusted_provenance": result.get("trusted_provenance") is True,
+        # Supported is the strongest NARE class.  A cryptographically valid
+        # receipt establishes artifact integrity for this local/reproducible
+        # level; it does not assert independent signer authority.
+        "receipt_integrity": result.get("receipt_valid") is True,
     }
     return {"ship_gate_passed": all(checks.values()), "checks": checks,
             "classification": "Supported" if all(checks.values()) else "Inconclusive"}

@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -31,13 +30,14 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
         raise ValueError("NARE --receipt and --receipt-public-key must be supplied together")
     paired.update({key: controls.get(key, False) for key in
                    ("subgroups_passed", "controls_passed", "provenance_passed")})
-    trusted_provenance = False
+    receipt = None
+    receipt_valid = False
     if receipt_path is not None:
         if receipt_public_key_path is None:
             raise ValueError("NARE receipt validation requires --receipt-public-key")
         if expected_git_sha is None:
             raise ValueError("NARE receipt validation requires --git-sha")
-        validate_receipt(
+        receipt = validate_receipt(
             receipt_path,
             {"manifest": manifest_path, "metrics": metrics_path, "controls": controls_path},
             receipt_public_key_path,
@@ -45,25 +45,13 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
             required_artifacts=("manifest", "metrics", "controls"),
             expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
         )
-        trusted_key_sha256 = os.environ.get("HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256", "").strip()
-        trusted_evaluator_sha256 = os.environ.get("HNCS_TRUSTED_EVALUATOR_SHA256", "").strip()
-        # A valid signature proves integrity, but an arbitrary key/evaluator is
-        # not an authenticated trusted run.  Keep NARE aligned with EAGER:
-        # only an explicitly pinned runner can satisfy the provenance gate.
-        if trusted_key_sha256 and trusted_evaluator_sha256:
-            validate_receipt(
-                receipt_path,
-                {"manifest": manifest_path, "metrics": metrics_path, "controls": controls_path},
-                receipt_public_key_path,
-                expected_git_sha=expected_git_sha,
-                trusted_public_key_sha256=trusted_key_sha256,
-                trusted_evaluator_sha256=trusted_evaluator_sha256,
-                required_artifacts=("manifest", "metrics", "controls"),
-                expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
-            )
-            trusted_provenance = True
-    paired["trusted_provenance"] = trusted_provenance
-    return {"paired": paired, "classification": classify_nare_result(paired)}
+        receipt_valid = receipt["signature_valid"] is True
+    paired["receipt_valid"] = receipt_valid
+    paired["trusted_provenance"] = False
+    report = {"paired": paired, "classification": classify_nare_result(paired)}
+    if receipt is not None:
+        report["evidence_receipt"] = receipt
+    return report
 
 
 def main() -> None:

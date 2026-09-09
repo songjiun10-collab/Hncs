@@ -7,7 +7,6 @@ selection and image processing outside the statistical checker.
 
 import argparse
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -84,20 +83,11 @@ def build_report(
             expected_git_sha=expected_git_sha,
             expected_run_config=receipt_run_config,
         )
-        trusted_key_sha256 = os.environ.get("HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256", "").strip()
-        trusted_evaluator_sha256 = os.environ.get("HNCS_TRUSTED_EVALUATOR_SHA256", "").strip()
-        if trusted_key_sha256 and trusted_evaluator_sha256:
-            validate_receipt(
-                receipt_path,
-                {"manifest": manifest_path, "metrics": metrics_path,
-                 "controls": controls_path, "robustness": robustness_path},
-                receipt_public_key_path,
-                expected_git_sha=expected_git_sha,
-                trusted_public_key_sha256=trusted_key_sha256,
-                trusted_evaluator_sha256=trusted_evaluator_sha256,
-                expected_run_config=receipt_run_config,
-            )
-            trusted_provenance = receipt["trusted"] is True
+        # A local caller controls its environment, command line, working tree,
+        # and supplied key.  Signature validity therefore cannot establish an
+        # independent promotion authority here.  Verified needs a separate
+        # trusted-runner path outside this CLI.
+        trusted_provenance = False
     paired = paired_report["paired"]
     paired["controls_passed"] = controls["passed"]
     paired["robustness_passed"] = robustness["passed"]
@@ -125,7 +115,7 @@ def main() -> None:
     parser.add_argument("--validation-passed", action="store_true")
     parser.add_argument("--lockbox-passed", action="store_true")
     parser.add_argument("--external-replication", action="store_true")
-    parser.add_argument("--receipt", help="signed Evidence Receipt from a trusted evaluator")
+    parser.add_argument("--receipt", help="signed Evidence Receipt from an evaluator")
     parser.add_argument("--receipt-public-key", help="base64 Ed25519 public key for --receipt")
     parser.add_argument("--bootstrap", type=int, default=20_000)
     parser.add_argument("--seed", type=int, default=0)
