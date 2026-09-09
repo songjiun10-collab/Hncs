@@ -408,6 +408,78 @@ def check_nare_registered_reports():
     return problems
 
 
+def check_nare_selection_sensitivity():
+    """Validate frozen NARE registration-selection sensitivity artifacts."""
+
+    problems, n_files = [], 0
+    schema = "hncs.nare-registration-selection-sensitivity/v1"
+    sha_pattern = re.compile(r"^[0-9a-fA-F]{40}$")
+
+    def finite(value):
+        return (isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(float(value)))
+
+    def ci(value):
+        return (isinstance(value, list) and len(value) == 2
+                and all(finite(item) for item in value) and value[0] <= value[1])
+
+    for root, _, files in os.walk(DATASETS):
+        for name in sorted(files):
+            if not name.startswith("nare_") or "registration_selection_sensitivity_" not in name \
+                    or not name.endswith(".json"):
+                continue
+            path = os.path.join(root, name)
+            n_files += 1
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    artifact = json.load(handle)
+            except (OSError, json.JSONDecodeError) as exc:
+                problems.append(f"NARE sensitivity JSON 파싱 실패: {os.path.relpath(path, BASE)}: {exc}")
+                continue
+            gate = artifact.get("registration_gate") if isinstance(artifact, dict) else None
+            sensitivity = artifact.get("selection_sensitivity") if isinstance(artifact, dict) else None
+            reports = artifact.get("post_registration_current_reports") if isinstance(artifact, dict) else None
+            valid = isinstance(artifact, dict) and artifact.get("schema") == schema \
+                and isinstance(artifact.get("source_develop_sha"), str) \
+                and sha_pattern.fullmatch(artifact["source_develop_sha"]) is not None
+            if isinstance(gate, dict):
+                counts = tuple(gate.get(key) for key in
+                               ("n_input", "n_passed", "n_failed", "n_aspect_ratio_failed", "n_geometry_failed"))
+                valid = valid and all(type(value) is int and value >= 0 for value in counts) \
+                    and counts[1] + counts[2] == counts[0] \
+                    and counts[3] + counts[4] == counts[2]
+            else:
+                valid = False
+            if isinstance(sensitivity, dict):
+                p_value = sensitivity.get("two_sided_permutation_p")
+                valid = valid and finite(sensitivity.get("pass_minus_fail_mean_absolute_improvement_delta_e00")) \
+                    and ci(sensitivity.get("bootstrap_95ci")) \
+                    and finite(p_value) and 0 <= p_value <= 1 \
+                    and type(sensitivity.get("bootstrap_draws")) is int \
+                    and sensitivity["bootstrap_draws"] > 0 \
+                    and type(sensitivity.get("permutation_draws")) is int \
+                    and sensitivity["permutation_draws"] > 0 \
+                    and type(sensitivity.get("seed_absolute")) is int \
+                    and type(sensitivity.get("seed_relative")) is int
+            else:
+                valid = False
+            if isinstance(reports, dict):
+                for scale in ("512px", "1024px"):
+                    report = reports.get(scale)
+                    valid = valid and isinstance(report, dict) \
+                        and type(report.get("n_scenes")) is int and report["n_scenes"] > 0 \
+                        and all(finite(report.get(key)) for key in
+                                ("mean_baseline_delta_e00", "mean_candidate_delta_e00",
+                                 "aggregate_relative_improvement_pct")) \
+                        and ci(report.get("bootstrap_95ci_absolute_improvement"))
+            else:
+                valid = False
+            if not valid:
+                problems.append(f"NARE sensitivity schema 누락: {os.path.relpath(path, BASE)}")
+    print(f"  NARE sensitivity {n_files}개 schema 확인")
+    return problems
+
+
 def main():
     all_problems, skipped = [], []
     for title, fn in [("문서 등재", check_registration),
@@ -415,6 +487,7 @@ def main():
                       ("assets 참조", check_asset_refs),
                       ("NARE metrics", check_nare_registered_metrics),
                       ("NARE reports", check_nare_registered_reports),
+                      ("NARE sensitivity", check_nare_selection_sensitivity),
                       ("프로필 헤더", check_profile_headers),
                       ("프로필 무결성", check_profiles)]:
         print(f"[{title}]")

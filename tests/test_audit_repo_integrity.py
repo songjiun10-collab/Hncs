@@ -19,7 +19,8 @@ import numpy as np
 from core.dcp_export import write_dcp
 from core.icc_export import write_icc_matrix_trc_profile
 from tools.maintenance.audit_repo_integrity import (
-    check_nare_registered_metrics, check_nare_registered_reports, check_profiles, dcp_header_problems,
+    check_nare_registered_metrics, check_nare_registered_reports,
+    check_nare_selection_sensitivity, check_profiles, dcp_header_problems,
     icc_header_problems,
 )
 
@@ -232,6 +233,7 @@ class TestNareRegisteredReports(unittest.TestCase):
                 problems = check_nare_registered_reports()
             self.assertEqual(len(problems), 1)
 
+
     def test_valid_bootstrap_configuration_passes(self):
         with tempfile.TemporaryDirectory() as directory:
             path = os.path.join(directory, "nare_registered_report_512px.json")
@@ -327,6 +329,61 @@ class TestNareRegisteredReports(unittest.TestCase):
             with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
                 problems = check_nare_registered_reports()
             self.assertEqual(len(problems), 1)
+
+
+class TestNareSelectionSensitivity(unittest.TestCase):
+    def _payload(self):
+        return {
+            "schema": "hncs.nare-registration-selection-sensitivity/v1",
+            "source_develop_sha": "a" * 40,
+            "registration_gate": {"n_input": 3, "n_passed": 2, "n_failed": 1,
+                                   "n_aspect_ratio_failed": 1, "n_geometry_failed": 0},
+            "selection_sensitivity": {
+                "pass_minus_fail_mean_absolute_improvement_delta_e00": 1.0,
+                "bootstrap_95ci": [0.1, 2.0],
+                "two_sided_permutation_p": 0.01,
+                "bootstrap_draws": 100,
+                "permutation_draws": 100,
+                "seed_absolute": 0,
+                "seed_relative": 1,
+            },
+            "post_registration_current_reports": {
+                "512px": {"n_scenes": 2, "mean_baseline_delta_e00": 10.0,
+                          "mean_candidate_delta_e00": 8.0,
+                          "aggregate_relative_improvement_pct": 20.0,
+                          "bootstrap_95ci_absolute_improvement": [1.0, 3.0]},
+                "1024px": {"n_scenes": 2, "mean_baseline_delta_e00": 10.0,
+                           "mean_candidate_delta_e00": 8.0,
+                           "aggregate_relative_improvement_pct": 20.0,
+                           "bootstrap_95ci_absolute_improvement": [1.0, 3.0]},
+            },
+        }
+
+    def test_valid_selection_sensitivity_artifact_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_provia_registration_selection_sensitivity_2026-09.json")
+            import json
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(self._payload(), handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(check_nare_selection_sensitivity(), [])
+
+    def test_selection_counts_and_ci_are_fail_closed(self):
+        for mutate in (
+            lambda payload: payload["registration_gate"].update(n_passed=3),
+            lambda payload: payload["selection_sensitivity"].update(bootstrap_95ci=[2.0, 1.0]),
+            lambda payload: payload["selection_sensitivity"].update(two_sided_permutation_p="0.01"),
+        ):
+            with self.subTest(mutate=mutate), tempfile.TemporaryDirectory() as directory:
+                payload = self._payload()
+                mutate(payload)
+                path = os.path.join(directory, "nare_provia_registration_selection_sensitivity_2026-09.json")
+                import json
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(payload, handle)
+                with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                    self.assertEqual(len(check_nare_selection_sensitivity()), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
