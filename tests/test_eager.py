@@ -43,6 +43,13 @@ class TestManifestValidation(unittest.TestCase):
         self.assertEqual(result["n_rows"], 1)
         self.assertEqual(result["n_scenes"], 1)
 
+    def test_evaluation_rejects_boolean_or_nonpositive_bootstrap(self):
+        metric = [SceneMetric("scene-1", 2.0, 1.0)]
+        with self.assertRaisesRegex(ValueError, "positive integer"):
+            evaluate_paired(metric, n_bootstrap=True)
+        with self.assertRaisesRegex(ValueError, "positive integer"):
+            evaluate_paired(metric, n_bootstrap=0)
+
     def test_same_scene_in_multiple_splits_is_rejected(self):
         with self.assertRaises(ValueError):
             validate_manifest([
