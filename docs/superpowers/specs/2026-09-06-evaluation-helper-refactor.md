@@ -1,5 +1,7 @@
 # 평가 도구 공통 헬퍼 리팩토링 사양
 
+[English](2026-09-06-evaluation-helper-refactor.en.md)
+
 ## 목표
 
 세 평가 도구에 반복된 기여 데이터셋 수집 및 sRGB/DeltaE 변환 로직을 하나의
