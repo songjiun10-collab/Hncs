@@ -5063,7 +5063,8 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > 1024px registration도 동일하게 **37/51 pass, 동일한 14 scene fail**이었다.
 > 실패 집합이 scale 사이에서 변하지 않아 단순 downsample artifact보다는
 > 원본 geometry/aspect-ratio 불일치로 해석하는 근거가 강화됐다. 결과는
-> `nare_provia_exploratory_registration_1024px_2026-09.json`에 보존했다.
+> 개별 결과와 교차 scale 요약을 각각 `nare_provia_exploratory_registration_1024px_2026-09.json`,
+> `nare_provia_exploratory_registration_multiscale_2026-09.json`에 보존했다.
 
 registration을 통과한 37개 scene을 11개 capture-date session으로 묶어
 leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해

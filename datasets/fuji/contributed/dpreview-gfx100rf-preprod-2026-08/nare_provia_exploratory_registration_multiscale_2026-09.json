@@ -1,0 +1,80 @@
+{
+  "manifest": "nare_provia_exploratory_manifest_2026-09.json",
+  "scales": [
+    {
+      "max_dim": 512,
+      "n_input": 51,
+      "n_passed": 37,
+      "n_failed": 14,
+      "failure_counts": {
+        "correlation": 5,
+        "correlation,translation": 2,
+        "correlation,translation,overlap": 5,
+        "translation": 1,
+        "translation,overlap": 1
+      },
+      "failed_scene_ids": [
+        "gfx100rf-002",
+        "gfx100rf-003",
+        "gfx100rf-008",
+        "gfx100rf-011",
+        "gfx100rf-012",
+        "gfx100rf-014",
+        "gfx100rf-019",
+        "gfx100rf-021",
+        "gfx100rf-036",
+        "gfx100rf-037",
+        "gfx100rf-038",
+        "gfx100rf-039",
+        "gfx100rf-049",
+        "gfx100rf-053"
+      ]
+    },
+    {
+      "max_dim": 1024,
+      "n_input": 51,
+      "n_passed": 37,
+      "n_failed": 14,
+      "failure_counts": {
+        "correlation": 8,
+        "correlation,translation": 2,
+        "correlation,translation,overlap": 3,
+        "translation": 1
+      },
+      "failed_scene_ids": [
+        "gfx100rf-002",
+        "gfx100rf-003",
+        "gfx100rf-008",
+        "gfx100rf-011",
+        "gfx100rf-012",
+        "gfx100rf-014",
+        "gfx100rf-019",
+        "gfx100rf-021",
+        "gfx100rf-036",
+        "gfx100rf-037",
+        "gfx100rf-038",
+        "gfx100rf-039",
+        "gfx100rf-049",
+        "gfx100rf-053"
+      ]
+    }
+  ],
+  "failed_scene_intersection": [
+    "gfx100rf-002",
+    "gfx100rf-003",
+    "gfx100rf-008",
+    "gfx100rf-011",
+    "gfx100rf-012",
+    "gfx100rf-014",
+    "gfx100rf-019",
+    "gfx100rf-021",
+    "gfx100rf-036",
+    "gfx100rf-037",
+    "gfx100rf-038",
+    "gfx100rf-039",
+    "gfx100rf-049",
+    "gfx100rf-053"
+  ],
+  "failed_scene_sets_identical": true,
+  "interpretation": "The same scenes fail at both scales; treat as geometry/registration exclusion, not color evidence."
+}
