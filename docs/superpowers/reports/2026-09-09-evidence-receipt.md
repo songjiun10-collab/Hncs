@@ -64,7 +64,16 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 - receipt 없이 external replication만 주장한 report: `Supported`
 - NARE receipt 없는 plausible metrics: `Inconclusive`
 - NARE 유효 receipt-backed report: `Supported`
-- 전체 suite: 1,436개 통과 (현재 checkout 재실행)
+- 전체 suite: 1,445개 통과 (현재 checkout 재실행)
+
+## NARE trusted-runner 재감사 (2026-09-09)
+
+NARE CLI도 이제 EAGER와 동일하게 trusted receipt public-key fingerprint와
+evaluator fingerprint가 환경에 pin되어 있을 때만 receipt를 provenance gate에
+반영한다. 임의 Ed25519 키로 서명한, 형식상 유효한 receipt는 hash chain 검증을
+통과해도 `trusted_provenance=False` 및 `Inconclusive`로 남는다. 두 fingerprint를
+모두 일치시킨 실행만 `Supported` 경로에 들어간다. 회귀 검증은 `tests.test_nare_cli`
+2개이며 전체 suite는 1,445개 통과했다.
 
 ## 한계
 

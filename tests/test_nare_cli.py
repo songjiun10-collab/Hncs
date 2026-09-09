@@ -1,5 +1,7 @@
 import json
 import base64
+import hashlib
+import os
 import subprocess
 import sys
 import tempfile
@@ -91,13 +93,27 @@ class TestNARECLI(unittest.TestCase):
                 required_artifacts=("manifest", "metrics", "controls")), private, key_id="ci")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
-            proc = subprocess.run([
+            command = [
                 sys.executable, "-m", "hybrid_engine.evaluation.nare_cli",
                 "--manifest", str(paths["manifest"]), "--metrics", str(paths["metrics"]),
                 "--controls", str(paths["controls"]), "--bootstrap", "100", "--seed", "0",
                 "--receipt", str(receipt_path), "--receipt-public-key", str(public_path),
                 "--git-sha", "a" * 40,
-            ], capture_output=True, text=True, check=True)
+            ]
+            # A mathematically valid receipt from an arbitrary key is not a
+            # trusted runner result and must remain Inconclusive.
+            proc = subprocess.run(command, capture_output=True, text=True, check=True)
+            report = json.loads(proc.stdout)
+            self.assertFalse(report["classification"]["ship_gate_passed"])
+            self.assertEqual(report["classification"]["classification"], "Inconclusive")
+            self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
+
+            trusted_env = os.environ.copy()
+            trusted_env["HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256"] = hashlib.sha256(
+                private.public_key().public_bytes_raw()).hexdigest()
+            trusted_env["HNCS_TRUSTED_EVALUATOR_SHA256"] = "b" * 64
+            proc = subprocess.run(command, capture_output=True, text=True,
+                                  check=True, env=trusted_env)
             report = json.loads(proc.stdout)
             self.assertTrue(report["classification"]["ship_gate_passed"])
             self.assertEqual(report["classification"]["classification"], "Supported")
