@@ -276,15 +276,21 @@ def sync_evaluation_report(
     metrics_sha = sha256_file(metrics_path)
     controls_sha = sha256_file(controls_path) if controls_path else None
     robustness_sha = sha256_file(robustness_path) if robustness_path else None
+    report_sha: str
     if report_path:
         try:
-            report_file_value = json.loads(Path(report_path).read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
+            # Read once so the mapping we validate and the bytes we identify
+            # cannot diverge if the path is replaced between operations.
+            report_bytes = Path(report_path).read_bytes()
+            report_file_value = json.loads(report_bytes.decode("utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise ValueError("report_path is not valid JSON") from exc
         if (not isinstance(report_file_value, Mapping)
                 or sha256_json(report_file_value) != sha256_json(report)):
             raise ValueError("report_path content does not match report")
-    report_sha = sha256_file(report_path) if report_path else sha256_json(report)
+        report_sha = sha256(report_bytes).hexdigest()
+    else:
+        report_sha = sha256_json(report)
     revision = git_sha or current_git_sha() or ""
     if revision and not isinstance(revision, str):
         raise ValueError("git_sha must be a full 40-character commit SHA")
@@ -414,8 +420,8 @@ def sync_evaluation_report(
         artifacts.append(("controls", controls_path, controls_sha))
     if robustness_path:
         artifacts.append(("robustness", robustness_path, robustness_sha))
-    if report_path and Path(report_path).exists():
-        artifacts.append(("report", report_path, sha256_file(report_path)))
+    if report_path:
+        artifacts.append(("report", report_path, report_sha))
     client.upsert(
         "hncs_artifacts",
         [{

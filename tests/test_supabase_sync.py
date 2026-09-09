@@ -288,6 +288,56 @@ class TestSupabaseSync(unittest.TestCase):
                     client=client)
             self.assertEqual(client.calls, [])
 
+    def test_invalid_utf8_report_is_rejected_before_registry_write(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report_path = Path(tmp) / "report.json"
+            report_path.write_bytes(b"\xff\xfe")
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            client = _FakeClient()
+            with self.assertRaisesRegex(ValueError, "not valid JSON"):
+                sync_evaluation_report(
+                    report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics,
+                    report_path=report_path, client=client)
+            self.assertEqual(client.calls, [])
+
+    def test_report_artifact_digest_uses_validated_bytes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            report_path = Path(tmp) / "report.json"
+            report_path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
+            expected = sha256_file(report_path)
+            real_hash = sha256_file
+
+            def altered_hash(path):
+                if Path(path) == report_path:
+                    return "f" * 64
+                return real_hash(path)
+
+            client = _FakeClient()
+            with patch("hybrid_engine.evaluation.supabase_sync.sha256_file",
+                       side_effect=altered_hash):
+                sync_evaluation_report(
+                    report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics,
+                    report_path=report_path, client=client)
+            artifacts = next(rows for table, rows, _ in client.calls
+                             if table == "hncs_artifacts")
+            report_artifact = next(row for row in artifacts if row["kind"] == "report")
+            self.assertEqual(report_artifact["sha256"], expected)
+
     def test_run_key_changes_when_git_revision_changes(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
