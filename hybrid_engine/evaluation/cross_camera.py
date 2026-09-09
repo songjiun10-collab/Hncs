@@ -62,7 +62,11 @@ from core.stats import image_stats
 from tools.research.iso_noise import estimate_noise_sigma
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_FUJI_RAW_GLOB = os.path.join(_REPO_ROOT, "raw_calib_cache_fuji", "*", "raw", "*.RAF")
+_FUJI_RAW_GLOBS = (
+    os.path.join(_REPO_ROOT, "raw_calib_cache_fuji", "*", "raw", "*.RAF"),
+    os.path.join(_REPO_ROOT, "datasets", "fuji", "contributed", "*", "raw", "*.raf"),
+    os.path.join(_REPO_ROOT, "datasets", "fuji", "contributed", "*", "raw", "*.RAF"),
+)
 _SYNTHETIC_SOURCES = ("sony", "nikon", "canon")  # 이 환경에 real RAW가 없는 브랜드
 
 
@@ -87,6 +91,12 @@ def _noise_sigma(img_bgr):
     return estimate_noise_sigma(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY).astype(np.float64))
 
 
+def _find_fuji_raw_files():
+    """Return unique Fuji RAW paths from legacy and contributed-data locations."""
+
+    return sorted({path for pattern in _FUJI_RAW_GLOBS for path in glob.glob(pattern)})
+
+
 def run_generalization(target_brand, base_image_path=None, target_profile=None,
                        include_synthetic=True):
     if target_brand not in BRAND_FUNCS:
@@ -95,7 +105,7 @@ def run_generalization(target_brand, base_image_path=None, target_profile=None,
     results = {}
 
     # 실제 RAW 경로 (Fuji) - HybridCameraEngine으로 브랜드 역산 없이 직접
-    raw_files = sorted(glob.glob(_FUJI_RAW_GLOB))
+    raw_files = _find_fuji_raw_files()
     if raw_files:
         raw_path = raw_files[0]
         linear = _resize_max_dim(decode_raw(raw_path), 1200)
@@ -118,7 +128,7 @@ def run_generalization(target_brand, base_image_path=None, target_profile=None,
             "post_noise_sigma": _noise_sigma(converted_u8),
         }
     else:
-        print("  fuji: RAW 없음(raw_calib_cache_fuji/), 스킵")
+        print("  fuji: RAW 없음(legacy/contributed Fuji 경로), 스킵")
 
     if include_synthetic:
         if not base_image_path:

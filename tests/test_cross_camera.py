@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 import numpy as np
 
-from hybrid_engine.evaluation.cross_camera import run_generalization, _convergence_summary
+from hybrid_engine.evaluation.cross_camera import (
+    _convergence_summary, _find_fuji_raw_files, run_generalization,
+)
 
 
 def _test_image(seed=0, shape=(24, 24, 3)):
@@ -77,6 +79,14 @@ class TestRunGeneralizationSyntheticOnly(unittest.TestCase):
             with patch("hybrid_engine.evaluation.cross_camera.glob.glob", return_value=[]):
                 with self.assertRaisesRegex(RuntimeError, "no real RAW source"):
                     run_generalization("hasselblad", f.name, include_synthetic=False)
+
+    def test_raw_discovery_includes_contributed_dataset_and_deduplicates(self):
+        with patch(
+            "hybrid_engine.evaluation.cross_camera.glob.glob",
+            side_effect=lambda pattern: ["/tmp/fuji.raf"]
+            if "datasets/fuji/contributed" in pattern else [],
+        ):
+            self.assertEqual(_find_fuji_raw_files(), ["/tmp/fuji.raf"])
 
 
 if __name__ == "__main__":
