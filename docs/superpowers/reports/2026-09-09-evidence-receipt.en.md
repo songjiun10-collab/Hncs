@@ -82,6 +82,10 @@ The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
 the provenance input.
 
+The receipt `git_sha` is also restricted to a full 40-character commit SHA.
+Abbreviated revisions remain suitable for registry metadata but cannot identify
+the code in an execution provenance receipt.
+
 ## Limitations
 
 This layer authenticates that a trusted runner signed the specified artifacts

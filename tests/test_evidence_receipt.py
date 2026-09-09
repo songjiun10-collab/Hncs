@@ -78,6 +78,20 @@ class TestEvidenceReceipt(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "signature"):
                 validate_receipt(receipt_path, paths, public_path)
 
+    def test_receipt_requires_full_git_commit_sha(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths, _, public_path = self._signed(Path(directory))
+            private = Ed25519PrivateKey.generate()
+            receipt = build_receipt(
+                paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
+                command=["evaluator"], run_id="run", timestamp="now")
+            receipt["git_sha"] = "abcdef1"
+            receipt_path = Path(directory) / "short-receipt.json"
+            receipt_path.write_text(json.dumps(sign_receipt(receipt, private, key_id="ci")), encoding="utf-8")
+            public_path.write_text(base64.b64encode(private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
+            with self.assertRaisesRegex(ValueError, "full commit SHA"):
+                validate_receipt(receipt_path, paths, public_path)
+
     def test_eager_report_requires_and_accepts_a_matching_signed_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
