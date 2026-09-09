@@ -1,8 +1,8 @@
 """Signed provenance receipts for evidence-producing evaluation runs.
 
-Receipts bind the exact input artifacts and evaluator identity to a run. They
-do not prove that the captured data represents reality; they prove which
-artifacts a trusted runner claimed to execute and sign.
+Receipts bind exact input artifacts and evaluator identity to a run. A valid
+signature establishes integrity under the supplied key; it does not by itself
+make that key an independently trusted promotion authority.
 """
 
 from __future__ import annotations
@@ -24,13 +24,39 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 _SCHEMA = "hncs.evidence-receipt/v1"
 _REQUIRED_ARTIFACTS = ("manifest", "metrics", "controls", "robustness")
+_PROMOTION_ATTESTATIONS = (
+    "validation_passed", "lockbox_passed", "external_replication",
+)
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
+_EVIDENCE_TIERS = frozenset("ABCDE")
 
 
 def _canonical(value: Mapping[str, Any]) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True,
                       separators=(",", ":")).encode("utf-8")
+
+
+def _normalize_attestations(value: Any) -> dict[str, bool]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError("receipt attestations must be a mapping")
+    unknown = sorted(set(value) - set(_PROMOTION_ATTESTATIONS))
+    if unknown:
+        raise ValueError(f"receipt contains unknown attestations: {', '.join(unknown)}")
+    invalid = sorted(name for name, flag in value.items() if type(flag) is not bool)
+    if invalid:
+        raise ValueError(f"receipt attestations must be boolean: {', '.join(invalid)}")
+    return {name: bool(value[name]) for name in _PROMOTION_ATTESTATIONS if name in value}
+
+
+def _normalize_evidence_tier(value: Any) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str) or value.upper() not in _EVIDENCE_TIERS:
+        raise ValueError("receipt evidence_tier must be one of A-E")
+    return value.upper()
 
 
 def sha256_file(path: str | Path) -> str:
@@ -57,6 +83,8 @@ def build_receipt(
     evaluator_sha256: str, command: list[str], run_id: str,
     timestamp: str, parent_run_id: str | None = None,
     required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
+    evidence_tier: str | None = None,
+    attestations: Mapping[str, bool] | None = None,
 ) -> dict[str, Any]:
     """Create an unsigned receipt from the artifacts actually on disk."""
     missing = [name for name in required_artifacts if name not in artifact_paths]
@@ -82,6 +110,8 @@ def build_receipt(
         "command": list(command),
         "timestamp": timestamp,
         "artifacts": artifacts,
+        "evidence_tier": _normalize_evidence_tier(evidence_tier),
+        "attestations": _normalize_attestations(attestations),
     }
 
 
@@ -115,7 +145,7 @@ def validate_receipt(
     trusted_public_key_sha256: str | None = None,
     trusted_evaluator_sha256: str | None = None,
 ) -> dict[str, Any]:
-    """Validate signature and every artifact hash before trusting a run."""
+    """Validate signature and artifact hashes without asserting signer authority."""
     try:
         receipt = json.loads(Path(receipt_path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
@@ -135,7 +165,9 @@ def validate_receipt(
                 or not _HEX64.fullmatch(trusted_evaluator_sha256.lower())):
             raise ValueError("trusted evaluator fingerprint is invalid")
         if receipt["evaluator_sha256"].lower() != trusted_evaluator_sha256.lower():
-            raise ValueError("receipt evaluator is not trusted")
+            raise ValueError("receipt evaluator does not match expected fingerprint")
+    evidence_tier = _normalize_evidence_tier(receipt.get("evidence_tier"))
+    attestations = _normalize_attestations(receipt.get("attestations"))
     if (not isinstance(receipt.get("command"), list)
             or not receipt["command"]
             or not all(isinstance(value, str) and value for value in receipt["command"])
@@ -161,9 +193,9 @@ def validate_receipt(
     if trusted_public_key_sha256 is not None:
         if (not isinstance(trusted_public_key_sha256, str)
                 or not _HEX64.fullmatch(trusted_public_key_sha256.lower())):
-            raise ValueError("trusted receipt public-key fingerprint is invalid")
+            raise ValueError("expected receipt public-key fingerprint is invalid")
         if public_key_sha256(public_key_path) != trusted_public_key_sha256.lower():
-            raise ValueError("receipt public key is not trusted")
+            raise ValueError("receipt public key does not match expected fingerprint")
     artifacts = receipt.get("artifacts")
     if not isinstance(artifacts, dict):
         raise ValueError("receipt artifacts are missing")
@@ -179,5 +211,15 @@ def validate_receipt(
             raise ValueError(f"receipt {name} artifact hash does not match")
     if not isinstance(receipt.get("run_id"), str) or not receipt["run_id"].strip():
         raise ValueError("receipt run_id is missing")
-    return {"trusted": True, "run_id": receipt["run_id"],
-            "key_id": signature.get("key_id"), "git_sha": receipt.get("git_sha")}
+    return {
+        "signature_valid": True,
+        # Compatibility field: cryptographic validity is deliberately not
+        # promotion authority.  An external trusted runner must establish it.
+        "trusted": False,
+        "run_id": receipt["run_id"],
+        "key_id": signature.get("key_id"),
+        "git_sha": receipt.get("git_sha"),
+        "evaluator_sha256": receipt["evaluator_sha256"].lower(),
+        "evidence_tier": evidence_tier,
+        "attestations": attestations,
+    }
