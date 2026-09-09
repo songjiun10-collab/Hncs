@@ -118,9 +118,10 @@ def _single_split(rows: Sequence[Mapping[str, Any]]) -> str | None:
 
 def _run_key(
     protocol: str, dataset_slug: str, candidate_name: str,
-    manifest_sha: str, metrics_sha: str,
+    manifest_sha: str, metrics_sha: str, *artifact_shas: str,
 ) -> str:
-    raw = "\0".join((protocol, dataset_slug, candidate_name, manifest_sha, metrics_sha))
+    raw = "\0".join((protocol, dataset_slug, candidate_name, manifest_sha,
+                       metrics_sha, *artifact_shas))
     suffix = sha256(raw.encode("utf-8")).hexdigest()[:20]
     return f"{protocol.lower().replace(' ', '-')}:{dataset_slug}:{candidate_name}:{suffix}"
 
@@ -177,7 +178,11 @@ def sync_evaluation_report(
     metrics_sha = sha256_file(metrics_path)
     controls_sha = sha256_file(controls_path) if controls_path else None
     robustness_sha = sha256_file(robustness_path) if robustness_path else None
-    run_key = _run_key(protocol, dataset_slug, candidate_name, manifest_sha, metrics_sha)
+    report_sha = sha256_file(report_path) if report_path else None
+    run_key = _run_key(
+        protocol, dataset_slug, candidate_name, manifest_sha, metrics_sha,
+        controls_sha or "", robustness_sha or "", report_sha or "",
+    )
     client = client or SupabaseRestClient()
 
     coverage = paired.get("coverage")
