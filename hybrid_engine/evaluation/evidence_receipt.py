@@ -113,6 +113,7 @@ def validate_receipt(
     public_key_path: str | Path, expected_git_sha: str | None = None,
     required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
     trusted_public_key_sha256: str | None = None,
+    trusted_evaluator_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Validate signature and every artifact hash before trusting a run."""
     try:
@@ -129,6 +130,12 @@ def validate_receipt(
     if (not isinstance(receipt.get("evaluator_sha256"), str)
             or not _HEX64.fullmatch(receipt["evaluator_sha256"].lower())):
         raise ValueError("receipt evaluator_sha256 is missing or invalid")
+    if trusted_evaluator_sha256 is not None:
+        if (not isinstance(trusted_evaluator_sha256, str)
+                or not _HEX64.fullmatch(trusted_evaluator_sha256.lower())):
+            raise ValueError("trusted evaluator fingerprint is invalid")
+        if receipt["evaluator_sha256"].lower() != trusted_evaluator_sha256.lower():
+            raise ValueError("receipt evaluator is not trusted")
     if (not isinstance(receipt.get("command"), list)
             or not receipt["command"]
             or not all(isinstance(value, str) and value for value in receipt["command"])

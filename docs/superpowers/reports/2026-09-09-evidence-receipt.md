@@ -14,6 +14,7 @@
 > EAGER CLI는 `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256`가 설정되고 공개키
 > fingerprint가 일치할 때만 receipt-backed `Verified`를 허용한다. 환경변수가
 > 없으면 같은 receipt도 `Supported`에 머문다.
+> evaluator hash도 `HNCS_TRUSTED_EVALUATOR_SHA256`와 일치해야 한다.
 > CLI의 등급, RAW/JPEG 실파일 검증, evaluator/config 검증 및 독립 replay는
 > 여전히 별도 보강이 필요하다. 이 변경은 기존 원격 기록을 감사하거나
 > 정정하지 않으며 service-role 소유자의 직접 DB 쓰기도 방어하지 않는다.
@@ -38,6 +39,7 @@ receipt가 유효하지 않으면 `trusted_provenance=False`이며, `--external-
 
 ```bash
 export HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256="$(openssl dgst -sha256 -binary ci-ed25519.pub | xxd -p -c 256)"
+export HNCS_TRUSTED_EVALUATOR_SHA256="$(shasum -a 256 hybrid_engine/evaluation/eager_cli.py | awk '{print $1}')"
 python -m hybrid_engine.evaluation.eager_cli \
   --manifest manifest.json --metrics metrics.json \
   --controls controls.json --robustness robustness.json \
