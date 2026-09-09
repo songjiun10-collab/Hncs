@@ -74,6 +74,14 @@ class TestEvidenceReceipt(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "signature"):
                 validate_receipt(receipt_path, paths, public_path)
 
+    def test_invalid_utf8_receipt_is_rejected_as_value_error(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            receipt_path = root / "receipt.json"
+            receipt_path.write_bytes(b"\xff\xfe")
+            with self.assertRaisesRegex(ValueError, "not valid JSON"):
+                validate_receipt(receipt_path, {}, root / "missing.key")
+
     def test_eager_local_env_cannot_self_select_verified_trust(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

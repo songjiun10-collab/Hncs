@@ -125,7 +125,7 @@ def validate_receipt(
     """Validate signature and artifact hashes without asserting signer authority."""
     try:
         receipt = json.loads(Path(receipt_path).read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as error:
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
         raise ValueError("receipt is not valid JSON") from error
     if not isinstance(receipt, dict) or receipt.get("schema") != _SCHEMA:
         raise ValueError("receipt schema is unsupported")
