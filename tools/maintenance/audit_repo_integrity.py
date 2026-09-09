@@ -317,6 +317,7 @@ def check_nare_registered_reports():
     """Ensure frozen registered NARE reports record bootstrap configuration."""
 
     problems, n_files = [], 0
+    scene_ids_by_root = {}
     for root, _, files in os.walk(DATASETS):
         for name in sorted(files):
             if not name.endswith(".json") or "registered_report_" not in name:
@@ -391,6 +392,8 @@ def check_nare_registered_reports():
                 problems.append(
                     f"NARE report schema 누락: {os.path.relpath(path, BASE)}"
                 )
+            if isinstance(per_scene, list) and all(isinstance(row, dict) for row in per_scene):
+                scene_ids_by_root.setdefault(root, {})[name] = tuple(scene_ids or [])
             metrics_name = name.replace("registered_report_", "registered_metrics_", 1)
             metrics_path = os.path.join(root, metrics_name)
             if os.path.isfile(metrics_path) and isinstance(per_scene, list):
@@ -405,6 +408,15 @@ def check_nare_registered_reports():
                         problems.append(
                             f"NARE report/metrics scene 불일치: {os.path.relpath(path, BASE)}"
                         )
+    for root, reports in scene_ids_by_root.items():
+        if len(reports) > 1:
+            reference_name, reference_ids = next(iter(sorted(reports.items())))
+            for name, scene_ids in sorted(reports.items()):
+                if scene_ids != reference_ids:
+                    problems.append(
+                        f"NARE scale report scene 불일치: {os.path.relpath(root, BASE)} "
+                        f"({reference_name} vs {name})"
+                    )
     print(f"  등록 NARE reports {n_files}개 bootstrap schema 확인")
     return problems
 
