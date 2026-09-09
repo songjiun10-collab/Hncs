@@ -130,3 +130,5 @@ Supabase sync also matches metrics artifact scene IDs to the manifest and report
 NARE sync rejects numeric substitution when metrics raw/candidate ΔE values differ from the report per-scene values.
 
 Evidence Receipts now sign bootstrap/seed in `run_config` and reject any CLI execution whose configuration does not match exactly.
+
+EAGER receipts also sign evidence tier and validation, lockbox, and external-replication gate inputs alongside bootstrap/seed.
