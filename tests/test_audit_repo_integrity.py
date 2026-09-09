@@ -330,6 +330,29 @@ class TestNareRegisteredReports(unittest.TestCase):
                 problems = check_nare_registered_reports()
             self.assertEqual(len(problems), 1)
 
+    def test_scale_reports_must_use_same_scene_set(self):
+        with tempfile.TemporaryDirectory() as directory:
+            import json
+            for scale, scene_id in (("512px", "scene-a"), ("1024px", "scene-b")):
+                path = os.path.join(directory, f"nare_registered_report_{scale}.json")
+                report = {
+                    "paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0,
+                               "n_scenes": 1, "mean_baseline": 10.0,
+                               "mean_candidate": 8.0, "mean_improvement": 2.0,
+                               "mean_improvement_pct": 20.0,
+                               "per_scene": [{"scene_id": scene_id,
+                                              "baseline_delta_e00": 10.0,
+                                              "candidate_delta_e00": 8.0,
+                                              "improvement": 2.0}]},
+                    "classification": {"classification": "Inconclusive",
+                                        "ship_gate_passed": False},
+                }
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(report, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertTrue(any("scale report scene 불일치" in problem for problem in problems))
+
 
 class TestNareSelectionSensitivity(unittest.TestCase):
     def _payload(self):
