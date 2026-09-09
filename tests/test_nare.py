@@ -80,6 +80,17 @@ class TestNARE(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate"):
             evaluate_nare_metrics(manifest, [metric, dict(metric)], n_bootstrap=20)
 
+    def test_evaluation_rejects_boolean_or_nonpositive_bootstrap_metadata(self):
+        manifest = [row("s1")]
+        metric = [{"scene_id": "s1", "raw_delta_e00": 10,
+                   "foundation_delta_e00": 8, "candidate_delta_e00": 7}]
+        with self.assertRaisesRegex(ValueError, "n_bootstrap"):
+            evaluate_nare_metrics(manifest, metric, n_bootstrap=True)
+        with self.assertRaisesRegex(ValueError, "n_bootstrap"):
+            evaluate_nare_metrics(manifest, metric, n_bootstrap=0)
+        with self.assertRaisesRegex(ValueError, "seed"):
+            evaluate_nare_metrics(manifest, metric, seed=True)
+
     def test_evaluation_coverage_uses_evaluated_rows_only(self):
         manifest = [row(f"s{i}", "daylight", "landscape") for i in range(3)]
         for i, lighting in enumerate(("tungsten", "mixed"), 3):

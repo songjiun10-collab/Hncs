@@ -96,6 +96,10 @@ def validate_nare_manifest(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
 def evaluate_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]],
                           metric_rows: Iterable[Mapping[str, Any]],
                           n_bootstrap: int = 20_000, seed: int = 0) -> dict[str, Any]:
+    if type(n_bootstrap) is not int or n_bootstrap <= 0:
+        raise ValueError("NARE n_bootstrap must be a positive integer")
+    if type(seed) is not int:
+        raise ValueError("NARE seed must be an integer")
     manifest = list(manifest_rows)
     summary = validate_nare_manifest(manifest)
     metadata = {str(row["scene_id"]): row for row in manifest

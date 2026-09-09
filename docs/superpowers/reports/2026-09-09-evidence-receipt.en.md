@@ -66,7 +66,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,475 tests passed (rerun on the current checkout)
+- full suite: 1,476 tests passed (rerun on the current checkout)
 
 ## Provenance trust-boundary re-audit (2026-09-09)
 
@@ -75,7 +75,7 @@ A valid receipt returns `signature_valid=True` and `trusted=False`, so local
 execution is capped at `Supported` and cannot reach `Verified`. NARE uses
 `receipt_integrity` as its `Supported` gate without claiming
 `trusted_provenance`. The regression coverage is in `tests.test_nare_cli`; the
-full suite now passes 1,475 tests.
+full suite now passes 1,476 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
@@ -152,5 +152,7 @@ When `report_path` is supplied, its parsed canonical JSON must match the report 
 The validated report bytes are reused for the run key and artifact digest, preventing a post-validation path replacement from changing the recorded identity.
 
 Malformed UTF-8 receipts and reports are rejected as ordinary validation errors before any registry write.
+
+NARE also rejects boolean or non-positive bootstrap counts and boolean seeds before computing metrics.
 
 The real 32-scene registered NARE report also passes the fake-registry preflight, preserving negative improvements for scenes where the candidate is worse.
