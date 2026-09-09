@@ -423,6 +423,10 @@ def check_nare_selection_sensitivity():
         return (isinstance(value, list) and len(value) == 2
                 and all(finite(item) for item in value) and value[0] <= value[1])
 
+    def close(actual, expected):
+        return finite(actual) and finite(expected) \
+            and abs(float(actual) - float(expected)) <= 1e-9 * max(1.0, abs(float(expected)))
+
     for root, _, files in os.walk(DATASETS):
         for name in sorted(files):
             if not name.startswith("nare_") or "registration_selection_sensitivity_" not in name \
@@ -463,6 +467,35 @@ def check_nare_selection_sensitivity():
                     and type(sensitivity.get("seed_relative")) is int
             else:
                 valid = False
+            pre = artifact.get("pre_registration_exploratory_metrics") if isinstance(artifact, dict) else None
+            if isinstance(pre, dict):
+                pre_values = {}
+                for group in ("all_51", "registration_pass_32", "registration_fail_19"):
+                    row = pre.get(group)
+                    if not isinstance(row, dict):
+                        valid = False
+                        continue
+                    required = ("mean_baseline_delta_e00", "mean_candidate_delta_e00",
+                                "mean_absolute_improvement_delta_e00",
+                                "aggregate_relative_improvement_pct")
+                    valid = valid and all(finite(row.get(key)) for key in required) \
+                        and type(row.get("wins")) is int and row["wins"] >= 0 \
+                        and type(row.get("losses")) is int and row["losses"] >= 0 \
+                        and close(row["mean_absolute_improvement_delta_e00"],
+                                  row["mean_baseline_delta_e00"] - row["mean_candidate_delta_e00"]) \
+                        and (row["mean_baseline_delta_e00"] == 0
+                             or close(row["aggregate_relative_improvement_pct"],
+                                      100.0 * row["mean_absolute_improvement_delta_e00"] /
+                                      row["mean_baseline_delta_e00"]))
+                    pre_values[group] = row
+                if (isinstance(sensitivity, dict)
+                        and all(group in pre_values for group in ("registration_pass_32", "registration_fail_19"))):
+                    valid = valid and close(
+                        sensitivity.get("pass_minus_fail_mean_absolute_improvement_delta_e00"),
+                        pre_values["registration_pass_32"]["mean_absolute_improvement_delta_e00"]
+                        - pre_values["registration_fail_19"]["mean_absolute_improvement_delta_e00"])
+            else:
+                valid = False
             if isinstance(reports, dict):
                 for scale in ("512px", "1024px"):
                     report = reports.get(scale)
@@ -470,8 +503,15 @@ def check_nare_selection_sensitivity():
                         and type(report.get("n_scenes")) is int and report["n_scenes"] > 0 \
                         and all(finite(report.get(key)) for key in
                                 ("mean_baseline_delta_e00", "mean_candidate_delta_e00",
+                                 "mean_absolute_improvement_delta_e00",
                                  "aggregate_relative_improvement_pct")) \
-                        and ci(report.get("bootstrap_95ci_absolute_improvement"))
+                        and ci(report.get("bootstrap_95ci_absolute_improvement")) \
+                        and close(report["mean_absolute_improvement_delta_e00"],
+                                  report["mean_baseline_delta_e00"] - report["mean_candidate_delta_e00"]) \
+                        and (report["mean_baseline_delta_e00"] == 0
+                             or close(report["aggregate_relative_improvement_pct"],
+                                      100.0 * report["mean_absolute_improvement_delta_e00"] /
+                                      report["mean_baseline_delta_e00"]))
             else:
                 valid = False
             if not valid:
