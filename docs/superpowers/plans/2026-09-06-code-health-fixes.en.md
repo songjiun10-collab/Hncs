@@ -1,26 +1,30 @@
 # Code Health Fixes Implementation Plan
 
-[English](2026-09-06-code-health-fixes.en.md)
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task by task.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task.
+**Goal:** Restore a green, reproducible test and CLI baseline for the reported
+color-science, chart-detection, research-tool, and resource-management defects.
 
-**Goal:** Restore a green, reproducible test/CLI baseline for the reported color-science, chart-detection, research-tool, and resource-management defects.
+**Architecture:** Keep shipped look functions unchanged. Centralize compatibility
+at existing utility boundaries, convert BGR uint8 research inputs to linear RGB
+before ΔE calculations, and fail early with clear messages when required raw
+pairs are absent.
 
-**Architecture:** Keep shipped look functions unchanged. Centralize compatibility at existing utility boundaries, make research tools convert BGR uint8 to linear RGB before ΔE, and fail early with clear messages when required raw pairs are absent.
-
-**Tech Stack:** Python 3.11/3.12, unittest, OpenCV contrib, colour-science, NumPy.
+**Tech stack:** Python 3.11/3.12, unittest, OpenCV contrib, colour-science,
+NumPy.
 
 **Spec:** User request “다 고쳐” following the repository code evaluation findings.
 
-## Global Constraints
+## Global constraints
 
 - Do not modify protected shipped `apply_*` behavior or profile assets.
 - Every production fix gets a regression test first and is verified with the full unittest suite.
-- Preserve existing research outputs and document any platform-only golden-hash behavior.
+- Preserve existing research outputs and document platform-only golden-hash behavior.
 
 ### Task 1: Colour/OpenCV compatibility
 
 **Files:**
+
 - Modify: `hybrid_engine/utils/evaluate.py`
 - Modify: `hybrid_engine/core/chart_baseline.py`
 - Test: `tests/test_hybrid_engine.py`, `tests/test_chart_baseline.py`
@@ -32,17 +36,19 @@
 ### Task 2: Correct research-tool color domain
 
 **Files:**
+
 - Modify: `tools/fuji/evaluate_fuji_classic_negative_v2_grid.py`
 - Modify: `tools/fuji/diagnose_fuji_autobright_vs_look.py`
 - Test: `tests/test_fuji_classic_negative_recalibration.py`
 
 - [x] Add a regression test that the ΔE helper receives linear RGB and BGR uint8 targets are converted before comparison.
 - [x] Add one shared conversion helper in the evaluation utility and use it at all affected call sites.
-- [x] Run focused tests and inspect no reported metric path uses raw BGR bytes.
+- [x] Run focused tests and inspect that no reported metric path uses raw BGR bytes.
 
 ### Task 3: Empty dataset and file-handle safety
 
 **Files:**
+
 - Modify: `tools/fuji/evaluate_fuji_classic_negative_v2_grid.py`
 - Modify: `tools/fuji/diagnose_fuji_autobright_vs_look.py`
 - Modify: `tools/fuji/diagnose_fuji_neutral_render_offset.py`
@@ -52,19 +58,20 @@
 
 - [x] Add tests for zero usable pairs producing a clear, non-zero failure instead of NaN/TypeError.
 - [x] Add early validation and context-managed CSV/JSON reads.
-- [x] Run focused tests and full suite.
+- [x] Run focused tests and the full suite.
 
 ### Task 4: Cross-platform golden verification
 
 **Files:**
+
 - Modify: `tests/test_population_fit_look_golden.py`
 - Test: existing golden test module
 
 - [x] Add a platform-tolerant assertion for known OpenCV HSV round-trip functions using a bounded pixel-difference check while retaining exact hashes for stable functions.
-- [x] Run the golden tests on the current environment and full suite.
+- [x] Run the golden tests on the current environment and the full suite.
 
 ### Task 5: Final verification
 
 - [x] Run `.venv/bin/python -m unittest discover -s tests` (928 tests, OK).
 - [x] Run CLI import/help smoke tests and report remaining dependency-only skips or failures.
-- [x] Review diff for protected-file violations and summarize exact test counts; integrity audit exits 0 and no protected files changed.
+- [x] Review the diff for protected-file violations and summarize exact test counts; the integrity audit exits 0 and no protected files changed.
