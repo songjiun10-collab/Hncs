@@ -127,7 +127,11 @@ class TestEvidenceReceipt(unittest.TestCase):
             receipt = sign_receipt(build_receipt(
                 paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
                 command=["trusted-evaluator"], run_id="run-1",
-                timestamp="2026-09-09T00:00:00Z", run_config={"bootstrap": 50, "seed": 0}),
+                timestamp="2026-09-09T00:00:00Z", run_config={
+                    "bootstrap": 50, "seed": 0, "evidence_tier": "C",
+                    "validation_passed": True, "lockbox_passed": True,
+                    "external_replication": True,
+                }),
                 private, key_id="ci")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
@@ -139,6 +143,13 @@ class TestEvidenceReceipt(unittest.TestCase):
                     expected_git_sha="a" * 40,
                 )
             self.assertEqual(untrusted["classification"]["classification"], "Supported")
+            with self.assertRaisesRegex(ValueError, "run_config"):
+                eager_report(
+                    *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                    "C", True, False, True, n_bootstrap=50,
+                    receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
+                    expected_git_sha="a" * 40,
+                )
             with patch.dict(os.environ, {"HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256": "0" * 64,
                                          "HNCS_TRUSTED_EVALUATOR_SHA256": "b" * 64}, clear=True):
                 with self.assertRaisesRegex(ValueError, "not trusted"):

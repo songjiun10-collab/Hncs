@@ -124,3 +124,5 @@ Supabase sync는 metrics artifact의 scene ID도 manifest·report와 일치하�
 NARE sync는 metrics의 raw/candidate ΔE가 report per-scene 값과 다르면 수치 substitution으로 거부한다.
 
 Evidence Receipt는 이제 bootstrap/seed를 `run_config`로 서명하고, CLI 실행 설정과 exact match하지 않으면 거부한다.
+
+EAGER receipt는 bootstrap/seed뿐 아니라 evidence tier와 validation·lockbox·external replication gate 입력도 서명한다.

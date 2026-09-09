@@ -65,6 +65,14 @@ def build_report(
         raise ValueError("--receipt and --receipt-public-key must be supplied together")
     receipt = None
     trusted_provenance = False
+    receipt_run_config = {
+        "bootstrap": n_bootstrap,
+        "seed": seed,
+        "evidence_tier": evidence_tier.upper(),
+        "validation_passed": validation_passed is True,
+        "lockbox_passed": lockbox_passed is True,
+        "external_replication": external_replication is True,
+    }
     if receipt_path and receipt_public_key_path:
         if not expected_git_sha:
             raise ValueError("--git-sha is required when validating an Evidence Receipt")
@@ -74,7 +82,7 @@ def build_report(
              "controls": controls_path, "robustness": robustness_path},
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
-            expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
+            expected_run_config=receipt_run_config,
         )
         trusted_key_sha256 = os.environ.get("HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256", "").strip()
         trusted_evaluator_sha256 = os.environ.get("HNCS_TRUSTED_EVALUATOR_SHA256", "").strip()
@@ -87,7 +95,7 @@ def build_report(
                 expected_git_sha=expected_git_sha,
                 trusted_public_key_sha256=trusted_key_sha256,
                 trusted_evaluator_sha256=trusted_evaluator_sha256,
-                expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
+                expected_run_config=receipt_run_config,
             )
             trusted_provenance = receipt["trusted"] is True
     paired = paired_report["paired"]
