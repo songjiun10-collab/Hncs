@@ -335,6 +335,24 @@ class TestSupabaseSync(unittest.TestCase):
                     manifest_path=manifest, metrics_path=metrics, client=client)
             self.assertEqual(client.calls, [])
 
+    def test_bootstrap_metadata_must_match_sync_configuration(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report = {
+                "paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0,
+                            "per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            client = _FakeClient()
+            with self.assertRaisesRegex(ValueError, "bootstrap_draws"):
+                sync_evaluation_report(
+                    report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, bootstrap_draws=100,
+                    bootstrap_seed=0, client=client)
+            self.assertEqual(client.calls, [])
+
     def test_ship_gate_cannot_be_synced_without_trusted_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s", "split": "evaluation"}])
