@@ -23,7 +23,12 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 
 
 _SCHEMA = "hncs.evidence-receipt/v1"
+_TRUSTED_SIGNERS_SCHEMA = "hncs.trusted-receipt-signers/v1"
+_TRUSTED_SIGNERS_PATH = Path(__file__).with_name("trusted_receipt_signers.json")
 _REQUIRED_ARTIFACTS = ("manifest", "metrics", "controls", "robustness")
+_PROMOTION_ATTESTATIONS = (
+    "validation_passed", "lockbox_passed", "external_replication",
+)
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
 _HEX_SHA = re.compile(r"^[0-9a-f]{7,64}$")
 
@@ -31,6 +36,20 @@ _HEX_SHA = re.compile(r"^[0-9a-f]{7,64}$")
 def _canonical(value: Mapping[str, Any]) -> bytes:
     return json.dumps(value, ensure_ascii=False, sort_keys=True,
                       separators=(",", ":")).encode("utf-8")
+
+
+def _normalize_attestations(value: Any) -> dict[str, bool]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError("receipt attestations must be a mapping")
+    unknown = sorted(set(value) - set(_PROMOTION_ATTESTATIONS))
+    if unknown:
+        raise ValueError(f"receipt contains unknown attestations: {', '.join(unknown)}")
+    invalid = sorted(name for name, flag in value.items() if type(flag) is not bool)
+    if invalid:
+        raise ValueError(f"receipt attestations must be boolean: {', '.join(invalid)}")
+    return {name: value[name] for name in _PROMOTION_ATTESTATIONS if name in value}
 
 
 def sha256_file(path: str | Path) -> str:
@@ -52,11 +71,49 @@ def public_key_sha256(path: str | Path) -> str:
     return sha256(raw).hexdigest()
 
 
+def trusted_receipt_signers(path: str | Path | None = None) -> frozenset[tuple[str, str]]:
+    """Load the repository-controlled signer/evaluator trust anchors."""
+    registry_path = Path(path) if path is not None else _TRUSTED_SIGNERS_PATH
+    try:
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        raise ValueError("trusted receipt signer registry is unavailable or invalid") from error
+    if (not isinstance(registry, dict)
+            or registry.get("schema") != _TRUSTED_SIGNERS_SCHEMA
+            or not isinstance(registry.get("signers"), list)):
+        raise ValueError("trusted receipt signer registry schema is invalid")
+    signers: set[tuple[str, str]] = set()
+    for index, entry in enumerate(registry["signers"], 1):
+        if not isinstance(entry, Mapping):
+            raise ValueError(f"trusted receipt signer {index} is invalid")
+        key_sha = str(entry.get("public_key_sha256", "")).lower()
+        evaluator_sha = str(entry.get("evaluator_sha256", "")).lower()
+        if not _HEX64.fullmatch(key_sha) or not _HEX64.fullmatch(evaluator_sha):
+            raise ValueError(f"trusted receipt signer {index} has invalid fingerprints")
+        pair = (key_sha, evaluator_sha)
+        if pair in signers:
+            raise ValueError(f"trusted receipt signer {index} duplicates an earlier entry")
+        signers.add(pair)
+    return frozenset(signers)
+
+
+def receipt_signer_is_trusted(
+    public_key_path: str | Path, evaluator_sha256: str,
+    *, registry_path: str | Path | None = None,
+) -> bool:
+    """Return whether the key/evaluator pair is pinned by repository policy."""
+    if not isinstance(evaluator_sha256, str) or not _HEX64.fullmatch(evaluator_sha256.lower()):
+        raise ValueError("receipt evaluator_sha256 is missing or invalid")
+    pair = (public_key_sha256(public_key_path), evaluator_sha256.lower())
+    return pair in trusted_receipt_signers(registry_path)
+
+
 def build_receipt(
     artifact_paths: Mapping[str, str | Path], *, git_sha: str,
     evaluator_sha256: str, command: list[str], run_id: str,
     timestamp: str, parent_run_id: str | None = None,
     required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
+    attestations: Mapping[str, bool] | None = None,
 ) -> dict[str, Any]:
     """Create an unsigned receipt from the artifacts actually on disk."""
     missing = [name for name in required_artifacts if name not in artifact_paths]
@@ -82,6 +139,7 @@ def build_receipt(
         "command": list(command),
         "timestamp": timestamp,
         "artifacts": artifacts,
+        "attestations": _normalize_attestations(attestations),
     }
 
 
@@ -136,6 +194,7 @@ def validate_receipt(
             raise ValueError("trusted evaluator fingerprint is invalid")
         if receipt["evaluator_sha256"].lower() != trusted_evaluator_sha256.lower():
             raise ValueError("receipt evaluator is not trusted")
+    attestations = _normalize_attestations(receipt.get("attestations"))
     if (not isinstance(receipt.get("command"), list)
             or not receipt["command"]
             or not all(isinstance(value, str) and value for value in receipt["command"])
@@ -180,4 +239,6 @@ def validate_receipt(
     if not isinstance(receipt.get("run_id"), str) or not receipt["run_id"].strip():
         raise ValueError("receipt run_id is missing")
     return {"trusted": True, "run_id": receipt["run_id"],
-            "key_id": signature.get("key_id"), "git_sha": receipt.get("git_sha")}
+            "key_id": signature.get("key_id"), "git_sha": receipt.get("git_sha"),
+            "evaluator_sha256": receipt["evaluator_sha256"].lower(),
+            "attestations": attestations}

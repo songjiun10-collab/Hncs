@@ -5,10 +5,12 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from hybrid_engine.evaluation.evidence_receipt import build_receipt, sign_receipt
+from hybrid_engine.evaluation.nare_cli import build_report as nare_report
 
 
 class TestNARECLI(unittest.TestCase):
@@ -54,7 +56,7 @@ class TestNARECLI(unittest.TestCase):
         self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
         self.assertEqual(report["paired"]["n_scenes"], 12)
 
-    def test_cli_accepts_only_a_matching_signed_receipt(self):
+    def test_self_signed_receipt_stays_untrusted_without_repository_anchor(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             manifest = [{"scene_id": f"s{i}", "session_id": f"session-{i}",
@@ -99,8 +101,19 @@ class TestNARECLI(unittest.TestCase):
                 "--git-sha", "a" * 40,
             ], capture_output=True, text=True, check=True)
             report = json.loads(proc.stdout)
-            self.assertTrue(report["classification"]["ship_gate_passed"])
-            self.assertEqual(report["classification"]["classification"], "Supported")
+            self.assertFalse(report["classification"]["ship_gate_passed"])
+            self.assertEqual(report["classification"]["classification"], "Inconclusive")
+            self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
+
+            with patch("hybrid_engine.evaluation.nare_cli.receipt_signer_is_trusted",
+                       return_value=True):
+                trusted = nare_report(
+                    str(paths["manifest"]), str(paths["metrics"]), str(paths["controls"]),
+                    n_bootstrap=100, seed=0, receipt_path=str(receipt_path),
+                    receipt_public_key_path=str(public_path), expected_git_sha="a" * 40,
+                )
+            self.assertTrue(trusted["classification"]["ship_gate_passed"])
+            self.assertEqual(trusted["classification"]["classification"], "Supported")
 
 
 if __name__ == "__main__":

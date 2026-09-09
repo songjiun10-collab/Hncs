@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from .nare import classify_nare_result, evaluate_nare_metrics
-from .evidence_receipt import validate_receipt
+from .evidence_receipt import receipt_signer_is_trusted, validate_receipt
 from .supabase_sync import sync_evaluation_report
 
 
@@ -32,14 +32,15 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
             raise ValueError("NARE receipt validation requires --receipt-public-key")
         if expected_git_sha is None:
             raise ValueError("NARE receipt validation requires --git-sha")
-        validate_receipt(
+        receipt = validate_receipt(
             receipt_path,
             {"manifest": manifest_path, "metrics": metrics_path, "controls": controls_path},
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
             required_artifacts=("manifest", "metrics", "controls"),
         )
-        trusted_provenance = True
+        trusted_provenance = receipt_signer_is_trusted(
+            receipt_public_key_path, receipt["evaluator_sha256"])
     paired["trusted_provenance"] = trusted_provenance
     return {"paired": paired, "classification": classify_nare_result(paired)}
 

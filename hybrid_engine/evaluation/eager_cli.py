@@ -7,7 +7,6 @@ selection and image processing outside the statistical checker.
 
 import argparse
 import json
-import os
 from pathlib import Path
 from typing import Any
 
@@ -18,8 +17,13 @@ from .eager import (
     validate_controls,
     validate_robustness,
 )
-from .evidence_receipt import validate_receipt
+from .evidence_receipt import receipt_signer_is_trusted, validate_receipt
 from .supabase_sync import sync_evaluation_report
+
+
+_PROMOTION_ATTESTATIONS = (
+    "validation_passed", "lockbox_passed", "external_replication",
+)
 
 
 def _load_json(path: str) -> Any:
@@ -63,6 +67,11 @@ def build_report(
     robustness = validate_robustness(_load_json(robustness_path))
     if bool(receipt_path) != bool(receipt_public_key_path):
         raise ValueError("--receipt and --receipt-public-key must be supplied together")
+    requested_attestations = {
+        "validation_passed": validation_passed is True,
+        "lockbox_passed": lockbox_passed is True,
+        "external_replication": external_replication is True,
+    }
     receipt = None
     trusted_provenance = False
     if receipt_path and receipt_public_key_path:
@@ -75,19 +84,23 @@ def build_report(
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
         )
-        trusted_key_sha256 = os.environ.get("HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256", "").strip()
-        trusted_evaluator_sha256 = os.environ.get("HNCS_TRUSTED_EVALUATOR_SHA256", "").strip()
-        if trusted_key_sha256 and trusted_evaluator_sha256:
-            validate_receipt(
-                receipt_path,
-                {"manifest": manifest_path, "metrics": metrics_path,
-                 "controls": controls_path, "robustness": robustness_path},
-                receipt_public_key_path,
-                expected_git_sha=expected_git_sha,
-                trusted_public_key_sha256=trusted_key_sha256,
-                trusted_evaluator_sha256=trusted_evaluator_sha256,
-            )
-            trusted_provenance = receipt["trusted"] is True
+        signed_attestations = receipt["attestations"]
+        for name, signed_value in signed_attestations.items():
+            if signed_value != requested_attestations[name]:
+                raise ValueError(
+                    f"receipt attestation {name} does not match requested value")
+        if receipt_signer_is_trusted(
+                receipt_public_key_path, receipt["evaluator_sha256"]):
+            missing = [name for name in _PROMOTION_ATTESTATIONS
+                       if name not in signed_attestations]
+            if missing:
+                raise ValueError(
+                    "trusted Evidence Receipt missing promotion attestations: "
+                    + ", ".join(missing))
+            validation_passed = signed_attestations["validation_passed"]
+            lockbox_passed = signed_attestations["lockbox_passed"]
+            external_replication = signed_attestations["external_replication"]
+            trusted_provenance = True
     paired = paired_report["paired"]
     paired["controls_passed"] = controls["passed"]
     paired["robustness_passed"] = robustness["passed"]
@@ -115,7 +128,7 @@ def main() -> None:
     parser.add_argument("--validation-passed", action="store_true")
     parser.add_argument("--lockbox-passed", action="store_true")
     parser.add_argument("--external-replication", action="store_true")
-    parser.add_argument("--receipt", help="signed Evidence Receipt from a trusted evaluator")
+    parser.add_argument("--receipt", help="signed Evidence Receipt from an evaluator")
     parser.add_argument("--receipt-public-key", help="base64 Ed25519 public key for --receipt")
     parser.add_argument("--bootstrap", type=int, default=20_000)
     parser.add_argument("--seed", type=int, default=0)
