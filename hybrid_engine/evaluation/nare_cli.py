@@ -22,6 +22,8 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
                  expected_git_sha: str | None = None) -> dict[str, Any]:
     paired = evaluate_nare_metrics(_load(manifest_path), _load(metrics_path),
                                    n_bootstrap=n_bootstrap, seed=seed)
+    paired["bootstrap_draws"] = n_bootstrap
+    paired["bootstrap_seed"] = seed
     controls = _load(controls_path)
     if not isinstance(controls, dict):
         raise ValueError("NARE controls JSON must be an object")

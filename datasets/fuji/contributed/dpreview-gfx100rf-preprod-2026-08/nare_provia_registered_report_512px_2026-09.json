@@ -447,6 +447,8 @@
     "picture_styles": [
       "f0/standard (provia)"
     ],
+    "bootstrap_draws": 20000,
+    "bootstrap_seed": 0,
     "subgroups_passed": false,
     "controls_passed": false,
     "provenance_passed": true,
