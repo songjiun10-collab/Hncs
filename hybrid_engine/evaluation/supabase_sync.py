@@ -178,6 +178,10 @@ def sync_evaluation_report(
         raise ValueError("report per_scene scene_id values must be non-empty and unique")
     if not set(report_ids).issubset(set(manifest_ids)):
         raise ValueError("report per_scene contains scene_id absent from manifest")
+    split_values = {str(row.get("split", "")).strip() for row in manifest_rows}
+    split_values.discard("")
+    if len(split_values) > 1:
+        raise ValueError("manifest contains multiple split values")
     metrics_ids = [str(row.get("scene_id", "")).strip() for row in metrics_rows]
     if (any(not scene_id for scene_id in metrics_ids)
             or len(metrics_ids) != len(set(metrics_ids))):
