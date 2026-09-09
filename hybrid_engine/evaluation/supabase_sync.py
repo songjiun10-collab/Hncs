@@ -182,12 +182,13 @@ def sync_evaluation_report(
         raise ValueError("metrics scene_id values must be non-empty and unique")
     if metrics_ids != manifest_ids or metrics_ids != report_ids:
         raise ValueError("metrics, manifest, and report scene_id values must match")
-    if protocol == "NARE":
+    if protocol in {"NARE", "EAGER"}:
         metrics_by_scene = dict(zip(metrics_ids, metrics_rows))
+        metric_baseline_key = "raw_delta_e00" if protocol == "NARE" else "baseline_delta_e00"
         for row in per_scene:
             metric = metrics_by_scene[row["scene_id"].strip()]
-            if all(key in metric for key in ("raw_delta_e00", "candidate_delta_e00")):
-                pairs = ((row.get("baseline_delta_e00"), metric["raw_delta_e00"]),
+            if all(key in metric for key in (metric_baseline_key, "candidate_delta_e00")):
+                pairs = ((row.get("baseline_delta_e00"), metric[metric_baseline_key]),
                          (row.get("candidate_delta_e00"), metric["candidate_delta_e00"]))
                 if any(not isinstance(left, (int, float)) or isinstance(left, bool)
                        or not isinstance(right, (int, float)) or isinstance(right, bool)
