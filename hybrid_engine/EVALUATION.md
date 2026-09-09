@@ -5037,6 +5037,13 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 
 ## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
 
+> **재실행 확인(2026-09-09)**: 현재 checkout의 registered manifest 37행을
+> `nare_registration_cli`로 다시 처리해 **37/37 registration pass**를 확인했고,
+> 그 결과만 `nare_runner_cli --candidate provia --max-dim 512`에 넣어 37 scene
+> metric을 생성했다. candidate 평균 ΔE00는 **11.989706008913073**으로 아래
+> 기록과 일치했다. 이 재실행은 metric 재현 확인이며, 배포 승인이나 독립
+> contributor/generalization 증거가 아니다.
+
 registration을 통과한 37개 scene을 11개 capture-date session으로 묶어
 leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해
 `shoulder_start ∈ {0.66, 0.70, 0.74, 0.78, 0.82}`와
