@@ -5078,6 +5078,19 @@ provenance gate 미충족으로 `Inconclusive`다. 기계 판독 결과는
 상세 분석은 `../docs/superpowers/reports/2026-09-09-nare-registration-selection-sensitivity.md`에 고정했다.
 이 분석은 **methodology sensitivity evidence**이며 ship evidence가 아니다.
 
+> **추가 scale 확인(2026-09-09, 2048px)**: 같은 32-scene frozen manifest를
+> 실제 RAW runner로 2048px long-edge에서 재실행했다. B0 평균 ΔE00은
+> **16.22042833445364**, C는 **11.746650092863138**, 상대 개선은
+> **+27.581135031359175%**, 20,000회 scene bootstrap 95% CI는
+> **[+3.578668263212973, +5.331445401997242]**, exact sign test는
+> **p=1.5366822481155396e-08**였다. 512→1024→2048px에서 방향과 유의성은
+> 유지되지만 개선율은 **30.6346% → 28.6976% → 27.5811%**로 감소한다.
+> 따라서 색 appearance 개선 방향은 scale에 강하지만, 고해상도에서 spatial
+> processing 차이가 커지는 신호로 해석한다. 2048px metrics/report는
+> `nare_provia_registered_metrics_2048px_2026-09.json`과
+> `nare_provia_registered_report_2048px_2026-09.json`에 고정했고, 최종 gate는
+> 여전히 coverage/subgroup/control/provenance 부족으로 `Inconclusive`다.
+
 ## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
 
 > **재실행 확인(2026-09-09)**: 현재 checkout의 registered manifest 37행을
