@@ -224,6 +224,18 @@ def sync_evaluation_report(
                 or any(abs(actual - wanted) > 1e-9 * max(1.0, abs(wanted))
                        for actual, wanted in zip(aggregate, expected))):
             raise ValueError("report aggregate metrics do not match per_scene")
+    ci95 = paired.get("ci95")
+    if ci95 is not None:
+        if (not isinstance(ci95, (list, tuple)) or len(ci95) != 2
+                or not all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                           and math.isfinite(float(value)) for value in ci95)
+                or ci95[0] > ci95[1]):
+            raise ValueError("report ci95 is invalid")
+    sign_test_p = paired.get("sign_test_p")
+    if sign_test_p is not None:
+        if (not isinstance(sign_test_p, (int, float)) or isinstance(sign_test_p, bool)
+                or not math.isfinite(float(sign_test_p)) or not 0 <= sign_test_p <= 1):
+            raise ValueError("report sign_test_p is invalid")
     n_scenes = paired.get("n_scenes")
     if n_scenes is not None and (type(n_scenes) is not int or n_scenes != len(report_ids)):
         raise ValueError("report n_scenes must match per_scene row count")
