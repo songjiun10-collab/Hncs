@@ -48,6 +48,32 @@ class TestSupabaseSync(unittest.TestCase):
                         manifest_path=manifest, metrics_path=metrics, client=client)
                 self.assertEqual(client.calls, [])
 
+    def test_registry_requires_literal_boolean_gate_values(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s", "split": "evaluation"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report = {
+                "paired": {
+                    "provenance_passed": "false",
+                    "per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                   "candidate_delta_e00": 1.0}],
+                },
+                "classification": {
+                    "classification": "Inconclusive",
+                    "ship_gate_passed": "false",
+                },
+            }
+            client = _FakeClient()
+            result = sync_evaluation_report(
+                report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                manifest_path=manifest, metrics_path=metrics,
+                external_replication="false", client=client)
+            self.assertFalse(result["ship_gate"])
+            by_table = {table: rows for table, rows, _ in client.calls}
+            self.assertEqual(by_table["hncs_datasets"][0]["provenance_status"], "incomplete")
+            self.assertFalse(by_table["hncs_runs"][0]["provenance_complete"])
+            self.assertFalse(by_table["hncs_runs"][0]["external_replication"])
+
     def _write_json(self, root, name, value):
         path = Path(root) / name
         path.write_text(json.dumps(value), encoding="utf-8")

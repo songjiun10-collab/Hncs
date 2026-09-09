@@ -101,10 +101,10 @@ def _classification(report: Mapping[str, Any]) -> tuple[str, bool]:
     value = report.get("classification")
     if isinstance(value, Mapping):
         label = value.get("classification")
-        ship = bool(value.get("ship_gate_passed", value.get("ship_gate", False)))
+        ship = value.get("ship_gate_passed", value.get("ship_gate", False)) is True
     else:
         label = value
-        ship = bool(report.get("ship_gate_passed", report.get("ship_gate", False)))
+        ship = report.get("ship_gate_passed", report.get("ship_gate", False)) is True
     if label not in _CLASSIFICATIONS:
         raise ValueError(f"unsupported classification: {label!r}")
     return str(label), ship
@@ -198,7 +198,7 @@ def sync_evaluation_report(
             "source_type": source_type,
             "evidence_tier": tier,
             "provenance_status": (
-                "complete" if bool(paired.get("provenance_passed", False)) else "incomplete"
+                "complete" if paired.get("provenance_passed") is True else "incomplete"
             ),
             "manifest_sha256": manifest_sha,
             "metadata": {
@@ -229,8 +229,8 @@ def sync_evaluation_report(
             "evidence_tier": tier,
             "classification": classification,
             "ship_gate": ship_gate,
-            "provenance_complete": bool(paired.get("provenance_passed", False)),
-            "external_replication": bool(external_replication),
+            "provenance_complete": paired.get("provenance_passed") is True,
+            "external_replication": external_replication is True,
             "bootstrap_draws": bootstrap_draws,
             "bootstrap_seed": bootstrap_seed,
             "n_scenes": paired.get("n_scenes"),
