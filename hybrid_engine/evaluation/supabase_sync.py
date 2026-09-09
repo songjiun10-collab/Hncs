@@ -236,6 +236,16 @@ def sync_evaluation_report(
         if (not isinstance(sign_test_p, (int, float)) or isinstance(sign_test_p, bool)
                 or not math.isfinite(float(sign_test_p)) or not 0 <= sign_test_p <= 1):
             raise ValueError("report sign_test_p is invalid")
+    for key, supplied, positive in (
+        ("bootstrap_draws", bootstrap_draws, True),
+        ("bootstrap_seed", bootstrap_seed, False),
+    ):
+        recorded = paired.get(key)
+        if recorded is not None:
+            if type(recorded) is not int or (positive and recorded <= 0):
+                raise ValueError(f"report {key} is invalid")
+            if supplied is not None and (type(supplied) is not int or supplied != recorded):
+                raise ValueError(f"report {key} does not match sync configuration")
     n_scenes = paired.get("n_scenes")
     if n_scenes is not None and (type(n_scenes) is not int or n_scenes != len(report_ids)):
         raise ValueError("report n_scenes must match per_scene row count")
