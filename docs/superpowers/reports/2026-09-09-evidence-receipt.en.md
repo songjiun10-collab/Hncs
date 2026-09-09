@@ -78,6 +78,10 @@ an arbitrary Ed25519 key still passes the hash-chain check but remains
 can reach the `Supported` path. The regression coverage is two
 `tests.test_nare_cli` tests; the full suite now passes 1,445 tests.
 
+The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
+together. A one-sided invocation fails immediately instead of silently ignoring
+the provenance input.
+
 ## Limitations
 
 This layer authenticates that a trusted runner signed the specified artifacts
