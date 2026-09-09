@@ -197,6 +197,8 @@ def bootstrap_mean_ci(
         raise ValueError("differences must contain at least one value")
     if type(n_bootstrap) is not int or n_bootstrap <= 0:
         raise ValueError("n_bootstrap must be a positive integer")
+    if type(seed) is not int:
+        raise ValueError("seed must be an integer")
     rng = np.random.default_rng(seed)
     samples = np.empty(n_bootstrap, dtype=float)
     for index in range(n_bootstrap):

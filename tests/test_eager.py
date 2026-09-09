@@ -49,6 +49,8 @@ class TestManifestValidation(unittest.TestCase):
             evaluate_paired(metric, n_bootstrap=True)
         with self.assertRaisesRegex(ValueError, "positive integer"):
             evaluate_paired(metric, n_bootstrap=0)
+        with self.assertRaisesRegex(ValueError, "seed"):
+            evaluate_paired(metric, seed=True)
 
     def test_same_scene_in_multiple_splits_is_rejected(self):
         with self.assertRaises(ValueError):
