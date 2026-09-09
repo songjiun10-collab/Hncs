@@ -151,6 +151,7 @@ class TestSupabaseSync(unittest.TestCase):
                     "classification": "Inconclusive",
                 },
             }
+            report_path.write_text(json.dumps(report, sort_keys=True), encoding="utf-8")
             expected_manifest_sha = sha256_file(manifest)
             client = _FakeClient()
             result = sync_evaluation_report(
@@ -268,6 +269,24 @@ class TestSupabaseSync(unittest.TestCase):
                 changed, protocol="NARE", dataset_slug="d", candidate_name="c",
                 manifest_path=manifest, metrics_path=metrics, client=_FakeClient())
         self.assertNotEqual(first["run_key"], second["run_key"])
+
+    def test_report_file_content_must_match_report_mapping(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report_path = self._write_json(tmp, "report.json", {"different": True})
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            client = _FakeClient()
+            with self.assertRaisesRegex(ValueError, "report_path content"):
+                sync_evaluation_report(
+                    report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, report_path=report_path,
+                    client=client)
+            self.assertEqual(client.calls, [])
 
     def test_run_key_changes_when_git_revision_changes(self):
         with tempfile.TemporaryDirectory() as tmp:
