@@ -39,6 +39,19 @@ class TestConvergenceSummary(unittest.TestCase):
         summary = _convergence_summary(results)
         self.assertLess(summary["fingerprint_erasure_ratio"], 1.0)
 
+    def test_real_raw_file_count_is_reported_separately_from_source_count(self):
+        results = {
+            "fuji": {"is_real_raw": True, "raw_file_count": 329,
+                     "post_stats": {"b2": 10, "w995": 220, "sat": 50},
+                     "pre_noise_sigma": 1.0, "post_noise_sigma": 1.0},
+            "sony": {"is_real_raw": False,
+                     "post_stats": {"b2": 10, "w995": 220, "sat": 50},
+                     "pre_noise_sigma": 1.0, "post_noise_sigma": 1.0},
+        }
+        summary = _convergence_summary(results)
+        self.assertEqual(summary["n_sources"], 2)
+        self.assertEqual(summary["real_raw_file_counts"], {"fuji": 329})
+
     def test_zero_pre_noise_variance_gives_none_ratio(self):
         results = {
             "a": {"post_stats": {"b2": 10, "w995": 220, "sat": 50},
