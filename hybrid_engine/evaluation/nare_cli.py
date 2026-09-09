@@ -25,6 +25,8 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
     controls = _load(controls_path)
     if not isinstance(controls, dict):
         raise ValueError("NARE controls JSON must be an object")
+    if bool(receipt_path) != bool(receipt_public_key_path):
+        raise ValueError("NARE --receipt and --receipt-public-key must be supplied together")
     paired.update({key: controls.get(key, False) for key in
                    ("subgroups_passed", "controls_passed", "provenance_passed")})
     trusted_provenance = False
@@ -87,6 +89,8 @@ def main() -> None:
         parser.error("--sync-supabase requires --out so the frozen report can be hashed")
     if args.sync_supabase and not args.candidate_name:
         parser.error("--sync-supabase requires --candidate-name")
+    if bool(args.receipt) != bool(args.receipt_public_key):
+        parser.error("--receipt and --receipt-public-key must be supplied together")
 
     report = build_report(args.manifest, args.metrics, args.controls,
                           n_bootstrap=args.bootstrap, seed=args.seed,

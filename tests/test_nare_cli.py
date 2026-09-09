@@ -108,6 +108,13 @@ class TestNARECLI(unittest.TestCase):
             self.assertEqual(report["classification"]["classification"], "Inconclusive")
             self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
 
+            incomplete = subprocess.run(
+                command[:-6] + ["--receipt-public-key", str(public_path),
+                                "--git-sha", "a" * 40],
+                capture_output=True, text=True)
+            self.assertNotEqual(incomplete.returncode, 0)
+            self.assertIn("must be supplied together", incomplete.stderr)
+
             trusted_env = os.environ.copy()
             trusted_env["HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256"] = hashlib.sha256(
                 private.public_key().public_bytes_raw()).hexdigest()

@@ -75,6 +75,10 @@ evaluator fingerprint가 환경에 pin되어 있을 때만 receipt를 provenance
 모두 일치시킨 실행만 `Supported` 경로에 들어간다. 회귀 검증은 `tests.test_nare_cli`
 2개이며 전체 suite는 1,445개 통과했다.
 
+또한 NARE CLI의 `--receipt`와 `--receipt-public-key`는 이제 반드시 함께
+지정해야 한다. 한쪽만 지정한 호출은 receipt를 묵살한 채 진행하지 않고 즉시
+실패한다.
+
 ## 한계
 
 이 계층은 “지정된 artifact와 evaluator identity를 trusted runner가 서명했다”는
