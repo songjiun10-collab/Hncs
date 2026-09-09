@@ -66,7 +66,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,459 tests passed (rerun on the current checkout)
+- full suite: 1,460 tests passed (rerun on the current checkout)
 
 ## NARE trusted-runner re-audit (2026-09-09)
 
@@ -76,7 +76,7 @@ fingerprint are pinned in the environment. A formally valid receipt signed by
 an arbitrary Ed25519 key still passes the hash-chain check but remains
 `trusted_provenance=False` and `Inconclusive`. Only matching both fingerprints
 can reach the `Supported` path. The regression coverage is two
-`tests.test_nare_cli` tests; the full suite now passes 1,459 tests.
+`tests.test_nare_cli` tests; the full suite now passes 1,460 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
@@ -120,3 +120,5 @@ scene accounting pass registration.
 The registered-report audit also checks finite non-negative ΔE values and reconciles every per-scene improvement and aggregate mean/% against the recorded rows.
 
 The registered-metrics audit also rejects duplicate scene IDs, NaN or negative ΔE values, and invalid overlap/ECC ranges.
+
+When a sibling registered-metrics file exists, the audit cross-checks its scene ID order and contents against the report.

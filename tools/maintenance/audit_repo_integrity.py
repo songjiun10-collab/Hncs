@@ -390,6 +390,20 @@ def check_nare_registered_reports():
                 problems.append(
                     f"NARE report schema 누락: {os.path.relpath(path, BASE)}"
                 )
+            metrics_name = name.replace("registered_report_", "registered_metrics_", 1)
+            metrics_path = os.path.join(root, metrics_name)
+            if os.path.isfile(metrics_path) and isinstance(per_scene, list):
+                try:
+                    with open(metrics_path, encoding="utf-8") as handle:
+                        metric_rows = json.load(handle)
+                except (OSError, json.JSONDecodeError) as exc:
+                    problems.append(f"NARE metrics JSON 파싱 실패: {os.path.relpath(metrics_path, BASE)}: {exc}")
+                else:
+                    metric_ids = [row.get("scene_id") for row in metric_rows] if isinstance(metric_rows, list) else None
+                    if metric_ids is None or metric_ids != scene_ids:
+                        problems.append(
+                            f"NARE report/metrics scene 불일치: {os.path.relpath(path, BASE)}"
+                        )
     print(f"  등록 NARE reports {n_files}개 bootstrap schema 확인")
     return problems
 
