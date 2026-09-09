@@ -127,7 +127,8 @@ class TestEvidenceReceipt(unittest.TestCase):
             receipt = sign_receipt(build_receipt(
                 paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
                 command=["trusted-evaluator"], run_id="run-1",
-                timestamp="2026-09-09T00:00:00Z"), private, key_id="ci")
+                timestamp="2026-09-09T00:00:00Z", run_config={"bootstrap": 50, "seed": 0}),
+                private, key_id="ci")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
             with patch.dict(os.environ, {}, clear=True):

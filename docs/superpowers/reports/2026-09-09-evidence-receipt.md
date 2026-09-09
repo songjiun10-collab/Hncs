@@ -122,3 +122,5 @@ Supabase sync는 manifest에 없는 scene, 중복 scene ID, 그리고 `n_scenes`
 Supabase sync는 metrics artifact의 scene ID도 manifest·report와 일치하는지 확인해 다른 split의 metrics 삽입을 막는다.
 
 NARE sync는 metrics의 raw/candidate ΔE가 report per-scene 값과 다르면 수치 substitution으로 거부한다.
+
+Evidence Receipt는 이제 bootstrap/seed를 `run_config`로 서명하고, CLI 실행 설정과 exact match하지 않으면 거부한다.

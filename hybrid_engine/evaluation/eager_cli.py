@@ -74,6 +74,7 @@ def build_report(
              "controls": controls_path, "robustness": robustness_path},
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
+            expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
         )
         trusted_key_sha256 = os.environ.get("HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256", "").strip()
         trusted_evaluator_sha256 = os.environ.get("HNCS_TRUSTED_EVALUATOR_SHA256", "").strip()
@@ -86,6 +87,7 @@ def build_report(
                 expected_git_sha=expected_git_sha,
                 trusted_public_key_sha256=trusted_key_sha256,
                 trusted_evaluator_sha256=trusted_evaluator_sha256,
+                expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
             )
             trusted_provenance = receipt["trusted"] is True
     paired = paired_report["paired"]
