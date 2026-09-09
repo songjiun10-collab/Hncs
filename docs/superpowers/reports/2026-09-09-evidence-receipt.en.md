@@ -18,6 +18,7 @@
 > The EAGER CLI now requires `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256` to match
 > the supplied key before a receipt-backed run can become `Verified`; without
 > that protected fingerprint the same receipt remains `Supported`.
+> The evaluator hash must also match `HNCS_TRUSTED_EVALUATOR_SHA256`.
 
 The attack in `0da0c44` and `3e27c7a` showed that the missing protection was not
 finite metrics or hash syntax. There was no binding from an external JSON report
@@ -40,6 +41,7 @@ argument or any hash mismatch is rejected. Without a valid receipt,
 
 ```bash
 export HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256="$(openssl dgst -sha256 -binary ci-ed25519.pub | xxd -p -c 256)"
+export HNCS_TRUSTED_EVALUATOR_SHA256="$(shasum -a 256 hybrid_engine/evaluation/eager_cli.py | awk '{print $1}')"
 python -m hybrid_engine.evaluation.eager_cli \
   --manifest manifest.json --metrics metrics.json \
   --controls controls.json --robustness robustness.json \
