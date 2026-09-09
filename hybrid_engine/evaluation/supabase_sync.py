@@ -198,6 +198,18 @@ def sync_evaluation_report(
                        or abs(float(left) - float(right)) > 1e-9 * max(1.0, abs(float(right)))
                        for left, right in pairs):
                     raise ValueError("NARE metrics values do not match report per_scene")
+    for row in per_scene:
+        try:
+            baseline = float(row["baseline_delta_e00"])
+            candidate = float(row["candidate_delta_e00"])
+            improvement = float(row.get("improvement", baseline - candidate))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("report per_scene ΔE values are invalid") from exc
+        if (not all(math.isfinite(value) and value >= 0
+                    for value in (baseline, candidate, improvement))
+                or abs(improvement - (baseline - candidate))
+                > 1e-9 * max(1.0, abs(baseline), abs(candidate))):
+            raise ValueError("report per_scene ΔE values are invalid")
     n_scenes = paired.get("n_scenes")
     if n_scenes is not None and (type(n_scenes) is not int or n_scenes != len(report_ids)):
         raise ValueError("report n_scenes must match per_scene row count")
