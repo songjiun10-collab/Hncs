@@ -70,7 +70,7 @@ registry 등록도 수행하지 않았다. 임시 합성 입력과 CLI 전체 re
 저장소 루트에서:
 
 ```bash
-~/.hncs-hybrid-venv312/bin/python3 docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
+.venv/bin/python docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
 ```
 
 문서의 최초 `Verified` 결과는 trusted-provenance gate 이전의 historical characterization이다.
