@@ -5,7 +5,9 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from tools.fuji.fit_nare_provia_session_holdout import fit, main
+import numpy as np
+
+from tools.fuji.fit_nare_provia_session_holdout import _load_frame, fit, main
 
 
 def _row(tmp, scene, session, split="evaluation"):
@@ -44,6 +46,20 @@ class TestNARESessionHoldout(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'duplicate'):
                     fit(rows)
                 load.assert_not_called()
+
+    def test_frame_loader_rejects_aspect_ratio_mismatch(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            row = _row(tmp, "scene-1", "session-1")
+            source = np.zeros((100, 100, 3), dtype=np.uint8)
+            target = np.zeros((100, 200, 3), dtype=np.uint8)
+            with patch("tools.fuji.fit_nare_provia_session_holdout.load_neutral_render",
+                       return_value=source), \
+                 patch("tools.fuji.fit_nare_provia_session_holdout.cv2.imread",
+                       return_value=target), \
+                 patch("tools.fuji.fit_nare_provia_session_holdout.register_to_target") as register:
+                with self.assertRaisesRegex(ValueError, "aspect ratios differ"):
+                    _load_frame(row, max_dim=512)
+                register.assert_not_called()
 
     def test_selection_uses_training_sessions_only_after_real_hash_validation(self):
         # The held-out scene strongly prefers the other parameter: including it
