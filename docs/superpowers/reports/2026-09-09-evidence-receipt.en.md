@@ -2,6 +2,27 @@
 
 [한국어](2026-09-09-evidence-receipt.md)
 
+> **Correction (2026-09-09, trust-root/promotion-attestation re-falsification):**
+> The previous fix was still incomplete. A local caller could generate an
+> arbitrary Ed25519 key, set `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256` and
+> `HNCS_TRUSTED_EVALUATOR_SHA256` to self-selected values, and let EAGER
+> promote that same local run to `Verified`. In addition,
+> `validation_passed`, `lockbox_passed`, and `external_replication` were not
+> signed by the receipt, so changing only CLI booleans could change promotion
+> without invalidating the receipt. The official CLIs no longer use those
+> environment variables as a trust root. Trust is determined only by the
+> `(public-key fingerprint, evaluator SHA-256)` pairs in the repository policy
+> `hybrid_engine/evaluation/trusted_receipt_signers.json`, and the three
+> promotion conditions are included in signed receipt `attestations`; a
+> mismatch with requested arguments is rejected. The policy file is currently
+> empty, so this checkout fails closed: local EAGER runs cannot become
+> `Verified`, and a self-signed NARE receipt does not establish trusted
+> provenance. A repository allowlist by itself still does not complete a
+> protected trust root; the final boundary needs a protected ref/ruleset plus
+> trusted CI signing/replay. The environment-variable example and the
+> `1,436 tests passed` entry below are historical records of the earlier
+> implementation, not claims about current behavior or current suite status.
+
 > **Correction (2026-09-09, forged registry trust re-audit):** The completion
 > claims below do not establish independently authenticated execution. Adding
 > `trusted_provenance: true` and a fake receipt object bypassed both registry

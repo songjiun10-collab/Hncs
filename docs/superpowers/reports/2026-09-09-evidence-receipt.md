@@ -2,6 +2,25 @@
 
 [English](2026-09-09-evidence-receipt.en.md)
 
+> **정정(2026-09-09, trust-root/승격 attestation 재반증)**: 직전 수정도
+> 불완전했다. 로컬 호출자가 임의 Ed25519 키를 만든 뒤
+> `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256`와
+> `HNCS_TRUSTED_EVALUATOR_SHA256`를 자기 값으로 설정하면 EAGER가 같은
+> 로컬 실행을 `Verified`로 승격할 수 있었다. 또한
+> `validation_passed`, `lockbox_passed`, `external_replication`은 receipt에
+> 서명되지 않아 receipt를 바꾸지 않고 CLI bool만 바꿀 수 있었다.
+> 현재 공식 CLI는 이 두 환경변수를 신뢰 루트로 사용하지 않는다. 신뢰 여부는
+> 저장소 정책 `hybrid_engine/evaluation/trusted_receipt_signers.json`의
+> `(public-key fingerprint, evaluator SHA-256)` 쌍으로만 결정하고, 세 승격
+> 조건은 receipt의 signed `attestations`에 포함되어 호출 인자와 다르면
+> 거절한다. 정책 파일은 현재 비어 있어 fail-closed이며, 따라서 현재 checkout의
+> 로컬 실행은 `Verified`가 될 수 없고 NARE self-signed receipt도 trusted
+> provenance가 아니다. 다만 저장소 안의 allowlist 자체만으로는 보호된 trust
+> root가 완성되지 않는다. 최종 경계는 protected ref/ruleset과 trusted CI
+> signing/replay로 고정해야 한다. 이 정정 이후 아래 환경변수 예제와
+> `1,436 tests passed` 항목은 당시 구현의 역사적 기록이며 현재 동작이나 현재
+> suite 상태를 주장하지 않는다.
+
 > **정정(2026-09-09, registry 신뢰 선언 위조 재감사)**: 아래 완료 주장은
 > 독립 실행 인증을 입증하지 않는다. `trusted_provenance: true`와 가짜
 > receipt 객체만 추가하면 registry의 기존 검사 두 개를 모두 우회했다.
