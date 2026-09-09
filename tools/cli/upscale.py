@@ -33,14 +33,16 @@ def main():
 
     img = cv2.imread(args.input, cv2.IMREAD_COLOR)
     if img is None:
-        print(f"이미지를 읽을 수 없음: {args.input}")
+        print(f"이미지를 읽을 수 없음: {args.input}", file=sys.stderr)
         sys.exit(1)
 
     print(f"업스케일 중... (scale={args.scale}, engine={args.engine}, "
           f"입력 {img.shape[1]}x{img.shape[0]})")
     out = upscale(img, scale=args.scale, engine=args.engine,
                   tile_size=args.tile_size, tile_pad=args.tile_pad)
-    cv2.imwrite(args.output, out)
+    if not cv2.imwrite(args.output, out):
+        print(f"이미지를 저장하지 못함: {args.output}", file=sys.stderr)
+        sys.exit(1)
     print(f"저장: {args.output} ({out.shape[1]}x{out.shape[0]})")
 
 
