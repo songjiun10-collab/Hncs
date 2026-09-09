@@ -390,6 +390,8 @@ class TestNareSelectionSensitivity(unittest.TestCase):
             lambda payload: payload["selection_sensitivity"].update(two_sided_permutation_p="0.01"),
             lambda payload: payload["post_registration_current_reports"]["512px"].update(
                 mean_absolute_improvement_delta_e00=99.0),
+            lambda payload: payload["post_registration_current_reports"]["512px"].update(
+                mean_candidate_delta_e00=-1.0, mean_absolute_improvement_delta_e00=11.0),
         ):
             with self.subTest(mutate=mutate), tempfile.TemporaryDirectory() as directory:
                 payload = self._payload()
