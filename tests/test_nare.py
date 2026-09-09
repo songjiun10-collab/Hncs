@@ -107,42 +107,31 @@ class TestNARE(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "finite"):
             summarize_nare_subgroups(nan, required=("skin", "sky"))
 
+    def _passing_gate(self):
+        return {"n_scenes": 12, "improvement_pct": 10,
+                "ci95": [0.1, 2], "sign_test_p": 0.01,
+                "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
+                             "scene_type": ["portrait", "landscape", "indoor"]},
+                "picture_styles": ["standard"], "registration_passed": True,
+                "subgroup_metrics_passed": True, "subgroups_passed": True,
+                "controls_passed": True, "provenance_passed": True,
+                "receipt_valid": True}
+
     def test_ship_gate_requires_three_lighting_and_scene_strata(self):
-        result = {"n_scenes": 12, "improvement_pct": 10,
-                  "ci95": [0.1, 2], "sign_test_p": 0.01,
-                  "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
-                               "scene_type": ["portrait", "landscape", "indoor"]},
-                  "picture_styles": ["standard"],
-                  "registration_passed": True,
-                  "subgroup_metrics_passed": True,
-                  "subgroups_passed": True, "controls_passed": True,
-                  "provenance_passed": True, "trusted_provenance": True}
+        result = self._passing_gate()
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
         result["coverage"]["lighting"] = ["daylight"]
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
 
     def test_ship_gate_rejects_unreceipted_plausible_metrics(self):
-        result = {"n_scenes": 12, "improvement_pct": 10,
-                  "ci95": [0.1, 2], "sign_test_p": 0.01,
-                  "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
-                               "scene_type": ["portrait", "landscape", "indoor"]},
-                  "picture_styles": ["standard"], "subgroups_passed": True,
-                  "registration_passed": True, "subgroup_metrics_passed": True,
-                  "controls_passed": True, "provenance_passed": True}
+        result = self._passing_gate()
+        result.pop("receipt_valid")
         report = classify_nare_result(result)
         self.assertFalse(report["ship_gate_passed"])
-        self.assertFalse(report["checks"]["trusted_provenance"])
+        self.assertFalse(report["checks"]["receipt_integrity"])
 
     def test_ship_gate_rejects_mixed_or_unknown_picture_style(self):
-        result = {"n_scenes": 12, "improvement_pct": 10,
-                  "ci95": [0.1, 2], "sign_test_p": 0.01,
-                  "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
-                               "scene_type": ["portrait", "landscape", "indoor"]},
-                  "picture_styles": ["standard"], "subgroups_passed": True,
-                  "registration_passed": True,
-                  "subgroup_metrics_passed": True,
-                  "controls_passed": True, "provenance_passed": True,
-                  "trusted_provenance": True}
+        result = self._passing_gate()
         self.assertTrue(classify_nare_result(result)["ship_gate_passed"])
         result["picture_styles"] = ["standard", "velvia"]
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
@@ -150,12 +139,8 @@ class TestNARE(unittest.TestCase):
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
 
     def test_ship_gate_requires_recorded_registration(self):
-        result = {"n_scenes": 12, "improvement_pct": 10, "ci95": [0.1, 2],
-                  "sign_test_p": 0.01,
-                  "coverage": {"lighting": ["daylight", "tungsten", "mixed"],
-                               "scene_type": ["portrait", "landscape", "indoor"]},
-                  "picture_styles": ["standard"], "subgroups_passed": True,
-                  "controls_passed": True, "provenance_passed": True}
+        result = self._passing_gate()
+        result.pop("registration_passed")
         self.assertFalse(classify_nare_result(result)["ship_gate_passed"])
 
     def test_subgroups_require_all_requested_regions_and_block_catastrophic_loss(self):
