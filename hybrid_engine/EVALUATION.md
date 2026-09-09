@@ -5160,3 +5160,33 @@ profile을 수정하지 않는다.
 
 기계 판독 결과와 fold별 선택값은
 `nare_provia_session_holdout_fit_512px_2026-09.json`에 고정했다.
+
+## 로컬 12개 브랜드 NARE pair audit 및 baseline ΔE00 실행 (2026-09-09)
+
+요청에 따라 `datasets/` 아래 12개 브랜드를 모두 스캔했다. NARE는 동일 촬영의
+RAW와 SOOC JPEG가 모두 있어야 하므로, 파일 확장자 수만으로 pair를 만들지 않고
+`nare_pairs.scan_pair_directories`의 EXIF strict pairing을 사용했다. 실제 strict
+pair가 생긴 브랜드는 Fuji 230개, Hasselblad 18개, Leica 15개, Sony 58개뿐이었다.
+Canon/Nikon/Sigma는 JPEG와 RAW가 서로 다른 intake에 있고, Olympus/Panasonic/
+Pentax/Ricoh GR는 RAW만 있으며, Phase One은 입력이 없었다.
+
+strict pair에 대해 512px runner를 candidate identity로 실행해 raw-decoder baseline
+ΔE00와 registration failure를 분리했다. 이는 제조사 appearance candidate 평가가
+아니며, 현재 NARE CLI가 지원하는 고정 candidate는 Fuji Provia 하나이므로 다른
+브랜드에 Provia를 억지로 적용하지 않았다.
+
+| 브랜드 | strict pair | metric 통과/실패 | baseline 평균 ΔE00 |
+|---|---:|---:|---:|
+| Fuji | 230 | 207/23 | 14.4234873622 |
+| Hasselblad | 18 | 17/1 | 10.2043482826 |
+| Leica | 15 | 15/0 | 10.0448002877 |
+| Sony | 58 | 0/58 | 미계산 (RAW decode/geometry failure) |
+
+Sony 58건은 LibRaw가 `Unsupported file format or not RAW file` 40건, aspect-ratio
+registration failure 18건으로 모두 제외됐다. Fuji 실패 23건과 Hasselblad 실패
+1건도 registration threshold/aspect-ratio 사유를 별도 JSON에 보존했다. 전체 inventory와
+집계는 `datasets/nare_local_12_brand_inventory_2026-09.json`에 고정했다.
+
+따라서 현재 로컬 데이터만으로 12개 브랜드의 NARE appearance ΔE00를 모두 산출했다는
+주장은 성립하지 않는다. 12개 모두에 대한 다음 실행에는 누락된 SOOC JPEG와 Sony RAW
+decoder 호환성/geometry 정리가 먼저 필요하다.

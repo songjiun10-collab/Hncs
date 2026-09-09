@@ -1,0 +1,166 @@
+{
+  "canon": {
+    "raw_files": 22,
+    "jpeg_files": 143,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "fuji": {
+    "raw_files": 329,
+    "jpeg_files": 309,
+    "strict_pairs": 230,
+    "directories": [
+      {
+        "dataset": "datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08",
+        "raw": 63,
+        "jpeg": 63,
+        "strict_pairs": 63,
+        "ambiguous": 0,
+        "invalid": 0
+      },
+      {
+        "dataset": "datasets/fuji/contributed/local-work-2026-08",
+        "raw": 246,
+        "jpeg": 246,
+        "strict_pairs": 167,
+        "ambiguous": 34,
+        "invalid": 0
+      }
+    ],
+    "baseline_metrics": {
+      "passed": 207,
+      "failed": 23,
+      "mean_delta_e00": 14.423487362150789,
+      "median_delta_e00": 14.237464795110565
+    }
+  },
+  "hasselblad": {
+    "raw_files": 212,
+    "jpeg_files": 537,
+    "strict_pairs": 18,
+    "directories": [
+      {
+        "dataset": "datasets/hasselblad/contributed/dpreview-cfv907x-2026-08",
+        "raw": 3,
+        "jpeg": 3,
+        "strict_pairs": 3,
+        "ambiguous": 0,
+        "invalid": 0
+      },
+      {
+        "dataset": "datasets/hasselblad/contributed/kmichels-x2dii-2026-07",
+        "raw": 9,
+        "jpeg": 9,
+        "strict_pairs": 0,
+        "ambiguous": 18,
+        "invalid": 0
+      },
+      {
+        "dataset": "datasets/hasselblad/contributed/x1d-x2d100c-restore-2026-08",
+        "raw": 55,
+        "jpeg": 55,
+        "strict_pairs": 5,
+        "ambiguous": 49,
+        "invalid": 50
+      },
+      {
+        "dataset": "datasets/hasselblad/contributed/xcd-lenses-2026-08",
+        "raw": 145,
+        "jpeg": 145,
+        "strict_pairs": 10,
+        "ambiguous": 135,
+        "invalid": 135
+      }
+    ],
+    "baseline_metrics": {
+      "passed": 17,
+      "failed": 1,
+      "mean_delta_e00": 10.204348282636285,
+      "median_delta_e00": 10.90281125863592
+    }
+  },
+  "leica": {
+    "raw_files": 15,
+    "jpeg_files": 259,
+    "strict_pairs": 15,
+    "directories": [
+      {
+        "dataset": "datasets/leica/contributed/dpreview-sl3p-2026-08",
+        "raw": 15,
+        "jpeg": 15,
+        "strict_pairs": 15,
+        "ambiguous": 0,
+        "invalid": 0
+      }
+    ],
+    "baseline_metrics": {
+      "passed": 15,
+      "failed": 0,
+      "mean_delta_e00": 10.044800287732253,
+      "median_delta_e00": 9.057272448172156
+    }
+  },
+  "nikon": {
+    "raw_files": 24,
+    "jpeg_files": 42,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "olympus": {
+    "raw_files": 22,
+    "jpeg_files": 0,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "panasonic": {
+    "raw_files": 20,
+    "jpeg_files": 0,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "pentax": {
+    "raw_files": 24,
+    "jpeg_files": 0,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "phaseone": {
+    "raw_files": 0,
+    "jpeg_files": 0,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "ricoh_gr": {
+    "raw_files": 24,
+    "jpeg_files": 0,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "sigma": {
+    "raw_files": 22,
+    "jpeg_files": 83,
+    "strict_pairs": 0,
+    "directories": []
+  },
+  "sony": {
+    "raw_files": 108,
+    "jpeg_files": 345,
+    "strict_pairs": 58,
+    "directories": [
+      {
+        "dataset": "datasets/sony/contributed/dpreview-a7v-preprod-2026-08",
+        "raw": 62,
+        "jpeg": 62,
+        "strict_pairs": 58,
+        "ambiguous": 1,
+        "invalid": 0
+      }
+    ],
+    "baseline_metrics": {
+      "passed": 0,
+      "failed": 58,
+      "mean_delta_e00": null,
+      "median_delta_e00": null
+    }
+  }
+}
