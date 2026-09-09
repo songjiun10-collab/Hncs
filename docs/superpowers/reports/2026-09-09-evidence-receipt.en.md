@@ -2,6 +2,20 @@
 
 [한국어](2026-09-09-evidence-receipt.md)
 
+> **Correction (2026-09-09, trust-root counterexample):** A later re-audit
+> reproduced that `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256` and
+> `HNCS_TRUSTED_EVALUATOR_SHA256` are caller-selectable in a local process and
+> therefore are not independent trust anchors. The environment-based `Verified`
+> behavior described below is a historical record of that implementation, not
+> current behavior. The normal EAGER CLI now separates signature/artifact
+> integrity from signer authority and never sets `trusted_provenance=True` on
+> the local path, so local execution is capped at `Supported`. `evidence_tier`
+> and the `validation_passed` / `lockbox_passed` / `external_replication`
+> promotion claims are also bound into the signed receipt; changing only the CLI
+> values while reusing the receipt is rejected. See
+> [provenance trust-boundary hardening](2026-09-09-provenance-trust-boundary-hardening.en.md)
+> for the reproduction and the new boundary.
+
 > **Correction (2026-09-09, forged registry trust re-audit):** The completion
 > claims below do not establish independently authenticated execution. Adding
 > `trusted_provenance: true` and a fake receipt object bypassed both registry

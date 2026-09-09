@@ -2,6 +2,18 @@
 
 [English](2026-09-09-evidence-receipt.en.md)
 
+> **정정(2026-09-09, trust-root 재반증)**: 이후 재감사에서
+> `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256`와
+> `HNCS_TRUSTED_EVALUATOR_SHA256`는 로컬 호출자가 직접 선택할 수 있으므로
+> 독립 trust anchor가 아님을 실제로 재현했다. 아래의 환경변수 기반
+> `Verified` 설명은 당시 구현의 역사적 기록이며 현재 동작이 아니다. 현재 일반
+> EAGER CLI는 signature/artifact integrity와 signer authority를 분리하고 로컬
+> 경로에서는 `trusted_provenance=True`를 만들지 않으므로 최대 `Supported`다.
+> `evidence_tier`와 `validation_passed` / `lockbox_passed` /
+> `external_replication`도 signed receipt에 묶여, 같은 receipt를 둔 채 CLI 값만
+> 바꾸면 거절된다. 자세한 재현과 변경 경계는
+> [provenance trust-boundary hardening](2026-09-09-provenance-trust-boundary-hardening.md)에 기록했다.
+
 > **정정(2026-09-09, registry 신뢰 선언 위조 재감사)**: 아래 완료 주장은
 > 독립 실행 인증을 입증하지 않는다. `trusted_provenance: true`와 가짜
 > receipt 객체만 추가하면 registry의 기존 검사 두 개를 모두 우회했다.
