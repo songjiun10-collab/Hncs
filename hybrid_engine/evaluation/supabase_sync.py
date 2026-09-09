@@ -164,6 +164,19 @@ def sync_evaluation_report(
     per_scene = paired.get("per_scene")
     if not isinstance(per_scene, list) or not all(isinstance(row, Mapping) for row in per_scene):
         raise ValueError("report paired.per_scene must be a row list")
+    manifest_ids = [str(row.get("scene_id", "")).strip() for row in manifest_rows]
+    if (any(not scene_id for scene_id in manifest_ids)
+            or len(manifest_ids) != len(set(manifest_ids))):
+        raise ValueError("manifest scene_id values must be non-empty and unique")
+    report_ids = [str(row.get("scene_id", "")).strip() for row in per_scene]
+    if (any(not scene_id for scene_id in report_ids)
+            or len(report_ids) != len(set(report_ids))):
+        raise ValueError("report per_scene scene_id values must be non-empty and unique")
+    if not set(report_ids).issubset(set(manifest_ids)):
+        raise ValueError("report per_scene contains scene_id absent from manifest")
+    n_scenes = paired.get("n_scenes")
+    if n_scenes is not None and (type(n_scenes) is not int or n_scenes != len(report_ids)):
+        raise ValueError("report n_scenes must match per_scene row count")
 
     classification, ship_gate = _classification(report)
     # This uploader has no independent verifier or protected trust root.
@@ -262,9 +275,7 @@ def sync_evaluation_report(
     if not run_id:
         raise RuntimeError("Supabase run upsert returned no id")
 
-    manifest_by_scene = {
-        str(row.get("scene_id")): row for row in manifest_rows if row.get("scene_id") is not None
-    }
+    manifest_by_scene = {str(row["scene_id"]).strip(): row for row in manifest_rows}
     scene_rows = []
     for row in per_scene:
         scene_id = str(row.get("scene_id", "")).strip()
