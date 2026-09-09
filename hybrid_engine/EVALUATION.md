@@ -5054,6 +5054,30 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > subgroup, controls, provenance/trusted-runner gate가 부족해 ship 판정은
 > `Inconclusive`로 유지된다.
 
+## GFX100RF Provia registration selection sensitivity - methodology evidence only (2026-09-09)
+
+> **정정(2026-09-09, registration selection sensitivity 기록)**: 새 1% aspect-ratio
+gate를 적용한 뒤에는 registration 통과 자체가 effect-size와 독립적이지 않은지
+별도로 확인해야 한다. 51개 exploratory metric을 현재 pass/fail ID로만 나누면
+32 pass / 19 fail이고, pass subset의 pre-registration 개선율은 **+20.928717236497807%**,
+fail subset은 **+7.325851205607281%**, 전체 51개는 **+14.987488603484733%**다.
+pass-minus-fail 절대 개선량 차이는 **+2.1125743190294215 ΔE00**,
+200,000회 group bootstrap 95% CI는 **[+0.61942192, +3.56687431]**,
+label-permutation p는 **0.012179939100304498**이다. 상대 개선율 차이도
+**+14.724098602296786%p** (bootstrap CI **[+7.50612246, +21.74777332]**,
+permutation p **0.0009899950500247498**)로 나타난다.
+
+이 수치는 registration 실패 scene의 pre-registration metric이 geometry 오염을
+포함하므로 registration이 성능을 인과적으로 높인다는 뜻이 아니다. 다만 intake
+수와 제외 사유를 함께 제시하지 않고 pass subset의 effect만 보고하면 방법론적
+선택 효과가 candidate 개선으로 오인될 수 있다는 반증이다. 실제 geometry
+correction을 적용한 32-scene report는 512px **+30.634607722882166%**,
+1024px **+28.697554063765285%**였고, 두 결과 모두 coverage/subgroup/control/
+provenance gate 미충족으로 `Inconclusive`다. 기계 판독 결과는
+`../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_registration_selection_sensitivity_2026-09.json`,
+상세 분석은 `../docs/superpowers/reports/2026-09-09-nare-registration-selection-sensitivity.md`에 고정했다.
+이 분석은 **methodology sensitivity evidence**이며 ship evidence가 아니다.
+
 ## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
 
 > **재실행 확인(2026-09-09)**: 현재 checkout의 registered manifest 37행을
