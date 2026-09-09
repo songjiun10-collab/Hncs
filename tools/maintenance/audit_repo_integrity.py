@@ -449,6 +449,21 @@ def check_nare_selection_sensitivity():
             valid = isinstance(artifact, dict) and artifact.get("schema") == schema \
                 and isinstance(artifact.get("source_develop_sha"), str) \
                 and sha_pattern.fullmatch(artifact["source_develop_sha"]) is not None
+            inputs = artifact.get("inputs") if isinstance(artifact, dict) else None
+            required_inputs = ("exploratory_metrics_512px", "registration_512px",
+                               "registered_report_512px", "registered_report_1024px")
+            if isinstance(inputs, dict):
+                artifact_dir = os.path.realpath(root)
+                for key in required_inputs:
+                    value = inputs.get(key)
+                    if not isinstance(value, str) or not value.strip() or os.path.isabs(value):
+                        valid = False
+                        continue
+                    candidate = os.path.realpath(os.path.join(root, value))
+                    valid = valid and os.path.commonpath((artifact_dir, candidate)) == artifact_dir \
+                        and os.path.isfile(candidate)
+            else:
+                valid = False
             if isinstance(gate, dict):
                 counts = tuple(gate.get(key) for key in
                                ("n_input", "n_passed", "n_failed", "n_aspect_ratio_failed", "n_geometry_failed"))

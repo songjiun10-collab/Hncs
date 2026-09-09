@@ -336,6 +336,12 @@ class TestNareSelectionSensitivity(unittest.TestCase):
         return {
             "schema": "hncs.nare-registration-selection-sensitivity/v1",
             "source_develop_sha": "a" * 40,
+            "inputs": {
+                "exploratory_metrics_512px": "exploratory.json",
+                "registration_512px": "registration.json",
+                "registered_report_512px": "report512.json",
+                "registered_report_1024px": "report1024.json",
+            },
             "registration_gate": {"n_input": 3, "n_passed": 2, "n_failed": 1,
                                    "n_aspect_ratio_failed": 1, "n_geometry_failed": 0},
             "selection_sensitivity": {
@@ -380,6 +386,8 @@ class TestNareSelectionSensitivity(unittest.TestCase):
             import json
             with open(path, "w", encoding="utf-8") as handle:
                 json.dump(self._payload(), handle)
+            for name in ("exploratory.json", "registration.json", "report512.json", "report1024.json"):
+                open(os.path.join(directory, name), "w", encoding="utf-8").close()
             with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
                 self.assertEqual(check_nare_selection_sensitivity(), [])
 
@@ -400,6 +408,22 @@ class TestNareSelectionSensitivity(unittest.TestCase):
                 import json
                 with open(path, "w", encoding="utf-8") as handle:
                     json.dump(payload, handle)
+                for name in ("exploratory.json", "registration.json", "report512.json", "report1024.json"):
+                    open(os.path.join(directory, name), "w", encoding="utf-8").close()
+                with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                    self.assertEqual(len(check_nare_selection_sensitivity()), 1)
+
+    def test_missing_or_escaping_input_artifact_is_rejected(self):
+        for input_path in ("missing.json", "../outside.json", "/tmp/absolute.json"):
+            with self.subTest(input_path=input_path), tempfile.TemporaryDirectory() as directory:
+                payload = self._payload()
+                payload["inputs"]["registration_512px"] = input_path
+                path = os.path.join(directory, "nare_provia_registration_selection_sensitivity_2026-09.json")
+                import json
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(payload, handle)
+                for name in ("exploratory.json", "report512.json", "report1024.json"):
+                    open(os.path.join(directory, name), "w", encoding="utf-8").close()
                 with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
                     self.assertEqual(len(check_nare_selection_sensitivity()), 1)
 
