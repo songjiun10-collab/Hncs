@@ -10,10 +10,11 @@
 > caller that is already trusted can still lie, and that trust boundary remains
 > explicitly documented.
 
-Baseline commit: `0da0c44086d0805e3ea87de536d66e1ed5a9c03f`.
-This experiment invokes the actual EAGER CLI in subprocesses without mocking
-classification, statistics or file reads. **The attack succeeds: fabricated
-evidence reaches Verified.**
+Baseline commit `0da0c44086d0805e3ea87de536d66e1ed5a9c03f` is the original
+attack reproduction. The current regression run invokes the actual EAGER CLI in
+subprocesses without mocking classification, statistics or file reads. **The
+unreceipted fabricated bundle now reaches Supported at most and cannot reach
+Verified.**
 
 ## Construction and observations
 
@@ -30,11 +31,11 @@ and independent replications actually performed is **zero**.
 
 | Input condition | Observed result |
 |---|---|
-| Files present, 48/48 matching hashes, invented metrics and attestations | Verified |
+| Files present, 48/48 matching hashes, invented metrics and attestations | Supported |
 | Remove only external-replication flag | Supported |
 | Set shuffle control to actual boolean False | Ship gate fails |
-| Mutate every source file, producing 24 hash mismatches | Verified |
-| Delete all 48 source/target image files | Verified |
+| Mutate every source file, producing 24 hash mismatches | Supported |
+| Delete all 48 source/target image files | Supported |
 
 Statistics genuinely computed by the CLI from the invented table:
 
@@ -79,7 +80,7 @@ From the repository root:
 ~/.hncs-hybrid-venv312/bin/python3 docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
 ```
 
-The report above records the original vulnerable run as historical
-characterization. The current script replays the same synthetic bundle and
-asserts that an unreceipted result cannot reach `Verified`, so it now serves as
-a security regression probe.
+The original `Verified` result is retained as historical characterization from
+before the trusted-provenance gate. The current script replays the same
+synthetic bundle and asserts that an unreceipted result cannot reach `Verified`,
+so it now serves as a security regression probe.
