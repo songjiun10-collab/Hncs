@@ -1,5 +1,7 @@
 # EAGER smoke 재현 결과 (2026-09-08)
 
+[English](2026-09-08-eager-smoke-reproduction.en.md)
+
 이 기록은 EAGER 통계 커널과 판정 게이트의 재현성을 확인하기 위한
 **합성 입력 smoke run**이다. 실제 카메라 간 동일 물리 장면 데이터가 아니므로
 cross-camera 일반화나 배포 성능의 근거로 사용할 수 없다.
