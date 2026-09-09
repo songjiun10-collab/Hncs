@@ -5055,6 +5055,8 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > 제외된다. 따라서 기존 51-scene exploratory metrics는 strict runner의
 > 재현 가능한 registered evidence가 아니며, 새 registration 결과를
 > `nare_provia_exploratory_registration_512px_2026-09.json`에 보존했다.
+> 별도 EXIF strict-pair preflight는 raw/jpeg **63/63**을 짝지었으므로,
+> 이 14건은 pairing 누락이 아니라 geometry/registration gate에서 제외된 것이다.
 
 registration을 통과한 37개 scene을 11개 capture-date session으로 묶어
 leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해
