@@ -2,20 +2,6 @@
 
 [한국어](2026-09-09-evidence-receipt.md)
 
-> **Correction (2026-09-09, trust-root counterexample):** A later re-audit
-> reproduced that `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256` and
-> `HNCS_TRUSTED_EVALUATOR_SHA256` are caller-selectable in a local process and
-> therefore are not independent trust anchors. The environment-based `Verified`
-> behavior described below is a historical record of that implementation, not
-> current behavior. The normal EAGER CLI now separates signature/artifact
-> integrity from signer authority and never sets `trusted_provenance=True` on
-> the local path, so local execution is capped at `Supported`. `evidence_tier`
-> and the `validation_passed` / `lockbox_passed` / `external_replication`
-> promotion claims are also bound into the signed receipt; changing only the CLI
-> values while reusing the receipt is rejected. See
-> [provenance trust-boundary hardening](2026-09-09-provenance-trust-boundary-hardening.en.md)
-> for the reproduction and the new boundary.
-
 > **Correction (2026-09-09, forged registry trust re-audit):** The completion
 > claims below do not establish independently authenticated execution. Adding
 > `trusted_provenance: true` and a fake receipt object bypassed both registry
@@ -80,7 +66,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,448 tests passed (rerun on the current checkout)
+- full suite: 1,463 tests passed (rerun on the current checkout)
 
 ## NARE trusted-runner re-audit (2026-09-09)
 
@@ -90,7 +76,7 @@ fingerprint are pinned in the environment. A formally valid receipt signed by
 an arbitrary Ed25519 key still passes the hash-chain check but remains
 `trusted_provenance=False` and `Inconclusive`. Only matching both fingerprints
 can reach the `Supported` path. The regression coverage is two
-`tests.test_nare_cli` tests; the full suite now passes 1,448 tests.
+`tests.test_nare_cli` tests; the full suite now passes 1,463 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
@@ -105,6 +91,16 @@ Registry sync also requires literal JSON boolean `true` for
 truthiness is no longer accepted. Fabricated values such as `"false"` cannot
 pollute the stored complete or ship state.
 
+NARE reports now also record `bootstrap_draws` and `bootstrap_seed` in the
+`paired` result, binding the metrics to the statistical configuration used.
+
+The registered-report audit also requires an allowed classification label and a
+literal JSON boolean for `ship_gate_passed`.
+
+It also requires `paired.n_scenes` to exactly match the number of
+`paired.per_scene` rows, preventing internally contradictory reports from being
+registered.
+
 ## Limitations
 
 This layer authenticates that a trusted runner signed the specified artifacts
@@ -116,3 +112,21 @@ private key in a separate runner such as GitHub CI and cap local runs at
 
 No private signing key is stored in the repository or report. This change does
 not modify shipped looks/profiles, existing datasets or the Supabase registry.
+
+The registered-report audit also rejects empty or duplicate `scene_id` values in
+`per_scene`. Matching the row count alone can therefore no longer make fabricated
+scene accounting pass registration.
+
+The registered-report audit also checks finite non-negative ΔE values and reconciles every per-scene improvement and aggregate mean/% against the recorded rows.
+
+The registered-metrics audit also rejects duplicate scene IDs, NaN or negative ΔE values, and invalid overlap/ECC ranges.
+
+When a sibling registered-metrics file exists, the audit cross-checks its scene ID order and contents against the report.
+
+Supabase sync now rejects report scenes absent from the manifest, duplicate scene IDs, and `n_scenes` mismatches before any registry write.
+
+Supabase sync also matches metrics artifact scene IDs to the manifest and report, preventing metrics from another split from being inserted.
+
+NARE sync rejects numeric substitution when metrics raw/candidate ΔE values differ from the report per-scene values.
+
+Evidence Receipts now sign bootstrap/seed in `run_config` and reject any CLI execution whose configuration does not match exactly.

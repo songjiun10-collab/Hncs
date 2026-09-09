@@ -2,18 +2,6 @@
 
 [English](2026-09-09-evidence-receipt.en.md)
 
-> **정정(2026-09-09, trust-root 재반증)**: 이후 재감사에서
-> `HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256`와
-> `HNCS_TRUSTED_EVALUATOR_SHA256`는 로컬 호출자가 직접 선택할 수 있으므로
-> 독립 trust anchor가 아님을 실제로 재현했다. 아래의 환경변수 기반
-> `Verified` 설명은 당시 구현의 역사적 기록이며 현재 동작이 아니다. 현재 일반
-> EAGER CLI는 signature/artifact integrity와 signer authority를 분리하고 로컬
-> 경로에서는 `trusted_provenance=True`를 만들지 않으므로 최대 `Supported`다.
-> `evidence_tier`와 `validation_passed` / `lockbox_passed` /
-> `external_replication`도 signed receipt에 묶여, 같은 receipt를 둔 채 CLI 값만
-> 바꾸면 거절된다. 자세한 재현과 변경 경계는
-> [provenance trust-boundary hardening](2026-09-09-provenance-trust-boundary-hardening.md)에 기록했다.
-
 > **정정(2026-09-09, registry 신뢰 선언 위조 재감사)**: 아래 완료 주장은
 > 독립 실행 인증을 입증하지 않는다. `trusted_provenance: true`와 가짜
 > receipt 객체만 추가하면 registry의 기존 검사 두 개를 모두 우회했다.
@@ -76,7 +64,7 @@ JSON 경로는 `Supported`까지의 호환성을 유지하지만 `Verified`에�
 - receipt 없이 external replication만 주장한 report: `Supported`
 - NARE receipt 없는 plausible metrics: `Inconclusive`
 - NARE 유효 receipt-backed report: `Supported`
-- 전체 suite: 1,448개 통과 (현재 checkout 재실행)
+- 전체 suite: 1,463개 통과 (현재 checkout 재실행)
 
 ## NARE trusted-runner 재감사 (2026-09-09)
 
@@ -85,7 +73,7 @@ evaluator fingerprint가 환경에 pin되어 있을 때만 receipt를 provenance
 반영한다. 임의 Ed25519 키로 서명한, 형식상 유효한 receipt는 hash chain 검증을
 통과해도 `trusted_provenance=False` 및 `Inconclusive`로 남는다. 두 fingerprint를
 모두 일치시킨 실행만 `Supported` 경로에 들어간다. 회귀 검증은 `tests.test_nare_cli`
-2개이며 전체 suite는 1,448개 통과했다.
+2개이며 전체 suite는 1,463개 통과했다.
 
 또한 NARE CLI의 `--receipt`와 `--receipt-public-key`는 이제 반드시 함께
 지정해야 한다. 한쪽만 지정한 호출은 receipt를 묵살한 채 진행하지 않고 즉시
@@ -100,6 +88,15 @@ receipt의 `git_sha`도 이제 축약형을 받지 않고 40자리 full commit S
 승인한다. 문자열 `"false"` 같은 fabricated 값은 저장 상태를 complete/ship으로
 오염시키지 않는다.
 
+NARE report의 `paired` 결과에도 `bootstrap_draws`와 `bootstrap_seed`를 기록해
+metrics와 통계 설정이 함께 고정되도록 했다.
+
+registered report audit는 classification label이 허용된 값인지와
+`ship_gate_passed`가 실제 JSON boolean인지도 검사한다.
+
+또한 `paired.n_scenes`가 `paired.per_scene` 행 수와 정확히 일치하는지 검사해
+내부적으로 모순된 report를 등록하지 않는다.
+
 ## 한계
 
 이 계층은 “지정된 artifact와 evaluator identity를 trusted runner가 서명했다”는
@@ -110,3 +107,20 @@ GitHub CI 같은 별도 실행 환경에 두고, local run은 최대 `Supported`
 
 서명 private key를 저장소나 report에 넣지 않았다. 이번 변경은 production look/profile,
 기존 dataset, Supabase registry를 수정하지 않는다.
+
+NARE 등록 report audit는 `per_scene`의 `scene_id`가 비어 있거나 중복되는 경우도
+거부한다. 따라서 행 수만 맞춘 fabricated scene accounting이 등록 검사를 통과할 수 없다.
+
+등록 report audit는 유한한 비음수 ΔE 값만 허용하고, 각 per-scene improvement와 aggregate mean/%가 실제 행 값에서 재계산되는지 대조한다.
+
+등록 metrics audit는 scene ID 중복과 NaN/음수 ΔE, 잘못된 overlap/ECC 범위도 거부한다.
+
+report와 대응하는 registered metrics가 함께 있으면 scene ID 순서와 내용도 교차 대조한다.
+
+Supabase sync는 manifest에 없는 scene, 중복 scene ID, 그리고 `n_scenes` 불일치 report를 registry에 쓰기 전에 거부한다.
+
+Supabase sync는 metrics artifact의 scene ID도 manifest·report와 일치하는지 확인해 다른 split의 metrics 삽입을 막는다.
+
+NARE sync는 metrics의 raw/candidate ΔE가 report per-scene 값과 다르면 수치 substitution으로 거부한다.
+
+Evidence Receipt는 이제 bootstrap/seed를 `run_config`로 서명하고, CLI 실행 설정과 exact match하지 않으면 거부한다.

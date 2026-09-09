@@ -21,6 +21,8 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
                  expected_git_sha: str | None = None) -> dict[str, Any]:
     paired = evaluate_nare_metrics(_load(manifest_path), _load(metrics_path),
                                    n_bootstrap=n_bootstrap, seed=seed)
+    paired["bootstrap_draws"] = n_bootstrap
+    paired["bootstrap_seed"] = seed
     controls = _load(controls_path)
     if not isinstance(controls, dict):
         raise ValueError("NARE controls JSON must be an object")
@@ -41,11 +43,10 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
             required_artifacts=("manifest", "metrics", "controls"),
+            expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
         )
         receipt_valid = receipt["signature_valid"] is True
     paired["receipt_valid"] = receipt_valid
-    # NARE has no Verified tier.  A local signed receipt can support the
-    # artifact-integrity gate, but it is not independent promotion authority.
     paired["trusted_provenance"] = False
     report = {"paired": paired, "classification": classify_nare_result(paired)}
     if receipt is not None:

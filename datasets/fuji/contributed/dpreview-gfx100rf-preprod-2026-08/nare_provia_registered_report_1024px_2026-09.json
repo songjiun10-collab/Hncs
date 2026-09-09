@@ -1,15 +1,15 @@
 {
   "paired": {
-    "n_scenes": 37,
-    "mean_baseline": 16.699295353344418,
-    "mean_candidate": 12.433394684534717,
-    "mean_improvement": 4.265900668809702,
-    "mean_improvement_pct": 25.54539325490376,
+    "n_scenes": 32,
+    "mean_baseline": 16.078743521242657,
+    "mean_candidate": 11.464537406459886,
+    "mean_improvement": 4.614206114782769,
+    "mean_improvement_pct": 28.697554063765285,
     "ci95": [
-      3.4045302682385996,
-      5.132902673708582
+      3.7250394275085563,
+      5.463555638740317
     ],
-    "sign_test_p": 1.0244548320770264e-08,
+    "sign_test_p": 1.5366822481155396e-08,
     "neutral_mean_improvement": null,
     "chromatic_mean_improvement": null,
     "per_scene": [
@@ -74,18 +74,6 @@
         "improvement": 6.483207908870755
       },
       {
-        "scene_id": "gfx100rf-007",
-        "baseline_delta_e00": 24.1407854152961,
-        "candidate_delta_e00": 16.861436964953086,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 7.279348450343015
-      },
-      {
         "scene_id": "gfx100rf-009",
         "baseline_delta_e00": 21.019405180926515,
         "candidate_delta_e00": 15.914759834809443,
@@ -96,18 +84,6 @@
         "chromatic_baseline": null,
         "chromatic_candidate": null,
         "improvement": 5.104645346117072
-      },
-      {
-        "scene_id": "gfx100rf-010",
-        "baseline_delta_e00": 21.687800377450685,
-        "candidate_delta_e00": 21.17684809445206,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 0.5109522829986268
       },
       {
         "scene_id": "gfx100rf-013",
@@ -420,48 +396,12 @@
         "chromatic_baseline": null,
         "chromatic_candidate": null,
         "improvement": 2.239165696820578
-      },
-      {
-        "scene_id": "gfx100rf-050",
-        "baseline_delta_e00": 19.008502424965837,
-        "candidate_delta_e00": 19.847979997315853,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": -0.8394775723500167
-      },
-      {
-        "scene_id": "gfx100rf-051",
-        "baseline_delta_e00": 19.872968613408485,
-        "candidate_delta_e00": 17.6715285639357,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 2.2014400494727866
-      },
-      {
-        "scene_id": "gfx100rf-052",
-        "baseline_delta_e00": 18.64407856285733,
-        "candidate_delta_e00": 17.612612700411415,
-        "source_body": "",
-        "illumination_id": "",
-        "neutral_baseline": null,
-        "neutral_candidate": null,
-        "chromatic_baseline": null,
-        "chromatic_candidate": null,
-        "improvement": 1.0314658624459163
       }
     ],
     "manifest": {
-      "n_rows": 37,
-      "n_scenes": 37,
-      "n_sessions": 11,
+      "n_rows": 32,
+      "n_scenes": 32,
+      "n_sessions": 10,
       "lighting": [
         "daylight"
       ],
@@ -472,13 +412,13 @@
         "F0/Standard (Provia)"
       ]
     },
-    "improvement_pct": 25.54539325490376,
+    "improvement_pct": 28.697554063765285,
     "baseline_layers": [
       "raw_decoder",
       "colorimetric_foundation",
       "appearance_candidate"
     ],
-    "mean_foundation": 16.699295353344418,
+    "mean_foundation": 16.078743521242657,
     "foundation_improvement_pct": 0.0,
     "registration_passed": true,
     "subgroup_metrics": {
@@ -507,6 +447,8 @@
     "picture_styles": [
       "f0/standard (provia)"
     ],
+    "bootstrap_draws": 20000,
+    "bootstrap_seed": 0,
     "subgroups_passed": false,
     "controls_passed": false,
     "provenance_passed": true,

@@ -40,6 +40,7 @@ Lightroom이 프로필을 못 읽던 실제 원인이었다). 즉 7번만으로�
   python3 -m tools.maintenance.audit_repo_integrity
 """
 import json
+import math
 import os
 import re
 import shutil
@@ -273,16 +274,137 @@ def check_nare_registered_metrics():
             n_rows += len(rows)
             match = re.search(r"registered_metrics_(\d+)px", name)
             expected_scale = int(match.group(1)) if match else None
+            scene_ids = []
             for row in rows:
+                scene_id = row.get("scene_id") if isinstance(row, dict) else None
+                scene_ids.append(scene_id)
                 registration = row.get("registration") if isinstance(row, dict) else None
                 scale = registration.get("long_edge_px") if isinstance(registration, dict) else None
-                if (type(scale) is not int or scale <= 0
+                deltas = tuple(row.get(key) for key in
+                               ("raw_delta_e00", "foundation_delta_e00", "candidate_delta_e00"))
+                overlap = registration.get("overlap_fraction") if isinstance(registration, dict) else None
+                correlation = registration.get("ecc_correlation") if isinstance(registration, dict) else None
+                finite_metrics = all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                                     and math.isfinite(float(value)) and value >= 0 for value in deltas)
+                valid_registration = (
+                    isinstance(overlap, (int, float)) and not isinstance(overlap, bool)
+                    and math.isfinite(float(overlap)) and 0 <= overlap <= 1
+                    and isinstance(correlation, (int, float)) and not isinstance(correlation, bool)
+                    and math.isfinite(float(correlation)) and -1 <= correlation <= 1
+                )
+                if (not isinstance(scene_id, str) or not scene_id.strip()
+                        or type(scale) is not int or scale <= 0
                         or (expected_scale is not None and scale != expected_scale)):
                     problems.append(
                         f"NARE registration scale 누락: {os.path.relpath(path, BASE)}"
                     )
                     break
+                if not finite_metrics or not valid_registration:
+                    problems.append(
+                        f"NARE metrics 값 무효: {os.path.relpath(path, BASE)}"
+                    )
+                    break
+            if len(scene_ids) != len(set(scene_ids)):
+                problems.append(
+                    f"NARE metrics scene_id 중복: {os.path.relpath(path, BASE)}"
+                )
     print(f"  등록 NARE metrics {n_files}개 / {n_rows}행 schema 확인")
+    return problems
+
+
+def check_nare_registered_reports():
+    """Ensure frozen registered NARE reports record bootstrap configuration."""
+
+    problems, n_files = [], 0
+    for root, _, files in os.walk(DATASETS):
+        for name in sorted(files):
+            if not name.endswith(".json") or "registered_report_" not in name:
+                continue
+            path = os.path.join(root, name)
+            n_files += 1
+            try:
+                with open(path, encoding="utf-8") as handle:
+                    report = json.load(handle)
+            except (OSError, json.JSONDecodeError) as exc:
+                problems.append(f"NARE report JSON 파싱 실패: {os.path.relpath(path, BASE)}: {exc}")
+                continue
+            paired = report.get("paired") if isinstance(report, dict) else None
+            draws = paired.get("bootstrap_draws") if isinstance(paired, dict) else None
+            seed = paired.get("bootstrap_seed") if isinstance(paired, dict) else None
+            n_scenes = paired.get("n_scenes") if isinstance(paired, dict) else None
+            per_scene = paired.get("per_scene") if isinstance(paired, dict) else None
+            scene_ids = [row.get("scene_id") for row in per_scene] if isinstance(per_scene, list) else None
+            aggregate_values = (
+                paired.get("mean_baseline"), paired.get("mean_candidate"),
+                paired.get("mean_improvement"), paired.get("mean_improvement_pct"),
+            ) if isinstance(paired, dict) else ()
+            aggregate_finite = all(
+                isinstance(value, (int, float)) and not isinstance(value, bool)
+                and math.isfinite(float(value)) for value in aggregate_values
+            )
+            per_scene_values = []
+            if isinstance(per_scene, list):
+                for row in per_scene:
+                    if not isinstance(row, dict):
+                        continue
+                    values = tuple(row.get(key) for key in
+                                   ("baseline_delta_e00", "candidate_delta_e00", "improvement"))
+                    if all(isinstance(value, (int, float)) and not isinstance(value, bool)
+                           and math.isfinite(float(value)) for value in values):
+                        per_scene_values.append(values)
+            arithmetic_ok = True
+            if n_scenes and len(per_scene_values) == n_scenes and aggregate_finite:
+                baseline_mean = sum(row[0] for row in per_scene_values) / n_scenes
+                candidate_mean = sum(row[1] for row in per_scene_values) / n_scenes
+                improvement_mean = sum(row[2] for row in per_scene_values) / n_scenes
+                expected_pct = 100.0 * improvement_mean / baseline_mean if baseline_mean else None
+                arithmetic_ok = (
+                    baseline_mean >= 0 and candidate_mean >= 0
+                    and all(abs(actual - expected) <= 1e-9 * max(1.0, abs(expected))
+                            for actual, expected in (
+                                (paired["mean_baseline"], baseline_mean),
+                                (paired["mean_candidate"], candidate_mean),
+                                (paired["mean_improvement"], improvement_mean),
+                            ))
+                    and (expected_pct is None or
+                         abs(paired["mean_improvement_pct"] - expected_pct)
+                         <= 1e-9 * max(1.0, abs(expected_pct)))
+                    and all(row[0] >= 0 and row[1] >= 0
+                            and abs(row[2] - (row[0] - row[1]))
+                            <= 1e-9 * max(1.0, abs(row[0]), abs(row[1]))
+                            for row in per_scene_values)
+                )
+            classification = report.get("classification") if isinstance(report, dict) else None
+            label = classification.get("classification") if isinstance(classification, dict) else None
+            ship_gate = classification.get("ship_gate_passed") if isinstance(classification, dict) else None
+            if (type(draws) is not int or draws <= 0 or type(seed) is not int
+                    or type(n_scenes) is not int or n_scenes < 0
+                    or not isinstance(per_scene, list) or len(per_scene) != n_scenes
+                    or any(not isinstance(row, dict) or not isinstance(row.get("scene_id"), str)
+                           or not row["scene_id"].strip() for row in per_scene or [])
+                    or len(scene_ids or []) != len(set(scene_ids or []))
+                    or (n_scenes > 0 and (not aggregate_finite or len(per_scene_values) != n_scenes
+                                          or not arithmetic_ok))
+                    or label not in {"Verified", "Supported", "Inconclusive", "Rejected", "Exploratory"}
+                    or type(ship_gate) is not bool):
+                problems.append(
+                    f"NARE report schema 누락: {os.path.relpath(path, BASE)}"
+                )
+            metrics_name = name.replace("registered_report_", "registered_metrics_", 1)
+            metrics_path = os.path.join(root, metrics_name)
+            if os.path.isfile(metrics_path) and isinstance(per_scene, list):
+                try:
+                    with open(metrics_path, encoding="utf-8") as handle:
+                        metric_rows = json.load(handle)
+                except (OSError, json.JSONDecodeError) as exc:
+                    problems.append(f"NARE metrics JSON 파싱 실패: {os.path.relpath(metrics_path, BASE)}: {exc}")
+                else:
+                    metric_ids = [row.get("scene_id") for row in metric_rows] if isinstance(metric_rows, list) else None
+                    if metric_ids is None or metric_ids != scene_ids:
+                        problems.append(
+                            f"NARE report/metrics scene 불일치: {os.path.relpath(path, BASE)}"
+                        )
+    print(f"  등록 NARE reports {n_files}개 bootstrap schema 확인")
     return problems
 
 
@@ -292,6 +414,7 @@ def main():
                       ("한/영 문서 짝", check_doc_pairs),
                       ("assets 참조", check_asset_refs),
                       ("NARE metrics", check_nare_registered_metrics),
+                      ("NARE reports", check_nare_registered_reports),
                       ("프로필 헤더", check_profile_headers),
                       ("프로필 무결성", check_profiles)]:
         print(f"[{title}]")

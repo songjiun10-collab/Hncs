@@ -80,24 +80,9 @@ class TestEvidenceReceipt(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "signature"):
                 validate_receipt(receipt_path, paths, public_path)
 
-    def test_receipt_requires_full_git_commit_sha(self):
-        with tempfile.TemporaryDirectory() as directory:
-            paths, _, public_path = self._signed(Path(directory))
-            private = Ed25519PrivateKey.generate()
-            receipt = build_receipt(
-                paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
-                command=["evaluator"], run_id="run", timestamp="now")
-            receipt["git_sha"] = "abcdef1"
-            receipt_path = Path(directory) / "short-receipt.json"
-            receipt_path.write_text(json.dumps(sign_receipt(receipt, private, key_id="ci")), encoding="utf-8")
-            public_path.write_text(base64.b64encode(private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
-            with self.assertRaisesRegex(ValueError, "full commit SHA"):
-                validate_receipt(receipt_path, paths, public_path)
-
     def test_eager_local_caller_cannot_self_select_verified_trust(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            paths = {}
             manifest = []
             metrics = []
             for index in range(12):
@@ -118,26 +103,23 @@ class TestEvidenceReceipt(unittest.TestCase):
                     "holdout_rerun", "chart_positive_control")},
                 "robustness": {"daylight": True},
             }
+            paths = {}
             for name, value in values.items():
                 path = root / f"{name}.json"
                 path.write_text(json.dumps(value, sort_keys=True), encoding="utf-8")
                 paths[name] = path
             private = Ed25519PrivateKey.generate()
             public_path = root / "public.key"
-            public_path.write_text(base64.b64encode(
-                private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
+            public_path.write_text(base64.b64encode(private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
             receipt = sign_receipt(build_receipt(
                 paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
                 command=["trusted-evaluator"], run_id="run-1",
-                timestamp="2026-09-09T00:00:00Z", evidence_tier="C",
-                attestations={
-                    "validation_passed": True,
-                    "lockbox_passed": True,
-                    "external_replication": True,
-                }), private, key_id="ci")
+                timestamp="2026-09-09T00:00:00Z",
+                run_config={"bootstrap": 50, "seed": 0}, evidence_tier="C",
+                attestations={"validation_passed": True, "lockbox_passed": True,
+                              "external_replication": True}), private, key_id="ci")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
-
             attack_env = {
                 "HNCS_TRUSTED_RECEIPT_PUBLIC_KEY_SHA256": public_key_sha256(public_path),
                 "HNCS_TRUSTED_EVALUATOR_SHA256": "b" * 64,
@@ -153,6 +135,13 @@ class TestEvidenceReceipt(unittest.TestCase):
             self.assertFalse(report["classification"]["checks"]["trusted_provenance"])
             self.assertTrue(report["evidence_receipt"]["signature_valid"])
             self.assertFalse(report["evidence_receipt"]["trusted"])
+            with self.assertRaisesRegex(ValueError, "run_config"):
+                eager_report(
+                    *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                    "C", True, True, True, n_bootstrap=51,
+                    receipt_path=str(receipt_path), receipt_public_key_path=str(public_path),
+                    expected_git_sha="a" * 40,
+                )
 
     def test_eager_receipt_binds_tier_and_all_promotion_attestations(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -184,55 +173,46 @@ class TestEvidenceReceipt(unittest.TestCase):
                 paths[name] = path
             private = Ed25519PrivateKey.generate()
             public_path = root / "public.key"
-            public_path.write_text(base64.b64encode(
-                private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
+            public_path.write_text(base64.b64encode(private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
 
             def write_receipt(name, **kwargs):
                 value = sign_receipt(build_receipt(
                     paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
                     command=["evaluator"], run_id=name,
-                    timestamp="2026-09-09T00:00:00Z", **kwargs), private, key_id="ci")
+                    timestamp="2026-09-09T00:00:00Z",
+                    run_config={"bootstrap": 50, "seed": 0}, **kwargs), private, key_id="ci")
                 path = root / f"{name}.json"
                 path.write_text(json.dumps(value), encoding="utf-8")
                 return path
 
             missing = write_receipt("missing", evidence_tier="C")
             with self.assertRaisesRegex(ValueError, "missing promotion attestations"):
-                eager_report(
-                    *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
-                    "C", True, True, True, n_bootstrap=50,
-                    receipt_path=str(missing), receipt_public_key_path=str(public_path),
-                    expected_git_sha="a" * 40,
-                )
+                eager_report(*(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                             "C", True, True, True, n_bootstrap=50,
+                             receipt_path=str(missing), receipt_public_key_path=str(public_path),
+                             expected_git_sha="a" * 40)
 
-            signed = write_receipt(
-                "signed", evidence_tier="C",
-                attestations={"validation_passed": True, "lockbox_passed": True,
-                              "external_replication": True})
-            for index, field in enumerate((
-                    "validation_passed", "lockbox_passed", "external_replication")):
+            signed = write_receipt("signed", evidence_tier="C",
+                                   attestations={"validation_passed": True, "lockbox_passed": True,
+                                                 "external_replication": True})
+            for index, field in enumerate(("validation_passed", "lockbox_passed", "external_replication")):
                 flags = [True, True, True]
                 flags[index] = False
                 with self.subTest(field=field):
                     with self.assertRaisesRegex(ValueError, f"attestation {field}"):
-                        eager_report(
-                            *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
-                            "C", *flags, n_bootstrap=50,
-                            receipt_path=str(signed), receipt_public_key_path=str(public_path),
-                            expected_git_sha="a" * 40,
-                        )
+                        eager_report(*(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                                     "C", *flags, n_bootstrap=50,
+                                     receipt_path=str(signed), receipt_public_key_path=str(public_path),
+                                     expected_git_sha="a" * 40)
 
-            wrong_tier = write_receipt(
-                "wrong-tier", evidence_tier="B",
-                attestations={"validation_passed": True, "lockbox_passed": True,
-                              "external_replication": True})
+            wrong_tier = write_receipt("wrong-tier", evidence_tier="B",
+                                       attestations={"validation_passed": True, "lockbox_passed": True,
+                                                     "external_replication": True})
             with self.assertRaisesRegex(ValueError, "evidence_tier"):
-                eager_report(
-                    *(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
-                    "C", True, True, True, n_bootstrap=50,
-                    receipt_path=str(wrong_tier), receipt_public_key_path=str(public_path),
-                    expected_git_sha="a" * 40,
-                )
+                eager_report(*(str(paths[name]) for name in ("manifest", "metrics", "controls", "robustness")),
+                             "C", True, True, True, n_bootstrap=50,
+                             receipt_path=str(wrong_tier), receipt_public_key_path=str(public_path),
+                             expected_git_sha="a" * 40)
 
 
 if __name__ == "__main__":

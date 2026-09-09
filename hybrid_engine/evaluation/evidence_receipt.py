@@ -82,6 +82,7 @@ def build_receipt(
     artifact_paths: Mapping[str, str | Path], *, git_sha: str,
     evaluator_sha256: str, command: list[str], run_id: str,
     timestamp: str, parent_run_id: str | None = None,
+    run_config: Mapping[str, Any] | None = None,
     required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
     evidence_tier: str | None = None,
     attestations: Mapping[str, bool] | None = None,
@@ -98,10 +99,12 @@ def build_receipt(
         raise ValueError("receipt evaluator_sha256 must be a SHA-256 digest")
     if not isinstance(run_id, str) or not run_id.strip() or not isinstance(timestamp, str) or not timestamp.strip():
         raise ValueError("receipt run_id and timestamp must be non-empty")
+    if run_config is not None and not isinstance(run_config, Mapping):
+        raise ValueError("receipt run_config must be an object")
     artifacts = {}
     for name, path in artifact_paths.items():
         artifacts[name] = {"path": str(path), "sha256": sha256_file(path)}
-    return {
+    result = {
         "schema": _SCHEMA,
         "run_id": run_id,
         "parent_run_id": parent_run_id,
@@ -113,6 +116,9 @@ def build_receipt(
         "evidence_tier": _normalize_evidence_tier(evidence_tier),
         "attestations": _normalize_attestations(attestations),
     }
+    if run_config is not None:
+        result["run_config"] = dict(run_config)
+    return result
 
 
 def sign_receipt(receipt: Mapping[str, Any], private_key: Ed25519PrivateKey,
@@ -144,6 +150,7 @@ def validate_receipt(
     required_artifacts: tuple[str, ...] = _REQUIRED_ARTIFACTS,
     trusted_public_key_sha256: str | None = None,
     trusted_evaluator_sha256: str | None = None,
+    expected_run_config: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate signature and artifact hashes without asserting signer authority."""
     try:
@@ -157,6 +164,11 @@ def validate_receipt(
         raise ValueError("receipt git_sha is missing or not a full commit SHA")
     if expected_git_sha is not None and receipt["git_sha"].lower() != expected_git_sha.lower():
         raise ValueError("receipt git_sha does not match expected git_sha")
+    if expected_run_config is not None:
+        actual_config = receipt.get("run_config")
+        if (not isinstance(actual_config, Mapping)
+                or _canonical(actual_config) != _canonical(expected_run_config)):
+            raise ValueError("receipt run_config does not match expected configuration")
     if (not isinstance(receipt.get("evaluator_sha256"), str)
             or not _HEX64.fullmatch(receipt["evaluator_sha256"].lower())):
         raise ValueError("receipt evaluator_sha256 is missing or invalid")
@@ -213,8 +225,6 @@ def validate_receipt(
         raise ValueError("receipt run_id is missing")
     return {
         "signature_valid": True,
-        # Compatibility field: cryptographic validity is deliberately not
-        # promotion authority.  An external trusted runner must establish it.
         "trusted": False,
         "run_id": receipt["run_id"],
         "key_id": signature.get("key_id"),

@@ -46,6 +46,19 @@ class TestNARERegistrationCLI(unittest.TestCase):
                       "--passed-manifest-out", str(passed)])
             self.assertEqual([item["scene_id"] for item in json.loads(passed.read_text())], ["a"])
 
+    def test_preflight_rejects_aspect_ratio_mismatch_before_resize(self):
+        source = np.zeros((100, 100, 3), dtype=np.uint8)
+        target = np.zeros((100, 200, 3), dtype=np.uint8)
+        with patch("hybrid_engine.evaluation.nare_registration_cli.load_neutral_render",
+                   return_value=source), \
+             patch("hybrid_engine.evaluation.nare_registration_cli.cv2.imread",
+                   return_value=target), \
+             patch("hybrid_engine.evaluation.nare_registration_cli.inspect_registration") as inspect:
+            report = build_report([row("scene-1")])
+        self.assertEqual(report["n_passed"], 0)
+        self.assertIn("aspect_ratio_mismatch", report["records"][0]["failure_reason"])
+        inspect.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

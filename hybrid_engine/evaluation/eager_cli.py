@@ -84,6 +84,7 @@ def build_report(
              "controls": controls_path, "robustness": robustness_path},
             receipt_public_key_path,
             expected_git_sha=expected_git_sha,
+            expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
         )
         if receipt["evidence_tier"] != requested_tier.value:
             raise ValueError("receipt evidence_tier does not match requested evidence tier")
@@ -97,11 +98,6 @@ def build_report(
             if signed_attestations[name] != requested_attestations[name]:
                 raise ValueError(
                     f"receipt attestation {name} does not match requested value")
-
-        # Deliberately never promote from this local CLI.  A caller controls
-        # its environment, command line, working tree and supplied key, so no
-        # local condition can establish independent signer authority.  A
-        # separate trusted runner must perform that transition.
         trusted_provenance = False
 
     paired = paired_report["paired"]

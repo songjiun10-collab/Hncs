@@ -49,6 +49,8 @@ class TestNARECLI(unittest.TestCase):
         self.assertEqual(report["classification"]["classification"], "Inconclusive")
         self.assertFalse(report["classification"]["checks"]["receipt_integrity"])
         self.assertEqual(report["paired"]["n_scenes"], 12)
+        self.assertEqual(report["paired"]["bootstrap_draws"], 200)
+        self.assertEqual(report["paired"]["bootstrap_seed"], 0)
 
     def test_valid_receipt_supports_nare_without_claiming_trusted_signer(self):
         manifest, metrics, controls = self._data()
@@ -62,12 +64,11 @@ class TestNARECLI(unittest.TestCase):
                 paths[name] = path
             private = Ed25519PrivateKey.generate()
             public_path = root / "public.key"
-            public_path.write_text(base64.b64encode(
-                private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
+            public_path.write_text(base64.b64encode(private.public_key().public_bytes_raw()).decode("ascii"), encoding="ascii")
             receipt = sign_receipt(build_receipt(
                 paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
                 command=["nare-evaluator"], run_id="nare-run-1",
-                timestamp="2026-09-09T00:00:00Z",
+                timestamp="2026-09-09T00:00:00Z", run_config={"bootstrap": 100, "seed": 0},
                 required_artifacts=("manifest", "metrics", "controls")), private, key_id="local")
             receipt_path = root / "receipt.json"
             receipt_path.write_text(json.dumps(receipt), encoding="utf-8")
@@ -87,9 +88,14 @@ class TestNARECLI(unittest.TestCase):
             self.assertTrue(report["evidence_receipt"]["signature_valid"])
             self.assertFalse(report["evidence_receipt"]["trusted"])
 
+            mismatched_config = list(command)
+            mismatched_config[mismatched_config.index("100")] = "101"
+            mismatch_proc = subprocess.run(mismatched_config, capture_output=True, text=True)
+            self.assertNotEqual(mismatch_proc.returncode, 0)
+            self.assertIn("run_config", mismatch_proc.stderr)
+
             incomplete = subprocess.run(
-                command[:-6] + ["--receipt-public-key", str(public_path),
-                                "--git-sha", "a" * 40],
+                command[:-6] + ["--receipt-public-key", str(public_path), "--git-sha", "a" * 40],
                 capture_output=True, text=True)
             self.assertNotEqual(incomplete.returncode, 0)
             self.assertIn("must be supplied together", incomplete.stderr)
