@@ -39,12 +39,14 @@ def _registration_is_valid(diagnostic: Any) -> bool:
     keys = ("ecc_correlation", "overlap_fraction", "shift_x_px", "shift_y_px", "long_edge_px")
     if not all(_valid_number(diagnostic.get(key)) for key in keys):
         return False
+    if type(diagnostic.get("long_edge_px")) is not int:
+        return False
     try:
         correlation = float(diagnostic["ecc_correlation"])
         overlap = float(diagnostic["overlap_fraction"])
         shift_x = float(diagnostic["shift_x_px"])
         shift_y = float(diagnostic["shift_y_px"])
-        long_edge = float(diagnostic["long_edge_px"])
+        long_edge = diagnostic["long_edge_px"]
     except (KeyError, TypeError, ValueError):
         return False
     if not all(math.isfinite(value) for value in (correlation, overlap, shift_x, shift_y)):

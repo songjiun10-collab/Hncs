@@ -60,6 +60,17 @@ class TestNARE(unittest.TestCase):
         result = evaluate_nare_metrics(manifest, metrics, n_bootstrap=20)
         self.assertFalse(result["registration_passed"])
 
+    def test_evaluation_rejects_non_integer_registration_scale(self):
+        manifest = [row("s1")]
+        metrics = [{"scene_id": "s1", "raw_delta_e00": 10,
+                    "foundation_delta_e00": 8, "candidate_delta_e00": 7,
+                    "registration": {"ecc_correlation": .9,
+                                      "overlap_fraction": .99,
+                                      "shift_x_px": 0, "shift_y_px": 0,
+                                      "long_edge_px": 512.0}}]
+        result = evaluate_nare_metrics(manifest, metrics, n_bootstrap=20)
+        self.assertFalse(result["registration_passed"])
+
     def test_evaluation_rejects_duplicate_metric_scene_ids(self):
         manifest = [row("s1")]
         metric = {"scene_id": "s1", "raw_delta_e00": 10,
