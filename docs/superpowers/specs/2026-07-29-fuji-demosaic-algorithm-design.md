@@ -96,14 +96,14 @@ def decode_raw(raw_path, demosaic_algorithm=None):
 DCP용 경로라 카메라 JPEG과 직접 비교할 수 없음) 변경하지 않는다.
 
 기존 호출부(12개 브랜드 population-fit 관련 코드, HNCS 구조 실험,
-`tools/evaluate_hncs_structural.py` 등)는 전부 `decode_raw(path)`처럼
+`tools/research/evaluate_hncs_structural.py` 등)는 전부 `decode_raw(path)`처럼
 위치 인자 하나만 넘기므로 새 키워드 인자 추가로 영향 없음 - 회귀
 테스트로 확인.
 
-### 2. `tools/evaluate_fuji_demosaic.py` (신규)
+### 2. `tools/fuji/evaluate_fuji_demosaic.py` (신규)
 
 ```
-python3 -m tools.evaluate_fuji_demosaic
+python3 -m tools.fuji.evaluate_fuji_demosaic
 ```
 
 - `fuji_pairs_manifest.csv`의 3행을 읽어 각 RAW를
@@ -144,12 +144,12 @@ python3 -m tools.evaluate_fuji_demosaic
   재실행 - 새 키워드 인자가 기본 동작을 안 바꾼다는 걸 간접 확인).
 - `decode_raw(path, demosaic_algorithm=DHT)`가 정상적으로 다른(하지만
   유효한 범위의) 이미지를 반환하는지 확인하는 단위 테스트 - 실제 RAW
-  캐시 의존적이라 이 프로젝트의 기존 관례대로(`tools/analyze_camera_native_matrix.py`
+  캐시 의존적이라 이 프로젝트의 기존 관례대로(`tools/fit/analyze_camera_native_matrix.py`
   등) 커밋되는 자동화 테스트 없이 수동 실행으로 검증하고 보고서에
   결과를 남긴다.
-- `tools/evaluate_fuji_demosaic.py`는 CSV 파싱 같은 순수 로직만
+- `tools/fuji/evaluate_fuji_demosaic.py`는 CSV 파싱 같은 순수 로직만
   단위 테스트, 실제 3쌍 비교는 수동 실행 + 보고서에 verbatim 기록
-  (`tools/evaluate_hncs_structural.py`와 동일 패턴).
+  (`tools/research/evaluate_hncs_structural.py`와 동일 패턴).
 
 ## 다음 단계(이 스펙 밖)
 

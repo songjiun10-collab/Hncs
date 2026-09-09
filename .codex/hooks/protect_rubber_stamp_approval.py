@@ -1,0 +1,1 @@
+../../.claude/hooks/protect_rubber_stamp_approval.py

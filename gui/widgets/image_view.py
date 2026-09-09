@@ -28,7 +28,7 @@ def image_and_raw_filetypes():
 
 def image_filetypes():
     """파일선택 다이얼로그용 filetypes - 일반 이미지만(RAW 미지원 탭용,
-    예: tools.upscale는 cv2.imread만 쓰고 RAW 디코드를 안 함)."""
+    예: tools.cli.upscale는 cv2.imread만 쓰고 RAW 디코드를 안 함)."""
     return [("이미지", " ".join(f"*{ext}" for ext in sorted(_IMAGE_EXTS))),
             ("모든 파일", "*.*")]
 
@@ -53,7 +53,7 @@ def prepare_for_display(img, max_width=480):
 
 def quick_raw_preview(path):
     """RAW 파일의 빠른 프리뷰용 디코드(half_size, camera WB) -
-    tools/lens_correction.py의 _load_image() RAW 분기와 동일한 rawpy
+    tools/cli/lens_correction.py의 _load_image() RAW 분기와 동일한 rawpy
     호출에 half_size=True만 추가(hybrid_engine/utils/io.py의 half_size
     파라미터와 같은 목적 - 프리뷰용 다운스케일)."""
     with rawpy.imread(path) as raw:

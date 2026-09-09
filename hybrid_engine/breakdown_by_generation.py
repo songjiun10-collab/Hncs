@@ -1,7 +1,7 @@
 """[research] recalibrate_full_contributed.py가 확인한 "487쌍 풀에서
 ΔE 14.379로 나쁨" 현상이 특정 바디/세대에 몰린 건지 확인 - 새로 매트릭스를
 학습하지 않고, 지금 배포된 hasselblad.json 그대로 페어별 ΔE00을 계산해서
-tools.calibrate._generation_for()의 세대 라벨로 묶어 평균/표준편차를 낸다.
+tools.fit.calibrate._generation_for()의 세대 라벨로 묶어 평균/표준편차를 낸다.
 
   python3 -m hybrid_engine.breakdown_by_generation
 """
@@ -18,7 +18,7 @@ from hybrid_engine.calibrate_profile import _find_pairs as _official_find_pairs
 from hybrid_engine.calibrate_profile import _resize_max_dim, CALIB_MAX_DIM, _mean_loss
 from hybrid_engine.core import color_matrix
 from hybrid_engine.utils.io import decode_raw, load_image_linear
-from tools.calibrate import collect_local_pairs, _generation_for
+from tools.fit.calibrate import collect_local_pairs
 
 
 def main():

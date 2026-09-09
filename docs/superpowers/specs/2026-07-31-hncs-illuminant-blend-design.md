@@ -53,7 +53,7 @@ Solution (HNCS) - how it works (probably)", `forum.luminous-landscape.com`,
   결과가 물리적으로 말이 됨(R/B 비율이 높을수록(따뜻한 광원 추정)
   CCT가 낮게 나옴 - 예: `B0001395.jpg`(R/B=0.36) → 9376K, `x1d-II-sample-09.jpg`
   (R/B=1.32) → 5807K, 단조 감소 경향 확인).
-- `tools/evaluate_hncs_structural.py`의 기존 chroma LUT 그리드
+- `tools/research/evaluate_hncs_structural.py`의 기존 chroma LUT 그리드
   (`SAT_MULT_GRID = [0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15]`,
   `HUE_SHIFT_GRID = [-6, -4, -2, 0, 2, 4, 6]`)를 그대로 재사용한다 -
   이미 이 데이터로 검증된 그리드 범위.
@@ -117,13 +117,13 @@ def apply_hncs_structural_blend(raw_path, weight, matrix_a, matrix_b,
 기존 `classify_illuminant_cluster`/`apply_hncs_structural`은 손대지
 않는다 - 새 함수만 추가.
 
-### 2. `tools/evaluate_hncs_blend.py` (신규)
+### 2. `tools/research/evaluate_hncs_blend.py` (신규)
 
 ```
-python3 -m tools.evaluate_hncs_blend
+python3 -m tools.research.evaluate_hncs_blend
 ```
 
-- `tools/evaluate_hncs_structural.py`의 13쌍 로드 패턴(`_pair_names()`/
+- `tools/research/evaluate_hncs_structural.py`의 13쌍 로드 패턴(`_pair_names()`/
   `_raw_path_for()`/`_target_path_for()`)과 페어별 디코드+축소 캐시
   패턴(`_pair_data()`, `DOWNSAMPLE_MAX_DIM = 512`)을 그대로 복사해
   재사용 - decode는 페어당 1회만(그리드서치가 캐시된 축소 이미지
@@ -158,7 +158,7 @@ python3 -m tools.evaluate_hncs_blend
   자기 자신의 가중치로 예측해서 ΔE(CIEDE2000, `mean_delta_e`) 측정.
   두 가중치 방식(R/B, CCT) 각각 독립적으로 13폴드 전부 실행.
 - `summarize()`/`_sign_test_p()`/`print_summary()`: 이 세션 표준
-  패턴(`tools/evaluate_hncs_structural.py`와 동일 시그니처) - 각
+  패턴(`tools/research/evaluate_hncs_structural.py`와 동일 시그니처) - 각
   블렌딩 방식의 LOO ΔE를 **기존 하드-클러스터 ΔE(10.191, 상수로
   하드코딩 - 재실행 안 함)**와 폴드별로 비교. 하드-클러스터 쪽 폴드별
   개별값은 `hybrid_engine/EVALUATION.md` "HNCS 구조 실험" 절의 "폴드별
@@ -193,7 +193,7 @@ python3 -m tools.evaluate_hncs_blend
   `chroma_lut_a`만 적용한 것과 동일한 출력이 나오는지(블렌딩 공식의
   경계 조건 검증), `weight=1.0`일 때 앵커B와 동일한지 - 모킹된 작은
   배열로 검증.
-- `tools/evaluate_hncs_blend.py`의 `summarize()`/`_sign_test_p()`는
+- `tools/research/evaluate_hncs_blend.py`의 `summarize()`/`_sign_test_p()`는
   순수 함수이므로 하드코딩된 값으로 단위 테스트(기존 관례와 동일
   패턴).
 - CSV/캐시 경로 파싱은 순수 단위 테스트, 실제 13쌍 LOO 실행(2가지

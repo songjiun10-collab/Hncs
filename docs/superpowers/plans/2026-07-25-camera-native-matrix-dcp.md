@@ -323,7 +323,7 @@ git commit -m "Add camera-native RAW decode path + UniqueCameraModel/AsShotNeutr
 ### Task 3: 네이티브 매트릭스 피팅 실험 (Phase 1의 실제 결과)
 
 **Files:**
-- Create: `tools/analyze_camera_native_matrix.py`
+- Create: `tools/fit/analyze_camera_native_matrix.py`
 
 **Interfaces:**
 - Consumes: Task 1의 `chart_baseline.reference_patches_xyz_d50()` / `patch_delta_e_xyz_d50(samples_xyz, reference_xyz=None)`, Task 2의 `io.decode_raw_native(raw_path)` / `exif.read_as_shot_neutral(path)` / `exif.read_unique_camera_model(path)`.
@@ -334,16 +334,16 @@ git commit -m "Add camera-native RAW decode path + UniqueCameraModel/AsShotNeutr
 
 - [ ] **Step 1: 도구 작성**
 
-`tools/analyze_camera_native_matrix.py` 신규 작성:
+`tools/fit/analyze_camera_native_matrix.py` 신규 작성:
 
 ```python
 """카메라 네이티브 공간에서 색매트릭스를 피팅해 libraw 내장 매트릭스와
 비교한다 - DCP 프로필의 ColorMatrix1이 요구하는 공간이 기존
-tools/analyze_colorchecker_matrix.py가 다루는 공간(libraw가 이미 자기
+tools/fit/analyze_colorchecker_matrix.py가 다루는 공간(libraw가 이미 자기
 매트릭스를 적용한 sRGB)과 다르기 때문. 설계 근거:
 docs/superpowers/specs/2026-07-25-camera-native-matrix-dcp-design.md
 
-  python3 -m tools.analyze_camera_native_matrix
+  python3 -m tools.fit.analyze_camera_native_matrix
 """
 import glob
 import json
@@ -410,7 +410,7 @@ def _estimate_illuminant(as_shot_neutral, cam_to_xyz):
     장면 조명은 이 데이터로 복원 불가능하다. 실제 구현은
     CalibrationIlluminant1을 23(D50)으로 고정하고 이 CCT 역산은 "결론
     없음"으로 라벨링한 진단으로만 남긴다 -
-    tools/analyze_camera_native_matrix.py의 _calibration_illuminant() 참고.]
+    tools/fit/analyze_camera_native_matrix.py의 _calibration_illuminant() 참고.]
 
     AsShotNeutral(촬영 당시 중립색의 카메라 네이티브 RGB)을 피팅된
     매트릭스로 XYZ에 보내 그 색도의 CCT를 추정하고, 가장 가까운 EXIF
@@ -564,18 +564,18 @@ if __name__ == "__main__":
 > `illuminant = _estimate_illuminant(as_shot, chart_m)`/
 > `report["estimated_illuminant"] = illuminant` 부분은 폐기됐다(`:404`의
 > 정정 노트, 이 파일 상단 Global Constraints의 정정 노트 참고). 실제
-> `tools/analyze_camera_native_matrix.py`는 대신 `_measured_native_neutral()`
+> `tools/fit/analyze_camera_native_matrix.py`는 대신 `_measured_native_neutral()`
 > + `_calibration_illuminant()`를 쓰고, 리포트 키도 `"estimated_illuminant"`가
 > 아니라 `"calibration_illuminant"`(+ `"measured_native_neutral_g_normalized"`,
 > `"measured_native_neutral_per_patch"`, `"dcp_color_matrix_1"`)다 - 이
 > 파일 상단 Task 3의 "Produces" 줄과 Task 5 Step 1/2의 스니펫이 이미 이
 > 새 키 이름을 쓰고 있다. 위 코드 블록은 원래 작성된 형태를 그대로 남겨둔
-> 역사적 기록이고, 실제 소스는 `tools/analyze_camera_native_matrix.py`를
+> 역사적 기록이고, 실제 소스는 `tools/fit/analyze_camera_native_matrix.py`를
 > 참고할 것.
 
 - [ ] **Step 2: 실행 (10장 100MP RAW 디코드 - 수 분 소요)**
 
-Run: `python3 -m tools.analyze_camera_native_matrix`
+Run: `python3 -m tools.fit.analyze_camera_native_matrix`
 Expected: 예외 없이 완주하고 위 형식의 표 + `camera_native_matrix_report.json` 생성.
 
 **출력된 모든 수치를 받아적어 둔다** - Task 5가 문서에 그대로 옮긴다. 특히:
@@ -590,7 +590,7 @@ Expected: 예외 없이 완주하고 위 형식의 표 + `camera_native_matrix_r
 - [ ] **Step 3: 커밋**
 
 ```bash
-git add tools/analyze_camera_native_matrix.py \
+git add tools/fit/analyze_camera_native_matrix.py \
         datasets/hasselblad/contributed/kmichels-x2dii-2026-07/camera_native_matrix_report.json
 git commit -m "Add camera-native matrix fitting experiment vs libraw's built-in matrix"
 ```
@@ -1088,7 +1088,7 @@ X2D II ColorChecker 차트 10장을 카메라 네이티브 RGB 공간(libraw의
 프로필로 내보낸다.
 
 ```
-python3 -m tools.analyze_camera_native_matrix   # 피팅 + libraw 내장 매트릭스와 교차검증 비교
+python3 -m tools.fit.analyze_camera_native_matrix   # 피팅 + libraw 내장 매트릭스와 교차검증 비교
 ```
 
 실측 결과(XYZ D50 패치 평균 ΔE00): libraw 내장 매트릭스 <libraw> ->
@@ -1132,7 +1132,7 @@ white balance), then exports the result as an Adobe `.dcp` profile that
 Lightroom Classic/Camera Raw reads.
 
 ```
-python3 -m tools.analyze_camera_native_matrix   # fit + cross-validated comparison against libraw's built-in matrix
+python3 -m tools.fit.analyze_camera_native_matrix   # fit + cross-validated comparison against libraw's built-in matrix
 ```
 
 Measured (patch-mean ΔE00 in XYZ D50): libraw's built-in matrix <libraw>
@@ -1170,10 +1170,10 @@ checked; (4) X2D II 100C only (declared via `UniqueCameraModel`).
 | `core/dcp_export.py` | Adobe DCP(카메라 프로필) 쓰기 - 카메라 네이티브 색매트릭스를 Lightroom Classic/Camera Raw가 읽는 `.dcp`로 내보낸다(`write_dcp`/`read_dcp`). DCP는 TIFF 구조라 표준 `struct`로 직접 쓴다(새 의존성 0). `.cube`(룩)와 달리 RAW 디모자이크 직후 색변환 단계용 색채측정 보정. Lightroom 실제 렌더링은 미검증(구조·수치 검증만) |
 ```
 
-`docs/project_structure.md`의 `tools/classify_brand.py` 행 **다음**에 추가:
+`docs/project_structure.md`의 `tools/cli/classify_brand.py` 행 **다음**에 추가:
 
 ```markdown
-| `tools/analyze_camera_native_matrix.py` | 카메라 네이티브 공간 색매트릭스 피팅 실험 CLI - `python3 -m tools.analyze_camera_native_matrix` (차트 10장을 `decode_raw_native()`로 디코드 -> XYZ(D50) 참조값에 피팅 -> libraw 내장 매트릭스와 leave-one-image-out 교차검증 비교, 리포트 JSON 저장) |
+| `tools/fit/analyze_camera_native_matrix.py` | 카메라 네이티브 공간 색매트릭스 피팅 실험 CLI - `python3 -m tools.fit.analyze_camera_native_matrix` (차트 10장을 `decode_raw_native()`로 디코드 -> XYZ(D50) 참조값에 피팅 -> libraw 내장 매트릭스와 leave-one-image-out 교차검증 비교, 리포트 JSON 저장) |
 ```
 
 `docs/project_structure.en.md`의 `core/photo_signature.py` 행 **다음**에 추가:
@@ -1182,10 +1182,10 @@ checked; (4) X2D II 100C only (declared via `UniqueCameraModel`).
 | `core/dcp_export.py` | Adobe DCP (camera profile) writing - exports a camera-native color matrix as a `.dcp` that Lightroom Classic/Camera Raw reads (`write_dcp`/`read_dcp`). DCP is TIFF-structured, so it's written directly with the standard-library `struct` (no new dependencies). Unlike `.cube` (a look), this is a colorimetric correction for the color-conversion stage right after RAW demosaic. Lightroom's actual rendering is unverified (only structure and numerics were checked) |
 ```
 
-`docs/project_structure.en.md`의 `tools/classify_brand.py` 행 **다음**에 추가:
+`docs/project_structure.en.md`의 `tools/cli/classify_brand.py` 행 **다음**에 추가:
 
 ```markdown
-| `tools/analyze_camera_native_matrix.py` | Camera-native color-matrix fitting experiment CLI - `python3 -m tools.analyze_camera_native_matrix` (decodes the 10 chart frames via `decode_raw_native()`, fits against XYZ(D50) references, compares to libraw's built-in matrix under leave-one-image-out cross-validation, saves a report JSON) |
+| `tools/fit/analyze_camera_native_matrix.py` | Camera-native color-matrix fitting experiment CLI - `python3 -m tools.fit.analyze_camera_native_matrix` (decodes the 10 chart frames via `decode_raw_native()`, fits against XYZ(D50) references, compares to libraw's built-in matrix under leave-one-image-out cross-validation, saves a report JSON) |
 ```
 
 - [ ] **Step 7: 전체 스위트 확인 + 커밋 + 푸시**

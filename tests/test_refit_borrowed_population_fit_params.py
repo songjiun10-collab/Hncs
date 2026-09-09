@@ -1,4 +1,4 @@
-"""`tools/refit_borrowed_population_fit_params.py` 단위 테스트 + 기록된 실행
+"""`tools/fit/refit_borrowed_population_fit_params.py` 단위 테스트 + 기록된 실행
 회귀 테스트.
 
 이 도구가 잡아낸 것: Leica(n=15)는 `shoulder_start` 재적합이 CI를 아슬아슬
@@ -9,7 +9,6 @@
 다시 확인한다.
 """
 import json
-import math
 import os
 import sys
 import unittest
@@ -18,7 +17,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools import refit_borrowed_population_fit_params as refit
+from tools.fit import refit_borrowed_population_fit_params as refit
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATASETS = os.path.join(BASE, "datasets")

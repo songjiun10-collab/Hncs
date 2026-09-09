@@ -7,7 +7,7 @@ Fuji는 필름모드가 여러 개라 Provia/Standard(EXIF FilmMode="F0/Standard
 (Provia)")로 한정해서 비교했다(`apply_provia()` 자체가 그 필름모드로
 검증됐던 것과 동일 스코프).
 
-`tools/fit_brand_matrix_chroma_pipeline.py fuji --loo`로 Fuji Provia
+`tools/fit/fit_brand_matrix_chroma_pipeline.py fuji --loo`로 Fuji Provia
 raw+jpeg 119쌍(GFX100RF 89 + X-T30 III 20 + GFX50S II 10) - 톤커브는
 `apply_provia()`가 이미 확정한 값(toe=0.0/ss=0.82/wp=1.0/clip=3.0,
 `brands/fuji.py` 참고) 그대로 두고 매트릭스+채도/색조만 새로 5-fold
@@ -22,7 +22,7 @@ CI [+0.225,+0.848](0 미포함) - Sony(+9.11%)/Sigma(+9.16%)/Leica(+8.13%)
 없이) 최종 재피팅: in-sample ΔE00=12.362(LOO 12.390과 큰 차이 없어
 과적합 아님), sat_mult=1.30, hue_shift=-2.86.
 
-재현: `python3 -m tools.fit_brand_matrix_chroma_pipeline fuji --loo`."""
+재현: `python3 -m tools.fit.fit_brand_matrix_chroma_pipeline fuji --loo`."""
 import colour
 import cv2
 import numpy as np

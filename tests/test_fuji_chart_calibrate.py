@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tools.fuji_chart_calibrate import aggregate_deltas, extract_strips
+from tools.fuji.fuji_chart_calibrate import aggregate_deltas, extract_strips
 
 
 class TestExtractStrips(unittest.TestCase):

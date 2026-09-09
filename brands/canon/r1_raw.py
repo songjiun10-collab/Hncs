@@ -12,8 +12,8 @@ LOO ΔE00=12.530, **+8.49%**, 33승11패, 부호검정 p=0.0013, 부트스트랩
 전체 표본(홀드아웃 없이) 최종 재피팅: in-sample ΔE00=12.472(LOO
 12.530과 큰 차이 없어 과적합 아님).
 
-재현: `python3 -m tools.breakdown_canon_by_camera_body`(바디별 분해),
-`python3 -m tools.fit_canon_body_split_pipeline "Canon EOS R1"`(LOO)."""
+재현: `python3 -m tools.fit.breakdown_canon_by_camera_body`(바디별 분해),
+`python3 -m tools.fit.fit_canon_body_split_pipeline "Canon EOS R1"`(LOO)."""
 import colour
 import cv2
 import numpy as np

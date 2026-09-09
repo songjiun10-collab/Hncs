@@ -2,7 +2,7 @@
 
 *[English README](README.md)*
 
-`brands/*.py`, `tools/raw_pipeline.py`와도 또 다른 목적을 가진 세
+`brands/*.py`, `tools/cli/raw_pipeline.py`와도 또 다른 목적을 가진 세
 번째 독립 모듈이다: "카메라 A로 찍어 완성된 JPEG을 마치 카메라 B가
 찍은 것처럼 다시 렌더링한다." 진입점은 두 개다 - RAW 입력용
 (`HybridCameraEngine`: Phase 0 색상 통일 + Gray World 정규화 + LAB
@@ -114,4 +114,43 @@ World + LAB 톤/색 커브)을 썼다 - 후지의 필름 시뮬레이션 프리�
 - `EVALUATION.md` - 이 모듈의 전체 측정 기록(위 표뿐 아니라 번호가
   매겨진 모든 후속 실험)
 - `assets/luts/README.md` - 기각된 LUT 실험들의 상세 기록
+- `evaluation/eager.py` - provenance-aware manifest 검사, capture-group
+  집계, paired 불확실성, sample accounting, 물리적 sanity, 결과 분류를
+  실행하는 EAGER 검증 커널
+- `evaluation/nare.py` / `evaluation/nare_cli.py` - 메인 실사진 RAW/SOOC JPEG
+  appearance 계약과 3층 평가 실행기
+- `evaluation/nare_pairs.py` / `evaluation/nare_pairs_cli.py` - 촬영시각,
+  제조사, 바디, ISO가 양쪽에서 정확히 한 번씩만 일치할 때만 pair로 받는
+  strict intake preflight. 피팅 전 `python3 -m
+  hybrid_engine.evaluation.nare_pairs_cli raw jpeg --output preflight.json`으로 실행한다.
+  `--manifest-out candidate.json --contributor <name>`을 추가하면 장면 라벨을
+  붙이기 전에도 해시와 촬영 EXIF를 candidate manifest에 보존한다.
+- `evaluation/nare_runner.py` / `evaluation/nare_runner_cli.py` - 고정한
+  RAW/SOOC JPEG 입력에서 장면별 3층 ΔE00을 생성한다. 현재 CLI는 고정된 Fuji
+  Provia target만 지원한다: `python3 -m hybrid_engine.evaluation.nare_runner_cli
+  --manifest provia.json --candidate provia --out metrics.json`. RAW를 디코드하기
+  전에 양쪽 파일 해시를 확인하고 Provia 이외 또는 mixed-style evaluation row는
+  거절한다.
+- `evaluation/nare_registration_cli.py` - metric 생성 전에 ECC correlation,
+  translation, valid overlap을 검사한다: `python3 -m
+  hybrid_engine.evaluation.nare_registration_cli --manifest candidate.json --out
+  registration.json --passed-manifest-out registered.json`. 이후 NARE metric은
+  이 명령이 만든 `registered.json`만 사용한다.
+- `evaluation/nare.py:summarize_nare_subgroups` - semantic 영역별
+  baseline/candidate ΔE00을 집계하고, 필요한 영역이 빠졌거나 catastrophic
+  threshold를 넘은 regression이 있으면 fail closed한다. 이 summary는
+  `evaluate_nare_metrics`의 ship gate에 연결되어 있다. runner가 mask를
+  임의로 만들지는 않으므로 실사진 run은 실제 mask metric을 제공해야 한다.
+- `evaluation/eager_cli.py` - manifest와 기록된 metric/control JSON에
+  위 게이트를 적용하는 실행 명령(`python3 -m
+  hybrid_engine.evaluation.eager_cli`)
+- `evaluation/supabase_sync.py` - `eager_cli.py`/`nare_cli.py`의 선택 플래그
+  `--sync-supabase`가 확정된(frozen) 리포트를 HNCS Supabase 연구 레지스트리에
+  upsert한다 - manifest/metrics 파일 해시로 키를 만들어서 같은 확정 입력을
+  다시 돌려도 멱등(idempotent)이다. 환경변수 `HNCS_SUPABASE_URL`(반드시
+  `https://`)과 `HNCS_SUPABASE_SERVICE_ROLE_KEY`가 필요하다 - 커맨드라인
+  인자로는 절대 안 받고, 리포트나 커밋되는 파일에도 안 남는다. 플래그를 안
+  쓰면 두 CLI 다 네트워크 접근이 전혀 없다.
+- `../docs/superpowers/specs/2026-09-08-eager-framework-design.md` -
+  EAGER Framework 설계와 주장 경계
 - `CLAUDE.md`(이 디렉토리) - 이곳 수정 규칙

@@ -1,0 +1,1 @@
+../../.claude/hooks/protect_push_safety.py

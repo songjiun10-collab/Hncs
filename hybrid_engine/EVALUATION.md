@@ -48,7 +48,16 @@ python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad \
 
 ## Protocol 2: Cross-camera generalization (타깃: hasselblad)
 
-소스: fuji(실제 RAW, `raw_calib_cache_fuji/`) + sony/nikon/canon(합성 -
+> **정정(2026-09-09, 실행 경로)**: `evaluation/cross_camera.py`는 이제
+> `raw_calib_cache_fuji/`뿐 아니라 `datasets/fuji/contributed/*/raw/`도 검색한다.
+> 현재 환경에서 Fuji RAW 329개가 발견되지만, 이 Protocol 2 분포 probe는
+> 소스별 대표 RAW 1개만 평가하므로 `n_sources=1`을 Fuji 전체 일반화 증거로
+> 읽으면 안 된다. `--real-only`는 Sony/Nikon/Canon 합성 소스를 제외하고
+> 실제 RAW가 없으면 fail-closed한다. 전체 scene/session 일반화 주장은 NARE
+> scene-level 평가로 별도 수행해야 한다.
+
+소스: fuji(실제 RAW, legacy `raw_calib_cache_fuji/` 또는
+`datasets/fuji/contributed/*/raw/`) + sony/nikon/canon(합성 -
 공통 테스트 사진에 `apply_*_look()` 적용, **진짜 카메라 데이터 아님**).
 
 | 소스 | 경로 | 변환 전 b2 | 변환 후 b2 | 변환 전 노이즈σ | 변환 후 노이즈σ |
@@ -4763,6 +4772,21 @@ p<0.0001, 부트스트랩 95% CI [+2.5045, +3.4374] - 4절의 좁은 격자 결�
 > 좁은 격자의 인공물이 아님을 확인했지만, 이 절 자체의 배포 보류 결정은
 > 그대로 유지한다 - 채택은 별개의 배포 결정이다.
 
+> **배포(2026-09-06, 사용자 승인)**: 위 권고대로 `apply_classic_negative_v2`를
+> `brands/fuji/look.py`에 추가했다(`toe_lift=0.0, shoulder_start=0.94,
+> white_point=1.0, sat_mult=0.15, clahe_clip=1.25`). 기존
+> `apply_classic_negative`는 `brands/CLAUDE.md`대로 그대로 두고 나란히
+> 둔다 - 교체가 아니라 추가다. 채택 수치는 6절과 동일 - 재현:
+> `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`,
+> 리포트는
+> `datasets/fuji/contributed/local-work-2026-08/classic_negative_v2_grid_report.json`
+> (5-fold 홀드아웃 15.2787→12.3081, +19.44%, 46승1패, 부호검정 p<0.0001,
+> 부트스트랩 95% CI [+2.5045,+3.4374]). `tests/test_brands.py`의
+> `FUJI_COLOR_PRESETS`에 등록, `brands/fuji/__init__.py`에서 재수출,
+> `docs/project_structure.md`/`.en.md`에 등재. `tools/video_engine.py`
+> 통합이나 Capture One ICC 재발급 등은 이번 배포 범위 밖 - 요청된 것만
+> 한다.
+
 재현: `~/.hncs-hybrid-venv312/bin/python3 -m tools.evaluate_fuji_classic_negative_v2_grid`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.probe_fuji_classic_negative_v2_boundary`,
 `~/.hncs-hybrid-venv312/bin/python3 -m tools.diagnose_neutral_render_offset_by_brand`,
@@ -4824,3 +4848,315 @@ phaseone)는 raw+jpeg 페어가 없어 재적합 자체를 못 했다 - RAW 재�
 ~/.hncs-hybrid-venv312/bin/python3 -m tools.refit_borrowed_population_fit_params \
     --brand brands.sony --set datasets/sony/contributed/dpreview-a7v-preprod-2026-08
 ```
+## dpreview 스튜디오씬 챠트 - 7브랜드 DCP/ICC 발급 (2026-09-06, 사용자 승인)
+
+위 "11개 브랜드 컬러체커 검증 총괄"의 11개 전부 CI가 0을 안 걸치는
+결정적 결과였지만(Canon R6III만 예외적으로 약함, CI [+2.63,+6.55]/
+승패 15/7), 이번에 실제 `.dcp`/`.icc`를 발급한 건 그중 이번 세션에
+RAW를 재다운로드한 7개(Canon R6III/Nikon Z5II/Panasonic S1II/Sigma
+fp L/Ricoh GR IV/OM System OM-3/Pentax K-3 Mark III)뿐이다. 나머지
+4개(Sony a7R VI/a7 V/Hasselblad X2D II 100C/Fujifilm X-E5)는 CI
+유의성은 동일하지만 이번 배치에서는 건드리지 않았다 - Hasselblad X2D
+II는 이미 전용 dual-illuminant 챠트 DCP/ICC(`hasselblad_x2dii_chart.dcp`/
+`.icc`)가 있어 확실히 제외 대상이고, Sony/Fuji는 "이미 프로파일이
+있어서"가 완전한 이유는 아니다(`sony_generic_jpeg_approx.icc`/
+`fuji_generic_jpeg_approx.icc`도 챠트 실측 이전 근사인데, 마찬가지로
+그런 근사가 있던 Sigma는 이번 배치에 포함됐다) - 실질적으로는 이번
+세션에 RAW를 재다운로드한 대상이 이 7개였다는 게 더 정확한 이유이고,
+Sony/Fuji/Hasselblad는(Hasselblad 제외 사유는 위와 별개로 확실함)
+챠트 기반으로 재발급할지가 아직 결정 안 된 상태로 남아있다.
+
+`tools/fit_dpreview_studio_chart.py`(`tools/fit_leica_sl3p_studio_chart.py`의
+일반화판, 전체 표본으로 최종 매트릭스 피팅 + in-sample ΔE00 보고, CI
+없음)로 발급했다. 사용자 지시 "클로드 크롬"(연결 확인) →
+"ㄱㄱ"(RAW 재다운로드, opencli Browser Bridge로 158장 성공) →
+"ㅇㅇ ㄱ"(DCP/ICC 발급).
+
+**정정(2026-09-06, 오퍼스 리뷰 3회)**: out-of-sample 정확도 판정
+(부트스트랩 95% CI)은 위 "11개 브랜드 컬러체커 검증 총괄"(2026-09-04,
+line 3673 부근)이 끝냈고, 아래는 그 판정을 다시 하는 게 아니다. Sigma
+fp L(위 표 n=20, `n_failed_detect: 0`)과 Ricoh GR IV(위 표 n=23,
+`n_failed_detect: 1`)는 이번 재다운로드 표본(각각 22장/24장, raw/
+폴더 전체)과 장수가 다르다 - manifest.csv는 두 브랜드 다 처음부터 각각
+22/24행이었으므로, Sigma는 그때 2장이 아예 다운로드/시도되지 않았던
+것이고(이번엔 전부 받아 22장), Ricoh는 24장 다 있었는데 그때 1장이
+검출 실패였던 것(이번엔 같은 24장 세트에서 재검출 성공, Panasonic과
+같은 경우) - 둘 다 위 CV CI가 정확히 이 발급 표본과 1:1 대응한다고
+주장하지는 않는다.
+
+> **정정(2026-09-06, 발급 표본 일치 가드 추가)**: 위 정정 당시 CI 리포트는
+> 재다운로드 전 파일명/검출 결과를 기준으로 작성돼 발급 표본과 3개 바디가
+> 달랐다. 현재 raw/ 폴더의 **실제 발급 표본 전체**를 다시
+> `validate_dpreview_chart_brand.py`로 검증하고 리포트를 갱신했다.
+> Panasonic은 n=20, ΔE00 28.904→12.342(+57.30%), CI=[+14.128,+19.027],
+> Sigma는 n=22, 30.548→12.329(+59.64%), CI=[+15.832,+20.699],
+> Ricoh는 n=24, 28.733→13.513(+52.97%), CI=[+12.255,+18.135]가 됐다.
+> Canon(n=22), Nikon(n=24), OM-3(n=22), Pentax(n=24)도 같은 raw/ 폴더로
+> 재검증했으며, 이제 7개 모두 `chart_validation_report.json`의 `images`
+> 집합과 발급 리포트의 `images` 집합이 일치한다. 발급 스크립트도 이 일치를
+> 확인하지 않으면 종료하도록 수정했다.
+
+각 브랜드 실행(`python3 -m tools.fit_dpreview_studio_chart <raw_dir> <brand> <camera> <ext> --unique-camera-model <Adobe 내부 코드명>`)이 직접 출력한 in-sample ΔE00(부트스트랩 CI 없음 - 전체 표본을 다 써서 발급용으로 다시 피팅한 값이라 위 CV 수치와 직접 비교 불가, out-of-sample 유의성은 위 두 문단이 가리키는 CV 표로 이미 결정됨)과, 같은 값이 저장된 `camera_native_matrix_report.json`(`n_images`/`chart_matrix_in_sample_delta_e_mean` 필드) 경로 - DCP/ICC는 `hybrid_engine/assets/profiles/`에:
+
+- Canon R6III: n=22, in-sample ΔE00=16.3517(CI 없음) → `canon_chart.dcp`/`.icc`, `datasets/canon/contributed/dpreview-r6iii-studio-chart-2026-09/camera_native_matrix_report.json`
+- Nikon Z5II: n=24, in-sample ΔE00=11.0676(CI 없음) → `nikon_chart.dcp`/`.icc`, `datasets/nikon/contributed/dpreview-z5ii-studio-chart-2026-09/camera_native_matrix_report.json`
+- Panasonic S1II: n=20(검증 때는 2실패였는데 재검출 시 20/20 성공), in-sample ΔE00=11.9754(CI 없음) → `panasonic_chart.dcp`/`.icc`, `datasets/panasonic/contributed/dpreview-s1ii-studio-chart-2026-09/camera_native_matrix_report.json`
+- Sigma fp L: n=22(위 표는 n=20 - 위 정정 참고), in-sample ΔE00=11.8200(CI 없음) → `sigma_fpl_chart.dcp`/`.icc`, `datasets/sigma/contributed/dpreview-fpl-studio-chart-2026-09/camera_native_matrix_report.json`
+- Ricoh GR IV: n=24(위 표는 n=23, 1실패 - 위 정정 참고), in-sample ΔE00=12.9574(CI 없음) → `ricoh_gr_griv_chart.dcp`/`.icc`, `datasets/ricoh_gr/contributed/dpreview-griv-studio-chart-2026-09/camera_native_matrix_report.json`
+- OM System OM-3: n=22, in-sample ΔE00=13.0214(CI 없음) → `olympus_om3_chart.dcp`/`.icc`, `datasets/olympus/contributed/dpreview-om3-studio-chart-2026-09/camera_native_matrix_report.json`
+- Pentax K-3 Mark III: n=24, in-sample ΔE00=17.2321(CI 없음) → `pentax_k3iii_chart.dcp`/`.icc`, `datasets/pentax/contributed/dpreview-k3iii-studio-chart-2026-09/camera_native_matrix_report.json`
+
+`exiftool -UniqueCameraModel -ProfileName`로 14개 파일(DCP 7 + ICC 7)
+전부 확인했고 `python3 -m tools.audit_repo_integrity`(ICC·DCP 80개
+exiftool 검증)도 이상 없음. 실기기 UniqueCameraModel 미확인 - EXIF
+Model 문자열을 그대로 씀(Leica SL3-P/하셀블라드 X2D II 선례와 동일한
+caveat). 파일명은 바디까지 명시(`sigma_fpl_chart`/`ricoh_gr_griv_chart`/
+`olympus_om3_chart`/`pentax_k3iii_chart`) - 같은 브랜드의 다른 바디를
+나중에 추가해도 충돌 안 나도록.
+
+## NARE 공개 샘플 intake - Fujifilm X-T100 한 쌍은 피팅 불가 (2026-09-08)
+
+실사진 제조사 appearance 검증용 NARE의 첫 공개 샘플 intake로
+[Mirrorless Comparison X-T100 sample gallery](https://mirrorlesscomparison.com/galleries/fujifilm-xt100-sample-shots/)가 연결한 RAW/JPEG를 받았다. 파일명 유사성으로 짝을 만들지 않고
+`evaluation.nare_pairs_cli`의 strict key(촬영시각, Make, Model, ISO가 양쪽에
+정확히 한 번씩 존재)로 검사했다. 3 RAW/4 JPEG 중 `DSCF0138.RAF`와
+`DSCF0138.JPG` 한 쌍만 통과했다. EXIF는 모두 `2018:08:19 22:16:43`,
+FUJIFILM X-T100, ISO 200, `F0/Standard (Provia)`, Kelvin WB다.
+
+이 한 쌍을 rawpy 0.27.0(`use_camera_wb=True`, `no_auto_bright=True`)으로
+512×512에 렌더하고 `apply_provia`를 적용한 exploratory probe는 raw 기준
+ΔE00 **13.392764584526887**, candidate **13.815155932672752**,
+즉 **−0.4223913481458652 / −3.15387719600379%**였다. 그러나 이는 NARE
+평가나 피팅 결과가 아니다. 독립 scene이 1개뿐이고 daylight 하나,
+natural-scene 하나라서 12-scene, 3-lighting, 3-scene-category gate를 전부
+충족하지 못한다. 이후 피팅/배포의 근거로 쓰지 않는다. 정확한 다운로드 URL,
+SHA-256, EXIF와 수치는
+`../datasets/fuji/contributed/mirrorlesscomparison-xt100-2018-08/nare_preflight_2026-09.json`에 기록했다.
+
+재현(이미지는 의도적으로 git에 넣지 않음):
+```
+~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_pairs_cli \
+    <raw-dir> <jpeg-dir> --output preflight.json
+```
+
+## GFX100RF NARE pool strict pairing - 63/63, coverage는 아직 부족 (2026-09-08)
+
+`datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/`의 실제 RAW/JPEG
+폴더를 같은 strict scanner로 다시 검사했다. 63 RAW와 63 JPEG가 모두
+`DateTimeOriginal`, Make, Model, ISO key로 정확히 한 번씩 일치했다:
+**63 strict pairs**, unmatched 0/0, invalid EXIF 0/0, ambiguous key 0이다.
+
+EXIF DateTimeOriginal 날짜 기준으로 이 63쌍은 14개 capture date에 걸친다.
+기존 12-scene NARE pilot은 그중 8개 date에서 뽑혔으므로, pilot manifest의
+`session_id`도 잘못된 단일 preprod ID 대신 실제 capture date로 정정했다.
+다만 날짜는 session의 보수적 proxy일 뿐, 같은 날짜의 서로 다른 독립 장면을
+자동으로 판별하지는 않는다.
+
+이는 기존 12-scene NARE pilot의 pairing 근거를 강화하지만, pilot의
+`picture_style=unknown`, 전체 `lighting=daylight`, `scene_type=natural_scene`
+한 종류라는 제한을 바꾸지는 않는다. 63개를 독립 scene 63개로 세거나
+NARE 결과를 갱신하지 않았다. scene grouping과 picture-style provenance,
+다른 조명 strata가 확보되기 전에는 현재 Inconclusive 판정을 유지한다.
+기계가 읽는 검사 수치는
+`../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_strict_pairing_report_2026-09.json`에 기록했다.
+
+## GFX100RF Provia NARE exploratory replay - +14.987%, ship 판정 보류 (2026-09-08)
+
+새 `hybrid_engine.evaluation.nare_runner_cli`로 같은 GFX100RF strict pool을
+다시 읽었다. EXIF `FilmMode=F0/Standard (Provia)`인 51 RAW/SOOC JPEG만
+선택했고, Reala ACE 11개와 FilmMode unknown 1개는 포함하지 않았다. 각 input의
+SHA-256을 frozen manifest와 재확인한 뒤 rawpy 0.27.0의
+`use_camera_wb=True`, `no_auto_bright=True`, sRGB형 gamma decode로 512px
+long-edge에 렌더했다. B0은 이 neutral RAW decode, B1은 명시적인 identity
+foundation control, C는 현행 `apply_provia`다.
+
+51 frame의 수치는 B0 평균 ΔE00 **20.714990929015055**, C 평균 ΔE00
+**17.61033402431603**, scene-level 평균차 **+3.1046569046990222**,
+상대 개선 **+14.987488603484707%**였다. C가 더 낮은 ΔE00인 frame은 42개,
+더 높은 frame은 9개였고, 20,000회 scene bootstrap 95% CI는
+**[+2.3120971492751248, +3.9058458129832943]**, exact paired sign test는
+**p=3.3888279489246997e-06**였다.
+
+이는 실제 RAW→SOOC JPEG replay의 강한 exploratory evidence이지만 **ship
+결과는 아니다**. 이 public pre-production pool은 `daylight` 하나와
+`natural_scene` 하나로만 라벨되어 3-lighting/3-scene-category gate를 통과하지
+못했고, semantic/spatial subgroup과 positive control도 아직 없다. 51 frame은
+12 capture date에 걸치지만, 날짜를 독립 scene으로 자동 간주하지 않는다.
+따라서 NARE report는 `Inconclusive`를 유지한다.
+
+재현:
+```
+~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_runner_cli \
+  --manifest datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_manifest_2026-09.json \
+  --candidate provia --max-dim 512 \
+  --out /tmp/gfx100rf-provia-metrics.json
+~/.hncs-hybrid-venv312/bin/python3 -m hybrid_engine.evaluation.nare_cli \
+  --manifest datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_manifest_2026-09.json \
+  --metrics /tmp/gfx100rf-provia-metrics.json \
+  --controls datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_controls_2026-09.json
+```
+
+동결 manifest, per-scene metrics, control 상태와 report는 모두
+`../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_exploratory_*_2026-09.json`에 기록했다.
+
+**Scale 재확인(2026-09-08)**: 같은 51 frame, 같은 frozen manifest와
+candidate를 1024px long-edge로 다시 RAW decode했다. B0 평균 ΔE00은
+**20.87315249324169**, C는 **17.887349289020122**, 상대 개선은
+**+14.304514879524367%**였다. scene bootstrap 95% CI는
+**[+2.197751632072092, +3.7788054935578597]**, 42승/9패,
+exact sign test **p=3.3888279489246997e-06**이다. 512px의 +14.987%와
+방향·CI 모두 일치한다. 그러나 이 재확인은 부족한 lighting/scene taxonomy,
+subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
+`Inconclusive`다. per-scene artifact는
+`nare_provia_exploratory_metrics_1024px_2026-09.json`과
+`nare_provia_exploratory_report_1024px_2026-09.json`이다.
+
+> **정정(2026-09-08, registration preflight 추가)**: 위 51-frame 수치는
+> geometry registration 전의 exploratory probe였다. translation-only ECC
+> preflight(correlation >= 0.6, shift <= long-edge의 5%, valid overlap >= 90%)를
+> 적용하자 37개가 통과하고 14개는 `registration_failure`가 됐다. 따라서
+> 51개 aggregate는 NARE 결과로 해석하지 않는다. failure accounting은
+> `nare_provia_registration_preflight_512px_2026-09.json`에, 통과 pair의 새
+> frozen manifest와 512px 재측정은 `nare_provia_registered_*_2026-09.json`에
+> 저장했다. corrected 37-frame exploratory replay는 B0 ΔE00
+> **16.5211983452177** → C **11.989706008913075**, **+27.42835139205464%**,
+> scene bootstrap 95% CI **[+3.6717888562545196, +5.400666505888509]**,
+> 35승/2패, exact sign test **p=1.0244548320770264e-08**이다. 조명·scene
+> taxonomy, semantic/spatial subgroup, positive control 부재는 해소되지 않아
+> NARE classification은 계속 `Inconclusive`다.
+
+> **Scale 재확인(2026-09-08, registration 통과 37개)**: 같은 registration
+> passed manifest를 1024px long-edge에서 다시 평가했다. B0 평균 ΔE00
+> **16.699295353344418** → C **12.433394684534717**, 상대 개선
+> **+25.54539325490376%**, scene bootstrap 95% CI
+> **[+3.4045302682385996, +5.132902673708582]**, 35승/2패, exact sign test
+> **p=1.0244548320770264e-08**이다. 512px corrected replay의 +27.428%와
+> 방향·CI가 일치한다. `nare_provia_registered_metrics_1024px_2026-09.json`와
+> `nare_provia_registered_report_1024px_2026-09.json`에 per-scene 결과를
+> 고정했다.
+
+> **정정(2026-09-09, runner geometry gate 재감사)**: 위 preflight도 target을
+> source render 크기로 무조건 resize한 뒤 ECC를 수행하고 있어 aspect-ratio가
+> 다른 crop/panorama를 통과시키는 결함이 있었다. runner와 preflight에 동일한
+> 상대 aspect-ratio gate(1% 이하 허용)를 적용해 재실행한 결과 exploratory
+> 51개 중 **32개만 통과**, 19개는 geometry mismatch로 제외됐다. 기존 registered
+> manifest의 37행 중 5행(`gfx100rf-007`, `010`, `050`, `051`, `052`)도 이
+> 재감사에서 제거했다. 새 32-scene manifest, 512/1024px metrics와 reports를
+> `nare_provia_registered_*_2026-09.json`에 덮어썼고 두 report 모두
+> `Inconclusive`다. 이는 기존 37-scene 수치를 그대로 재사용할 수 없다는
+> 정정이며, color metric 개선이나 ship 승인 주장을 강화하지 않는다.
+> 새 512px report는 B0 **15.931793794298834** → C
+> **11.051151262196903**, 상대 개선 **+30.634607722882166%**, 95% CI
+> **[+3.9863925883616704, +5.738710855086144]**, sign test
+> **p=1.5366822481155396e-08**다. 1024px는 B0 **16.078743521242657** → C
+> **11.464537406459886**, 상대 개선 **+28.697554063765285%**, 95% CI
+> **[+3.7250394275085563, +5.463555638740317]**다. 두 결과 모두 coverage,
+> subgroup, controls, provenance/trusted-runner gate가 부족해 ship 판정은
+> `Inconclusive`로 유지된다.
+
+## GFX100RF Provia registration selection sensitivity - methodology evidence only (2026-09-09)
+
+> **정정(2026-09-09, registration selection sensitivity 기록)**: 새 1% aspect-ratio
+gate를 적용한 뒤에는 registration 통과 자체가 effect-size와 독립적이지 않은지
+별도로 확인해야 한다. 51개 exploratory metric을 현재 pass/fail ID로만 나누면
+32 pass / 19 fail이고, pass subset의 pre-registration 개선율은 **+20.928717236497807%**,
+fail subset은 **+7.325851205607281%**, 전체 51개는 **+14.987488603484733%**다.
+pass-minus-fail 절대 개선량 차이는 **+2.1125743190294215 ΔE00**,
+200,000회 group bootstrap 95% CI는 **[+0.61942192, +3.56687431]**,
+label-permutation p는 **0.012179939100304498**이다. 상대 개선율 차이도
+**+14.724098602296786%p** (bootstrap CI **[+7.50612246, +21.74777332]**,
+permutation p **0.0009899950500247498**)로 나타난다.
+
+이 수치는 registration 실패 scene의 pre-registration metric이 geometry 오염을
+포함하므로 registration이 성능을 인과적으로 높인다는 뜻이 아니다. 다만 intake
+수와 제외 사유를 함께 제시하지 않고 pass subset의 effect만 보고하면 방법론적
+선택 효과가 candidate 개선으로 오인될 수 있다는 반증이다. 실제 geometry
+correction을 적용한 32-scene report는 512px **+30.634607722882166%**,
+1024px **+28.697554063765285%**였고, 두 결과 모두 coverage/subgroup/control/
+provenance gate 미충족으로 `Inconclusive`다. 기계 판독 결과는
+`../datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_registration_selection_sensitivity_2026-09.json`,
+상세 분석은 `../docs/superpowers/reports/2026-09-09-nare-registration-selection-sensitivity.md`에 고정했다.
+이 분석은 **methodology sensitivity evidence**이며 ship evidence가 아니다.
+
+> **추가 scale 확인(2026-09-09, 2048px)**: 같은 32-scene frozen manifest를
+> 실제 RAW runner로 2048px long-edge에서 재실행했다. B0 평균 ΔE00은
+> **16.22042833445364**, C는 **11.746650092863138**, 상대 개선은
+> **+27.581135031359175%**, 20,000회 scene bootstrap 95% CI는
+> **[+3.578668263212973, +5.331445401997242]**, exact sign test는
+> **p=1.5366822481155396e-08**였다. 512→1024→2048px에서 방향과 유의성은
+> 유지되지만 개선율은 **30.6346% → 28.6976% → 27.5811%**로 감소한다.
+> 따라서 색 appearance 개선 방향은 scale에 강하지만, 고해상도에서 spatial
+> processing 차이가 커지는 신호로 해석한다. 2048px metrics/report는
+> `nare_provia_registered_metrics_2048px_2026-09.json`과
+> `nare_provia_registered_report_2048px_2026-09.json`에 고정했고, 최종 gate는
+> 여전히 coverage/subgroup/control/provenance 부족으로 `Inconclusive`다.
+
+> **per-scene scale 교차 확인(2026-09-09)**: 세 report의 같은 scene ID를
+> 교차하면 512/1024/2048px 모두 **31승/1패**이고 scale 사이 sign flip은
+> **0개**다. scene별 absolute improvement 상관은 512↔1024 **0.9976684473395135**,
+> 1024↔2048 **0.9989682880724691**, 512↔2048 **0.9940799935343329**였다.
+> 512→2048에서 가장 큰 절대 변화는 `gfx100rf-033`의 **6.0119463432826254 →
+> 4.810205739090804 ΔE00**였다. 따라서 고해상도에서 aggregate 개선율은
+> 감소하지만 scene별 승패 방향은 유지되며, 특정 scene의 spatial 차이가
+> 전체 결론을 뒤집는 현상은 확인되지 않았다.
+
+## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
+
+> **재실행 확인(2026-09-09)**: 현재 checkout의 registered manifest 37행을
+> `nare_registration_cli`로 다시 처리해 **37/37 registration pass**를 확인했고,
+> 그 결과만 `nare_runner_cli --candidate provia --max-dim 512`에 넣어 37 scene
+> metric을 생성했다. candidate 평균 ΔE00는 **11.989706008913073**으로 아래
+> 기록과 일치했다. 이 재실행은 metric 재현 확인이며, 배포 승인이나 독립
+> contributor/generalization 증거가 아니다.
+> 같은 registered 입력의 1024px 재실행도 37 scene을 생성했고 평균 candidate
+> ΔE00는 **12.433394684534717**이었다. 512px와 1024px 모두 gate 분류는
+> `Inconclusive`다.
+> 같은 37 scene metric을 controls `{}`로 NARE CLI에 넣은 별도 gate 실행은
+> **Inconclusive**였다. lighting/scene coverage, semantic subgroup, controls,
+> provenance가 충족되지 않았고, 따라서 metric 생성 성공을 ship gate 통과로
+> 해석하지 않는다.
+> 반면 51-scene exploratory manifest를 현재 512px registration에 다시 넣으면
+> **37/51만 통과하고 14 scene은 correlation/translation/overlap 실패**로
+> 제외된다. 따라서 기존 51-scene exploratory metrics는 strict runner의
+> 재현 가능한 registered evidence가 아니며, 새 registration 결과를
+> `nare_provia_exploratory_registration_512px_2026-09.json`에 보존했다.
+> 별도 EXIF strict-pair preflight는 raw/jpeg **63/63**을 짝지었으므로,
+> 이 14건은 pairing 누락이 아니라 geometry/registration gate에서 제외된 것이다.
+> 실패 row를 EXIF로 대조하면 RAW는 4000×3000인데 JPEG가 8736×8736,
+> 11648×4304 같은 crop/aspect-ratio 변형인 사례가 포함되어 있다. 이는
+> 색 오차로 환산하면 안 되며, registration failure로 남기는 것이 맞다.
+> 1024px registration도 동일하게 **37/51 pass, 동일한 14 scene fail**이었다.
+> 실패 집합이 scale 사이에서 변하지 않아 단순 downsample artifact보다는
+> 원본 geometry/aspect-ratio 불일치로 해석하는 근거가 강화됐다. **후속 정정
+> (2026-09-09)**: 위 37/51 수치는 resize를 포함한 구 preflight 결과다. 새
+> runner/preflight 공통 aspect-ratio gate를 적용한 현재 결과는 **32/51 pass,
+> 19 scene fail**이며, 실패 집합에는 기존 14건과 aspect-ratio mismatch 5건이
+> 포함된다. 현재 registered manifest·metrics·reports는 이 32-scene 결과로
+> 갱신되어 있다.
+> 기존 개별 결과와 교차 scale 요약은 각각 `nare_provia_exploratory_registration_1024px_2026-09.json`,
+> `nare_provia_exploratory_registration_multiscale_2026-09.json`에 보존했다.
+
+새 geometry gate를 통과한 32개 scene을 10개 capture-date session으로 묶어
+leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해
+`shoulder_start ∈ {0.66, 0.70, 0.74, 0.78, 0.82}`와
+`clahe_clip ∈ {1.25, 2.0, 3.0}` grid를 선택하고, held-out session에는
+선택 결과를 한 번만 적용했다. 이 연구용 fit은 `apply_provia`나 shipped
+profile을 수정하지 않는다.
+
+현재 look의 scene-level 평균 ΔE00은 **11.051151262196903**, session-holdout
+후보는 **11.05994330831201**로 상대 변화가 **-0.07955773933871704%**였다.
+20,000회 scene bootstrap 95% CI는 **[-0.023592727755224207,
++0.0052896295400972175]**, 개선 7 scene/악화 10 scene, exact paired sign test는
+**p=0.629058837890625**였다. CI가 0을 포함하고 sign test도 통과하지 못하므로
+후보를 fit하거나 배포하지 않는다. 현행 shipped Provia를 유지한다.
+
+재현:
+```
+~/.hncs-hybrid-venv312/bin/python3 -m tools.fuji.fit_nare_provia_session_holdout \
+  --manifest datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_registered_manifest_2026-09.json \
+  --candidate provia --max-dim 512 \
+  --out datasets/fuji/contributed/dpreview-gfx100rf-preprod-2026-08/nare_provia_session_holdout_fit_512px_2026-09.json
+```
+
+기계 판독 결과와 fold별 선택값은
+`nare_provia_session_holdout_fit_512px_2026-09.json`에 고정했다.

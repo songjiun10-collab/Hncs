@@ -112,7 +112,7 @@ white_point)`를 `core/engine.py`에 추가한다. 시그니처는
 `apply_population_fit_look()`에서 `clahe_clip` 인자만 뺀 형태(CLAHE를
 아예 안 쓰므로)이고, 내부적으로 CLAHE 단계를 생략한 채 톤 LUT만 적용한다.
 
-`tools/video_engine.py`가 브랜드별 `toe_lift`/`shoulder_start`/
+`tools/cli/video_engine.py`가 브랜드별 `toe_lift`/`shoulder_start`/
 `white_point` 값을 얻는 방법: 각 `brands/*.py`의 상수는
 `_TOE_LIFT`처럼 밑줄 접두사(비공개 관례)라 다른 모듈에서 직접 import하지
 않는다. 대신 `inspect.signature(apply_canon_look).parameters['toe_lift']
@@ -122,15 +122,15 @@ white_point)`를 `core/engine.py`에 추가한다. 시그니처는
 white_point=_WHITE_POINT, clahe_clip=_CLAHE_CLIP)` 형태로 이 값들을
 기본 인자에 그대로 노출하고 있음을 이용한다(10개 브랜드 전부 동일 패턴,
 `brands/sigma.py` 확인됨). 브랜드 이름 → 함수 매핑은
-`tools/video_engine.py` 안에 10개 항목짜리 딕셔너리로 명시한다.
+`tools/cli/video_engine.py` 안에 10개 항목짜리 딕셔너리로 명시한다.
 
 ### 모듈 구조
 
-`tools/video_engine.py` - CLI 진입점, `hybrid_engine/main.py`와 동일한
+`tools/cli/video_engine.py` - CLI 진입점, `hybrid_engine/main.py`와 동일한
 패턴(입력 경로, 출력 경로, 옵션 인자):
 
 ```
-python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon
 ```
 
 핵심 흐름:
@@ -163,7 +163,7 @@ RAW 파일도 실제 비디오 샘플도 이 환경에 없으므로, 합성 데�
 1. `tests/test_video_engine.py`에서 `cv2.VideoWriter`로 짧은 합성
    비디오(예: 10프레임, 64x48, 그라디언트+색 패치가 프레임마다 살짝
    달라지는 패턴)를 임시 파일로 생성
-2. `tools.video_engine`의 핵심 처리 함수를 호출해 출력 비디오를 만들고:
+2. `tools.cli.video_engine`의 핵심 처리 함수를 호출해 출력 비디오를 만들고:
    - 출력 파일이 존재하고 열리는지
    - 프레임 수/해상도/fps가 입력과 일치하는지
    - 출력 프레임이 입력과 실제로 달라졌는지(브랜드 룩이 적용됐는지 픽셀

@@ -44,14 +44,20 @@ raw+jpeg library used for this session's Classic Chrome/Nostalgic Neg
 calibration. The person in frame is seen from behind/the side only, not
 identifiable.*
 
-![HNCS preset demo - 44 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
+![HNCS preset demo - 56 apply_* looks + original on one photo](docs/images/preset_demo.jpg)
 
-*All 44 photo-mode `apply_*` looks from `brands/<brand>/*.py` (+ the original) run
-on the same source photo (a street snapshot from Itaewon, Seoul, shot on a
-Fuji GFX50S II - `DSCF9556.RAF`, from the same raw+jpeg library used for
-this session's Classic Chrome/Nostalgic Neg calibration, not a close-up of
-any specific person). Built with `tools/build_readme_demo.py`, which
-re-runs automatically as new looks ship.*
+*All 56 photo-mode `apply_*` looks from `brands/<brand>/*.py` (+ the original) run
+on the same Seoul street-crossing snapshot as above (`DSCF9447.RAF`) - the
+original `DSCF9556.RAF` Itaewon source used for earlier versions of this
+grid lives in the `999_FUJI` contributed library, which is git-ignored and
+not present in every checkout, so this regeneration reuses the crossing
+photo instead. Not a close-up of any specific person. Built with
+`tools/demo/build_readme_demo.py`, which has to be **re-run by hand** whenever
+a look ships - this exact count has already drifted from the last real regeneration
+(44, at commit 317f3bd) twice - once to 55, caught only while fixing an
+unrelated GUI-tab drift in this same sweep, then to 56 a commit later
+before that fix was even pushed. `python3 .claude/skills/run-hncs/driver.py env`'s "배포 룩 N개" line
+is the live count to check against.*
 
 ## Supported Brands
 
@@ -124,7 +130,7 @@ needed, just open it.
 - [x] GitHub Actions CI (runs automatically on every push/PR)
 - [x] Population-statistics reproducibility audit tooling
 - [x] RAW -> Log colorspace (F-Log2/S-Log3/V-Log/etc.) + `.cube` LUT
-      pipeline (`tools/raw_pipeline.py`, separate from the brand engine)
+      pipeline (`tools/cli/raw_pipeline.py`, separate from the brand engine)
 - [x] EXIF-driven cross-camera color conversion engine V0.1
       (`hybrid_engine/`, supports both RAW and JPEG input, brand tone-curve
       inversion + a ΔE evaluation loop)
@@ -143,6 +149,53 @@ tests/        unittest test suite - README.md, CLAUDE.md
 models/       Pretrained models used for e.g. face detection
 docs/         Detailed docs (methodology / measurements / per-brand notes / file map) - CLAUDE.md
 ```
+
+```mermaid
+flowchart TB
+    subgraph RUNTIME["Entry points and shared processing"]
+        direction TB
+        GUI["gui/<br/>Tkinter app"]
+        CLI["tools/cli/<br/>RAW→Log · lens · upscale<br/>video · LUT export"]
+        BRANDS["brands/<br/>12 packages · apply_*"]
+        CORE["core/<br/>tone · LUT · image helpers"]
+        HYBRID["hybrid_engine/<br/>conversion and calibration"]
+        GUI -->|"decoded preview image"| BRANDS
+        GUI -->|"subprocess"| CLI
+        GUI -->|"subprocess"| HYBRID
+        CLI -->|"video / LUT look functions"| BRANDS
+        CLI -->|"processing helpers"| CORE
+        BRANDS -->|"shared helpers"| CORE
+    end
+
+```
+
+```mermaid
+flowchart TB
+    subgraph RESEARCH["Research and profile generation"]
+        direction TB
+        DATA["datasets/<br/>metadata · manifests · local pairs"]
+        FIT["tools/fit/ · tools/research/<br/>fitting and comparisons"]
+        DOCS["docs/ · hybrid_engine/EVALUATION.md<br/>evidence and decisions"]
+        PROFILETOOLS["Profile-generation tools<br/>tools/x2dii/ · tools/capture_one/<br/>tools/fit_dpreview_studio_chart.py"]
+        WRITERS["core/dcp_export.py<br/>core/icc_export.py"]
+        PROFILES["DCP / ICC files"]
+        BRANDS["brands/<br/>shipped look functions"]
+        DATA -->|"reference data"| FIT
+        FIT -->|"record results"| DOCS
+        DOCS -. "explicit approval before shipping" .-> BRANDS
+        PROFILETOOLS -->|"call format writers"| WRITERS
+        WRITERS -->|"write"| PROFILES
+    end
+
+```
+
+The diagrams show selected relationships; edge labels distinguish calls
+and data. `apply_*` takes decoded image arrays; callers decode RAW
+files or extract video frames first. Profile tools can reuse calibration
+helpers in `hybrid_engine/`; file-format writers live in `core/`.
+CI runs the unittest suite, including tests for the audit helpers. The full
+repository audit is also a standalone command:
+`python3 tools/maintenance/audit_repo_integrity.py`.
 
 Each area's own `README.md` (where present) covers usage/examples;
 `CLAUDE.md` covers the rules for changes there. See

@@ -169,9 +169,9 @@ leave-one-out 교차검증(13회, 매회 1쌍을 held-out으로 빼고 나머지
 ## 재검증 (2026-08, 94쌍 로컬 데이터 + 블렌딩 변형 + 1024콤보 그리드)
 
 위 13쌍 결과("무승부, 4.1% 개선이지만 CI가 0을 포함")를 훨씬 큰 표본으로
-다시 확인했다. `tools/evaluate_hncs_structural.py`(신규 - 이 체크아웃엔
+다시 확인했다. `tools/research/evaluate_hncs_structural.py`(신규 - 이 체크아웃엔
 `hybrid_engine`이 없어 `hybrid_engine/research/hncs_structural.py` +
-`tools/evaluate_hncs_structural.py`를 자체 재구현)가 로컬 dpreview 클린
+`tools/research/evaluate_hncs_structural.py`를 자체 재구현)가 로컬 dpreview 클린
 95쌍 중 손상 파일(`4589763049.3fr`) 1개를 뺀 **94쌍**으로 두 가지를
 동시에 확장했다:
 
@@ -218,15 +218,15 @@ JPEG(HNCS 실제 출력이 아님), 비교가 여전히 비대칭(`apply_hncs()`
 자체가 이 페어들로 그리드서치된 값), Phocus의 실제 매트릭스/LUT와는
 무관한 재피팅 - 전부 그대로 적용된다.
 
-재현: `python3 -m tools.evaluate_hncs_structural`(94쌍×1024콤보×5-fold,
+재현: `python3 -m tools.research.evaluate_hncs_structural`(94쌍×1024콤보×5-fold,
 약 1시간).
 
 ## 재검증 2 (2026-08, 로컬 풀 364쌍·6세대) - 마침내 결론 확정, 방향 반전
 
-사용자 지시("표본도 커져서 가능할듯")로 이번 세션 `tools.calibrate.collect_local_pairs()`
+사용자 지시("표본도 커져서 가능할듯")로 이번 세션 `tools.fit.calibrate.collect_local_pairs()`
 (dedup 수정 후)로 모인 전체 로컬 하셀블라드 raw+jpeg 풀 - 94쌍의 거의
 4배(6세대: X1D 121, X2D 100C 82, X2D II 100C 74, X1D II 50C 38, CFV
-100C/907X 29, X1D-50c 20)로 재검증했다(`tools/evaluate_hncs_structural_full_pool.py`,
+100C/907X 29, X1D-50c 20)로 재검증했다(`tools/research/evaluate_hncs_structural_full_pool.py`,
 신규 - `/Users/songjiun/Documents/raw pair`가 이번 세션 로컬에 없어서
 `datasets/hasselblad/contributed/*/`에서 읽도록 로더만 교체, 나머지
 방법론은 동일. chroma 그리드는 1024->256으로 줄여 표본 증가분과 총
@@ -264,7 +264,7 @@ R/B 비율 기반 2클러스터로 근사해 미러링해도, `apply_hncs()`의 
 아님), Phocus의 실제 매트릭스/LUT와 무관한 재피팅, 2클러스터는
 실제 4개 이상 조명의 축소판이라는 점 등은 표본이 늘어도 바뀌지 않는다.
 
-재현: `python3 -m tools.evaluate_hncs_structural_full_pool`(364쌍×256콤보×5-fold,
+재현: `python3 -m tools.research.evaluate_hncs_structural_full_pool`(364쌍×256콤보×5-fold,
 3코어 병렬 디코드 기준 약 15분).
 
 > **정정(2026-08, 사용자 지적 "야 이상하다 검증해" -> 해상도 확인)**:
@@ -290,7 +290,7 @@ R/B 비율 기반 2클러스터로 근사해 미러링해도, `apply_hncs()`의 
 > 떨어짐)은 그대로 유지** - "364쌍에서 apply_hncs가 유의하게 이긴다"는
 > 결론 자체는 바뀌지 않는다. 위 개선폭/CI 수치는 이 정정판(512/160)이
 > 최종값이고, 256px 수치는 편향이 섞인 초안으로만 남긴다. 재현:
-> `python3 -m tools.evaluate_hncs_structural_full_pool`(DOWNSAMPLE_MAX_DIM=512,
+> `python3 -m tools.research.evaluate_hncs_structural_full_pool`(DOWNSAMPLE_MAX_DIM=512,
 > GRID_DOWNSAMPLE_MAX_DIM=160 기준, 3코어로 약 25분).
 
 ## 재검증 3 (2026-08, KMeans 4-클러스터) - 실제 구조에 더 가깝게 해도 결론 불변
@@ -299,7 +299,7 @@ R/B 비율 기반 2클러스터로 근사해 미러링해도, `apply_hncs()`의 
 Tungsten/Low Tungsten/Flash/Flash-Daylight, WB로 매트릭스 선택")의
 축소판이라는 지적("한계" 절)이 계속 있었다. 사용자 지시("원래
 하셀블라드 구조하고 동일하게 만들어서")로 클러스터 수를 4개로 늘려
-재검증했다(`tools/evaluate_hncs_structural_4cluster.py`, 신규) - 수동
+재검증했다(`tools/research/evaluate_hncs_structural_4cluster.py`, 신규) - 수동
 임계값 대신 AsShotNeutral의 (log(R/G), log(B/G))를 표준화해 KMeans(k=4)로
 데이터 주도 분류(전체 페어 기준 1회, 폴드 종속 아님 - 2-클러스터판과
 같은 out-of-sample 한계). "WB로 매트릭스 선택"이 하드 할당에 가까운
@@ -327,15 +327,15 @@ apply_hncs 쪽으로 기울어 있어 방향 자체는 같다.
 `apply_hncs()`가 이겼다는 일관된 신호는 이미 충분하다. `apply_hncs()`는
 이 실험으로도 바뀌지 않는다.
 
-재현: `python3 -m tools.evaluate_hncs_structural_4cluster`(364쌍×256콤보×5-fold×4클러스터,
+재현: `python3 -m tools.research.evaluate_hncs_structural_4cluster`(364쌍×256콤보×5-fold×4클러스터,
 3코어 병렬 디코드 기준 약 27분).
 
-## 재검증 4 (2026-09-03, `tools/evaluate_hncs_structural.py` 자체를 390쌍으로) - 독립 재현, 결론 불변
+## 재검증 4 (2026-09-03, `tools/research/evaluate_hncs_structural.py` 자체를 390쌍으로) - 독립 재현, 결론 불변
 
 **먼저 정직하게 밝힐 것**: 이 절을 쓰기 시작하고 나서야 위 "재검증
 2/3"(`evaluate_hncs_structural_full_pool.py`/`_4cluster.py`, 2026-08-30)이
 이미 존재한다는 걸 발견했다 - 사용자 지시("데이터도 커졌는데
-구조데로 해보면 안됨?")를 받았을 때 `tools/evaluate_hncs_structural.py`
+구조데로 해보면 안됨?")를 받았을 때 `tools/research/evaluate_hncs_structural.py`
 (원본 파일, 여전히 존재하지 않는 로컬 경로를 읽어 이 세션에선 아예
 못 돌아가는 상태였음)만 확인하고 형제 스크립트 존재를 안 찾아본 채
 데이터 로더를 새로 고쳐서 처음부터 다시 돌렸다 - `docs/CLAUDE.md`가
@@ -401,7 +401,7 @@ KMeans) 같은 결론이 나온 것은 이 결론(apply_hncs가 구조 미러링
 "확정" 단계를 넘어 "여러 번 독립 검증된 확정"이다. `apply_hncs()`는
 이 실험으로도 바뀌지 않는다(원래도 보호 대상).
 
-재현: `python3 -m tools.evaluate_hncs_structural`(390쌍×1024콤보×5-fold,
+재현: `python3 -m tools.research.evaluate_hncs_structural`(390쌍×1024콤보×5-fold,
 3워커 기준 약 2시간15분 - 메모리 여유가 있으면 `N_WORKERS` 상한을
 5로 올려서 더 빠르게 돌릴 수 있다, 다만 이 세션에서는 워커당
 pair_data 캐시(~1.6GB)가 5개면 스왑을 심하게 채웠다).
@@ -411,7 +411,7 @@ pair_data 캐시(~1.6GB)가 5개면 스왑을 심하게 채웠다).
 위 "재검증 4"가 열어둔 질문(`_full_pool`은 블렌딩 vs 하드클러스터가
 유의하게 하드클러스터 우세, 이번 페어드 비교는 판정 보류 - 그리드
 크기(1024 vs 256콤보)와 표본 수(389 vs 364)가 동시에 달라서 원인을
-못 가렸다)에 답하려고 `tools/evaluate_hncs_structural_gridsize_ablation.py`를
+못 가렸다)에 답하려고 `tools/research/evaluate_hncs_structural_gridsize_ablation.py`를
 새로 짰다 - `evaluate_hncs_structural.py`와 로더/폴드분할(`load_pairs()`/
 `make_folds(seed=0)`)이 100% 동일한 코드(`test_matches_original_script_fold_split`로
 확인)에 `CHROMA_COMBOS`만 1024에서 `_full_pool`과 같은 256(16x16)으로
@@ -438,5 +438,5 @@ pair_data 캐시(~1.6GB)가 5개면 스왑을 심하게 채웠다).
 필요하면 `_full_pool`의 364쌍 서브셋으로 이 스크립트를 다시 돌려서
 표본 수만 격리하는 게 다음 단계).
 
-재현: `python3 -m tools.evaluate_hncs_structural_gridsize_ablation`
+재현: `python3 -m tools.research.evaluate_hncs_structural_gridsize_ablation`
 (389쌍×256콤보×5-fold, 3워커 기준 약 35분).

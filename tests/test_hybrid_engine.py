@@ -36,7 +36,6 @@ class TestNormalizer(unittest.TestCase):
         # 장면: 대부분은 살짝 파란기가 도는 중성 회색, 소수의 픽셀만 강한
         # 주황색 광원(야경 가로등 상황의 축소판). robust 추정은 주황 광원을
         # 제외하고 회색 픽셀들의 파란기만 보정해야 한다.
-        rng = np.random.default_rng(2)
         img = np.empty((10, 10, 3))
         img[..., 0] = 0.28
         img[..., 1] = 0.30
@@ -948,17 +947,17 @@ class TestMatrixFeaturesMode(unittest.TestCase):
 
 class TestFindPairsExcludesContaminated(unittest.TestCase):
     """정정(2026-09-01): calibrate_profile._find_pairs()가 raw_calib_cache의
-    공식 13쌍 중 tools.calibrate._CONTAMINATED_OFFICIAL_PAIRS(Adobe
+    공식 13쌍 중 tools.fit.calibrate._CONTAMINATED_OFFICIAL_PAIRS(Adobe
     Photoshop/Lightroom Software EXIF가 찍힌 9쌍)를 실제로 걸러내는지 -
     raw_calib_cache/는 CI에 없으므로(tests/CLAUDE.md) glob/exists를
-    모킹한다. tools.calibrate._resolve_pairs()의 동명 테스트
+    모킹한다. tools.fit.calibrate._resolve_pairs()의 동명 테스트
     (tests/test_calibrate.py)와 짝을 이룬다."""
 
     @patch("os.path.exists", return_value=True)
     @patch("glob.glob")
     def test_contaminated_official_pairs_excluded(self, mock_glob, mock_exists):
         from hybrid_engine.calibrate_profile import _find_pairs, CACHE_DIR
-        from tools.calibrate import _CONTAMINATED_OFFICIAL_PAIRS
+        from tools.fit.calibrate import _CONTAMINATED_OFFICIAL_PAIRS
         import os as os_module
 
         clean = ["00378.jpg.3FR", "02709.jpg.fff"]

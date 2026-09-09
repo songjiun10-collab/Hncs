@@ -1,0 +1,1 @@
+../../.claude/hooks/protect_agent_model_naming.py

@@ -3,7 +3,7 @@
 > Sub-project 2 of 4 in the "레포 전체 대규모 리팩토링" initiative
 > (maintainability + readability). Sub-project 1 (onboarding docs) is
 > done. This one, sub-project 3 (`tools/` adopted-vs-rejected index), and
-> sub-project 4 (splitting `tools/calibrate.py`) get their own specs.
+> sub-project 4 (splitting `tools/fit/calibrate.py`) get their own specs.
 
 ## Governing exception
 
@@ -60,7 +60,7 @@ values without duplicating them:
 - `hybrid_engine/core/preset_inverse.py:80`, `curve_params()`:
   `inspect.signature(BRAND_FUNCS[brand]).parameters["toe_lift"].default`
   (also reads `shoulder_start`, `white_point`).
-- `tools/video_engine.py:116`, `brand_video_params()`: same pattern,
+- `tools/cli/video_engine.py:116`, `brand_video_params()`: same pattern,
   reading `toe_lift`, `shoulder_start`, `white_point`.
 
 `functools.partial` also satisfies `inspect.signature()` correctly
@@ -85,7 +85,7 @@ and before `apply_population_fit_look_video_frame`:
 def make_population_fit_look(toe_lift, shoulder_start, white_point, clahe_clip):
     """apply_population_fit_look()에 브랜드별 상수를 고정한 apply_*_look()
     함수를 만들어 반환한다. functools.partial이 아니라 진짜 def 클로저를
-    쓰는 이유: hybrid_engine/core/preset_inverse.py와 tools/video_engine.py가
+    쓰는 이유: hybrid_engine/core/preset_inverse.py와 tools/cli/video_engine.py가
     inspect.signature(func).parameters["toe_lift"].default 형태로 이
     함수의 기본값을 직접 읽어가므로(브랜드 상수를 이중 기록하지 않기
     위해), 그 두 소비자가 지금과 동일하게 동작하려면 실제 함수
@@ -173,7 +173,7 @@ more scrutiny than a typical docs-only change:
    `BRAND_LOOKS` entries already call these exact functions and check
    shape/dtype), `tests/test_video_engine.py` (exercises
    `brand_video_params()`, i.e. the `inspect.signature()` path in
-   `tools/video_engine.py`), and any `preset_inverse` tests exercising
+   `tools/cli/video_engine.py`), and any `preset_inverse` tests exercising
    `curve_params()`.
 3. `python3 -m unittest discover -s tests` full suite green (excluding
    the pre-existing, unrelated `torch` import errors in this sandbox).

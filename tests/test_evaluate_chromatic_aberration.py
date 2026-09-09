@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_chromatic_aberration import _resize_max_dim, _sign_test_p, summarize
+from tools.research.evaluate_chromatic_aberration import _resize_max_dim, _sign_test_p, summarize
 
 
 class TestResizeMaxDim(unittest.TestCase):
@@ -31,14 +31,14 @@ class TestSignTestP(unittest.TestCase):
 
     def test_known_exact_value(self):
         # C(13,3) 이하 누적 / 2^13 = 0.046142578125(한쪽 꼬리) x 2(양측) -
-        # tools/evaluate_darktable_vs_rawpy.py의 동일 구현/동일 관례로
+        # tools/research/evaluate_darktable_vs_rawpy.py의 동일 구현/동일 관례로
         # 교차검증한 값(_sign_test_p(10, 3) == 0.09228515625)
         self.assertAlmostEqual(_sign_test_p(10, 3), 0.09228515625, places=9)
 
 
 class TestSummarizeShape(unittest.TestCase):
     """summarize(baseline_de, best_de, names)가 반환하는 dict의 키/타입만
-    검증 - tools/evaluate_chromatic_aberration.py의 실제 시그니처(리스트
+    검증 - tools/research/evaluate_chromatic_aberration.py의 실제 시그니처(리스트
     of 튜플이 아니라 3개의 나란한 배열)를 그대로 따른다."""
 
     def test_returns_expected_keys(self):

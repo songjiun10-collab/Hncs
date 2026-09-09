@@ -65,7 +65,7 @@ v12/day-night v3 기준 (`brands/hasselblad.py` docstring 참고).
     따라 `brands/hasselblad.py`에는 변경을 가하지 않기로 결정 — 이번
     분석의 실질적 산출물은 "반영 안 하는 게 맞다"는 근거 있는 결론.
 - **재검증(2026-07, brands/core/tools 리팩토링 후)**: `apply_hncs`(순정)와
-  `apply_hncs_learned`(런드)를 `tools.calibrate grid_search`/`learn_curve`로
+  `apply_hncs_learned`(런드)를 `tools.fit.calibrate grid_search`/`learn_curve`로
   다시 돌려서 RMSE가 리팩토링 전과 완전히 동일하게 재현됨을 확인
   (23.31→16.51 grid_search, 23.31→15.41 learn_curve) - raw+jpeg 페어가
   여전히 10장뿐이라(나머지는 죽은 링크) 더 재보정할 새 데이터는 없음
@@ -225,9 +225,9 @@ X1D 표본이 4장까지 줄어서 결론을 내리기엔 너무 얇다 - 세대
 근본 원인과 함께 미해결로 남는다. X2D II raw+jpeg 페어 기여 제안이
 실제로 이 공백을 메울 수 있는 유일한 경로.
 
-**코드 수정**: `tools/analyze.py`의 `_hasselblad_download()`에 리사이즈
+**코드 수정**: `tools/cli/analyze.py`의 `_hasselblad_download()`에 리사이즈
 *전* 원본 바이트 단계에서 EXIF Software 검사(`_check_genuine_bytes()`)를
-추가해서, 앞으로 `python3 -m tools.analyze hasselblad`를 재실행하면
+추가해서, 앞으로 `python3 -m tools.cli.analyze hasselblad`를 재실행하면
 Photoshop/Lightroom 편집분이 자동으로 제외되고 제외 건수가 콘솔에
 찍힌다. cameralabs.com은 하드 제외하지 않음(위 표에서 보듯 왜곡 효과가
 노이즈 수준이라 서드파티 소스 자체를 배제할 근거는 약함) - 대신
@@ -244,9 +244,9 @@ X2D II raw+jpeg 페어 기여 제안은 별도로 진행 중(GitHub 이슈 #4 �
 재시도")과 달리 소유자 본인 소유 파일이라 라이선스 문제 없이 바로 쓸 수
 있었다.
 
-**방법론** (`tools/build_local_manifest.py`, 신규):
+**방법론** (`tools/data/build_local_manifest.py`, 신규):
 - EXIF `DateTimeOriginal`이 2초 이내로 일치하는 raw/jpeg를 "동일 셔터"로
-  매칭 (`tools/verify_contributed_pairs.py`의 기존 허용치와 동일)
+  매칭 (`tools/data/verify_contributed_pairs.py`의 기존 허용치와 동일)
 - 매칭 도중 발견: 2017년 촬영분 X1D raw 8장이 jpeg보다 정확히 **7시간**
   빠르게 기록되어 있었다(분·초 단위까지 완전 일치 - 우연으로는 사실상
   불가능한 패턴). 카메라/펌웨어가 raw와 jpeg에 서로 다른 타임존 기준으로
@@ -270,7 +270,7 @@ X2D II raw+jpeg 페어 기여 제안은 별도로 진행 중(GitHub 이슈 #4 �
 | X1D | 1 |
 
 공식 샘플 13쌍(전량 X1D 계열) + 로컬 61쌍 = 총 74쌍으로
-`python3 -m tools.calibrate learn_curve` 재실행. 세대별 RMSE 분해:
+`python3 -m tools.fit.calibrate learn_curve` 재실행. 세대별 RMSE 분해:
 
 | 카메라 | n | 파라메트릭(v11) RMSE | 학습 LUT(v12) RMSE |
 |---|---|---|---|
@@ -285,7 +285,7 @@ X2D II raw+jpeg 페어 기여 제안은 별도로 진행 중(GitHub 이슈 #4 �
 "Phocus 실제 렌더 대조" 절 정정에서 확인된 편집 오염 9쌍(로컬 61쌍은
 이미 `verify_contributed_pairs`가 같은 기준으로 걸러낸 뒤라 무관 -
 104쌍 후보 중 43쌍이 이 필터로 이미 탈락됨, 위 "방법론" 참고)을
-`tools/calibrate.py`의 `_resolve_pairs()`에서 제외하도록 고치고
+`tools/fit/calibrate.py`의 `_resolve_pairs()`에서 제외하도록 고치고
 (`_CONTAMINATED_OFFICIAL_PAIRS` 상수) `learn_curve`를 65쌍(클린 공식
 4쌍 + 로컬 61쌍)으로 재실행:
 
@@ -311,11 +311,11 @@ X2D II raw+jpeg 페어 기여 제안은 별도로 진행 중(GitHub 이슈 #4 �
 채택하지 않는다. 세대별로 각각 학습한 LUT이 세대 내에서는 더 나을 수
 있지만(미검증), 세대당 표본이 아직 30장 안팎이라 이번엔 시도하지 않았다.
 
-재현: `python3 -m tools.build_local_manifest <원본 폴더> datasets/hasselblad/contributed/local-mixed-2026-07`
-로 페어 추가 → `python3 -m tools.calibrate learn_curve`로 재학습.
+재현: `python3 -m tools.data.build_local_manifest <원본 폴더> datasets/hasselblad/contributed/local-mixed-2026-07`
+로 페어 추가 → `python3 -m tools.fit.calibrate learn_curve`로 재학습.
 
 **하이브리드(regularize) 재검증(2026-08)** - 위 두 버전(v11/v12)
-재검증과 같은 74쌍으로 `tools/calibrate.py regularize` 모드(v11↔v12
+재검증과 같은 74쌍으로 `tools/fit/calibrate.py regularize` 모드(v11↔v12
 ridge 하이브리드, `lut = (sums + λ·prior)/(counts + λ)`)도 재실행.
 최적 λ=1e9(=순수 파라메트릭) - λ를 0(이 λ=0 arm은 v12 자체가 아니라
 `_build_lut_from_counts`가 평균 기반·빈 bin은 prior로 채워 근사한
@@ -341,7 +341,7 @@ ridge 하이브리드, `lut = (sums + λ·prior)/(counts + λ)`)도 재실행.
 
 **결론: 하이브리드는 도움이 안 된다.** v11이 이미 v12를 압도적으로
 이기는 상황이라 둘을 섞을 이유가 없고, 그리드서치 자체가 그걸
-정량적으로 확인해줬다. 재현: `python3 -m tools.calibrate regularize`.
+정량적으로 확인해줬다. 재현: `python3 -m tools.fit.calibrate regularize`.
 
 ## v11 파라미터 재보정 - 65쌍으로 그리드서치 + LOO 검증, 실제 채택 (2026-08)
 
@@ -351,7 +351,7 @@ shoulder_start=0.78, white_point=1.0, exposure_gamma=0.7 - v10/v11 원래
 자체의 파라미터를 65쌍(공식 오염제외 4 + 로컬 기여 61)으로 다시
 그리드서치했다.
 
-**1단계 - in-sample 그리드서치** (`tools/calibrate.py`의 `run_grid_search()`를
+**1단계 - in-sample 그리드서치** (`tools/fit/calibrate.py`의 `run_grid_search()`를
 `collect_pairs()`(공식 13쌍만) 대신 `_resolve_pairs()`(65쌍)를 쓰도록
 수정, 파라미터 격자는 기존과 동일: exposure_gamma 7값 x toe_lift 3값 x
 shoulder_start 7값 x white_point 3값 = 441조합):
@@ -393,8 +393,8 @@ shoulder_start≈0.5는 v11 원래 이력(`brands/hasselblad.py` docstring)에�
 shoulder_start 0.78→0.5, white_point 1.0 그대로) - 자세한 근거는 그
 파일 docstring 참고. 전체 테스트(613개) 통과 확인.
 
-재현: `python3 -m tools.calibrate grid_search`(in-sample) /
-`python3 -m tools.calibrate grid_search_loo`(LOO 검증).
+재현: `python3 -m tools.fit.calibrate grid_search`(in-sample) /
+`python3 -m tools.fit.calibrate grid_search_loo`(LOO 검증).
 
 ### 독립 검증 - ΔE00(실사진 + ColorChecker 차트)로 재확인 (2026-08)
 
@@ -480,7 +480,7 @@ Phocus 4.1.1(`brew install --cask phocus`)로 Import → (기본 Standard
 프리셋, 조정 없음) → Export해서 진짜 HNCS 렌더 TIFF를 얻었다 - 배경은
 `hncs_external_sources_analysis.md` 6절 참고.
 
-**방법**: `tools/calibrate.py`의 `load_neutral_render()`와 동일한 레시피
+**방법**: `tools/fit/calibrate.py`의 `load_neutral_render()`와 동일한 레시피
 (`rawpy.postprocess(use_camera_wb=True, no_auto_bright=True, output_bps=8,
 gamma=(2.222, 4.5))`)로 raw를 "무가공 중립" 베이스라인으로 디코드해
 `apply_hncs()`에 입력, `hybrid_engine.utils.evaluate.mean_delta_e`
@@ -531,7 +531,7 @@ gamma=(2.222, 4.5))`)로 raw를 "무가공 중립" 베이스라인으로 디코�
 
 재현: Phocus에서 `raw_calib_cache/*.3FR`/`*.fff` 13개를 Import(기본
 Standard 프리셋) → TIFF Export 후, 이 문서를 생성한 1회성 스크립트
-(경로는 세션 스크래치 - 재현 시 `tools/calibrate.py`의
+(경로는 세션 스크래치 - 재현 시 `tools/fit/calibrate.py`의
 `load_neutral_render()` + `hybrid_engine.utils.evaluate.mean_delta_e` +
 `hybrid_engine.utils.io.load_image_linear`를 조합하면 동일 로직).
 
@@ -586,7 +586,7 @@ Standard 프리셋) → TIFF Export 후, 이 문서를 생성한 1회성 스크�
 
 ## White Patch / Shades of Gray 자동 화이트밸런스 정확도 (2026-08)
 
-`tools/raw_pipeline.py --auto-wb-mode {white_patch,shades_of_gray}`(신규,
+`tools/cli/raw_pipeline.py --auto-wb-mode {white_patch,shades_of_gray}`(신규,
 `core/log_pipeline.py`)가 raw_calib_cache 13장(실사진, 컬러차트 아님)에서
 카메라의 실제 AsShotNeutral(DNG 스펙, 정답으로 취급) 대비 얼마나
 정확한지 실측.
@@ -702,7 +702,7 @@ B×1.0배로 커진다 - **채널 게인이 그 채널의 센서 노이즈를 �
    지우고 색조/구조는 유지)한 뒤 ΔE00 재계산.
    블러 없음 22.01 -> 5px 21.96 -> 15px 21.88 -> 31px 21.81 -> 61px(매우
    강함) 21.76 - 노이즈를 사실상 다 지워도 1.1%밖에 안 줄어듦.
-2. **74쌍 전체**(공식 13 + 로컬 기여 61, `tools/calibrate.py`의
+2. **74쌍 전체**(공식 13 + 로컬 기여 61, `tools/fit/calibrate.py`의
    `collect_pairs()`+`collect_local_pairs()` - jpeg 타깃은 안 쓰므로
    EXIF 오염 필터 무관), 각 페어의 전체 픽셀 ΔE00 분포를 블러 전/후로
    비교(camera_wb vs shades_of_gray, 61px 블러):
@@ -802,7 +802,7 @@ target_L **평균**을 쓰는데, ISO 64와 25,600은 카메라 내부 노이즈
 **결론**: 세대별 분리는 세대마다 결과가 다르고(CFV는 분리하면 오히려
 나빠짐, X2D 100C는 나아지되 근거가 약함), 어느 쪽도 지금 당장 채택할
 만큼 명확하지 않다. `apply_hncs()`는 그대로 유지. 재현: `python3 -m
-tools.calibrate grid_search_loo_per_generation` / `regularize_per_generation`,
+tools.fit.calibrate grid_search_loo_per_generation` / `regularize_per_generation`,
 둘 다 min_n=10 미만 세대는 자동 생략.
 
 ## 색수차 보정(chromatic_aberration) LOO 실험 - 완전한 무효과 (2026-08)
@@ -812,7 +812,7 @@ rawpy `raw.postprocess()`의 `chromatic_aberration=(red_scale, blue_scale)`
 줄어드는지 실측. 원본 스펙(`docs/superpowers/specs/
 2026-07-31-chromatic-aberration-correction-design.md`, 13쌍·X1D 전용)을
 로컬 dpreview 클린 95쌍(4세대: CFV/X2D/X2D II/X1D II, X1D는 클린 표본
-1장뿐이라 제외)으로 확대 재현했다(`tools/evaluate_chromatic_aberration.py`,
+1장뿐이라 제외)으로 확대 재현했다(`tools/research/evaluate_chromatic_aberration.py`,
 신규 - 이 체크아웃엔 `hybrid_engine`이 없어 자체 구현).
 
 **방법**: `half_size=True`(속도), `gamma=(1,1)` pure linear로 rawpy
@@ -846,7 +846,7 @@ no-op 처리될 가능성) 별도 확인 - 동일 파일을 (0.98,0.98) vs (1.02
 94쌍)에서는 기각된다. `apply_hncs()`는 손대지 않음(원본 스펙과 동일한
 이유 - 이 실험은 raw 디코드 단계 전용, 톤커브 단계와 무관).
 
-재현: `python3 -m tools.evaluate_chromatic_aberration` (95쌍×81콤보,
+재현: `python3 -m tools.research.evaluate_chromatic_aberration` (95쌍×81콤보,
 약 1시간).
 
 ## v13: dpreview 135쌍(5세대, X2D II 포함) 재검증 - candidate (2026-08)
@@ -1018,11 +1018,11 @@ CIEDE2000으로 재측정
   135쌍(5세대) 기준, X2D II 실사진 41장 포함
 
 `shoulder_start`/`white_point`는 이미 일치, 실질 쟁점은
-`exposure_gamma`(0.8 vs 0.7)뿐이라 `tools/evaluate_exposure_gamma_x2dii.py`
+`exposure_gamma`(0.8 vs 0.7)뿐이라 `tools/x2dii/evaluate_exposure_gamma_x2dii.py`
 (신규)로 두 후보를 **X2D II 41장을 포함한 dpreview 클린 95쌍**(둘 중
 어느 쪽도 그동안 갖고 있지 않았던 조합)에 직접 맞대결시켰다. 학습 없이
 고정된 두 파라미터셋을 페어드 비교만 하므로 LOO는 아니고, 통계는
-`tools/calibrate.py`의 `summarize()`(부호검정, 페어드 t, 부트스트랩
+`tools/fit/calibrate.py`의 `summarize()`(부호검정, 페어드 t, 부트스트랩
 95% CI, drop-one)를 그대로 재사용.
 
 | 세대 | n | 결과 | 부호검정 p | 부트스트랩 95% CI(개선폭) |
@@ -1046,16 +1046,16 @@ exposure_gamma로 X 시스템 전 세대를 풀링하겠다는 전제 자체가 
 CFV/X2D 대비 유의성 있는 반대 방향 신호로 처음 확정한 결과다.
 
 `apply_hncs()`는 이 실험으로 바꾸지 않는다 - 세대별 분기 도입 여부는
-별도 결정. 재현: `python3 -m tools.evaluate_exposure_gamma_x2dii`
-(95쌍, 약 5분 - `tools.calibrate.load_neutral_render`/`gray_stats` 재사용).
+별도 결정. 재현: `python3 -m tools.x2dii.evaluate_exposure_gamma_x2dii`
+(95쌍, 약 5분 - `tools.fit.calibrate.load_neutral_render`/`gray_stats` 재사용).
 
 ### X2D II 전용 파라미터 LOO/5-fold - 판정 보류 (2026-08)
 
 위 표에서 "X2D II 전용이 이긴다"는 main과 candidate라는 **두 고정
 파라미터셋끼리의** 비교였다. 별도로, X2D II 41쌍 자체 안에서
 "세대전용으로 그리드서치한 파라미터가 풀링된 main보다 유의미하게
-나은가"를 `tools.calibrate.run_grid_search_loo_per_generation`과 같은
-방법론으로 검증했다(`tools/evaluate_x2dii_generation_loo.py`, 신규 -
+나은가"를 `tools.fit.calibrate.run_grid_search_loo_per_generation`과 같은
+방법론으로 검증했다(`tools/x2dii/evaluate_x2dii_generation_loo.py`, 신규 -
 441콤보 그리드, 41쌍 전량 클린이라 편집오염 필터 불필요).
 
 **LOO(외부폴드 41개)**: 개선폭 36.0%(RMSE 19.88->12.73), 27승14패,
@@ -1090,7 +1090,7 @@ CFV/X2D 대비 유의성 있는 반대 방향 신호로 처음 확정한 결과�
 채택을 뒷받침할 만큼 통계적으로 견고하지는 않다 - 41쌍이라는 표본
 크기 자체가 한계다. **서로 다른 리뷰어/촬영 세션의 X2D II raw+jpeg
 페어가 추가로 확보되면 재확정**한다. 재현: `python3 -m
-tools.evaluate_x2dii_generation_loo`.
+tools.x2dii.evaluate_x2dii_generation_loo`.
 
 #### 표본 확장(41->63->70쌍) 후 판정 확정, shoulder_start 정정 (2026-08)
 
@@ -1101,7 +1101,7 @@ XCD 35-100E), 전부 Software 태그가 펌웨어 버전 문자열뿐이라(Adob
 0.00(위 8가설 조사의 "확연히 다른 습관")이었는데 추가분엔 -2/3, -4/3
 등도 섞여 있어 완전히 같은 촬영 세션은 아닌 것으로 보인다. 41->63(+22,
 1건은 중복 파일이라 실질 +21)->70(+7)쌍으로 매니페스트를 확장하고
-`tools/evaluate_x2dii_generation_loo.py`를 그대로 재실행했다:
+`tools/x2dii/evaluate_x2dii_generation_loo.py`를 그대로 재실행했다:
 
 | n | 개선폭(LOO) | LOO 부호검정 p | 5-fold 부호검정 p | 지배적 조합 |
 |---|---|---|---|---|
@@ -1129,7 +1129,7 @@ XCD 35-100E), 전부 Software 태그가 펌웨어 버전 문자열뿐이라(Adob
 매트릭스를 실사진에 그대로 적용만 해봤다(챠트 매트릭스+톤커브가
 톤커브 단독보다 오히려 나빠짐, 11.23->12.32 ΔE00). 이번엔 챠트가
 아니라 **X2D II 실사진 41장 자체**로 3x3 매트릭스를 새로 피팅해서
-(`tools/evaluate_x2dii_color_matrix.py`, 신규 - `AsShotNeutral`로
+(`tools/x2dii/evaluate_x2dii_color_matrix.py`, 신규 - `AsShotNeutral`로
 화이트밸런스한 카메라 네이티브 linear RGB를 소스로, ridge=1.0
 최소자승) 같은 질문을 다시 물었다. LOO(41폴드, held-out 뺀 40쌍으로
 매트릭스 재피팅) - 매트릭스 뒤에 붙는 톤커브는 `apply_hncs()`(main)
@@ -1147,7 +1147,7 @@ XCD 35-100E), 전부 Software 태그가 펌웨어 버전 문자열뿐이라(Adob
 자체로 새로 피팅해도 결과는 안 바뀐다** - X2D II의 문제는 공간적
 색 왜곡(매트릭스가 고치는 것)이 아니라 톤/노출 쪽이라는 게 두 번째
 독립 실험으로도 확인됐다. 재현: `python3 -m
-tools.evaluate_x2dii_color_matrix`.
+tools.x2dii.evaluate_x2dii_color_matrix`.
 
 ### apply_hncs_x2dii - X2D II 전용 실험 함수 신설 (2026-08)
 
@@ -1188,7 +1188,7 @@ white_point=0.95`. 3x3 매트릭스는 여전히 제외(위에서 기각).
 한 번도 없었다.
 
 **직접 맞대결(3000px, 다운샘플 최소화) - 결과는 보류, 사실상 무승부**
-(`tools/evaluate_full_pixel_de00_confirm.py`, n=70): 개선폭 -5.13%
+(`tools/fit/evaluate_full_pixel_de00_confirm.py`, n=70): 개선폭 -5.13%
 (main이 근소 우세), 승/패 34/36, 부트스트랩 95% CI [-1.679, +0.292]
 (0 포함) - **percentile RMSE 그리드서치가 냈던 "44.1% 개선"은
 목적함수 자체의 결함이었다** - Sony a7V(`brands/sony_a7v.py` 이력)에서
@@ -1198,7 +1198,7 @@ shoulder_start)에도 있었던 것. 이 결과는 사용자가 직접 렌더링
 뿌옇다")와도 정확히 일치한다.
 
 **ΔE00을 직접 목적함수로 441콤보 그리드서치 재실행**
-(`tools/evaluate_x2dii_de00_grid.py`, 신규 - 저해상도 200px로 폴드별
+(`tools/x2dii/evaluate_x2dii_de00_grid.py`, 신규 - 저해상도 200px로 폴드별
 콤보 선택, 3000px로 최종 LOO 평가): `apply_hncs()`(main) 대비 **개선폭
 +12.99%, 61승9패, 부호검정 p<0.0001, 부트스트랩 95% CI [+1.421,
 +2.065]**(0 미포함, 이번엔 진짜 유의미) - 최적 조합
@@ -1215,7 +1215,7 @@ toe_lift=0.02, shoulder_start=0.58, white_point=0.95`로 갱신.
 개선폭 자체는 작아지지만(Sony +0.53%, Leica +0.6~2.8%) 신뢰할 수
 있고, X2D II처럼 원래 목적함수가 완전히 잘못된 방향을 가리켰던 경우엔
 오히려 큰 개선(+12.99%)이 나올 수도 있다 - 크기가 아니라 목적함수
-자체가 핵심이다. 재현: `python3 -m tools.evaluate_x2dii_de00_grid`.
+자체가 핵심이다. 재현: `python3 -m tools.x2dii.evaluate_x2dii_de00_grid`.
 
 ### shoulder_start x clahe_clip 합동 재검증 - 이미 최적값이었음 확인 (2026-08)
 
@@ -1223,7 +1223,7 @@ toe_lift=0.02, shoulder_start=0.58, white_point=0.95`로 갱신.
 4개만 훑었다 - `clahe_clip`(=1.25)은 `apply_hncs()`(main)의 기본값을
 그대로 물려받은 채 한 번도 변수로 넣어본 적이 없었다(사용자 지적).
 `shoulder_start`와 `clahe_clip` 사이에 상호작용이 있는지 확인하려고
-`tools/evaluate_x2dii_clahe_shoulder_grid.py`(신규 - exposure_gamma=0.6/
+`tools/x2dii/evaluate_x2dii_clahe_shoulder_grid.py`(신규 - exposure_gamma=0.6/
 toe_lift=0.02/white_point=0.95는 고정, shoulder_start 7값 x clahe_clip
 6값=42콤보)로 같은 X2D II 70쌍에 합동 재그리드서치를 돌렸다.
 
@@ -1246,15 +1246,15 @@ clahe_clip=1.25)을 그대로 선택**했고, 나머지 12폴드가 이웃값(0.
 이미 이긴다. **결론: clahe_clip=1.25/shoulder_start=0.58는 미검증
 차용값이 아니라 실제로 이 2D 그리드의 결합 최적점이었다** - 코드 변경
 없음(`apply_hncs_x2dii()` 그대로 유지). 재현: `python3 -m
-tools.evaluate_x2dii_clahe_shoulder_grid`.
+tools.x2dii.evaluate_x2dii_clahe_shoulder_grid`.
 
 ### apply_hncs_x1d50c 신설 - Hasselblad X1D-50c 전용 (2026-08)
 
 로컬 raw+jpeg 라이브러리에 X1D-50c 페어 20장이 새로 추가돼서(Adobe 편집
 오염 없음 확인), `apply_hncs()`(main) 대비 ΔE00을 직접 목적함수로
 그리드서치+LOO를 X2D II와 동일 방식으로 돌렸다
-(`tools/evaluate_hasselblad_body_de00_grid.py` - 200px로 폴드별 콤보
-선택, 400px로 확정, 이어서 `tools/evaluate_native_pixel_confirm.py`로
+(`tools/x2dii/evaluate_hasselblad_body_de00_grid.py` - 200px로 폴드별 콤보
+선택, 400px로 확정, 이어서 `tools/fit/evaluate_native_pixel_confirm.py`로
 원본 해상도(max_dim=3000) 재확인).
 
 | 검증 단계 | 개선폭 | 승/패 | 부호검정 p | 부트스트랩 95% CI |
@@ -1309,8 +1309,8 @@ CI[-0.057,+0.433] 0 포함)·CFV 100C/907X(31쌍, CI[+0.015,+0.350] 0에
 X-T30 III(.raf)가 새로 들어오면서 재도전했다. 두 바디 JPEG 전부 FilmMode가
 "F0/Standard (Provia)"였는데 fuji.py엔 대응하는 프리셋이 없어서, 비교할
 기존 함수 없이 가공 없는 raw 중립 렌더 자체를 baseline으로 삼아
-(`tools/evaluate_new_body_de00_grid.py --baseline-identity`, 신규 옵션)
-ΔE00 직접 그리드서치+LOO를 돌리고 `tools/evaluate_native_pixel_confirm.py`로
+(`tools/fit/evaluate_new_body_de00_grid.py --baseline-identity`, 신규 옵션)
+ΔE00 직접 그리드서치+LOO를 돌리고 `tools/fit/evaluate_native_pixel_confirm.py`로
 원본 픽셀(max_dim=3000) 재확인했다.
 
 | 바디 | n | 개선폭(LOO) | 개선폭(원본 픽셀) | 부호검정 p | 부트스트랩 95% CI(픽셀) |
@@ -1350,7 +1350,7 @@ EOS R6 Mark III/R1은 CI가 0을 포함하거나(X2D 100C) 개선폭 자체가
 개선폭)를 보고 "데이터 재확인"을 요청해서 다시 조사한 결과, **두 개의
 독립적인 데이터 무결성 버그**를 발견했다:
 
-**버그 1 - Capture One이 편집 오염 키워드 목록에 없었음.** `tools/analyze.py`의
+**버그 1 - Capture One이 편집 오염 키워드 목록에 없었음.** `tools/cli/analyze.py`의
 `_check_genuine_bytes()`가 Photoshop/Lightroom/Camera Raw만 걸러내고
 **Capture One**(Phase One의 RAW 현상 소프트웨어)은 빠져있었다. M11
 "클린" 35쌍을 재확인하니 EXIF `Software` 태그가 전부
@@ -1395,7 +1395,7 @@ EOS R6 Mark III/R1은 CI가 0을 포함하거나(X2D 100C) 개선폭 자체가
 뒤집혔다.** 채택된 적 없는 항목이라(항상 "약한 근거"로 보류 상태였음)
 실제 영향은 없지만, M11과 함께 "오염이 약한 신호를 가짜 우세로
 부풀린" 두 번째 사례. 재현: `python3 -m
-tools.evaluate_hasselblad_body_de00_grid --label "Hasselblad CFV
+tools.x2dii.evaluate_hasselblad_body_de00_grid --label "Hasselblad CFV
 100C/907X" --manifest datasets/hasselblad/hasselblad_new_pairs.csv
 --raw-dir "/Users/songjiun/local-work" --model "CFV 100C/907X"`.
 
@@ -1423,7 +1423,7 @@ Chrome/Classic Negative/Nostalgic Neg/Eterna)는 각각 최소 25쌍 확보돼�
 CI [+2.731, +3.556]. 65/67 폴드가 기존 채택값(`toe=0/shoulder=0.82/wp=1.0`)
 그대로 수렴 - 세 번째 바디가 추가돼도 안 바뀜, 기존 결론 재확인.
 
-**기존 프리셋 3개를 raw+jpeg로 직접 검증**(`tools/evaluate_fuji_preset_de00.py`,
+**기존 프리셋 3개를 raw+jpeg로 직접 검증**(`tools/fuji/evaluate_fuji_preset_de00.py`,
 신규 - raw 무가공 대비 기존 프리셋 함수 그대로 비교, 그리드서치 아님):
 
 | 프리셋 | n | 개선폭 | 판정 |
@@ -1448,7 +1448,7 @@ docstring에 이 결과를 append, `apply_nostalgic_neg_v2`로 대체 권장.
 shoulder_start만 0.66(15/39)·0.70(15/39)·0.82(9/39)로 삼분됨 - 중간값
 0.70을 기본값으로 채택, 표본이 더 모이면 재확인 필요.
 
-재현: `python3 -m tools.evaluate_new_body_de00_grid --label "..." --manifest
+재현: `python3 -m tools.fit.evaluate_new_body_de00_grid --label "..." --manifest
 /tmp/fuji_<mode>.csv --raw-dir "/Users/songjiun/local-work"
 --baseline-identity` (매니페스트는 `datasets/fuji/fuji_new_pairs.csv`를
 film_mode 컬럼으로 필터링해서 생성).
@@ -1483,7 +1483,7 @@ white_point=1.0` 수렴 - Sigma BF(`toe_lift=0.09`)와 toe_lift만 다름.
 ### 학습 LUT vs 파라메트릭 - 6개 함수 신설 (2026-08)
 
 사용자가 "라이카/후지 톤커브 진짜 같은지 확인"을 요청해서 시작된
-실측 톤커브 조사(`tools/evaluate_empirical_tone_curve.py`)에서, 파라메트릭
+실측 톤커브 조사(`tools/fit/evaluate_empirical_tone_curve.py`)에서, 파라메트릭
 `toe_lift/shoulder_start/white_point` 3파라미터 가정이 실제 카메라 곡선과
 얼마나 맞는지 10개 채택 함수 전부 RMSE로 측정했다:
 
@@ -1500,7 +1500,7 @@ white_point=1.0` 수렴 - Sigma BF(`toe_lift=0.09`)와 toe_lift만 다름.
 | Sigma BF | 45.87(가장 안 맞음) |
 | Nostalgic Neg v2 | 46.36 |
 
-이걸 `tools/evaluate_learned_lut.py`(파라메트릭 대신 256bin 학습 LUT을
+이걸 `tools/fit/evaluate_learned_lut.py`(파라메트릭 대신 256bin 학습 LUT을
 LOO로 교차검증)로 이어서 실제 ΔE00 개선 여부를 확인했다:
 
 | 함수 | n | 개선폭 | 판정 |
@@ -1523,7 +1523,7 @@ RMSE와 LUT 개선폭이 대체로 대응(X2D II 최저 RMSE·최저 개선, Sig
 ΔE00은 픽셀수가 많은 구간(주로 미드톤) 비중이 커서 완전히 같은
 지표가 아니기 때문으로 추정.
 
-**우세 판정 6개를 `tools/fit_final_lut.py`로 홀드아웃 없이 전체
+**우세 판정 6개를 `tools/fit/fit_final_lut.py`로 홀드아웃 없이 전체
 표본 재학습해서 신설**(파라메트릭 `apply_*_look`/`apply_provia`는
 `hasselblad_learned.py` 선례대로 그대로 유지, 나란히 배치):
 
@@ -1559,7 +1559,7 @@ RMSE와 LUT 개선폭이 대체로 대응(X2D II 최저 RMSE·최저 개선, Sig
 1167 vs 3339)는 신호를 근거로, 이미지 콘텐츠에서 직접 노이즈를
 추정해서(Immerkaer 1996 고속 노이즈 추정, EXIF ISO는 `apply_*()`
 시그니처에 없어서 못 씀) 파라메트릭/LUT을 전환하는 하이브리드를
-`tools/evaluate_hybrid_switch.py`로 LOO 검증했다. 결과: "항상 LUT"보다
+`tools/fit/evaluate_hybrid_switch.py`로 LOO 검증했다. 결과: "항상 LUT"보다
 오히려 근소하게 나쁨(a7V +10.96% vs 항상LUT +11.10%, a7R VI +8.51% vs
 +9.12%) - 학습된 임계값이 파라메트릭을 거의 안 고름(a7V 61쌍 중 1쌍,
 1.6%). 이미지 자체에서 뽑은 노이즈 추정치가 실제 ISO 신호를 충분히
@@ -1567,7 +1567,7 @@ RMSE와 LUT 개선폭이 대체로 대응(X2D II 최저 RMSE·최저 개선, Sig
 
 **라이카 바디별 개별 LUT(기각)**: 5바디 통합 LUT(`apply_leica_raw_learned`)
 대비 바디별(SL3-P/Q3 43/SL2/M10/SL2-S) 개별 학습 LUT을
-`tools/fit_final_lut.py`로 따로 뽑아 통합 LUT과 값 자체를 비교하니
+`tools/fit/fit_final_lut.py`로 따로 뽑아 통합 LUT과 값 자체를 비교하니
 평균 절대차 2.3~6.9(0-255 스케일, 라이카-후지 간 실측곡선 차이
 11~24보다 훨씬 작음) - 바디 간 차이가 크지 않다는 뜻. 편차가 가장 컸던
 M10만 바디전용 LUT이 통합 LUT보다 +3.63% 나았고(표본 내, LOO 아님),
@@ -1578,7 +1578,7 @@ M10만 바디전용 LUT이 통합 LUT보다 +3.63% 나았고(표본 내, LOO 아
 
 LOO가 표본이 클수록 낙관적으로 보일 수 있다는 이 프로젝트 통계 관례에
 따라(`hybrid_engine/CLAUDE.md`), 학습 LUT 결과 일부를 5-fold로 다시
-검증했다(`tools/evaluate_learned_lut.py --n-folds 5` 신규 옵션).
+검증했다(`tools/fit/evaluate_learned_lut.py --n-folds 5` 신규 옵션).
 
 **라이카 렌즈별**(SL3-P/SL2/SL2-S가 섞여 쓰는 VARIO-ELMARIT 등, 표본
 수는 매니페스트에서 재계산해 확인: 113/44/28/25 정확히 일치):
@@ -1637,11 +1637,11 @@ R²=0.61 수준이라는 내용 - 을 공유해서, 이 세션 전체가 써온 
 병렬 검토) 중 `apply_sony_a7rvi_learned`/`apply_sony_a7v_learned`의
 `_LEARNED_LUT` 그림자 초입(index 0-2)이 mid-gray(93/99)로 튀었다가
 index 3에서 급락(20/24)하는 비단조 절벽을 발견 - L=0이 L=3보다 밝게
-렌더링되는 반전. 원인: `tools/fit_final_lut.py`가 bin별 가중평균만
+렌더링되는 반전. 원인: `tools/fit/fit_final_lut.py`가 bin별 가중평균만
 쓰고 단조성 보장이 없어서, 등록/노이즈로 특정 bin에 섞인 소수 픽셀이
 그대로 반영됨.
 
-수정: `tools/fit_final_lut.py`와 `tools/evaluate_learned_lut.py`에 가중
+수정: `tools/fit/fit_final_lut.py`와 `tools/fit/evaluate_learned_lut.py`에 가중
 PAVA(pool adjacent violators, isotonic regression)를 추가 - 표본이 많은
 bin일수록 더 세게 고정하면서 non-decreasing을 강제. 두 바디 모두
 재검증(동일 raw+jpeg 페어, LOO):
@@ -1657,14 +1657,14 @@ bin일수록 더 세게 고정하면서 non-decreasing을 강제. 두 바디 모
 `apply_sony_a7rvi_learned`/`apply_sony_a7v_learned`는 그대로 두고
 `apply_sony_a7rvi_learned_v2`/`apply_sony_a7v_learned_v2`를 신설(값이
 바뀐 LUT이라 dated correction 주석만으로는 부족하다고 판단) - 아직
-`hybrid_engine/core/preset_inverse.py`/`tools/video_engine.py`
+`hybrid_engine/core/preset_inverse.py`/`tools/cli/video_engine.py`
 레지스트리에 연결하지 않음(적용은 별도 결정).
 
 같은 리뷰에서 나온 다른 항목들: `hybrid_engine/calibrate_profile.py`가
 `--mode` 없이 실행되면 교차검증 없이 `hasselblad.json`을 덮어쓰던
 문제(hybrid_engine/CLAUDE.md의 "Never touch" 위반) - 게이트가 있는
 `recalibrate.py --write`로 유도하는 안내만 남기고 write 로직 제거.
-`tools/iso_noise.py`가 `tools/analyze.py`와 같은 고정 임시파일 경로
+`tools/research/iso_noise.py`가 `tools/cli/analyze.py`와 같은 고정 임시파일 경로
 레이스 컨디션을 갖고 있어서 동일하게 수정. `core/engine.py`에
 `ensure_uint8()` 가드 누락(15개+ population-fit 브랜드가 거치는 경로)
 추가. `apply_hncs` 계열 5개 + Fuji 프리셋 13개에 골든해시 테스트 추가
@@ -1675,10 +1675,10 @@ bin일수록 더 세게 고정하면서 non-decreasing을 강제. 두 바디 모
 
 ### 페어 매칭 버그로 Fuji 데이터셋 절반이 오염돼 있었음을 발견·수정 (2026-08)
 
-`tools/build_local_manifest.py`의 페어 매칭(raw를 시각순으로 처리하며
+`tools/data/build_local_manifest.py`의 페어 매칭(raw를 시각순으로 처리하며
 jpeg 풀에서 "그 순간 처음 만난" 후보를 집는 방식, 델타 크기를 비교하지
 않음)을 1:1 deterministic으로 고친 뒤(별도 커밋), 이 함수를 그대로
-가져다 쓰는 `tools/build_flat_manifest.py`로 만들어진 브랜드별
+가져다 쓰는 `tools/data/build_flat_manifest.py`로 만들어진 브랜드별
 `*_new_pairs.csv`가 실제로 얼마나 영향받았는지 `~/local-work` 전체를
 새 매칭기로 재실행해서 확인했다.
 
@@ -1712,7 +1712,7 @@ X2D II에서 확인한 대로(위 "shoulder_start x clahe_clip 합동 재검증"
 `clahe_clip=1.25`를 population-fit 기본값에서 그대로 차용했을 뿐 한
 번도 그리드서치 변수로 넣은 적이 없었다. 사용자 지시("브랜드 전체")로
 raw+jpeg 데이터가 로컬에 있는 나머지 9개 바디 전부를 같은 방법으로
-재검증했다(`tools/evaluate_all_brands_clahe_shoulder_grid.py`, 신규 -
+재검증했다(`tools/fit/evaluate_all_brands_clahe_shoulder_grid.py`, 신규 -
 exposure_gamma/toe_lift/white_point는 각 바디 기존 확정값 고정,
 shoulder_start 7값 x clahe_clip 6값=42콤보, 200px 선택/400px LOO 확정).
 데이터는 `datasets/<brand>/contributed/*/`에서 읽음(`~/local-work`/
@@ -1755,7 +1755,7 @@ M10은 유일하게 역방향 신호** - 그리드서치가 오히려 현재값�
 그리드서치보다 원래 확정 과정(원본 픽셀 재확인 포함)이 더 신뢰도 높았던
 것으로 보임, 절대 이 재검증 결과로 덮어쓰면 안 됨.
 
-재현: `python3 -m tools.evaluate_all_brands_clahe_shoulder_grid`
+재현: `python3 -m tools.fit.evaluate_all_brands_clahe_shoulder_grid`
 (~450쌍, 약 25분).
 
 ## /goal "다른 전체 브랜드 평균 ΔE00→10미만" - 목표 미달, 구조적 한계로 판정 (2026-08)
@@ -1765,7 +1765,7 @@ M10은 유일하게 역방향 신호** - 그리드서치가 오히려 현재값�
 구조적으로 도달 불가능**하다는 게 opus 에스컬레이션(아래)까지 거친
 최종 판정이다. 시도한 것과 근거를 전부 기록한다.
 
-**1) 현재 상태 서베이** (`tools/measure_all_brand_baselines.py`, 800px,
+**1) 현재 상태 서베이** (`tools/fit/measure_all_brand_baselines.py`, 800px,
 각 바디의 현재 shipped 함수 그대로):
 
 | 그룹 | n | ΔE00 |
@@ -1789,13 +1789,13 @@ M10은 유일하게 역방향 신호** - 그리드서치가 오히려 현재값�
 
 **2) 톤커브 4파라미터 그리드서치만으로는 어림없음** - Canon(가장
 나쁘고 전용 튜닝 자체가 없었음)에 ΔE00 직접 목적함수 그리드서치+LOO
-(`tools/fit_population_body_de00_grid.py`, toe_lift x shoulder_start x
+(`tools/fit/fit_population_body_de00_grid.py`, toe_lift x shoulder_start x
 white_point x clahe_clip 252콤보): 23.109→22.041, **+4.62%뿐**(통계는
 견고, p<0.0001).
 
 **3) 매트릭스 추가 - 도움되지만 한참 부족**: raw 네이티브 화이트밸런스
 선형 RGB에 3x3 컬러매트릭스를 최소자승으로 새로 피팅(hncs_structural과
-같은 방법, `tools/fit_body_matrix_plus_tone_de00.py`)하고 그 위에 톤커브
+같은 방법, `tools/fit/fit_body_matrix_plus_tone_de00.py`)하고 그 위에 톤커브
 적용: Canon 19.964(톤만)→17.478(매트릭스+톤), **+12.45%**(p=0.0006) -
 채도/색조 LUT까지 추가(`--chroma`)해도 17.242로 겨우 +1.3%p 더 - 매트릭스
 +톤+채도 다 합쳐도 **17.2대에서 정체**.
@@ -1806,7 +1806,7 @@ SL3-P/SL2/Q343/M10)"에 돌리면 정반대**: 매트릭스가 오히려 나쁨
 `hncs_structural` 재검증에서 이미 확인된 "풀링된 다양한 데이터에 전역
 매트릭스를 피팅하면 오히려 해롭다"는 패턴이 여기서도 반복.
 
-**4) ISO/노출/인물 분해로도 못 좁힘** (`tools/breakdown_by_exposure_iso.py`,
+**4) ISO/노출/인물 분해로도 못 좁힘** (`tools/fit/breakdown_by_exposure_iso.py`,
 Canon 매트릭스+톤+채도 고정 파이프라인 기준): ISO 구간(저/중/고/초고)
 14.6~19.0, 노출보정 구간(언더/중립/오버) 14.4~19.7 - **어느 구간도 10에
 가깝지 않다**. 인물 사진만(OpenCV Haar cascade로 얼굴 검출, 143장 중
@@ -1847,7 +1847,7 @@ opus에게 전체 증거를 넘겨 판단을 물었다. 판정: **구조적으�
   다섯 그룹을 더 추가하면 평균이 더 나빠질 뿐이다.
 
 **opus 권고에 따라 실행한 것**: "이미 10 미만"이라던 SL2/SL3-P/M10을
-원본 픽셀(max_dim=3000)로 재확인(`tools/confirm_leica_raw_look_extension.py --already10`,
+원본 픽셀(max_dim=3000)로 재확인(`tools/fit/confirm_leica_raw_look_extension.py --already10`,
 30분 타임박스 - 실제로는 143쌍 전부 약 10분에 끝남):
 
 | 바디 | n | apply_leica_look(main) | apply_leica_raw_look(전용) | 판정 |
@@ -1868,7 +1868,7 @@ Leica 전용 튜닝 5바디 중 **3/5만 10 미만**, 나머지(SL2/SL2-S)는 �
 5% 이상 개선" 같은 상대적 목표, 또는 "Hasselblad 11.7 바닥까지 좁히기")
 또는 세대/장면 조건부 분기라는 멀티세션급 프로젝트 승인을 요청한다.
 
-재현: `python3 -m tools.fit_population_body_de00_grid canon`,
+재현: `python3 -m tools.fit.fit_population_body_de00_grid canon`,
 `... fit_body_matrix_plus_tone_de00 canon --chroma`,
 `... breakdown_by_exposure_iso canon`,
 `... confirm_leica_raw_look_extension`.
@@ -1881,7 +1881,7 @@ Leica 전용 튜닝 5바디 중 **3/5만 10 미만**, 나머지(SL2/SL2-S)는 �
 함수**(X2D II 100C만 `apply_hncs_x2dii()`, 나머지 전부
 `apply_hncs()`)를 그대로 적용해 `datasets/hasselblad/contributed/`
 전체(챠트 제외 368쌍, dedup 반영, 367쌍 디코드 성공)를 ISO/노출(EV)/
-인물 여부로 분해했다(`tools/breakdown_hasselblad_by_exposure_iso_portrait.py`
+인물 여부로 분해했다(`tools/x2dii/breakdown_hasselblad_by_exposure_iso_portrait.py`
 신설).
 
 **전체 평균 ΔE00=10.290** (세대별 실제 배포 함수 기준, in-sample 진단).
@@ -1919,14 +1919,14 @@ X1D/X1D II 50C/X1D-50c에 몰려있어(X2D II·X2D 100C·CFV는 0장) 같은
 확인된 약점이다. `apply_hncs()`/`apply_hncs_x2dii()` 둘 다 이 조사로
 바뀌지 않음(진단만).
 
-재현: `python3 -m tools.breakdown_hasselblad_by_exposure_iso_portrait`
+재현: `python3 -m tools.x2dii.breakdown_hasselblad_by_exposure_iso_portrait`
 (368쌍, 3코어 병렬 디코드 기준 약 9분).
 
 ## apply_hncs_x1d 신설 - X1D 전용, 121/121 폴드 전원일치 +18.35% (2026-09)
 
 위 세대별 분해가 X1D를 최악 세대로 확인한 데 대해 사용자가 지시("애초에
 그러면 X1D만 사용하는 필터 하나 더 만들어") - X2D II/X1D-50c와 같은
-방법으로 X1D 전용 함수를 만든다. `tools/evaluate_x1d_de00_grid.py`(신설,
+방법으로 X1D 전용 함수를 만든다. `tools/x2dii/evaluate_x1d_de00_grid.py`(신설,
 `evaluate_x2dii_de00_grid.py`와 동일 방법론 - exposure_gamma 포함
 441콤보 ΔE00 직접 그리드서치, 저해상도 200px로 폴드별 콤보 선택 후
 **3000px(원본 픽셀)로 최종 완전 LOO 평가** - 별도 원본 픽셀 재확인
@@ -1950,13 +1950,13 @@ X2D 100C(6.783)/CFV 100C/907X(5.783)는 이미 main이 잘 맞지만,
 **X1D II 50C(11.795, 세대 중 2위로 나쁨)는 여전히 전용 함수 없이
 방치된 실제 갭**이다 - 다음 후보로 남겨둠.
 
-재현: `python3 -m tools.evaluate_x1d_de00_grid` (121쌍, 순차 디코드
+재현: `python3 -m tools.x2dii.evaluate_x1d_de00_grid` (121쌍, 순차 디코드
 기준 약 15~20분).
 
 ## apply_hncs_x1dii50c 신설 - X1D II 50C 전용, 38/38 폴드 전원일치 +9.63% (2026-09)
 
 X1D 다음으로 2위로 나쁜(11.795) X1D II 50C도 사용자 지시("만들어")로
-같은 방법(`tools/evaluate_x1dii50c_de00_grid.py`, `evaluate_x1d_de00_grid.py`
+같은 방법(`tools/x2dii/evaluate_x1dii50c_de00_grid.py`, `evaluate_x1d_de00_grid.py`
 복사판) 적용 - `collect_local_pairs()`의 X1D II 50C 38쌍(dedup 반영,
 챠트 제외):
 
@@ -1972,4 +1972,4 @@ X1D 다음으로 2위로 나쁜(11.795) X1D II 50C도 사용자 지시("만들�
 전용 함수 없이 main을 그대로 쓰지만 그걸로 이미 충분히 낮음
 (6.783/5.783) - **6세대 전부 처리 완료**.
 
-재현: `python3 -m tools.evaluate_x1dii50c_de00_grid` (38쌍, 몇 분).
+재현: `python3 -m tools.x2dii.evaluate_x1dii50c_de00_grid` (38쌍, 몇 분).

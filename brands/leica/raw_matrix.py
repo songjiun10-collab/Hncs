@@ -5,7 +5,7 @@ apply_leica_raw_matrix_look - `apply_leica_raw_look()`(brands/leica_raw.py,
 `sigma_raw_matrix.py`와 같은 조사(2026-09-02, 사용자 지시 "소니같은거도
 다 매트릭스 만들어").
 
-`tools/fit_brand_matrix_chroma_pipeline.py leica --loo`로 Leica raw+jpeg
+`tools/fit/fit_brand_matrix_chroma_pipeline.py leica --loo`로 Leica raw+jpeg
 244쌍(디코드 성공, SL2/Q3 43/SL2-S/SL3-P/M10/CL 통합 풀) - 톤커브는
 `apply_leica_raw_look()`이 이미 확정한 값(toe=0.0/ss=0.82/wp=1.0/
 clip=1.25, `brands/leica_raw.py` 참고) 그대로 두고 매트릭스+채도/색조만
@@ -23,7 +23,7 @@ clip=1.25, `brands/leica_raw.py` 참고) 그대로 두고 매트릭스+채도/�
 `/goal "다른 브랜드 ΔE00<10"`을 구조적으로 못 채웠던 것과 대비된다
 (`brands/canon.py`의 `apply_canon_raw_look` docstring 참고).
 
-재현: `python3 -m tools.fit_brand_matrix_chroma_pipeline leica --loo`."""
+재현: `python3 -m tools.fit.fit_brand_matrix_chroma_pipeline leica --loo`."""
 import colour
 import cv2
 import numpy as np

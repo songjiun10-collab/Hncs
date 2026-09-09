@@ -5,17 +5,17 @@ apply_hncs_x1d - Experimental. X1D 전용 `apply_hncs()`(brands/hasselblad.py)
 자체엔 모델 판별 로직 없음).
 
 **경위(2026-09, 사용자 지시 "애초에 그러면 X1D만 사용하는 필터 하나
-더 만들어")**: `tools/breakdown_hasselblad_by_exposure_iso_portrait.py`가
+더 만들어")**: `tools/x2dii/breakdown_hasselblad_by_exposure_iso_portrait.py`가
 Hasselblad 세대별 실측(368쌍)에서 **X1D가 세대 중 최악**(평균 ΔE00
 13.410, 표준편차도 최대 6.876)임을 확인했다 - `apply_hncs()`(main)가
 원래 X1D 13쌍으로 만들어진 함수인데도, population이 커진 지금은
 CFV 100C/907X(5.783)/X2D 100C(6.783)에 훨씬 잘 맞고 X1D 자신에는
 오히려 제일 안 맞는 역설적 상황.
 
-`tools/evaluate_x1d_de00_grid.py`(신규, `evaluate_x2dii_de00_grid.py`와
+`tools/x2dii/evaluate_x1d_de00_grid.py`(신규, `evaluate_x2dii_de00_grid.py`와
 동일 방법론 - exposure_gamma 포함 441콤보 ΔE00 직접 그리드서치, 저해상도
 200px로 폴드별 콤보 선택 후 3000px로 최종 완전 LOO 평가)를
-`tools.calibrate.collect_local_pairs()`의 X1D 121쌍(dedup 반영, 챠트
+`tools.fit.calibrate.collect_local_pairs()`의 X1D 121쌍(dedup 반영, 챠트
 제외)에 돌렸다:
 
 **결과 - `apply_hncs()`(main) 대비 개선폭 +18.35%**(14.013 -> 11.442,
@@ -29,7 +29,7 @@ CFV 100C/907X(5.783)/X2D 100C(6.783)에 훨씬 잘 맞고 X1D 자신에는
 차용 - `apply_hncs_x2dii()`/`apply_hncs_x1d50c.py`와 같은 관례(clahe_clip
 합동 재검증은 별도 세션 작업, 이 함수엔 아직 적용 안 됨).
 
-재현: `python3 -m tools.evaluate_x1d_de00_grid`.
+재현: `python3 -m tools.x2dii.evaluate_x1d_de00_grid`.
 """
 from core.engine import make_hasselblad_body_look
 

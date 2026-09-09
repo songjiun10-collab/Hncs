@@ -1,4 +1,4 @@
-"""`tools/evaluate_dcp_huesatmap_full_srgb.py`의 순수 함수 단위 테스트 +
+"""`tools/x2dii/evaluate_dcp_huesatmap_full_srgb.py`의 순수 함수 단위 테스트 +
 `hybrid_engine/EVALUATION.md`에 기록된 실제 LOO 결과의 재현 회귀 테스트.
 
 기록된 표를 다시 `summarize()`에 넣어 판정(성립/보류)이 그대로 나오는지
@@ -10,7 +10,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_dcp_huesatmap_full_srgb import (
+from tools.x2dii.evaluate_dcp_huesatmap_full_srgb import (
     _apply_tables, _fit_tables, _hsv_to_rgb, _interp_division, _rgb_to_hsv,
     _wrap_deg, summarize,
 )

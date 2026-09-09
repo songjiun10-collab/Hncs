@@ -100,6 +100,7 @@ FUJI_COLOR_PRESETS = [
     "apply_nostalgic_neg",
     "apply_reala_ace",
     "apply_classic_negative",
+    "apply_classic_negative_v2",
     "apply_provia",
     "apply_classic_chrome",
     "apply_nostalgic_neg_v2",
@@ -111,8 +112,9 @@ FUJI_COLOR_PRESETS = [
 # 발견, README도 같이 고침(brands/fuji.py 자체 코드는 원래도 정확했음).
 # apply_provia 추가(2026-08)로 11개(컬러 9 + 모노 2) -> apply_classic_chrome/
 # apply_nostalgic_neg_v2 추가로 13개(컬러 11 + 모노 2) -> 페어 매칭 버그
-# 수정 후 apply_classic_chrome_v2/apply_nostalgic_neg_v3 추가로 현재는
-# 15개(컬러 13 + 모노 2).
+# 수정 후 apply_classic_chrome_v2/apply_nostalgic_neg_v3 추가로 15개(컬러 13
+# + 모노 2) -> apply_classic_negative_v2 추가(2026-09, 사용자 승인)로
+# 현재는 16개(컬러 14 + 모노 2).
 FUJI_MONO_PRESETS = ["apply_acros", "apply_monochrome"]
 
 # apply_*_video_frame은 대응 프리셋의 CLAHE 생략 버전으로 tools/
@@ -194,7 +196,7 @@ class TestFujiPresets(unittest.TestCase):
 
     def test_all_documented_presets_covered(self):
         # brand.fuji의 apply_* 중 core.curve/core.lut에서 재노출된 범용
-        # 헬퍼(apply_lut/apply_highlight_rolloff)와 tools/video_engine.py
+        # 헬퍼(apply_lut/apply_highlight_rolloff)와 tools/cli/video_engine.py
         # 전용 CLAHE-생략 변형(이름이 "_video_frame"으로 끝남 - 별도
         # "룩"이 아니라 구현 디테일)을 뺀 진짜 프리셋 개수가 FUJI_COLOR_
         # PRESETS/FUJI_MONO_PRESETS 목록과 일치하는지 확인 - 프리셋을
@@ -204,7 +206,7 @@ class TestFujiPresets(unittest.TestCase):
                          if n.startswith("apply_") and n not in generic_helpers
                          and not n.endswith("_video_frame")}
         self.assertEqual(preset_names, set(FUJI_COLOR_PRESETS) | set(FUJI_MONO_PRESETS))
-        self.assertEqual(len(preset_names), 15)
+        self.assertEqual(len(preset_names), 16)
 
 
 if __name__ == "__main__":

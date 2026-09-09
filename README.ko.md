@@ -43,14 +43,19 @@ HNCS(Hasselblad Natural Colour Solution) 하나만 다뤘는데, 같은 방법�
 쓰인 것과 같은 raw+jpeg 라이브러리)에 적용한 결과. 사진 속 인물은
 뒷모습/옆모습만 나와 특정할 수 없음.*
 
-![HNCS 프리셋 데모 - 사진 한 장에 apply_* 44개(+원본) 전부 적용](docs/images/preset_demo.jpg)
+![HNCS 프리셋 데모 - 사진 한 장에 apply_* 56개(+원본) 전부 적용](docs/images/preset_demo.jpg)
 
-*동일한 소스 사진(Fuji GFX50S II로 찍은 서울 이태원 거리 스냅샷,
-`DSCF9556.RAF` - Classic Chrome/Nostalgic Neg 등 이 세션 캘리브레이션에
-쓰인 것과 같은 raw+jpeg 라이브러리에서 고른 실제 사진, 특정 인물 클로즈업이
-아니라 일반 거리 스냅샷) 한 장에 `brands/<브랜드>/*.py`의 사진용 `apply_*` 룩
-44개(+원본)를 그대로 돌린 결과. `tools/build_readme_demo.py`로 생성 -
-새 룩이 추가될 때마다 재실행하면 됨.*
+*위와 같은 서울 횡단보도 스냅샷(`DSCF9447.RAF`) 한 장에 `brands/<브랜드>/*.py`의
+사진용 `apply_*` 룩 56개(+원본)를 그대로 돌린 결과. 이전 버전들이 쓰던 원래
+소스 `DSCF9556.RAF`(서울 이태원 거리 스냅샷)는 `999_FUJI` 기여 라이브러리에
+있는데 이게 gitignore 대상이라 모든 체크아웃에 있는 게 아니라서, 이번
+재생성은 대신 횡단보도 사진을 재사용했다. 특정 인물 클로즈업 아님.
+`tools/demo/build_readme_demo.py`로 생성 - **손으로 재실행해야** 하고 자동이
+아니다. 이 개수 자체가 마지막 실재생성(317f3bd, 44개) 이후 이미 두 번 벌어졌다
+(55로, 이번 스윕에서 무관한 GUI 탭 드리프트를 고치다 우연히 잡음 -> 56으로,
+그 수정을 푸시하기도 전에 커밋 하나 사이로 또) -
+`python3 .claude/skills/run-hncs/driver.py env`의 "배포 룩 N개" 줄이
+현재값을 대조할 살아있는 기준이다.*
 
 ## 지원 브랜드
 
@@ -119,7 +124,7 @@ pip install -r requirements.txt
 - [x] GitHub Actions CI(push/PR마다 자동 실행)
 - [x] population 통계 재현성 감사 도구
 - [x] RAW -> Log 색공간(F-Log2/S-Log3/V-Log 등) + `.cube` LUT 적용
-      파이프라인(`tools/raw_pipeline.py`, 브랜드 엔진과 별도)
+      파이프라인(`tools/cli/raw_pipeline.py`, 브랜드 엔진과 별도)
 - [x] EXIF 기반 카메라 간 색감 변환 엔진 V0.1(`hybrid_engine/`, RAW/JPEG
       입력 둘 다 지원, 브랜드 톤커브 역산 + ΔE 평가 루프)
 
@@ -137,6 +142,53 @@ tests/        unittest 테스트 스위트 - README.md, CLAUDE.md
 models/       얼굴 검출 등에 쓰는 사전학습 모델
 docs/         상세 문서 (방법론/실측 결론/브랜드별 기록/파일별 설명) - CLAUDE.md
 ```
+
+```mermaid
+flowchart TB
+    subgraph RUNTIME["진입점과 공통 처리"]
+        direction TB
+        GUI["gui/<br/>Tkinter 앱"]
+        CLI["tools/cli/<br/>RAW→Log · 렌즈 · 업스케일<br/>비디오 · LUT 내보내기"]
+        BRANDS["brands/<br/>12개 패키지 · apply_*"]
+        CORE["core/<br/>톤 · LUT · 이미지 헬퍼"]
+        HYBRID["hybrid_engine/<br/>변환과 캘리브레이션"]
+        GUI -->|"디코딩한 프리뷰 이미지"| BRANDS
+        GUI -->|"subprocess"| CLI
+        GUI -->|"subprocess"| HYBRID
+        CLI -->|"비디오 / LUT 룩 함수"| BRANDS
+        CLI -->|"처리 헬퍼"| CORE
+        BRANDS -->|"공통 헬퍼"| CORE
+    end
+
+```
+
+```mermaid
+flowchart TB
+    subgraph RESEARCH["연구와 프로파일 생성"]
+        direction TB
+        DATA["datasets/<br/>메타데이터 · manifest · 로컬 페어"]
+        FIT["tools/fit/ · tools/research/<br/>피팅과 비교 실험"]
+        DOCS["docs/ · hybrid_engine/EVALUATION.md<br/>근거와 결정 기록"]
+        PROFILETOOLS["프로파일 생성 도구<br/>tools/x2dii/ · tools/capture_one/<br/>tools/fit_dpreview_studio_chart.py"]
+        WRITERS["core/dcp_export.py<br/>core/icc_export.py"]
+        PROFILES["DCP / ICC 파일"]
+        BRANDS["brands/<br/>배포 룩 함수"]
+        DATA -->|"참조 데이터"| FIT
+        FIT -->|"결과 기록"| DOCS
+        DOCS -. "배포 전 명시적 승인" .-> BRANDS
+        PROFILETOOLS -->|"포맷 작성 함수 호출"| WRITERS
+        WRITERS -->|"기록"| PROFILES
+    end
+
+```
+
+두 구조도는 주요 관계를 보여주며, 화살표 라벨로 호출과 데이터를 구분한다.
+`apply_*`는 디코딩된 이미지 배열을 받는다. RAW 디코드나 비디오 프레임
+추출은 호출부가 먼저 수행한다. 프로파일 도구는 `hybrid_engine/`의
+캘리브레이션 헬퍼를 재사용할 수 있고, 파일 포맷 작성 함수는 `core/`에 있다.
+CI는 감사 헬퍼 테스트를 포함한 unittest 스위트를 실행한다. 저장소 전체
+감사는 별도 명령으로도 실행한다:
+`python3 tools/maintenance/audit_repo_integrity.py`.
 
 각 영역의 `README.md`(있는 경우)는 사용법/예시를, `CLAUDE.md`는 그
 영역을 바꿀 때의 규칙을 다룬다. 파일별 상세 설명은

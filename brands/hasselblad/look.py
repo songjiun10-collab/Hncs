@@ -84,7 +84,7 @@ apply_hncs_learned()로 분리 제공 (원본이 10장뿐이라 표본이 작다
 이 파일의 apply_hncs 기본값은 안 건드리고 나란히 유지, 자세한 이력은
 그 파일 docstring 참고).
 
-재검증(2026-07, brands/core/tools 리팩토링 후): `tools.calibrate
+재검증(2026-07, brands/core/tools 리팩토링 후): `tools.fit.calibrate
 grid_search`/`learn_curve`로 다시 돌려서 RMSE가 리팩토링 전과 완전히
 동일하게 재현됨을 확인(23.31->16.51 grid_search, 23.31->15.41
 learn_curve) - raw+jpeg 페어가 여전히 10장뿐이라(나머지는 죽은 링크) 더
@@ -115,7 +115,7 @@ raw+jpeg 페어가 X1D 13장(공식)에서 X2D/907X·CFV 실사진 61장이 추�
 손대지 않았다.
 
 v11 파라미터 재보정(2026-08, 65쌍 - 공식 오염제외 4 + 로컬 기여
-61 - `tools.calibrate grid_search`/`grid_search_loo`): 이번엔 실제로
+61 - `tools.fit.calibrate grid_search`/`grid_search_loo`): 이번엔 실제로
 채택했다. 그리드서치 최적값이 **exposure_gamma=0.7->0.8, toe_lift=
 0.001->0.0, shoulder_start=0.78->0.5**(white_point=1.0은 그대로)로
 나왔는데, 바로 이 shoulder_start~0.5 값은 v11 원래 이력(위 문단)에서

@@ -3,7 +3,7 @@
 *[한국어 README](README.ko.md)*
 
 A third, independent module with yet another purpose from `brands/*.py`
-and `tools/raw_pipeline.py`: "re-render a finished JPEG shot on camera A
+and `tools/cli/raw_pipeline.py`: "re-render a finished JPEG shot on camera A
 as if camera B had shot it." There are two entry points - one for RAW
 input (`HybridCameraEngine`: Phase 0 color unification + Gray World
 normalization + LAB tone/saturation curves) and one for JPEG-only input
@@ -80,4 +80,43 @@ library/palace/street shots are not identifiable close-ups.*
 - `EVALUATION.md` - the full measurement record for this module (every
   numbered follow-up experiment, not just the table above)
 - `assets/luts/README.md` - the rejected LUT experiments in detail
+- `evaluation/eager.py` - executable EAGER evidence kernel: provenance-aware
+  manifest checks, capture-group aggregation, paired uncertainty, sample
+  accounting, physical sanity, and result classification
+- `evaluation/nare.py` / `evaluation/nare_cli.py` - primary natural-scene
+  RAW/SOOC-JPEG appearance contract and runnable three-layer evaluation
+- `evaluation/nare_pairs.py` / `evaluation/nare_pairs_cli.py` - strict intake
+  preflight that accepts a pair only when capture time, make, model, and ISO
+  occur exactly once on both sides; run it before fitting with
+  `python3 -m hybrid_engine.evaluation.nare_pairs_cli raw jpeg --output preflight.json`
+  and add `--manifest-out candidate.json --contributor <name>` to preserve
+  hashes and capture EXIF in a candidate manifest before scene labels are set
+- `evaluation/nare_runner.py` / `evaluation/nare_runner_cli.py` - generate the
+  three per-scene ΔE00 layers from frozen RAW/SOOC-JPEG inputs. The current CLI
+  supports the fixed Fuji Provia target only: `python3 -m
+  hybrid_engine.evaluation.nare_runner_cli --manifest provia.json --candidate
+  provia --out metrics.json`. It verifies both file hashes and rejects every
+  non-Provia or mixed-style evaluation row before RAW decoding.
+- `evaluation/nare_registration_cli.py` - inspect ECC correlation, translation,
+  and valid overlap before metric generation: `python3 -m
+  hybrid_engine.evaluation.nare_registration_cli --manifest candidate.json --out
+  registration.json --passed-manifest-out registered.json`. Only use the emitted
+  `registered.json` for the subsequent NARE metric run.
+- `evaluation/nare.py:summarize_nare_subgroups` - aggregate semantic-region
+  baseline/candidate ΔE00 and fail closed when required regions are missing or
+  a region regresses past the catastrophic threshold. `evaluate_nare_metrics`
+  wires this summary into the ship gate. The runner does not invent masks; a
+  real-photo run must provide them as metric-row evidence.
+- `evaluation/eager_cli.py` - apply those gates to a manifest plus recorded
+  metric/control JSON (`python3 -m hybrid_engine.evaluation.eager_cli`)
+- `evaluation/supabase_sync.py` - opt-in `--sync-supabase` flag on
+  `eager_cli.py`/`nare_cli.py` upserts the frozen report to the HNCS
+  Supabase research registry, keyed by a hash of the manifest/metrics
+  files so re-running the same frozen inputs is idempotent. Needs
+  `HNCS_SUPABASE_URL` (must be `https://`) and
+  `HNCS_SUPABASE_SERVICE_ROLE_KEY` in the environment - never on the
+  command line, never written to a report or committed file. Skip the
+  flag entirely to run either CLI with no network access at all.
+- `../docs/superpowers/specs/2026-09-08-eager-framework-design.en.md` - the
+  EAGER Framework design and claim boundaries
 - `CLAUDE.md` (this directory) - rules for changes here

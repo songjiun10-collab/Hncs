@@ -11,12 +11,12 @@ the CDN corruption pattern) / `core/engine.py` (the population-fit
 engine) / `brands/*.py` (shape/dtype preservation for every `apply_*`
 look function, Fuji preset count consistency) / `tools/
 fuji_chart_calibrate.py` (crop-box extraction, delta aggregation) /
-`tools/download.py` (imaging-resource.com HTML parsing, filtering,
+`tools/cli/download.py` (imaging-resource.com HTML parsing, filtering,
 Google Drive URL classification - network calls are mocked) / all of
 `datasets/*/texture_signature.json` (whether sharpening/micro_contrast/
 noise fall within a sane cross-brand range - a regression guard against
 a Sony-scale-bug-style order-of-magnitude error) / `core/lut.py` /
-`core/denoise.py` / `tools/iso_noise.py` (including a regression test
+`core/denoise.py` / `tools/research/iso_noise.py` (including a regression test
 for the patch-grid off-by-one bug) / `core/log_pipeline.py` (exposure
 adjustment, Log encoding, `.cube` LUT application, every supported
 `LOG_SPACES` entry) / `hybrid_engine/` (normalization/tone/color/

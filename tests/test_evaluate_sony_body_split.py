@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from tools.evaluate_sony_body_split import load_rows, loo_errors, summarize
+from tools.fit.evaluate_sony_body_split import load_rows, loo_errors, summarize
 
 
 class TestLoadRows(unittest.TestCase):

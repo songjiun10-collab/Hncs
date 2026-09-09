@@ -9,14 +9,14 @@ from gui.tabs.lens_correction_tab import build_lens_correction_command, read_exi
 class TestBuildLensCorrectionCommand(unittest.TestCase):
     def test_minimal_command_no_overrides(self):
         cmd = build_lens_correction_command("in.jpg", "out.jpg", python_exe="python3")
-        self.assertEqual(cmd, ["python3", "-m", "tools.lens_correction", "in.jpg", "out.jpg"])
+        self.assertEqual(cmd, ["python3", "-m", "tools.cli.lens_correction", "in.jpg", "out.jpg"])
 
     def test_all_overrides_included(self):
         cmd = build_lens_correction_command(
             "in.jpg", "out.jpg", make="FUJIFILM", model="X-T1", lens="XF10-24mmF4 R OIS",
             focal_length=10, aperture=8, python_exe="python3")
         self.assertEqual(cmd, [
-            "python3", "-m", "tools.lens_correction", "in.jpg", "out.jpg",
+            "python3", "-m", "tools.cli.lens_correction", "in.jpg", "out.jpg",
             "--make", "FUJIFILM", "--model", "X-T1", "--lens", "XF10-24mmF4 R OIS",
             "--focal-length", "10", "--aperture", "8",
         ])

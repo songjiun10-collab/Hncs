@@ -203,10 +203,10 @@ See the "HNCS Structural Experiment" section of hybrid_engine/EVALUATION.md for 
 ## Revalidation (2026-08, 94 local pairs + blending variant + 1024-combo grid)
 
 Re-checked the 13-pair result above ("a draw - 4.1% improvement but the
-CI includes 0") at much larger scale. `tools/evaluate_hncs_structural.py`
+CI includes 0") at much larger scale. `tools/research/evaluate_hncs_structural.py`
 (new - self-contained reimplementation of
 `hybrid_engine/research/hncs_structural.py` +
-`tools/evaluate_hncs_structural.py`, since this checkout has no
+`tools/research/evaluate_hncs_structural.py`, since this checkout has no
 `hybrid_engine`) expanded two things at once, using the local
 dpreview-sourced clean 95 pairs minus one corrupted file
 (`4589763049.3fr`) - **94 pairs**:
@@ -261,17 +261,17 @@ grid-searched against these same pairs), and this remains a fresh fit
 unrelated to Phocus's actual matrix/LUT values - all of that still
 applies.
 
-Reproduce: `python3 -m tools.evaluate_hncs_structural` (94 pairs × 1024
+Reproduce: `python3 -m tools.research.evaluate_hncs_structural` (94 pairs × 1024
 combos × 5-fold, ~1 hour).
 
 ## Revalidation 2 (2026-08, local pool of 364 pairs, 6 generations) - finally settled, direction reversed
 
 On the user's instruction ("the sample got bigger too, should be
 feasible now"), this was re-verified against the full local Hasselblad
-raw+jpeg pool gathered via `tools.calibrate.collect_local_pairs()`
+raw+jpeg pool gathered via `tools.fit.calibrate.collect_local_pairs()`
 (post-dedup-fix) this session - almost 4x the previous 94 pairs (6
 generations: X1D 121, X2D 100C 82, X2D II 100C 74, X1D II 50C 38, CFV
-100C/907X 29, X1D-50c 20) (`tools/evaluate_hncs_structural_full_pool.py`,
+100C/907X 29, X1D-50c 20) (`tools/research/evaluate_hncs_structural_full_pool.py`,
 new - `/Users/songjiun/Documents/raw pair` wasn't present locally this
 session, so only the loader was swapped for one reading from
 `datasets/hasselblad/contributed/*/`; everything else is the same
@@ -319,7 +319,7 @@ still a fresh fit unrelated to Phocus's actual matrix/LUT values, and
 the 2-cluster split is still a reduction of the real 4-or-more-illuminant
 structure - none of that changes just because the sample grew.
 
-Reproduce: `python3 -m tools.evaluate_hncs_structural_full_pool` (364
+Reproduce: `python3 -m tools.research.evaluate_hncs_structural_full_pool` (364
 pairs × 256 combos × 5-fold, ~15 minutes with 3-worker parallel decode).
 
 > **Correction (2026-08, user flagged "hey that's weird, verify it" ->
@@ -347,7 +347,7 @@ pairs × 256 combos × 5-fold, ~15 minutes with 3-worker parallel decode).
 > 0) hold** - "apply_hncs wins significantly at n=364" stands as the
 > conclusion. Treat this corrected (512/160) run as the final numbers and
 > the 256px ones as a biased draft. Reproduce: `python3 -m
-> tools.evaluate_hncs_structural_full_pool` (with DOWNSAMPLE_MAX_DIM=512,
+> tools.research.evaluate_hncs_structural_full_pool` (with DOWNSAMPLE_MAX_DIM=512,
 > GRID_DOWNSAMPLE_MAX_DIM=160, ~25 minutes with 3 workers).
 
 ## Revalidation 3 (2026-08, KMeans 4-cluster) - still holds even closer to the real structure
@@ -357,7 +357,7 @@ threshold 0.9) as a reduction of the real HNCS structure ("at least 4
 illuminants - Tungsten/Low Tungsten/Flash/Flash-Daylight, matrix
 selected by WB"). On the user's instruction ("make it match the real
 Hasselblad structure"), the cluster count was raised to 4
-(`tools/evaluate_hncs_structural_4cluster.py`, new) - instead of a
+(`tools/research/evaluate_hncs_structural_4cluster.py`, new) - instead of a
 manual threshold, AsShotNeutral's (log(R/G), log(B/G)) was standardized
 and clustered data-drivenly with KMeans(k=4) (fit once over all pairs,
 not per-fold - the same out-of-sample caveat as the 2-cluster version
@@ -388,18 +388,18 @@ independent re-verifications (2-cluster and 4-cluster) both landing on
 `apply_hncs()` winning is already a consistent enough signal.
 `apply_hncs()` is unchanged by this experiment too.
 
-Reproduce: `python3 -m tools.evaluate_hncs_structural_4cluster` (364
+Reproduce: `python3 -m tools.research.evaluate_hncs_structural_4cluster` (364
 pairs × 256 combos × 5-fold × 4 clusters, ~27 minutes with 3-worker
 parallel decode).
 
-## Re-verification 4 (2026-09-03, `tools/evaluate_hncs_structural.py` itself, at 390 pairs) - independent reproduction, conclusion unchanged
+## Re-verification 4 (2026-09-03, `tools/research/evaluate_hncs_structural.py` itself, at 390 pairs) - independent reproduction, conclusion unchanged
 
 **Honesty first**: only after starting to write this section did I
 discover that "Re-verification 2/3" above
 (`evaluate_hncs_structural_full_pool.py`/`_4cluster.py`, 2026-08-30)
 already existed. When given the instruction ("the data's grown too,
 can't we do it per the real structure now?"), I only checked
-`tools/evaluate_hncs_structural.py` itself (the original file, which
+`tools/research/evaluate_hncs_structural.py` itself (the original file, which
 still pointed at a local path that no longer exists on this machine
 and so couldn't even run this session) and never searched for sibling
 scripts - I should have read this document's own "Re-verification 2/3"
@@ -476,7 +476,7 @@ moves it from "settled" to "settled and independently
 cross-validated." `apply_hncs()` remains unchanged by this experiment
 too (it was already protected).
 
-Reproduce: `python3 -m tools.evaluate_hncs_structural` (390 pairs ×
+Reproduce: `python3 -m tools.research.evaluate_hncs_structural` (390 pairs ×
 1024 combos × 5-fold, about 2h15m at 3 workers - with more memory
 headroom, raising the `N_WORKERS` cap to 5 runs faster, though in this
 session's environment 5 workers' combined pair_data cache (~1.6GB
@@ -488,7 +488,7 @@ Re-verification 4 above left one question open: `_full_pool` found
 blend vs hard-cluster significantly favoring hard-cluster, while this
 run's direct paired comparison was inconclusive - grid size (1024 vs
 256 combos) and sample count (389 vs 364) differed simultaneously, so
-the cause couldn't be isolated. `tools/evaluate_hncs_structural_gridsize_ablation.py`
+the cause couldn't be isolated. `tools/research/evaluate_hncs_structural_gridsize_ablation.py`
 answers this - it's 100% identical code to `evaluate_hncs_structural.py`
 for the loader/fold split (`load_pairs()`/`make_folds(seed=0)`,
 verified via `test_matches_original_script_fold_split`), with only
@@ -517,5 +517,5 @@ some other undiscovered methodology gap (out of this session's scope -
 the next step, if revisited, would be re-running this script on
 `_full_pool`'s exact 364-pair subset to isolate sample count alone).
 
-Reproduce: `python3 -m tools.evaluate_hncs_structural_gridsize_ablation`
+Reproduce: `python3 -m tools.research.evaluate_hncs_structural_gridsize_ablation`
 (389 pairs × 256 combos × 5-fold, about 35 minutes at 3 workers).

@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tools.simulate_pair_count_power import _sign_test_p, bootstrap_power_at_n
+from tools.research.simulate_pair_count_power import _sign_test_p, bootstrap_power_at_n
 
 
 class TestSignTestP(unittest.TestCase):

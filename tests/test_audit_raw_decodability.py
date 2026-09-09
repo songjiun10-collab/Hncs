@@ -1,4 +1,4 @@
-"""`tools/audit_raw_decodability.py` 단위 테스트 + 기록된 실행 회귀 테스트.
+"""`tools/research/audit_raw_decodability.py` 단위 테스트 + 기록된 실행 회귀 테스트.
 
 이 감사가 잡아낸 것: 소니 `dpreview-a7v-preprod-2026-08`의 실효 표본이
 매니페스트 62행이 아니라 **22쌍**이다(나머지 40개는 LibRaw 0.22.1이
@@ -14,7 +14,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools import audit_raw_decodability as ard
+from tools.research import audit_raw_decodability as ard
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPORT = os.path.join(BASE, "datasets", "raw_decodability_audit.json")

@@ -22,6 +22,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__))), ".claude", "hooks"))
 import protect_push_safety as hook  # noqa: E402
+from tests._hook_subprocess import run_hook
 
 
 def _is_force_push(command):
@@ -172,17 +173,7 @@ class TestHookEndToEnd(unittest.TestCase):
         shutil.rmtree(self._log_dir, ignore_errors=True)
 
     def _run_hook(self, command, agent_id=None):
-        payload = {"tool_name": "Bash", "tool_input": {"command": command}}
-        if agent_id:
-            payload["agent_id"] = agent_id
-            payload["agent_type"] = "general-purpose"
-        proc = subprocess.run(
-            [sys.executable, hook.__file__],
-            cwd=self.repo, input=json.dumps(payload), env=self._env,
-            capture_output=True, text=True, timeout=15,
-        )
-        out = json.loads(proc.stdout)
-        return out["hookSpecificOutput"]["permissionDecision"]
+        return run_hook(hook, self.repo, self._env, command, agent_id=agent_id)
 
     def _write_decision_record(self, target):
         sys.modules.pop("_hook_common", None)
@@ -204,6 +195,17 @@ class TestHookEndToEnd(unittest.TestCase):
             "deny")
 
     def test_safe_push_allowed_end_to_end(self):
+        self.assertEqual(self._run_hook("git push -u origin main"), "allow")
+
+    def test_codex_author_email_allowed_end_to_end(self):
+        """AGENTS.md의 Codex 명의(noreply@openai.com)도 허용한다."""
+        run = lambda *args: subprocess.run(  # noqa: E731
+            args, cwd=self.repo, capture_output=True, text=True, check=True)
+        run("git", "config", "user.email", "noreply@openai.com")
+        with open(os.path.join(self.repo, "f.txt"), "a") as f:
+            f.write("codex")
+        run("git", "add", "f.txt")
+        run("git", "commit", "-q", "-m", "codex author")
         self.assertEqual(self._run_hook("git push -u origin main"), "allow")
 
     def test_non_push_command_allowed_end_to_end(self):

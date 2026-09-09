@@ -1,0 +1,418 @@
+[
+  {
+    "scene_id": "gfx100rf-000",
+    "raw_delta_e00": 19.77187768621074,
+    "foundation_delta_e00": 19.77187768621074,
+    "candidate_delta_e00": 13.33607141738031,
+    "registration": {
+      "ecc_correlation": 0.9428845732360649,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.39777490496635437,
+      "shift_y_px": 0.1731892079114914,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-001",
+    "raw_delta_e00": 13.418790401597953,
+    "foundation_delta_e00": 13.418790401597953,
+    "candidate_delta_e00": 11.540335424712387,
+    "registration": {
+      "ecc_correlation": 0.8950216107022303,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.15753550827503204,
+      "shift_y_px": 0.33421799540519714,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-004",
+    "raw_delta_e00": 20.52718664488509,
+    "foundation_delta_e00": 20.52718664488509,
+    "candidate_delta_e00": 16.9558046972647,
+    "registration": {
+      "ecc_correlation": 0.7047962677344282,
+      "overlap_fraction": 0.9876234089425587,
+      "shift_x_px": 0.9652882218360901,
+      "shift_y_px": 4.211791038513184,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-005",
+    "raw_delta_e00": 19.833110497583696,
+    "foundation_delta_e00": 19.833110497583696,
+    "candidate_delta_e00": 12.073575357927705,
+    "registration": {
+      "ecc_correlation": 0.9071347499293405,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": -0.1922188252210617,
+      "shift_y_px": 0.5051361322402954,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-006",
+    "raw_delta_e00": 20.432267715650717,
+    "foundation_delta_e00": 20.432267715650717,
+    "candidate_delta_e00": 13.698572778552721,
+    "registration": {
+      "ecc_correlation": 0.8158083957276835,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.47902384400367737,
+      "shift_y_px": 0.7933305501937866,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-009",
+    "raw_delta_e00": 20.846678819950952,
+    "foundation_delta_e00": 20.846678819950952,
+    "candidate_delta_e00": 15.228457300990467,
+    "registration": {
+      "ecc_correlation": 0.8804971269297788,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.20871980488300323,
+      "shift_y_px": 0.2993977963924408,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-013",
+    "raw_delta_e00": 7.41506180109306,
+    "foundation_delta_e00": 7.41506180109306,
+    "candidate_delta_e00": 5.88183487782764,
+    "registration": {
+      "ecc_correlation": 0.8875114676241376,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.009294720366597176,
+      "shift_y_px": 0.3136439323425293,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-015",
+    "raw_delta_e00": 20.10777320031094,
+    "foundation_delta_e00": 20.10777320031094,
+    "candidate_delta_e00": 12.105688225312786,
+    "registration": {
+      "ecc_correlation": 0.9458470412706921,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.357441782951355,
+      "shift_y_px": 0.18818612396717072,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-016",
+    "raw_delta_e00": 16.99140559105267,
+    "foundation_delta_e00": 16.99140559105267,
+    "candidate_delta_e00": 13.741492238328055,
+    "registration": {
+      "ecc_correlation": 0.9346017288598861,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.11917106062173843,
+      "shift_y_px": -0.045885298401117325,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-017",
+    "raw_delta_e00": 16.21671224062985,
+    "foundation_delta_e00": 16.21671224062985,
+    "candidate_delta_e00": 10.14416126020018,
+    "registration": {
+      "ecc_correlation": 0.9188676191168469,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.2773597836494446,
+      "shift_y_px": -0.35087791085243225,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-018",
+    "raw_delta_e00": 19.411853644335167,
+    "foundation_delta_e00": 19.411853644335167,
+    "candidate_delta_e00": 13.912297363010639,
+    "registration": {
+      "ecc_correlation": 0.8654589361464107,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.062434665858745575,
+      "shift_y_px": 0.15125924348831177,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-020",
+    "raw_delta_e00": 17.751526537578712,
+    "foundation_delta_e00": 17.751526537578712,
+    "candidate_delta_e00": 12.262651369943798,
+    "registration": {
+      "ecc_correlation": 0.8892859002860746,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.004409722983837128,
+      "shift_y_px": 0.3993678390979767,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-022",
+    "raw_delta_e00": 4.396772232847536,
+    "foundation_delta_e00": 4.396772232847536,
+    "candidate_delta_e00": 4.544815339930816,
+    "registration": {
+      "ecc_correlation": 0.9895385340840488,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.18840815126895905,
+      "shift_y_px": -0.12249313294887543,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-026",
+    "raw_delta_e00": 16.03679390852091,
+    "foundation_delta_e00": 16.03679390852091,
+    "candidate_delta_e00": 9.65039667395424,
+    "registration": {
+      "ecc_correlation": 0.9351127225300504,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.10774514079093933,
+      "shift_y_px": 0.17444908618927002,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-027",
+    "raw_delta_e00": 11.755377391914738,
+    "foundation_delta_e00": 11.755377391914738,
+    "candidate_delta_e00": 8.389338958291843,
+    "registration": {
+      "ecc_correlation": 0.9546288461695764,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.3862091302871704,
+      "shift_y_px": -0.35717353224754333,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-028",
+    "raw_delta_e00": 15.188458596841471,
+    "foundation_delta_e00": 15.188458596841471,
+    "candidate_delta_e00": 11.97791997615344,
+    "registration": {
+      "ecc_correlation": 0.9648191200241093,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.6970433592796326,
+      "shift_y_px": 0.1348404884338379,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-029",
+    "raw_delta_e00": 13.474758152619488,
+    "foundation_delta_e00": 13.474758152619488,
+    "candidate_delta_e00": 7.247808214746592,
+    "registration": {
+      "ecc_correlation": 0.9437622465778341,
+      "overlap_fraction": 0.9954410084856397,
+      "shift_x_px": 0.6208319067955017,
+      "shift_y_px": 0.5109256505966187,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-030",
+    "raw_delta_e00": 6.853202315734399,
+    "foundation_delta_e00": 6.853202315734399,
+    "candidate_delta_e00": 5.925307885696843,
+    "registration": {
+      "ecc_correlation": 0.9493237345914408,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": -0.3775812089443207,
+      "shift_y_px": -0.5039861798286438,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-031",
+    "raw_delta_e00": 20.715833858885343,
+    "foundation_delta_e00": 20.715833858885343,
+    "candidate_delta_e00": 11.454190054829386,
+    "registration": {
+      "ecc_correlation": 0.8894370563618319,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.3224954903125763,
+      "shift_y_px": -0.021911535412073135,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-032",
+    "raw_delta_e00": 21.41392850023431,
+    "foundation_delta_e00": 21.41392850023431,
+    "candidate_delta_e00": 13.074550215179576,
+    "registration": {
+      "ecc_correlation": 0.9241696777335814,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": 0.3128320276737213,
+      "shift_y_px": -0.5464394688606262,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-033",
+    "raw_delta_e00": 20.754351662317845,
+    "foundation_delta_e00": 20.754351662317845,
+    "candidate_delta_e00": 14.74240531903522,
+    "registration": {
+      "ecc_correlation": 0.920245748011274,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.31467634439468384,
+      "shift_y_px": -0.04260674864053726,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-034",
+    "raw_delta_e00": 19.497253218748085,
+    "foundation_delta_e00": 19.497253218748085,
+    "candidate_delta_e00": 12.12977776212567,
+    "registration": {
+      "ecc_correlation": 0.8494670405374173,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.4766668975353241,
+      "shift_y_px": -0.24598777294158936,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-035",
+    "raw_delta_e00": 16.928947493805797,
+    "foundation_delta_e00": 16.928947493805797,
+    "candidate_delta_e00": 10.088531081930347,
+    "registration": {
+      "ecc_correlation": 0.9223085660905388,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.25858739018440247,
+      "shift_y_px": 0.2581547200679779,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-040",
+    "raw_delta_e00": 17.18510601013344,
+    "foundation_delta_e00": 17.18510601013344,
+    "candidate_delta_e00": 12.079043884305124,
+    "registration": {
+      "ecc_correlation": 0.9509887034986952,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": -0.1119004413485527,
+      "shift_y_px": -1.1352441310882568,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-041",
+    "raw_delta_e00": 23.78663582465107,
+    "foundation_delta_e00": 23.78663582465107,
+    "candidate_delta_e00": 16.2624121231471,
+    "registration": {
+      "ecc_correlation": 0.9472069128884844,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": -0.35536283254623413,
+      "shift_y_px": 0.6510590314865112,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-042",
+    "raw_delta_e00": 19.470684345563264,
+    "foundation_delta_e00": 19.470684345563264,
+    "candidate_delta_e00": 13.8376403671603,
+    "registration": {
+      "ecc_correlation": 0.9205329821253206,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.033594489097595215,
+      "shift_y_px": 0.030962826684117317,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-043",
+    "raw_delta_e00": 25.059936414015116,
+    "foundation_delta_e00": 25.059936414015116,
+    "candidate_delta_e00": 16.775685596021756,
+    "registration": {
+      "ecc_correlation": 0.9301233255599756,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.12661908566951752,
+      "shift_y_px": 0.31914040446281433,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-044",
+    "raw_delta_e00": 10.283864490155816,
+    "foundation_delta_e00": 10.283864490155816,
+    "candidate_delta_e00": 7.843608753654587,
+    "registration": {
+      "ecc_correlation": 0.9226750985591072,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.4121004641056061,
+      "shift_y_px": 0.3192487061023712,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-045",
+    "raw_delta_e00": 10.517726633242209,
+    "foundation_delta_e00": 10.517726633242209,
+    "candidate_delta_e00": 8.37640069883164,
+    "registration": {
+      "ecc_correlation": 0.9476937498990233,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.18478477001190186,
+      "shift_y_px": -0.6196836233139038,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-046",
+    "raw_delta_e00": 7.488665996353775,
+    "foundation_delta_e00": 7.488665996353775,
+    "candidate_delta_e00": 7.0912147104306404,
+    "registration": {
+      "ecc_correlation": 0.9359927032300932,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.3662751615047455,
+      "shift_y_px": -0.6023017168045044,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-047",
+    "raw_delta_e00": 10.151568137711003,
+    "foundation_delta_e00": 10.151568137711003,
+    "candidate_delta_e00": 7.420693136525423,
+    "registration": {
+      "ecc_correlation": 0.9253731891840599,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": -0.18042002618312836,
+      "shift_y_px": -0.5689091086387634,
+      "long_edge_px": 512
+    }
+  },
+  {
+    "scene_id": "gfx100rf-048",
+    "raw_delta_e00": 6.13329145238757,
+    "foundation_delta_e00": 6.13329145238757,
+    "candidate_delta_e00": 3.84415732689898,
+    "registration": {
+      "ecc_correlation": 0.9437306407599151,
+      "overlap_fraction": 0.9954410084856397,
+      "shift_x_px": -0.8955133557319641,
+      "shift_y_px": 1.3495378494262695,
+      "long_edge_px": 512
+    }
+  }
+]

@@ -13,7 +13,7 @@ from core.brand_classifier import (
     load_signatures, extract_features, standardize, nearest_centroid_loo,
     confusion_matrix, classification_report, rank_brands_by_distance,
 )
-from tools.classify_brand import main as classify_brand_main
+from tools.cli.classify_brand import main as classify_brand_main
 
 
 def _write_signature_json(path, n_images, per_image):
@@ -264,7 +264,7 @@ class TestClassifyBrandCliFeaturesGuard(unittest.TestCase):
         argv = ["classify_brand.py", "predict", "photo.jpg"]
         fake_ranking = [("hasselblad", 1.0), ("sony", 2.0)]
         with mock.patch.object(sys, "argv", argv), \
-                mock.patch("tools.classify_brand.run_predict", return_value=fake_ranking) as run_predict:
+                mock.patch("tools.cli.classify_brand.run_predict", return_value=fake_ranking) as run_predict:
             with redirect_stdout(io.StringIO()):
                 classify_brand_main()  # SystemExit이면 테스트가 실패한다
         run_predict.assert_called_once_with("photo.jpg")

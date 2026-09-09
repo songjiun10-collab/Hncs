@@ -18,17 +18,17 @@ S-Log3, V-Log, ARRI LogC3/4 등)으로 인코딩한다 - 그러면 그 카메라
 받아 `colour-science` 위에 재구현).
 
 ```
-python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3
-python3 -m tools.raw_pipeline photo.CR3 photo.exr --log-space S-Log3   # 32비트 float OpenEXR, scene-referred
-python3 -m tools.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks/my_look.cube
-python3 -m tools.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
-python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode highlight_safe
-python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode matrix
-python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3 --auto-wb-mode white_patch
-python3 -m tools.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3 --auto-wb-mode shades_of_gray
-python3 -m tools.raw_pipeline photo.CR3 photo.tiff --hdr-space HLG
-python3 -m tools.raw_pipeline photo.CR3 photo.exr --hdr-space PQ --hdr-peak-nits 4000
-python3 -m tools.raw_pipeline photo.RAF photo.tiff --log-space F-Log2 --lens-correct
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.exr --log-space S-Log3   # 32비트 float OpenEXR, scene-referred
+python3 -m tools.cli.raw_pipeline photo.ARW photo.tiff --log-space V-Log --lut looks/my_look.cube
+python3 -m tools.cli.raw_pipeline photo.NEF photo.tiff --log-space F-Log2 --exposure 1.0
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode highlight_safe
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.tiff --log-space V-Log --auto-expose-mode matrix
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3 --auto-wb-mode white_patch
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.tiff --log-space S-Log3 --auto-wb-mode shades_of_gray
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.tiff --hdr-space HLG
+python3 -m tools.cli.raw_pipeline photo.CR3 photo.exr --hdr-space PQ --hdr-peak-nits 4000
+python3 -m tools.cli.raw_pipeline photo.RAF photo.tiff --log-space F-Log2 --lens-correct
 ```
 
 `--log-space`와 `--hdr-space`(BT.2020 PQ/HLG, 미검증 - 실제
@@ -89,8 +89,8 @@ LensModel/FocalLength/FNumber를 읽어 맞는 프로필을 자동으로
 찾으며, RAW와 이미 렌더링된 JPEG/TIFF/PNG 입력을 모두 받는다.
 
 ```
-python3 -m tools.lens_correction photo.RAF corrected.jpg
-python3 -m tools.lens_correction photo.jpg corrected.jpg --lens "XF10-24mmF4 R OIS" --focal-length 10 --aperture 8
+python3 -m tools.cli.lens_correction photo.RAF corrected.jpg
+python3 -m tools.cli.lens_correction photo.jpg corrected.jpg --lens "XF10-24mmF4 R OIS" --focal-length 10 --aperture 8
 ```
 
 카메라나 렌즈가 데이터베이스에 없거나, 매칭된 렌즈 프로필에 왜곡
@@ -116,10 +116,10 @@ ACR/`.xmp` 프리셋과 달리 `.cube` 파일은 "입력 색 -> 출력 색"만
 `.cube`를 직접 읽고, DaVinci Resolve/Premiere/After Effects도 마찬가지다.
 
 ```
-python3 -m tools.export_lut --list                            # 사용 가능한 프리셋 전체 목록
-python3 -m tools.export_lut hasselblad hasselblad.cube
-python3 -m tools.export_lut fuji_astia fuji_astia.cube --size 33   # 33은 Adobe 표준 그리드 크기
-python3 -m tools.export_lut hasselblad hasselblad.cube --install-lightroom  # Lightroom/ACR의 LUT Profiles 폴더에도 복사
+python3 -m tools.cli.export_lut --list                            # 사용 가능한 프리셋 전체 목록
+python3 -m tools.cli.export_lut hasselblad hasselblad.cube
+python3 -m tools.cli.export_lut fuji_astia fuji_astia.cube --size 33   # 33은 Adobe 표준 그리드 크기
+python3 -m tools.cli.export_lut hasselblad hasselblad.cube --install-lightroom  # Lightroom/ACR의 LUT Profiles 폴더에도 복사
 ```
 
 **알려진 한계**: CLAHE(적응형 로컬 대비, 예: `fuji.apply_pro_neg_hi`)
@@ -153,7 +153,7 @@ ColorChecker 프레임 10장을 카메라 네이티브 RGB 공간(`decode_raw_na
 내보낸다 - Lightroom Classic/Camera Raw가 이를 읽는다.
 
 ```
-python3 -m tools.analyze_camera_native_matrix   # 피팅 + libraw 내장 매트릭스와 교차검증 비교
+python3 -m tools.fit.analyze_camera_native_matrix   # 피팅 + libraw 내장 매트릭스와 교차검증 비교
 ```
 
 `../hybrid_engine/EVALUATION.md`("후속 실측 21")에서 검증한 측정값
@@ -201,8 +201,8 @@ nearest-centroid 분류로 검증한다. 거리는 표준화(z-score)되고,
 설명돼있다.)
 
 ```
-python3 -m tools.classify_brand                # Set A: tone+color+gamut (15차원)
-python3 -m tools.classify_brand --features all  # Set B: + texture (21차원)
+python3 -m tools.cli.classify_brand                # Set A: tone+color+gamut (15차원)
+python3 -m tools.cli.classify_brand --features all  # Set B: + texture (21차원)
 ```
 
 실행 결과 - Set A(텍스처 제외) - 전체 정확도: `0.196`, macro 정확도:
@@ -227,8 +227,8 @@ Set A보다 점수가 높아도 이 결과만으로는 "진짜 색 차이"와 "�
 보여준다.
 
 ```
-python3 -m tools.classify_brand predict photo.jpg
-python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진을 base64로 내장한 독립 실행 정적 HTML
+python3 -m tools.cli.classify_brand predict photo.jpg
+python3 -m tools.cli.classify_brand predict photo.jpg --html result.html  # 사진을 base64로 내장한 독립 실행 정적 HTML
 ```
 
 ## 비디오 엔진 (프레임 단위, 엔지니어링 재사용 - 새 측정 아님)
@@ -247,7 +247,7 @@ python3 -m tools.classify_brand predict photo.jpg --html result.html  # 사진�
 참고.
 
 ```
-python3 -m tools.video_engine input.mp4 output.mp4 --brand canon
+python3 -m tools.cli.video_engine input.mp4 output.mp4 --brand canon
 ```
 
 **알려진 한계**: (1) 오디오는 무손실 remux 단계로 기본 보존된다
@@ -268,20 +268,20 @@ copy` - 재인코딩 없음, 첫 번째 오디오 트랙만, 끄는 옵션 없�
 ## 측정값 재현/재검증
 
 ```
-python3 -m tools.analyze hasselblad       # 핫셀블라드 공식 샘플 전체 population 통계
-python3 -m tools.analyze portrait         # 인물 서브셋 + 피부톤 색상각 불변성 검증
-python3 -m tools.analyze leica            # 라이카 imaging-resource.com population
-python3 -m tools.analyze phaseone         # 페이즈원, 동일
-python3 -m tools.analyze pentax           # 펜탁스, 동일
-python3 -m tools.analyze ricoh_gr         # 리코 GR, 동일
-python3 -m tools.analyze fuji_film_modes  # 후지 필름 모드별 population + 프리셋 방향 검증
+python3 -m tools.cli.analyze hasselblad       # 핫셀블라드 공식 샘플 전체 population 통계
+python3 -m tools.cli.analyze portrait         # 인물 서브셋 + 피부톤 색상각 불변성 검증
+python3 -m tools.cli.analyze leica            # 라이카 imaging-resource.com population
+python3 -m tools.cli.analyze phaseone         # 페이즈원, 동일
+python3 -m tools.cli.analyze pentax           # 펜탁스, 동일
+python3 -m tools.cli.analyze ricoh_gr         # 리코 GR, 동일
+python3 -m tools.cli.analyze fuji_film_modes  # 후지 필름 모드별 population + 프리셋 방향 검증
 
-python3 -m tools.download fuji-links      # 후지 RAW/JPEG 구글드라이브 링크 수집
-python3 -m tools.download fuji-pairs      # 그 링크에서 RAW+JPEG 페어 다운로드(gdown 필요)
+python3 -m tools.cli.download fuji-links      # 후지 RAW/JPEG 구글드라이브 링크 수집
+python3 -m tools.cli.download fuji-pairs      # 그 링크에서 RAW+JPEG 페어 다운로드(gdown 필요)
 
-python3 -m tools.calibrate grid_search    # 핫셀블라드 raw에서 진짜 전/후 그리드서치(rawpy 필요, 대용량 다운로드)
-python3 -m tools.calibrate learn_curve    # raw+jpeg 픽셀 대응에서 직접 톤커브 학습(rawpy 필요)
-python3 -m tools.calibrate regularize     # 학습된 LUT 정규화 + leave-one-out 교차검증
+python3 -m tools.fit.calibrate grid_search    # 핫셀블라드 raw에서 진짜 전/후 그리드서치(rawpy 필요, 대용량 다운로드)
+python3 -m tools.fit.calibrate learn_curve    # raw+jpeg 픽셀 대응에서 직접 톤커브 학습(rawpy 필요)
+python3 -m tools.fit.calibrate regularize     # 학습된 LUT 정규화 + leave-one-out 교차검증
 ```
 
 `evaluate_darktable_vs_rawpy.py`(리서치 전용 RAW 디코더 비교

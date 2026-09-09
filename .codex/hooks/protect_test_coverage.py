@@ -1,0 +1,1 @@
+../../.claude/hooks/protect_test_coverage.py

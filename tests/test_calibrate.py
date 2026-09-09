@@ -7,7 +7,25 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.calibrate import _CONTAMINATED_OFFICIAL_PAIRS, _generation_for, _resolve_pairs
+from tools.fit.calibrate import (
+    _CONTAMINATED_OFFICIAL_PAIRS, _generation_for, _pair_error, _resolve_pairs,
+)
+
+
+class TestPairError(unittest.TestCase):
+    """run_grid_search()/run_grid_search_loo()/run_grid_search_loo_per_generation()가
+    각자 중첩 정의로 들고 있던 동일한 오차식을 _pair_error()로 통합한 것 -
+    섀도우(b2) 항은 shadow_valid일 때만 더해진다."""
+
+    def test_highlight_only_when_shadow_invalid(self):
+        d = {'target': {'w995': 90.0, 'b2': 5.0}, 'shadow_valid': False}
+        s = {'w995': 92.0, 'b2': 50.0}
+        self.assertAlmostEqual(_pair_error(d, s), (92.0 - 90.0) ** 2)
+
+    def test_highlight_plus_shadow_when_shadow_valid(self):
+        d = {'target': {'w995': 90.0, 'b2': 5.0}, 'shadow_valid': True}
+        s = {'w995': 92.0, 'b2': 7.0}
+        self.assertAlmostEqual(_pair_error(d, s), (92.0 - 90.0) ** 2 + (7.0 - 5.0) ** 2)
 
 
 class TestResolvePairsExcludesContaminated(unittest.TestCase):
@@ -16,15 +34,15 @@ class TestResolvePairsExcludesContaminated(unittest.TestCase):
     네트워크(download)와 로컬 기여 데이터셋(collect_local_pairs)은 CI에
     없으므로 모킹한다(tests/CLAUDE.md)."""
 
-    @patch("tools.calibrate.collect_local_pairs", return_value=[])
-    @patch("tools.calibrate.download", return_value=True)
+    @patch("tools.fit.calibrate.collect_local_pairs", return_value=[])
+    @patch("tools.fit.calibrate.download", return_value=True)
     def test_contaminated_official_pairs_excluded(self, mock_download, mock_local):
         pairs = _resolve_pairs()
         names = {p["filename"] for p in pairs}
         self.assertTrue(names.isdisjoint(_CONTAMINATED_OFFICIAL_PAIRS))
 
-    @patch("tools.calibrate.collect_local_pairs", return_value=[])
-    @patch("tools.calibrate.download", return_value=True)
+    @patch("tools.fit.calibrate.collect_local_pairs", return_value=[])
+    @patch("tools.fit.calibrate.download", return_value=True)
     def test_exactly_four_clean_official_pairs_remain(self, mock_download, mock_local):
         pairs = _resolve_pairs()
         self.assertEqual(len(pairs), 4)
@@ -52,7 +70,7 @@ class TestGenerationFor(unittest.TestCase):
 
 class TestPairCountsSums(unittest.TestCase):
     def test_matches_manual_bincount(self):
-        from tools.calibrate import _pair_counts_sums
+        from tools.fit.calibrate import _pair_counts_sums
         neutral_l = np.array([10, 10, 20, 250], dtype=np.int64)
         target_l = np.array([12.0, 14.0, 22.0, 240.0], dtype=np.float64)
         counts, sums = _pair_counts_sums(neutral_l, target_l)
@@ -70,7 +88,7 @@ class TestPairCountsSums(unittest.TestCase):
 
 class TestBuildLutFromCounts(unittest.TestCase):
     def test_lambda_zero_is_pure_empirical_mean(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.zeros(256, dtype=np.float64)
         sums = np.zeros(256, dtype=np.float64)
         counts[100] = 4
@@ -80,7 +98,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
         self.assertAlmostEqual(lut[100], 150.0, places=4)
 
     def test_huge_lambda_converges_to_prior(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.zeros(256, dtype=np.float64)
         sums = np.zeros(256, dtype=np.float64)
         counts[100] = 4
@@ -90,7 +108,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
         self.assertAlmostEqual(lut[100], 100.0, places=1)
 
     def test_empty_bin_falls_back_to_prior(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.zeros(256, dtype=np.float64)
         sums = np.zeros(256, dtype=np.float64)
         prior = np.arange(256, dtype=np.float32)
@@ -98,7 +116,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
         self.assertAlmostEqual(lut[50], 50.0, places=4)
 
     def test_monotonic_nondecreasing(self):
-        from tools.calibrate import _build_lut_from_counts
+        from tools.fit.calibrate import _build_lut_from_counts
         counts = np.array([0, 5, 0, 3] + [0] * 252, dtype=np.float64)
         sums = np.array([0, 5 * 200.0, 0, 3 * 10.0] + [0.0] * 252, dtype=np.float64)
         prior = np.arange(256, dtype=np.float32)
@@ -108,7 +126,7 @@ class TestBuildLutFromCounts(unittest.TestCase):
 
 class TestSubtractionLooMatchesRecompute(unittest.TestCase):
     def test_subtraction_equals_full_recompute(self):
-        from tools.calibrate import _pair_counts_sums, _build_lut_from_counts
+        from tools.fit.calibrate import _pair_counts_sums, _build_lut_from_counts
 
         rng = np.random.default_rng(42)
         pairs = []
@@ -147,7 +165,7 @@ class TestFoldBestComboMatchesRecompute(unittest.TestCase):
     와 같은 성격의 검증."""
 
     def test_subtraction_equals_full_recompute(self):
-        from tools.calibrate import _fold_best_combo
+        from tools.fit.calibrate import _fold_best_combo
 
         rng = np.random.default_rng(7)
         n_combos, n_pairs = 12, 6
@@ -163,7 +181,7 @@ class TestFoldBestComboMatchesRecompute(unittest.TestCase):
             self.assertEqual(got, expected)
 
     def test_picks_the_combo_with_lower_error_on_remaining_pairs(self):
-        from tools.calibrate import _fold_best_combo
+        from tools.fit.calibrate import _fold_best_combo
 
         # combo 0이 페어 1에서만 나쁘고 나머지에선 좋음 - held_out=1을 빼면
         # combo 0이 이겨야 한다.
@@ -176,22 +194,22 @@ class TestFoldBestComboMatchesRecompute(unittest.TestCase):
 
 class TestSignTestP(unittest.TestCase):
     def test_no_pairs_is_p_one(self):
-        from tools.calibrate import _sign_test_p
+        from tools.fit.calibrate import _sign_test_p
         self.assertEqual(_sign_test_p(0, 0), 1.0)
 
     def test_even_split_is_p_one(self):
-        from tools.calibrate import _sign_test_p
+        from tools.fit.calibrate import _sign_test_p
         self.assertAlmostEqual(_sign_test_p(5, 5), 1.0)
 
     def test_all_wins_is_significant(self):
-        from tools.calibrate import _sign_test_p
+        from tools.fit.calibrate import _sign_test_p
         p = _sign_test_p(10, 0)
         self.assertLess(p, 0.05)
 
 
 class TestSummarizeShape(unittest.TestCase):
     def test_returns_expected_keys(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         per_fold = [(f"pair{i}", 10.0, 9.0) for i in range(20)]
         s = summarize(per_fold)
         expected_keys = {
@@ -207,7 +225,7 @@ class TestSummarizeShape(unittest.TestCase):
         self.assertAlmostEqual(s["mean_b"], 9.0)
 
     def test_identical_values_is_inconclusive(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         per_fold = [(f"pair{i}", 10.0, 10.0) for i in range(20)]
         s = summarize(per_fold)
         self.assertTrue(s["inconclusive"])
@@ -216,7 +234,7 @@ class TestSummarizeShape(unittest.TestCase):
 
 class TestGenerationBreakdown(unittest.TestCase):
     def test_groups_and_computes_rmse(self):
-        from tools.calibrate import _generation_breakdown
+        from tools.fit.calibrate import _generation_breakdown
         fold = [
             ("a", "X1D", 3.0),
             ("b", "X1D", 5.0),
@@ -230,7 +248,7 @@ class TestGenerationBreakdown(unittest.TestCase):
         self.assertAlmostEqual(by_gen["X2D 100C"][1], 4.0)
 
     def test_sorted_by_generation_name(self):
-        from tools.calibrate import _generation_breakdown
+        from tools.fit.calibrate import _generation_breakdown
         fold = [("a", "X2D 100C", 1.0), ("b", "CFV 100C/907X", 1.0)]
         result = _generation_breakdown(fold)
         gens = [gen for gen, _, _ in result]
@@ -328,24 +346,24 @@ class TestSummarizeRecordedRun(unittest.TestCase):
     재현하는 회귀 테스트."""
 
     def test_reproduces_documented_means(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
         self.assertAlmostEqual(s["mean_a"], 31.716, places=3)
         self.assertAlmostEqual(s["mean_b"], 16.989, places=3)
 
     def test_reproduces_documented_improvement_pct(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
         self.assertAlmostEqual(s["improvement_pct"], 46.4, places=1)
 
     def test_reproduces_documented_win_loss(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
         self.assertEqual(s["b_wins"], 60)
         self.assertEqual(s["a_wins"], 14)
 
     def test_reproduces_documented_sign_test_p(self):
-        from tools.calibrate import summarize
+        from tools.fit.calibrate import summarize
         s = summarize(_RECORDED_HYBRID_VS_V12_RUN)
         self.assertAlmostEqual(s["sign_test_p"], 6.22176141634788e-08, places=9)
 

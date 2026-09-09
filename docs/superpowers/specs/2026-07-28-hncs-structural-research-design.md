@@ -106,7 +106,7 @@ x1d-II-sample-09    1.3163
   2-클러스터로 제한(아래 "조사 결과"의 정정된 수치 참고 - 소수
   클러스터가 3쌍뿐).
 - **비디오 엔진 통합** - 이 실험 모듈은 정지 RAW 한 장을 다루는
-  연구용 코드고, `tools/video_engine.py`에 새 브랜드로 추가하지
+  연구용 코드고, `tools/cli/video_engine.py`에 새 브랜드로 추가하지
   않는다(그 자체로 별도 스펙 - Stable로 승격된 뒤에나 고려할 일).
 - **Phocus의 실제 조명별 매트릭스/LUT 값 재현** - Hasselblad 비공개
   자산이라 우리가 가진 데이터로 새로 피팅한 근사치일 뿐, Phocus와
@@ -200,7 +200,7 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
 바꾸지 않은 전례와 같은 판단).
 
 > **정정(2026-07-29, 사후 감사)**: 위 "공유 피팅"은 **구현되지 않았다**.
-> `tools/evaluate_hncs_structural.py`는 `FILM_CURVE_TOE_LIFT=0.001` /
+> `tools/research/evaluate_hncs_structural.py`는 `FILM_CURVE_TOE_LIFT=0.001` /
 > `SHOULDER_START=0.78` / `WHITE_POINT=1.0`을 상수로 고정하고 한 번도
 > 피팅하지 않는다(= `film_curve()` 기본값 = `apply_hncs()`가 v11에서
 > 채택한 값). 결과적으로 두 방식이 같은 톤커브를 공유해 톤이 통제변수가
@@ -212,8 +212,8 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
 
 ### 평가
 
-`tools/evaluate_hncs_structural.py`(가칭, 기존
-`tools/analyze_camera_native_matrix.py`류의 "1회성 실험 스크립트는
+`tools/research/evaluate_hncs_structural.py`(가칭, 기존
+`tools/fit/analyze_camera_native_matrix.py`류의 "1회성 실험 스크립트는
 `tools/`에 둔다"는 전례를 따름 - `hybrid_engine/evaluation/`은
 재사용 가능한 평가 프로토콜/메트릭용이라 이 1회성 실험과는 결이
 다름) - leave-one-out

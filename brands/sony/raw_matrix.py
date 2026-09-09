@@ -7,7 +7,7 @@ apply_sony_raw_matrix_look - `apply_sony_raw_look()`(brands/sony_raw.py,
 매트릭스 데이터를 만들려다, Sony에 매트릭스 자체가 없다는 걸 확인하고
 먼저 이걸 만든 것.
 
-`tools/fit_brand_matrix_chroma_pipeline.py sony --loo`로 Sony raw+jpeg
+`tools/fit/fit_brand_matrix_chroma_pipeline.py sony --loo`로 Sony raw+jpeg
 288쌍(디코드 성공, `load_neutral_render()` 입력공간) - 톤커브는
 `apply_sony_raw_look()`이 이미 확정한 값(toe=0.02/ss=0.82/wp=1.0/clip=2.0,
 `brands/sony_raw.py` 참고, 재탐색 안 함) 그대로 두고 매트릭스+채도/색조만
@@ -21,7 +21,7 @@ CI [+0.980,+1.480](0 미포함) - Canon 매트릭스 도입 때(+26.48%)보다�
 ΔE00=12.196(LOO 12.219와 거의 차이 없어 과적합 아님), sat_mult=1.15,
 hue_shift=0.0.
 
-재현: `python3 -m tools.fit_brand_matrix_chroma_pipeline sony --loo`."""
+재현: `python3 -m tools.fit.fit_brand_matrix_chroma_pipeline sony --loo`."""
 import colour
 import cv2
 import numpy as np

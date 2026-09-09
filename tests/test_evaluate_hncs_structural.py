@@ -4,12 +4,12 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_hncs_structural import (
+from tools.research.evaluate_hncs_structural import (
     _sign_test_p, classify_illuminant_cluster, compute_blend_weight_rb,
     fit_color_matrix, apply_color_matrix, make_folds, summarize,
 )
 
-# 이 파일은 예전에 원본 13쌍(X1D 전용) 실험판 tools/evaluate_hncs_structural.py를
+# 이 파일은 예전에 원본 13쌍(X1D 전용) 실험판 tools/research/evaluate_hncs_structural.py를
 # 대상으로 `_pair_names`/`_resize_max_dim`을 테스트했는데, 그 사이 모듈이
 # dpreview 95쌍(4세대) 5-fold 재실험판으로 전면 재작성되면서 `_pair_names`가
 # 아예 없어져 import 자체가 깨졌다(CI에서 발견, 2026-08-09). RAW_DIR도

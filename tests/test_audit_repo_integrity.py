@@ -1,4 +1,4 @@
-"""`tools/audit_repo_integrity.py`의 프로필 헤더 검사 회귀 테스트.
+"""`tools/maintenance/audit_repo_integrity.py`의 프로필 헤더 검사 회귀 테스트.
 
 이 검사가 따로 있는 이유는 `exiftool -validate`가 DCP 매직이 틀린 파일에도
 `Validate: OK`를 내기 때문이다(`tests/test_dcp_export.py`의
@@ -18,8 +18,11 @@ import numpy as np
 
 from core.dcp_export import write_dcp
 from core.icc_export import write_icc_matrix_trc_profile
-from tools.audit_repo_integrity import (check_profiles, dcp_header_problems,
-                                        icc_header_problems)
+from tools.maintenance.audit_repo_integrity import (
+    check_nare_registered_metrics, check_nare_registered_reports,
+    check_nare_selection_sensitivity, check_profiles, dcp_header_problems,
+    icc_header_problems,
+)
 
 _CM1 = np.array([[0.9, -0.2, -0.1], [-0.3, 1.2, 0.05], [0.02, -0.25, 0.8]])
 _NATIVE_TO_XYZ = np.array([[0.6, 0.3, 0.02], [0.2, 0.7, 0.1], [0.15, 0.05, 0.7]])
@@ -113,13 +116,13 @@ class TestCheckProfilesSkipsWithoutExiftool(unittest.TestCase):
     부풀리지 않는다."""
 
     def test_returns_none_when_exiftool_is_absent(self):
-        with patch("tools.audit_repo_integrity.shutil.which", return_value=None):
+        with patch("tools.maintenance.audit_repo_integrity.shutil.which", return_value=None):
             self.assertIsNone(check_profiles())
 
     def test_returns_list_when_exiftool_is_present(self):
-        with patch("tools.audit_repo_integrity.shutil.which",
+        with patch("tools.maintenance.audit_repo_integrity.shutil.which",
                    return_value="/usr/bin/exiftool"), \
-             patch("tools.audit_repo_integrity.subprocess.run") as run:
+             patch("tools.maintenance.audit_repo_integrity.subprocess.run") as run:
             run.return_value.stdout = "OK\n"
             self.assertEqual(check_profiles(), [])
         self.assertTrue(run.called)
@@ -144,11 +147,328 @@ class TestCheckProfilesSkipsWithoutExiftool(unittest.TestCase):
                 self.assertEqual(path, json_path)
                 return handle
 
-            with patch("tools.audit_repo_integrity.PROFILES", directory), \
-                 patch("tools.audit_repo_integrity.shutil.which", return_value=None), \
+            with patch("tools.maintenance.audit_repo_integrity.PROFILES", directory), \
+                 patch("tools.maintenance.audit_repo_integrity.shutil.which", return_value=None), \
                  patch("builtins.open", side_effect=open_profile):
                 self.assertIsNone(check_profiles())
             self.assertTrue(handle.was_closed)
+
+
+class TestNareRegisteredMetrics(unittest.TestCase):
+    def test_registration_scale_is_required(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "s", "registration": {}}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_metrics()
+            self.assertEqual(len(problems), 1)
+            self.assertIn("registration scale 누락", problems[0])
+
+    def test_valid_registration_scale_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "s", "raw_delta_e00": 1.0,
+                            "foundation_delta_e00": 1.0, "candidate_delta_e00": 0.5,
+                            "registration": {"long_edge_px": 512,
+                                              "overlap_fraction": 1.0,
+                                              "ecc_correlation": 0.9}}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(check_nare_registered_metrics(), [])
+
+    def test_boolean_or_nonpositive_registration_scale_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "s", "registration": {"long_edge_px": True}}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(len(check_nare_registered_metrics()), 1)
+
+    def test_filename_scale_must_match_registration_scale(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "s", "registration": {"long_edge_px": 1024}}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(len(check_nare_registered_metrics()), 1)
+
+    def test_metrics_require_unique_scene_ids_and_finite_registration_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            duplicate_path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            invalid_path = os.path.join(directory, "nare_registered_metrics_1024px.json")
+            with open(duplicate_path, "w", encoding="utf-8") as handle:
+                import json
+                row = {"scene_id": "s", "raw_delta_e00": 1.0,
+                       "foundation_delta_e00": 1.0, "candidate_delta_e00": 0.5,
+                       "registration": {"long_edge_px": 512,
+                                         "overlap_fraction": 1.0,
+                                         "ecc_correlation": 0.9}}
+                json.dump([row, dict(row)], handle)
+            with open(invalid_path, "w", encoding="utf-8") as handle:
+                import json
+                row = {"scene_id": "other", "raw_delta_e00": 1.0,
+                       "foundation_delta_e00": 1.0, "candidate_delta_e00": float("nan"),
+                       "registration": {"long_edge_px": 1024,
+                                         "overlap_fraction": 1.1,
+                                         "ecc_correlation": 0.9}}
+                json.dump([row], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_metrics()
+            self.assertEqual(len(problems), 2)
+
+
+class TestNareRegisteredReports(unittest.TestCase):
+    def test_bootstrap_configuration_is_required(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({"paired": {"bootstrap_draws": True, "bootstrap_seed": "0"}}, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertEqual(len(problems), 1)
+
+
+    def test_valid_bootstrap_configuration_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({
+                    "paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0,
+                               "n_scenes": 0, "per_scene": []},
+                    "classification": {"classification": "Inconclusive", "ship_gate_passed": False},
+                }, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(check_nare_registered_reports(), [])
+
+    def test_classification_envelope_requires_known_label_and_boolean_gate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({
+                    "paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0},
+                    "classification": {"classification": "made-up", "ship_gate_passed": "false"},
+                }, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+                self.assertEqual(len(problems), 1)
+
+    def test_scene_count_must_match_per_scene_rows(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({
+                    "paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0,
+                               "n_scenes": 2, "per_scene": [{"scene_id": "s1"}]},
+                    "classification": {"classification": "Inconclusive", "ship_gate_passed": False},
+                }, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertEqual(len(problems), 1)
+
+    def test_per_scene_ids_must_be_unique_and_nonempty(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({
+                    "paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0,
+                               "n_scenes": 2, "per_scene": [{"scene_id": "s1"}, {"scene_id": "s1"}]},
+                    "classification": {"classification": "Inconclusive", "ship_gate_passed": False},
+                }, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertEqual(len(problems), 1)
+
+    def test_report_aggregates_must_match_per_scene_values(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_report_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({
+                    "paired": {
+                        "bootstrap_draws": 20_000, "bootstrap_seed": 0, "n_scenes": 1,
+                        "mean_baseline": 10.0, "mean_candidate": 8.0,
+                        "mean_improvement": 1.0, "mean_improvement_pct": 10.0,
+                        "per_scene": [{"scene_id": "s1", "baseline_delta_e00": 10.0,
+                                       "candidate_delta_e00": 8.0, "improvement": 2.0}],
+                    },
+                    "classification": {"classification": "Inconclusive", "ship_gate_passed": False},
+                }, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertEqual(len(problems), 1)
+
+    def test_report_scene_ids_must_match_sibling_metrics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            report_path = os.path.join(directory, "nare_registered_report_512px.json")
+            metrics_path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(report_path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump({"paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0,
+                                       "n_scenes": 1, "mean_baseline": 1.0,
+                                       "mean_candidate": 0.5, "mean_improvement": 0.5,
+                                       "mean_improvement_pct": 50.0,
+                                       "per_scene": [{"scene_id": "report",
+                                                       "baseline_delta_e00": 1.0,
+                                                       "candidate_delta_e00": 0.5,
+                                                       "improvement": 0.5}]},
+                           "classification": {"classification": "Inconclusive",
+                                               "ship_gate_passed": False}}, handle)
+            with open(metrics_path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "metrics"}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertEqual(len(problems), 1)
+
+    def test_scale_reports_must_use_same_scene_set(self):
+        with tempfile.TemporaryDirectory() as directory:
+            import json
+            for scale, scene_id in (("512px", "scene-a"), ("1024px", "scene-b")):
+                path = os.path.join(directory, f"nare_registered_report_{scale}.json")
+                report = {
+                    "paired": {"bootstrap_draws": 20_000, "bootstrap_seed": 0,
+                               "n_scenes": 1, "mean_baseline": 10.0,
+                               "mean_candidate": 8.0, "mean_improvement": 2.0,
+                               "mean_improvement_pct": 20.0,
+                               "per_scene": [{"scene_id": scene_id,
+                                              "baseline_delta_e00": 10.0,
+                                              "candidate_delta_e00": 8.0,
+                                              "improvement": 2.0}]},
+                    "classification": {"classification": "Inconclusive",
+                                        "ship_gate_passed": False},
+                }
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(report, handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                problems = check_nare_registered_reports()
+            self.assertTrue(any("scale report scene 불일치" in problem for problem in problems))
+
+
+class TestNareSelectionSensitivity(unittest.TestCase):
+    def _payload(self):
+        return {
+            "schema": "hncs.nare-registration-selection-sensitivity/v1",
+            "source_develop_sha": "68df31818f7b4a4c3e2d663d6d04eb7b51e03d10",
+            "inputs": {
+                "exploratory_metrics_512px": "exploratory.json",
+                "registration_512px": "registration.json",
+                "registered_report_512px": "report512.json",
+                "registered_report_1024px": "report1024.json",
+            },
+            "input_sha256": {
+                "exploratory_metrics_512px": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "registration_512px": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "registered_report_512px": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "registered_report_1024px": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            },
+            "registration_gate": {"n_input": 3, "n_passed": 2, "n_failed": 1,
+                                   "n_aspect_ratio_failed": 1, "n_geometry_failed": 0},
+            "selection_sensitivity": {
+                "pass_minus_fail_mean_absolute_improvement_delta_e00": 2.0,
+                "bootstrap_95ci": [0.1, 2.0],
+                "two_sided_permutation_p": 0.01,
+                "bootstrap_draws": 100,
+                "permutation_draws": 100,
+                "seed_absolute": 0,
+                "seed_relative": 1,
+            },
+            "pre_registration_exploratory_metrics": {
+                "all_51": {"mean_baseline_delta_e00": 20.0, "mean_candidate_delta_e00": 16.0,
+                            "mean_absolute_improvement_delta_e00": 4.0,
+                            "aggregate_relative_improvement_pct": 20.0, "wins": 2, "losses": 1},
+                "registration_pass_32": {"mean_baseline_delta_e00": 18.0, "mean_candidate_delta_e00": 14.0,
+                                         "mean_absolute_improvement_delta_e00": 4.0,
+                                         "aggregate_relative_improvement_pct": 22.22222222222222,
+                                         "wins": 2, "losses": 0},
+                "registration_fail_19": {"mean_baseline_delta_e00": 24.0, "mean_candidate_delta_e00": 22.0,
+                                          "mean_absolute_improvement_delta_e00": 2.0,
+                                          "aggregate_relative_improvement_pct": 8.333333333333332,
+                                          "wins": 0, "losses": 1},
+            },
+            "post_registration_current_reports": {
+                "512px": {"n_scenes": 2, "mean_baseline_delta_e00": 10.0,
+                          "mean_candidate_delta_e00": 8.0,
+                          "mean_absolute_improvement_delta_e00": 2.0,
+                          "aggregate_relative_improvement_pct": 20.0,
+                          "bootstrap_95ci_absolute_improvement": [1.0, 3.0]},
+                "1024px": {"n_scenes": 2, "mean_baseline_delta_e00": 10.0,
+                           "mean_candidate_delta_e00": 8.0,
+                           "mean_absolute_improvement_delta_e00": 2.0,
+                           "aggregate_relative_improvement_pct": 20.0,
+                           "bootstrap_95ci_absolute_improvement": [1.0, 3.0]},
+            },
+        }
+
+    def test_valid_selection_sensitivity_artifact_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_provia_registration_selection_sensitivity_2026-09.json")
+            import json
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(self._payload(), handle)
+            for name in ("exploratory.json", "registration.json", "report512.json", "report1024.json"):
+                open(os.path.join(directory, name), "w", encoding="utf-8").close()
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(check_nare_selection_sensitivity(), [])
+
+    def test_selection_counts_and_ci_are_fail_closed(self):
+        for mutate in (
+            lambda payload: payload["registration_gate"].update(n_passed=3),
+            lambda payload: payload["selection_sensitivity"].update(bootstrap_95ci=[2.0, 1.0]),
+            lambda payload: payload["selection_sensitivity"].update(two_sided_permutation_p="0.01"),
+            lambda payload: payload["post_registration_current_reports"]["512px"].update(
+                mean_absolute_improvement_delta_e00=99.0),
+            lambda payload: payload["post_registration_current_reports"]["512px"].update(
+                mean_candidate_delta_e00=-1.0, mean_absolute_improvement_delta_e00=11.0),
+            lambda payload: payload.update(source_develop_sha="f" * 40),
+        ):
+            with self.subTest(mutate=mutate), tempfile.TemporaryDirectory() as directory:
+                payload = self._payload()
+                mutate(payload)
+                path = os.path.join(directory, "nare_provia_registration_selection_sensitivity_2026-09.json")
+                import json
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(payload, handle)
+                for name in ("exploratory.json", "registration.json", "report512.json", "report1024.json"):
+                    open(os.path.join(directory, name), "w", encoding="utf-8").close()
+                with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                    self.assertEqual(len(check_nare_selection_sensitivity()), 1)
+
+    def test_missing_or_escaping_input_artifact_is_rejected(self):
+        for input_path in ("missing.json", "../outside.json", "/tmp/absolute.json"):
+            with self.subTest(input_path=input_path), tempfile.TemporaryDirectory() as directory:
+                payload = self._payload()
+                payload["inputs"]["registration_512px"] = input_path
+                path = os.path.join(directory, "nare_provia_registration_selection_sensitivity_2026-09.json")
+                import json
+                with open(path, "w", encoding="utf-8") as handle:
+                    json.dump(payload, handle)
+                for name in ("exploratory.json", "report512.json", "report1024.json"):
+                    open(os.path.join(directory, name), "w", encoding="utf-8").close()
+                with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                    self.assertEqual(len(check_nare_selection_sensitivity()), 1)
+
+    def test_input_hash_mismatch_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            payload = self._payload()
+            payload["input_sha256"]["registration_512px"] = "0" * 64
+            path = os.path.join(directory, "nare_provia_registration_selection_sensitivity_2026-09.json")
+            import json
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(payload, handle)
+            for name in ("exploratory.json", "registration.json", "report512.json", "report1024.json"):
+                open(os.path.join(directory, name), "w", encoding="utf-8").close()
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(len(check_nare_selection_sensitivity()), 1)
 
 
 if __name__ == "__main__":

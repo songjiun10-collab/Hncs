@@ -1,0 +1,308 @@
+[
+  {
+    "scene_id": "gfx100rf-000",
+    "raw_delta_e00": 19.796668413534324,
+    "foundation_delta_e00": 19.796668413534324,
+    "candidate_delta_e00": 13.522484570612335
+  },
+  {
+    "scene_id": "gfx100rf-001",
+    "raw_delta_e00": 13.570155538826038,
+    "foundation_delta_e00": 13.570155538826038,
+    "candidate_delta_e00": 11.911701096891292
+  },
+  {
+    "scene_id": "gfx100rf-002",
+    "raw_delta_e00": 17.264848695160183,
+    "foundation_delta_e00": 17.264848695160183,
+    "candidate_delta_e00": 18.596850961756275
+  },
+  {
+    "scene_id": "gfx100rf-003",
+    "raw_delta_e00": 6.3519620836297745,
+    "foundation_delta_e00": 6.3519620836297745,
+    "candidate_delta_e00": 7.020002371580336
+  },
+  {
+    "scene_id": "gfx100rf-004",
+    "raw_delta_e00": 21.410855812131068,
+    "foundation_delta_e00": 21.410855812131068,
+    "candidate_delta_e00": 18.009413313133912
+  },
+  {
+    "scene_id": "gfx100rf-005",
+    "raw_delta_e00": 19.88120440478189,
+    "foundation_delta_e00": 19.88120440478189,
+    "candidate_delta_e00": 12.295503001932767
+  },
+  {
+    "scene_id": "gfx100rf-006",
+    "raw_delta_e00": 23.326317928022263,
+    "foundation_delta_e00": 23.326317928022263,
+    "candidate_delta_e00": 20.774190478032885
+  },
+  {
+    "scene_id": "gfx100rf-007",
+    "raw_delta_e00": 24.347958661458847,
+    "foundation_delta_e00": 24.347958661458847,
+    "candidate_delta_e00": 17.112821025548726
+  },
+  {
+    "scene_id": "gfx100rf-008",
+    "raw_delta_e00": 26.546006909923637,
+    "foundation_delta_e00": 26.546006909923637,
+    "candidate_delta_e00": 22.890707422721977
+  },
+  {
+    "scene_id": "gfx100rf-009",
+    "raw_delta_e00": 20.857641291872827,
+    "foundation_delta_e00": 20.857641291872827,
+    "candidate_delta_e00": 15.534641576051119
+  },
+  {
+    "scene_id": "gfx100rf-010",
+    "raw_delta_e00": 21.147494034205497,
+    "foundation_delta_e00": 21.147494034205497,
+    "candidate_delta_e00": 20.560362710263984
+  },
+  {
+    "scene_id": "gfx100rf-011",
+    "raw_delta_e00": 14.614443290868586,
+    "foundation_delta_e00": 14.614443290868586,
+    "candidate_delta_e00": 13.004834323505275
+  },
+  {
+    "scene_id": "gfx100rf-012",
+    "raw_delta_e00": 15.981925032106352,
+    "foundation_delta_e00": 15.981925032106352,
+    "candidate_delta_e00": 14.639826308096108
+  },
+  {
+    "scene_id": "gfx100rf-013",
+    "raw_delta_e00": 7.443883029832781,
+    "foundation_delta_e00": 7.443883029832781,
+    "candidate_delta_e00": 5.952750069558671
+  },
+  {
+    "scene_id": "gfx100rf-014",
+    "raw_delta_e00": 16.638153378809907,
+    "foundation_delta_e00": 16.638153378809907,
+    "candidate_delta_e00": 18.02701233217625
+  },
+  {
+    "scene_id": "gfx100rf-015",
+    "raw_delta_e00": 20.096473004276596,
+    "foundation_delta_e00": 20.096473004276596,
+    "candidate_delta_e00": 12.246103198868724
+  },
+  {
+    "scene_id": "gfx100rf-016",
+    "raw_delta_e00": 33.79716341915736,
+    "foundation_delta_e00": 33.79716341915736,
+    "candidate_delta_e00": 28.946144352449476
+  },
+  {
+    "scene_id": "gfx100rf-017",
+    "raw_delta_e00": 16.274084305506943,
+    "foundation_delta_e00": 16.274084305506943,
+    "candidate_delta_e00": 10.277009933543123
+  },
+  {
+    "scene_id": "gfx100rf-018",
+    "raw_delta_e00": 19.42835077596338,
+    "foundation_delta_e00": 19.42835077596338,
+    "candidate_delta_e00": 13.980214092340747
+  },
+  {
+    "scene_id": "gfx100rf-019",
+    "raw_delta_e00": 21.66476689739744,
+    "foundation_delta_e00": 21.66476689739744,
+    "candidate_delta_e00": 22.75637397964579
+  },
+  {
+    "scene_id": "gfx100rf-020",
+    "raw_delta_e00": 22.862935935760717,
+    "foundation_delta_e00": 22.862935935760717,
+    "candidate_delta_e00": 21.031006142683726
+  },
+  {
+    "scene_id": "gfx100rf-021",
+    "raw_delta_e00": 28.602114086600373,
+    "foundation_delta_e00": 28.602114086600373,
+    "candidate_delta_e00": 26.216117330841325
+  },
+  {
+    "scene_id": "gfx100rf-022",
+    "raw_delta_e00": 4.4465177230584825,
+    "foundation_delta_e00": 4.4465177230584825,
+    "candidate_delta_e00": 4.655061948545953
+  },
+  {
+    "scene_id": "gfx100rf-026",
+    "raw_delta_e00": 16.082462543462245,
+    "foundation_delta_e00": 16.082462543462245,
+    "candidate_delta_e00": 10.021615687595057
+  },
+  {
+    "scene_id": "gfx100rf-027",
+    "raw_delta_e00": 11.803518325283546,
+    "foundation_delta_e00": 11.803518325283546,
+    "candidate_delta_e00": 8.671838997987825
+  },
+  {
+    "scene_id": "gfx100rf-028",
+    "raw_delta_e00": 15.193169441102357,
+    "foundation_delta_e00": 15.193169441102357,
+    "candidate_delta_e00": 12.093783877032655
+  },
+  {
+    "scene_id": "gfx100rf-029",
+    "raw_delta_e00": 13.506949936952115,
+    "foundation_delta_e00": 13.506949936952115,
+    "candidate_delta_e00": 7.560762156367229
+  },
+  {
+    "scene_id": "gfx100rf-030",
+    "raw_delta_e00": 6.922297634602863,
+    "foundation_delta_e00": 6.922297634602863,
+    "candidate_delta_e00": 6.133690689440635
+  },
+  {
+    "scene_id": "gfx100rf-031",
+    "raw_delta_e00": 20.71715993724378,
+    "foundation_delta_e00": 20.71715993724378,
+    "candidate_delta_e00": 11.635948538814308
+  },
+  {
+    "scene_id": "gfx100rf-032",
+    "raw_delta_e00": 21.467926398567297,
+    "foundation_delta_e00": 21.467926398567297,
+    "candidate_delta_e00": 13.26015118499286
+  },
+  {
+    "scene_id": "gfx100rf-033",
+    "raw_delta_e00": 30.61145253877055,
+    "foundation_delta_e00": 30.61145253877055,
+    "candidate_delta_e00": 27.961522994607467
+  },
+  {
+    "scene_id": "gfx100rf-034",
+    "raw_delta_e00": 19.5253992915416,
+    "foundation_delta_e00": 19.5253992915416,
+    "candidate_delta_e00": 12.504781522291642
+  },
+  {
+    "scene_id": "gfx100rf-035",
+    "raw_delta_e00": 16.951266740473205,
+    "foundation_delta_e00": 16.951266740473205,
+    "candidate_delta_e00": 10.247938846446113
+  },
+  {
+    "scene_id": "gfx100rf-036",
+    "raw_delta_e00": 28.69915623888198,
+    "foundation_delta_e00": 28.69915623888198,
+    "candidate_delta_e00": 24.12626194686064
+  },
+  {
+    "scene_id": "gfx100rf-037",
+    "raw_delta_e00": 41.26057023961163,
+    "foundation_delta_e00": 41.26057023961163,
+    "candidate_delta_e00": 39.89355877741735
+  },
+  {
+    "scene_id": "gfx100rf-038",
+    "raw_delta_e00": 39.19163478499653,
+    "foundation_delta_e00": 39.19163478499653,
+    "candidate_delta_e00": 38.97958277295022
+  },
+  {
+    "scene_id": "gfx100rf-039",
+    "raw_delta_e00": 23.90250035672574,
+    "foundation_delta_e00": 23.90250035672574,
+    "candidate_delta_e00": 21.21593497073026
+  },
+  {
+    "scene_id": "gfx100rf-040",
+    "raw_delta_e00": 29.855144623140127,
+    "foundation_delta_e00": 29.855144623140127,
+    "candidate_delta_e00": 28.8850372600985
+  },
+  {
+    "scene_id": "gfx100rf-041",
+    "raw_delta_e00": 33.123889487953136,
+    "foundation_delta_e00": 33.123889487953136,
+    "candidate_delta_e00": 27.53438605458848
+  },
+  {
+    "scene_id": "gfx100rf-042",
+    "raw_delta_e00": 19.470089089083295,
+    "foundation_delta_e00": 19.470089089083295,
+    "candidate_delta_e00": 13.885469432481049
+  },
+  {
+    "scene_id": "gfx100rf-043",
+    "raw_delta_e00": 30.260768709268607,
+    "foundation_delta_e00": 30.260768709268607,
+    "candidate_delta_e00": 25.169186151402037
+  },
+  {
+    "scene_id": "gfx100rf-044",
+    "raw_delta_e00": 10.440986959875199,
+    "foundation_delta_e00": 10.440986959875199,
+    "candidate_delta_e00": 8.143280688282202
+  },
+  {
+    "scene_id": "gfx100rf-045",
+    "raw_delta_e00": 17.999009910694056,
+    "foundation_delta_e00": 17.999009910694056,
+    "candidate_delta_e00": 19.959760386646504
+  },
+  {
+    "scene_id": "gfx100rf-046",
+    "raw_delta_e00": 15.226200581088246,
+    "foundation_delta_e00": 15.226200581088246,
+    "candidate_delta_e00": 16.67561496335138
+  },
+  {
+    "scene_id": "gfx100rf-047",
+    "raw_delta_e00": 10.22400047143669,
+    "foundation_delta_e00": 10.22400047143669,
+    "candidate_delta_e00": 7.445525062250287
+  },
+  {
+    "scene_id": "gfx100rf-048",
+    "raw_delta_e00": 12.46596802839482,
+    "foundation_delta_e00": 12.46596802839482,
+    "candidate_delta_e00": 13.579173287068967
+  },
+  {
+    "scene_id": "gfx100rf-049",
+    "raw_delta_e00": 22.88173371489594,
+    "foundation_delta_e00": 22.88173371489594,
+    "candidate_delta_e00": 18.60620082228629
+  },
+  {
+    "scene_id": "gfx100rf-050",
+    "raw_delta_e00": 19.270582109294388,
+    "foundation_delta_e00": 19.270582109294388,
+    "candidate_delta_e00": 19.961209802903593
+  },
+  {
+    "scene_id": "gfx100rf-051",
+    "raw_delta_e00": 29.030458641063618,
+    "foundation_delta_e00": 29.030458641063618,
+    "candidate_delta_e00": 28.189223937546362
+  },
+  {
+    "scene_id": "gfx100rf-052",
+    "raw_delta_e00": 30.756088193695216,
+    "foundation_delta_e00": 30.756088193695216,
+    "candidate_delta_e00": 28.012200835676204
+  },
+  {
+    "scene_id": "gfx100rf-053",
+    "raw_delta_e00": 33.272227798783554,
+    "foundation_delta_e00": 33.272227798783554,
+    "candidate_delta_e00": 27.812261051220588
+  }
+]

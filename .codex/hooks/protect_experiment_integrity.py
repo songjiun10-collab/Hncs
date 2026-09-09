@@ -1,0 +1,1 @@
+../../.claude/hooks/protect_experiment_integrity.py

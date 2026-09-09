@@ -4,7 +4,7 @@ apply_sigma_raw_matrix_look - `apply_sigma_raw_look()`(brands/sigma_raw.py,
 컬러매트릭스+채도/색조 LUT을 얹은 버전. `brands/sony_raw_matrix.py`와
 같은 조사(2026-09-02, 사용자 지시 "소니같은거도 다 매트릭스 만들어").
 
-`tools/fit_brand_matrix_chroma_pipeline.py sigma --loo`로 Sigma raw+jpeg
+`tools/fit/fit_brand_matrix_chroma_pipeline.py sigma --loo`로 Sigma raw+jpeg
 83쌍(디코드 성공) - 톤커브는 `apply_sigma_raw_look()`이 이미 확정한 값
 (toe=0.02/ss=0.82/wp=1.0/clip=3.0, `brands/sigma_raw.py` 참고) 그대로
 두고 매트릭스+채도/색조만 새로 5-fold LOO 피팅해서 **실제 배포된
@@ -16,7 +16,7 @@ CI [+0.760,+1.888](0 미포함) - Sony(+9.11%)와 거의 같은 개선폭. 전�
 표본(홀드아웃 없이) 최종 재피팅: in-sample ΔE00=13.102(LOO 13.305와
 큰 차이 없어 과적합 아님), sat_mult=1.20, hue_shift=0.0.
 
-재현: `python3 -m tools.fit_brand_matrix_chroma_pipeline sigma --loo`."""
+재현: `python3 -m tools.fit.fit_brand_matrix_chroma_pipeline sigma --loo`."""
 import colour
 import cv2
 import numpy as np

@@ -19,7 +19,7 @@ import numpy as np
 from hybrid_engine.calibrate_profile import _resize_max_dim, CALIB_MAX_DIM, _mean_loss, _DEFAULT_PARAMS
 from hybrid_engine.core import color_matrix
 from hybrid_engine.utils.io import decode_raw, load_image_linear
-from tools.calibrate import collect_local_pairs
+from tools.fit.calibrate import collect_local_pairs
 
 TARGET_GENERATION = "X2D II 100C"
 REPORT_PATH = os.path.join(

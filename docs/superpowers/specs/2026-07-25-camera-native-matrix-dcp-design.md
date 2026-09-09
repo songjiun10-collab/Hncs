@@ -2,7 +2,7 @@
 
 ## 배경 / 문제
 
-`hybrid_engine/core/chart_baseline.py`와 `tools/analyze_colorchecker_matrix.py`는
+`hybrid_engine/core/chart_baseline.py`와 `tools/fit/analyze_colorchecker_matrix.py`는
 기여받은 X2D II ColorChecker Classic 차트 10장으로 "rawpy/libraw 기본
 디코드가 참값 색과 얼마나 다른가"를 재고(ΔE00 7.58), 차트로 직접 피팅한
 매트릭스로 그걸 2.78까지 줄였다(leave-one-image-out 교차검증). 이건 GitHub
@@ -115,9 +115,9 @@ rawpy의 `rgb_xyz_matrix`가 XYZ→camera인지 camera→XYZ인지는 문서만�
 Lab으로 가는 경로를 쓴다(D50 백색점 기준). 기존 함수는 sRGB D65 전제라
 XYZ 입력을 받는 형태가 필요하면 얇은 헬퍼를 추가한다.
 
-#### 1-5. `tools/analyze_camera_native_matrix.py`
+#### 1-5. `tools/fit/analyze_camera_native_matrix.py`
 
-기존 `tools/analyze_colorchecker_matrix.py`와 같은 형태의 실행 스크립트:
+기존 `tools/fit/analyze_colorchecker_matrix.py`와 같은 형태의 실행 스크립트:
 비교표를 콘솔에 출력하고 리포트 JSON을
 `datasets/hasselblad/contributed/kmichels-x2dii-2026-07/camera_native_matrix_report.json`에
 저장한다. 저장할 값: 매트릭스 방향 판정 근거, 세 경우의 이미지별/평균 ΔE,
@@ -181,7 +181,7 @@ DNG 스펙상 ForwardMatrix는 카메라 중립점을 D50 백색점으로 정확
    > 보다 강한 진술). 그래서 `CalibrationIlluminant1`은 매트릭스가 실제로
    > 대응하는 참조 백색점인 **23(D50)**으로 고정한다 - 장면 조명을
    > 측정/가정한 값이 아니다. `AsShotNeutral` CCT 역산은 "결론 없음"
-   > 진단으로만 리포트 JSON에 남긴다. 상세: `tools/analyze_camera_native_matrix.py`의
+   > 진단으로만 리포트 JSON에 남긴다. 상세: `tools/fit/analyze_camera_native_matrix.py`의
    > `_calibration_illuminant()`, `hybrid_engine/EVALUATION.md`의
    > "후속 실측 21".
 2. **조명 조건 1개.** 10장 전부 94초 한 버스트다(manifest 기록). 단일
@@ -216,7 +216,7 @@ DNG 스펙상 ForwardMatrix는 카메라 중립점을 D50 백색점으로 정확
 - 합성 데이터 라운드트립: 알려진 3×3을 네이티브 샘플에 곱해 타깃을 만든 뒤
   `fit_color_matrix()`가 그 3×3을 복원하는지(피팅 경로 자체의 정상 동작).
 - `decode_raw_native()`는 실 RAW 파일이 필요해 자동 테스트 범위 밖 -
-  `tools/analyze_camera_native_matrix.py` 수동 실행으로 확인(이 프로젝트의
+  `tools/fit/analyze_camera_native_matrix.py` 수동 실행으로 확인(이 프로젝트의
   다른 RAW 경로와 동일한 관례).
 
 **Phase 2** (`tests/test_dcp_export.py`):

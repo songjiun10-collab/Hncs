@@ -1,4 +1,4 @@
-"""AI 업스케일(Real-ESRGAN) 탭 - tools.upscale을 subprocess로 실행한다."""
+"""AI 업스케일(Real-ESRGAN) 탭 - tools.cli.upscale을 subprocess로 실행한다."""
 import os
 import subprocess
 import sys
@@ -18,7 +18,7 @@ ENGINE_CHOICES = list(UPSCALE_ENGINES)
 
 def build_upscale_command(input_path, output_path, scale, engine, python_exe=None):
     python_exe = python_exe or sys.executable
-    return [python_exe, "-m", "tools.upscale", input_path, output_path,
+    return [python_exe, "-m", "tools.cli.upscale", input_path, output_path,
             "--scale", str(scale), "--engine", engine]
 
 

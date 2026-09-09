@@ -5,7 +5,7 @@ import unittest
 
 import numpy as np
 
-from tools.evaluate_darktable_vs_rawpy import (
+from tools.research.evaluate_darktable_vs_rawpy import (
     _resize_max_dim, _sign_test_p, load_fuji_pairs, summarize,
 )
 

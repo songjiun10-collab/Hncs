@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from tools.build_readme_demo import CELL_H, CELL_W, LABEL_H, _short_label, build_grid
+from tools.demo.build_readme_demo import CELL_H, CELL_W, LABEL_H, _short_label, build_grid
 
 
 class TestShortLabel(unittest.TestCase):

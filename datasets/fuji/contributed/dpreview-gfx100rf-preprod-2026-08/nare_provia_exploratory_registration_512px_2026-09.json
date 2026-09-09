@@ -1,0 +1,484 @@
+{
+  "max_dim": 512,
+  "n_input": 51,
+  "n_passed": 32,
+  "failure_counts": {
+    "aspect_ratio_mismatch: 0.748047 vs 0.666896 (error=10.848%)": 2,
+    "aspect_ratio_mismatch: 1.336815 vs 0.749084 (error=43.965%)": 1,
+    "aspect_ratio_mismatch: 1.336815 vs 1.000000 (error=25.195%)": 3,
+    "aspect_ratio_mismatch: 1.336815 vs 1.498141 (error=12.068%)": 1,
+    "aspect_ratio_mismatch: 1.336815 vs 1.777778 (error=32.986%)": 1,
+    "aspect_ratio_mismatch: 1.336815 vs 2.706320 (error=102.445%)": 1,
+    "correlation": 4,
+    "correlation,translation": 1,
+    "correlation,translation,overlap": 4,
+    "translation,overlap": 1
+  },
+  "records": [
+    {
+      "scene_id": "gfx100rf-000",
+      "ecc_correlation": 0.9428845732360649,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.39777490496635437,
+      "shift_y_px": 0.1731892079114914,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-001",
+      "ecc_correlation": 0.8950216107022303,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.15753550827503204,
+      "shift_y_px": 0.33421799540519714,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-002",
+      "ecc_correlation": 0.1135469303033098,
+      "overlap_fraction": 0.9792346605744126,
+      "shift_x_px": -8.429525375366211,
+      "shift_y_px": 1.8038227558135986,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation"
+    },
+    {
+      "scene_id": "gfx100rf-003",
+      "ecc_correlation": 0.45767192781333504,
+      "overlap_fraction": 0.8804106152088773,
+      "shift_x_px": 38.57747268676758,
+      "shift_y_px": -18.190343856811523,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation,translation,overlap"
+    },
+    {
+      "scene_id": "gfx100rf-004",
+      "ecc_correlation": 0.7047962677344282,
+      "overlap_fraction": 0.9876234089425587,
+      "shift_x_px": 0.9652882218360901,
+      "shift_y_px": 4.211791038513184,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-005",
+      "ecc_correlation": 0.9071347499293405,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": -0.1922188252210617,
+      "shift_y_px": 0.5051361322402954,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-006",
+      "ecc_correlation": 0.8158083957276835,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.47902384400367737,
+      "shift_y_px": 0.7933305501937866,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-007",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 1.336815 vs 1.777778 (error=32.986%)"
+    },
+    {
+      "scene_id": "gfx100rf-008",
+      "ecc_correlation": 0.6981223966793287,
+      "overlap_fraction": 0.8115412859007833,
+      "shift_x_px": 76.38748931884766,
+      "shift_y_px": 17.786823272705078,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "translation,overlap"
+    },
+    {
+      "scene_id": "gfx100rf-009",
+      "ecc_correlation": 0.8804971269297788,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.20871980488300323,
+      "shift_y_px": 0.2993977963924408,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-010",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 1.336815 vs 0.749084 (error=43.965%)"
+    },
+    {
+      "scene_id": "gfx100rf-011",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 1.336815 vs 1.000000 (error=25.195%)"
+    },
+    {
+      "scene_id": "gfx100rf-012",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 1.336815 vs 1.000000 (error=25.195%)"
+    },
+    {
+      "scene_id": "gfx100rf-013",
+      "ecc_correlation": 0.8875114676241376,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.009294720366597176,
+      "shift_y_px": 0.3136439323425293,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-014",
+      "ecc_correlation": 0.46836548244991166,
+      "overlap_fraction": 0.9100185623368147,
+      "shift_x_px": -31.302257537841797,
+      "shift_y_px": 11.565125465393066,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation,translation"
+    },
+    {
+      "scene_id": "gfx100rf-015",
+      "ecc_correlation": 0.9458470412706921,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.357441782951355,
+      "shift_y_px": 0.18818612396717072,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-016",
+      "ecc_correlation": 0.9346017288598861,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.11917106062173843,
+      "shift_y_px": -0.045885298401117325,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-017",
+      "ecc_correlation": 0.9188676191168469,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.2773597836494446,
+      "shift_y_px": -0.35087791085243225,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-018",
+      "ecc_correlation": 0.8654589361464107,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.062434665858745575,
+      "shift_y_px": 0.15125924348831177,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-019",
+      "ecc_correlation": 0.17219602098105527,
+      "overlap_fraction": 0.8431380548302873,
+      "shift_x_px": 14.136775970458984,
+      "shift_y_px": 50.5435791015625,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation,translation,overlap"
+    },
+    {
+      "scene_id": "gfx100rf-020",
+      "ecc_correlation": 0.8892859002860746,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.004409722983837128,
+      "shift_y_px": 0.3993678390979767,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-021",
+      "ecc_correlation": 0.4277403037223426,
+      "overlap_fraction": 0.9476990861618799,
+      "shift_x_px": 15.033536911010742,
+      "shift_y_px": -6.620225429534912,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation"
+    },
+    {
+      "scene_id": "gfx100rf-022",
+      "ecc_correlation": 0.9895385340840488,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.18840815126895905,
+      "shift_y_px": -0.12249313294887543,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-026",
+      "ecc_correlation": 0.9351127225300504,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.10774514079093933,
+      "shift_y_px": 0.17444908618927002,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-027",
+      "ecc_correlation": 0.9546288461695764,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.3862091302871704,
+      "shift_y_px": -0.35717353224754333,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-028",
+      "ecc_correlation": 0.9648191200241093,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.6970433592796326,
+      "shift_y_px": 0.1348404884338379,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-029",
+      "ecc_correlation": 0.9437622465778341,
+      "overlap_fraction": 0.9954410084856397,
+      "shift_x_px": 0.6208319067955017,
+      "shift_y_px": 0.5109256505966187,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-030",
+      "ecc_correlation": 0.9493237345914408,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": -0.3775812089443207,
+      "shift_y_px": -0.5039861798286438,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-031",
+      "ecc_correlation": 0.8894370563618319,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.3224954903125763,
+      "shift_y_px": -0.021911535412073135,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-032",
+      "ecc_correlation": 0.9241696777335814,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": 0.3128320276737213,
+      "shift_y_px": -0.5464394688606262,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-033",
+      "ecc_correlation": 0.920245748011274,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.31467634439468384,
+      "shift_y_px": -0.04260674864053726,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-034",
+      "ecc_correlation": 0.8494670405374173,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.4766668975353241,
+      "shift_y_px": -0.24598777294158936,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-035",
+      "ecc_correlation": 0.9223085660905388,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.25858739018440247,
+      "shift_y_px": 0.2581547200679779,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-036",
+      "ecc_correlation": 0.541452006901203,
+      "overlap_fraction": 0.9934929830287206,
+      "shift_x_px": -2.468567371368408,
+      "shift_y_px": 1.3386038541793823,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation"
+    },
+    {
+      "scene_id": "gfx100rf-037",
+      "ecc_correlation": 0.28558221597646916,
+      "overlap_fraction": 0.7762014523498695,
+      "shift_x_px": -73.2252197265625,
+      "shift_y_px": -21.269193649291992,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation,translation,overlap"
+    },
+    {
+      "scene_id": "gfx100rf-038",
+      "ecc_correlation": 0.4403771363984212,
+      "overlap_fraction": 0.7242167101827677,
+      "shift_x_px": -66.00139617919922,
+      "shift_y_px": 64.26487731933594,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation,translation,overlap"
+    },
+    {
+      "scene_id": "gfx100rf-039",
+      "ecc_correlation": 0.5470664216894273,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.5384206175804138,
+      "shift_y_px": 0.4369956851005554,
+      "long_edge_px": 512,
+      "passed": false,
+      "failure_reason": "correlation"
+    },
+    {
+      "scene_id": "gfx100rf-040",
+      "ecc_correlation": 0.9509887034986952,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": -0.1119004413485527,
+      "shift_y_px": -1.1352441310882568,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-041",
+      "ecc_correlation": 0.9472069128884844,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": -0.35536283254623413,
+      "shift_y_px": 0.6510590314865112,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-042",
+      "ecc_correlation": 0.9205329821253206,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.033594489097595215,
+      "shift_y_px": 0.030962826684117317,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-043",
+      "ecc_correlation": 0.9301233255599756,
+      "overlap_fraction": 1.0,
+      "shift_x_px": -0.12661908566951752,
+      "shift_y_px": 0.31914040446281433,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-044",
+      "ecc_correlation": 0.9226750985591072,
+      "overlap_fraction": 1.0,
+      "shift_x_px": 0.4121004641056061,
+      "shift_y_px": 0.3192487061023712,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-045",
+      "ecc_correlation": 0.9476937498990233,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.18478477001190186,
+      "shift_y_px": -0.6196836233139038,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-046",
+      "ecc_correlation": 0.9359927032300932,
+      "overlap_fraction": 0.998046875,
+      "shift_x_px": 0.3662751615047455,
+      "shift_y_px": -0.6023017168045044,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-047",
+      "ecc_correlation": 0.9253731891840599,
+      "overlap_fraction": 0.9973890339425587,
+      "shift_x_px": -0.18042002618312836,
+      "shift_y_px": -0.5689091086387634,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-048",
+      "ecc_correlation": 0.9437306407599151,
+      "overlap_fraction": 0.9954410084856397,
+      "shift_x_px": -0.8955133557319641,
+      "shift_y_px": 1.3495378494262695,
+      "long_edge_px": 512,
+      "passed": true,
+      "failure_reason": null
+    },
+    {
+      "scene_id": "gfx100rf-049",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 1.336815 vs 2.706320 (error=102.445%)"
+    },
+    {
+      "scene_id": "gfx100rf-050",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 1.336815 vs 1.000000 (error=25.195%)"
+    },
+    {
+      "scene_id": "gfx100rf-051",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 0.748047 vs 0.666896 (error=10.848%)"
+    },
+    {
+      "scene_id": "gfx100rf-052",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 0.748047 vs 0.666896 (error=10.848%)"
+    },
+    {
+      "scene_id": "gfx100rf-053",
+      "passed": false,
+      "failure_reason": "aspect_ratio_mismatch: 1.336815 vs 1.498141 (error=12.068%)"
+    }
+  ]
+}

@@ -30,12 +30,12 @@ UI/frontend"라고 명시하지만 이번은 명시적 요청("야 gui 개발 �
     `assets/profiles/*.json` 근거 없으면 에러) + `--jpeg-quality` +
     `--max-megapixels`(기본 50.0, 고해상도 RAW OOM 방지용 다운샘플) +
     `--evaluate`.
-  - `tools.raw_pipeline` - RAW 전용, `--log-space`(필수, `core.log_pipeline
+  - `tools.cli.raw_pipeline` - RAW 전용, `--log-space`(필수, `core.log_pipeline
     .LOG_SPACES`의 12개 키 중 하나) + `--lut`(선택, `.cube`) +
     `--exposure`/`--auto-expose-mode`(`average`/`highlight_safe`/`matrix`) +
     `--exr-compression`. 출력 확장자로 `.tif`(16비트)/`.exr`(32비트)
     분기.
-  - `tools.lens_correction` - RAW/일반 이미지 둘 다, `--make`/`--model`/
+  - `tools.cli.lens_correction` - RAW/일반 이미지 둘 다, `--make`/`--model`/
     `--lens`/`--focal-length`/`--aperture`(전부 생략시 EXIF/exiftool에서
     읽음) + `--distance`(기본 1000.0).
 - `tools/CLAUDE.md`에 이미 있는 subprocess 컨벤션(명시적 `env=`, 부모
@@ -60,7 +60,7 @@ UI/frontend"라고 명시하지만 이번은 명시적 요청("야 gui 개발 �
   경로를 그대로 CLI 인자로 넘기고 출력은 임시 디렉토리(`tempfile.
   mkdtemp()`)에 받아서 로드 후 화면에 표시.
   - 탭 2는 입력 확장자로 `hybrid_engine.convert`(jpg/jpeg/png/tif/tiff)
-    vs `hybrid_engine.main`(RAW 확장자 - `tools/lens_correction.py`의
+    vs `hybrid_engine.main`(RAW 확장자 - `tools/cli/lens_correction.py`의
     `_RAW_EXTS` 집합과 동일한 목록을 재사용)을 자동 분기. 사용자가 타깃
     브랜드만 고르면 되고, 소스는 EXIF 자동인식 결과를 화면에 보여주되
     수동 오버라이드 드롭다운도 제공(`--source`/`--profile`).
@@ -120,7 +120,7 @@ func_name, img) -> np.ndarray`).
   모드 - 진행률을 모르므로).
 - 에러 처리: subprocess 탭은 `returncode != 0`이면 stderr를 그대로
   라벨/텍스트박스에 표시(CLI가 이미 사람이 읽을 에러 메시지를 찍는다 -
-  `tools/lens_correction.py`의 "에러: ..." 패턴 등). 브랜드 탭은 예외를
+  `tools/cli/lens_correction.py`의 "에러: ..." 패턴 등). 브랜드 탭은 예외를
   잡아 메시지 표시.
 
 ### 4. 의존성 변경

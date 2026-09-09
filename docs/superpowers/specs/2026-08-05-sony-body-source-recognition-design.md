@@ -52,7 +52,7 @@ docstring이 이미 "105mm/28-200mm 렌즈 테스트용 실내 저대비 피사�
   CSV가 유실되면 `core/stats.py:image_stats()`로 재계산 가능하지만,
   **원본 스크레이핑 스크립트는 커밋된 적이 없다**(`brands/sony.py`
   docstring: "Canon/Nikon 작업과의 동시편집 충돌을 피하려고 별도
-  스크립트로 수집" - 그 스크립트 자체는 저장 안 됨, `tools/analyze.py`의
+  스크립트로 수집" - 그 스크립트 자체는 저장 안 됨, `tools/cli/analyze.py`의
   `BRAND_CONFIGS`에도 sony는 없음). 두 캐시 모두 사라지면 imaging-resource.com
   갤러리를 처음부터 다시 긁어야 한다 - 이 스펙의 범위 밖.
 - `hybrid_engine/core/preset_inverse.py`의 `curve_params(brand)`(:73)는
@@ -73,7 +73,7 @@ docstring이 이미 "105mm/28-200mm 렌즈 테스트용 실내 저대비 피사�
   따로 계산, 총 115쌍의 페어드 비교 x 2통계)
 
 **판정**: `hybrid_engine/CLAUDE.md`의 4종 검정 그대로(부호검정 + 부트스트랩
-95% CI 20000회 + drop-one 민감도) - `tools/evaluate_hncs_blend.py`의
+95% CI 20000회 + drop-one 민감도) - `tools/research/evaluate_hncs_blend.py`의
 `summarize()`를 복사해서 재사용(brand-agnostic, ΔE 전용 코드 없음 -
 b2/w995 오차값 리스트만 받으면 그대로 동작).
 

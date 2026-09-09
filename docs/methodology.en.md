@@ -8,7 +8,7 @@ Back to the [main README](../README.md).
 
 We found that imaging-resource.com's media CDN stores genuinely corrupted originals across several camera review galleries (72% of the Hasselblad X2D 100C gallery, 100% of the Phase One XF 100MP gallery, 40% of the Pentax 645Z/K-1 galleries had decoding stop partway through with the rest saved as blank rows - repeated re-downloads via different methods reproduced the exact same result, confirming this is a defect in the files as stored on the site, not a transfer issue). `cv2.imread()` silently "succeeds" on these files too, only printing a "Premature end of JPEG file" warning and filling the rest with black pixels - load success or shape alone can't filter these out.
 
-**So from this point on, every population analysis only uses images that pass `core/validation.py`'s `is_image_usable()`** (which judges corruption via row-wise standard deviation). This is already applied across every download path in `tools/analyze.py` (Hasselblad's official CDN + the 4 imaging-resource.com brands) and `tools/download.py`'s Fuji Google Drive download path (`download_fuji_pairs()`), so newly scraped images are automatically filtered going forward.
+**So from this point on, every population analysis only uses images that pass `core/validation.py`'s `is_image_usable()`** (which judges corruption via row-wise standard deviation). This is already applied across every download path in `tools/cli/analyze.py` (Hasselblad's official CDN + the 4 imaging-resource.com brands) and `tools/cli/download.py`'s Fuji Google Drive download path (`download_fuji_pairs()`), so newly scraped images are automatically filtered going forward.
 
 Re-verifying all previously committed/cached population data:
   - Leica (45 photos), Fuji (mirrorlesscomparison.com, 40 JPEGs across 10 bodies): 0 corrupted - no change in numbers
@@ -20,7 +20,7 @@ See each brand file's docstring for exact numbers.
 **Hasselblad X2D 100C gallery follow-up (2026-07) - final verdict: unusable.**
 The "72% corrupted" figure above never got a documented follow-up
 conclusion, so we actually ran it through `run_imaging_resource_brand()`
-in `tools.analyze`. Of the 45 non-"-MOD" (unedited) candidates, both the
+in `tools.cli.analyze`. Of the 45 non-"-MOD" (unedited) candidates, both the
 original and scaled versions were tried for every one - 44 came back
 corrupted ("Premature end of JPEG file"), and the remaining 1 failed the
 expected-renderer EXIF check - **zero survivors**. Re-downloading the
@@ -30,7 +30,7 @@ but genuine corruption in the files as stored on imaging-resource.com's
 CDN (the same character of failure as the Phase One XF 100MP gallery's
 100% corruption). As with Phase One XT, this was left out of
 `BRAND_CONFIGS` and only documented as a code comment in
-`tools/analyze.py` - Hasselblad's official 124-photo `cdn.hasselblad.com`
+`tools/cli/analyze.py` - Hasselblad's official 124-photo `cdn.hasselblad.com`
 set remains the best available source.
 
 ## Brand-function QA verification (2026-07)

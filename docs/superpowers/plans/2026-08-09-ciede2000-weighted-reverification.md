@@ -4,7 +4,7 @@
 
 **Goal:** Add optional (kL, kC, kH) weighting to this project's CIEDE2000 measurement, verify it reproduces the existing default exactly, then re-run 3 of the project's ΔE-based research experiments under a published paper's optimized weights (4.1, 1.1, 1.6) to see whether any past verdict changes.
 
-**Architecture:** `hybrid_engine/utils/evaluate.py` gains a `delta_E_CIE2000_weighted()` helper that reuses `colour.difference.delta_e.intermediate_attributes_CIE2000()`'s pre-combination terms (colour-science's own `delta_E_CIE2000` has no way to pass arbitrary kL/kC/kH — confirmed by reading its source, it only supports a fixed `textiles=True` → kL=2 preset). `mean_delta_e()`/`delta_e_map()` grow optional `kL=1.0, kC=1.0, kH=1.0` keyword arguments routed through this helper, defaulting to today's exact behavior. Three research scripts (`tools/evaluate_hncs_blend.py`, `tools/evaluate_fuji_demosaic.py`, `tools/evaluate_darktable_vs_rawpy.py`) get a matching `--kl/--kc/--kh` CLI flag threaded down to every `mean_delta_e()` call in their pipelines, then get re-run for real with (4.1, 1.1, 1.6) and their results recorded in `hybrid_engine/EVALUATION.md`.
+**Architecture:** `hybrid_engine/utils/evaluate.py` gains a `delta_E_CIE2000_weighted()` helper that reuses `colour.difference.delta_e.intermediate_attributes_CIE2000()`'s pre-combination terms (colour-science's own `delta_E_CIE2000` has no way to pass arbitrary kL/kC/kH — confirmed by reading its source, it only supports a fixed `textiles=True` → kL=2 preset). `mean_delta_e()`/`delta_e_map()` grow optional `kL=1.0, kC=1.0, kH=1.0` keyword arguments routed through this helper, defaulting to today's exact behavior. Three research scripts (`tools/research/evaluate_hncs_blend.py`, `tools/fuji/evaluate_fuji_demosaic.py`, `tools/research/evaluate_darktable_vs_rawpy.py`) get a matching `--kl/--kc/--kh` CLI flag threaded down to every `mean_delta_e()` call in their pipelines, then get re-run for real with (4.1, 1.1, 1.6) and their results recorded in `hybrid_engine/EVALUATION.md`.
 
 **Tech Stack:** Python 3, `colour-science` 0.4.7 (already a dependency, no version change), `numpy`, `unittest`.
 
@@ -181,10 +181,10 @@ unaffected."
 
 ---
 
-### Task 2: `tools/evaluate_hncs_blend.py` — weighted RB-vs-CCT re-verification
+### Task 2: `tools/research/evaluate_hncs_blend.py` — weighted RB-vs-CCT re-verification
 
 **Files:**
-- Modify: `tools/evaluate_hncs_blend.py`
+- Modify: `tools/research/evaluate_hncs_blend.py`
 
 **Interfaces:**
 - Consumes: `mean_delta_e` from Task 1 (now accepts `kL`/`kC`/`kH`).
@@ -373,7 +373,7 @@ Expected: all pre-existing tests PASS (this task doesn't touch `summarize`/`_sig
 - [ ] **Step 4: Smoke-test the new CLI flag parses and threads through correctly**
 
 Run: `python3 -c "
-import tools.evaluate_hncs_blend as m
+import tools.research.evaluate_hncs_blend as m
 import inspect
 sig = inspect.signature(m.run_loocv)
 assert list(sig.parameters) == ['weight_fn_name', 'pool', 'kL', 'kC', 'kH'], sig
@@ -386,7 +386,7 @@ Expected: `signatures OK`, no errors.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add tools/evaluate_hncs_blend.py
+git add tools/research/evaluate_hncs_blend.py
 git commit -m "Add --kl/--kc/--kh to evaluate_hncs_blend.py
 
 Threads custom CIEDE2000 weights through the chroma-LUT grid search
@@ -397,10 +397,10 @@ weights) - only the self-contained RB-vs-CCT direct comparison runs."
 
 ---
 
-### Task 3: `tools/evaluate_fuji_demosaic.py` — weighted re-verification
+### Task 3: `tools/fuji/evaluate_fuji_demosaic.py` — weighted re-verification
 
 **Files:**
-- Modify: `tools/evaluate_fuji_demosaic.py`
+- Modify: `tools/fuji/evaluate_fuji_demosaic.py`
 
 **Interfaces:**
 - Consumes: `mean_delta_e` from Task 1.
@@ -469,7 +469,7 @@ Add `import argparse` to the top of the file alongside the existing `csv`, `os`,
 - [ ] **Step 2: Smoke-test signatures**
 
 Run: `python3 -c "
-import tools.evaluate_fuji_demosaic as m
+import tools.fuji.evaluate_fuji_demosaic as m
 import inspect
 assert list(inspect.signature(m.compare_pair).parameters) == ['pair', 'kL', 'kC', 'kH']
 assert list(inspect.signature(m.run_comparison).parameters) == ['kL', 'kC', 'kH']
@@ -480,16 +480,16 @@ Expected: `signatures OK`, no errors.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add tools/evaluate_fuji_demosaic.py
+git add tools/fuji/evaluate_fuji_demosaic.py
 git commit -m "Add --kl/--kc/--kh to evaluate_fuji_demosaic.py"
 ```
 
 ---
 
-### Task 4: `tools/evaluate_darktable_vs_rawpy.py` — weighted re-verification
+### Task 4: `tools/research/evaluate_darktable_vs_rawpy.py` — weighted re-verification
 
 **Files:**
-- Modify: `tools/evaluate_darktable_vs_rawpy.py`
+- Modify: `tools/research/evaluate_darktable_vs_rawpy.py`
 
 **Interfaces:**
 - Consumes: `mean_delta_e` from Task 1.
@@ -585,7 +585,7 @@ Add `import argparse` to the top of the file alongside the existing `csv`, `glob
 - [ ] **Step 2: Smoke-test signatures**
 
 Run: `python3 -c "
-import tools.evaluate_darktable_vs_rawpy as m
+import tools.research.evaluate_darktable_vs_rawpy as m
 import inspect
 assert list(inspect.signature(m.check_determinism).parameters) == ['pair', 'kL', 'kC', 'kH']
 assert list(inspect.signature(m.compare_pair).parameters) == ['pair', 'kL', 'kC', 'kH']
@@ -597,7 +597,7 @@ Expected: `signatures OK`, no errors.
 - [ ] **Step 3: Commit**
 
 ```bash
-git add tools/evaluate_darktable_vs_rawpy.py
+git add tools/research/evaluate_darktable_vs_rawpy.py
 git commit -m "Add --kl/--kc/--kh to evaluate_darktable_vs_rawpy.py"
 ```
 
@@ -617,9 +617,9 @@ git commit -m "Add --kl/--kc/--kh to evaluate_darktable_vs_rawpy.py"
 None of these 3 depend on each other (unlike the original 5-script design — see the spec's "재검증 범위" section). Launch all three at once:
 
 ```bash
-nohup python3 -m tools.evaluate_hncs_blend --kl 4.1 --kc 1.1 --kh 1.6 > /tmp/hncs_blend_weighted.log 2>&1 &
-nohup python3 -m tools.evaluate_fuji_demosaic --kl 4.1 --kc 1.1 --kh 1.6 > /tmp/fuji_demosaic_weighted.log 2>&1 &
-nohup python3 -m tools.evaluate_darktable_vs_rawpy --kl 4.1 --kc 1.1 --kh 1.6 > /tmp/darktable_vs_rawpy_weighted.log 2>&1 &
+nohup python3 -m tools.research.evaluate_hncs_blend --kl 4.1 --kc 1.1 --kh 1.6 > /tmp/hncs_blend_weighted.log 2>&1 &
+nohup python3 -m tools.fuji.evaluate_fuji_demosaic --kl 4.1 --kc 1.1 --kh 1.6 > /tmp/fuji_demosaic_weighted.log 2>&1 &
+nohup python3 -m tools.research.evaluate_darktable_vs_rawpy --kl 4.1 --kc 1.1 --kh 1.6 > /tmp/darktable_vs_rawpy_weighted.log 2>&1 &
 ```
 
 `evaluate_fuji_demosaic` (3 pairs, no grid search) and
@@ -677,7 +677,7 @@ Fill in every `<...>` with the real log output.
 Once `/tmp/hncs_blend_weighted.log` completes, find the RB-vs-CCT
 direct-comparison section's output (the last `=== RB블렌딩 vs CCT블렌딩
 직접 비교 ===` block in the log) and append to
-`tests/test_evaluate_hncs_blend.py` (add `from tools.evaluate_hncs_blend
+`tests/test_evaluate_hncs_blend.py` (add `from tools.research.evaluate_hncs_blend
 import summarize` if not already imported at module level — check first,
 the file already has `summarize` defined locally so no import is
 needed, just use it directly):

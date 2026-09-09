@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 import numpy as np
 
-from tools.highlight_rolloff_signal import rolloff_stats
+from tools.research.highlight_rolloff_signal import rolloff_stats
 
 
 class TestRolloffStats(unittest.TestCase):

@@ -61,9 +61,9 @@ separate factory is needed.
 
 - Neither `apply_hncs_x1d50c` nor `apply_hncs_x2dii` is registered in any
   `inspect.signature()`-reading registry — confirmed via repo-wide grep
-  for `x1d50c`/`x2dii` in `tools/video_engine.py`,
+  for `x1d50c`/`x2dii` in `tools/cli/video_engine.py`,
   `hybrid_engine/core/preset_inverse.py`, `core/lut_export.py`,
-  `tools/classify_brand.py`, `core/brand_classifier.py`,
+  `tools/cli/classify_brand.py`, `core/brand_classifier.py`,
   `tests/test_video_engine.py`: zero matches in all of them. So, unlike
   sub-project 2, there is no constraint forcing the factory's returned
   callable to be introspectable via `inspect.signature()` — but the

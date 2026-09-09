@@ -1,0 +1,39 @@
+{
+  "protocol": "NARE Natural-scene Appearance Reconstruction Evaluation",
+  "status": "insufficient_for_nare",
+  "source_page": "https://mirrorlesscomparison.com/galleries/fujifilm-xt100-sample-shots/",
+  "acquired_2026_09_08": {
+    "raw_input_count": 3,
+    "jpeg_input_count": 4,
+    "strict_pair_count": 1,
+    "pair_key": ["2018:08:19 22:16:43", "FUJIFILM", "X-T100", "200"],
+    "raw": {
+      "filename": "DSCF0138.RAF",
+      "download_url": "https://drive.google.com/uc?export=download&id=13fzzuhcm10fRmkApYSNHsG6ndHVHZDev",
+      "sha256": "d8b7ab7610ef665cbce70ecc4fe6fa0758140765d248a2fe98a1ad62272d7b99"
+    },
+    "jpeg": {
+      "filename": "DSCF0138.JPG",
+      "download_url": "https://drive.google.com/uc?export=download&id=1jK491TC6mGbhMVCWXp6px_baHFkhh1i6",
+      "sha256": "b64d962f8f62a5dd222ade7144b6c6761b897a6768d8837d16fdf779abe84828"
+    },
+    "exif": {
+      "make": "FUJIFILM",
+      "model": "X-T100",
+      "datetime_original": "2018:08:19 22:16:43",
+      "iso": 200,
+      "film_mode": "F0/Standard (Provia)",
+      "white_balance": "Kelvin"
+    }
+  },
+  "single_pair_probe": {
+    "raw_decoder": "rawpy 0.27.0 use_camera_wb=True no_auto_bright=True",
+    "candidate": "brands.fuji.look.apply_provia",
+    "evaluation_scale": "512x512",
+    "raw_delta_e00": 13.392764584526887,
+    "candidate_delta_e00": 13.815155932672752,
+    "candidate_improvement_delta_e00": -0.4223913481458652,
+    "candidate_improvement_pct": -3.15387719600379
+  },
+  "decision": "Do not fit or make an appearance claim: one independent daylight scene cannot meet NARE's 12-scene, three-lighting, or three-scene-category gates."
+}

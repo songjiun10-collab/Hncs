@@ -143,7 +143,7 @@ Then append this new function to the end of `hybrid_engine/utils/io.py` (after `
 ```python
 def decode_raw_darktable(raw_path):
     """RAW -> Linear RGB, darktable-cli 경유(연구용 전용 -
-    decode_raw()를 대체하지 않는다, tools/evaluate_darktable_vs_rawpy.py
+    decode_raw()를 대체하지 않는다, tools/research/evaluate_darktable_vs_rawpy.py
     전용). float64 [0, ~) 범위, shape (H, W, 3), RGB 순서,
     decode_raw()와 같은 sRGB(Rec.709) 프라이머리 기준 선형광 값이지만
     데모자이크/카메라 매트릭스/화이트밸런스를 rawpy(LibRaw)가 아니라
@@ -159,7 +159,7 @@ def decode_raw_darktable(raw_path):
 
     subprocess+임시파일 기반이라 decode_raw()보다 훨씬 느리다(파일당
     10초 이상) - 프로덕션 경로가 아니라
-    tools/evaluate_darktable_vs_rawpy.py 전용이다."""
+    tools/research/evaluate_darktable_vs_rawpy.py 전용이다."""
     with tempfile.TemporaryDirectory() as tmpdir:
         out_path = os.path.join(tmpdir, "out.tif")
         result = subprocess.run(
@@ -220,10 +220,10 @@ git commit -m "Add decode_raw_darktable(): darktable-cli-based RAW decode for re
 
 ---
 
-### Task 2: `tools/evaluate_darktable_vs_rawpy.py` + real 16-pair comparison + record results
+### Task 2: `tools/research/evaluate_darktable_vs_rawpy.py` + real 16-pair comparison + record results
 
 **Files:**
-- Create: `tools/evaluate_darktable_vs_rawpy.py`
+- Create: `tools/research/evaluate_darktable_vs_rawpy.py`
 - Test: `tests/test_evaluate_darktable_vs_rawpy.py`
 - Modify: `hybrid_engine/EVALUATION.md` (append new section)
 - Modify: `README.md` (add darktable system-dependency note)
@@ -242,7 +242,7 @@ import os
 import tempfile
 import unittest
 
-from tools.evaluate_darktable_vs_rawpy import load_fuji_pairs
+from tools.research.evaluate_darktable_vs_rawpy import load_fuji_pairs
 
 _FIELDS = ["camera", "datetime", "film_mode", "raw_path", "jpeg_path"]
 
@@ -296,11 +296,11 @@ if __name__ == "__main__":
 - [ ] **Step 2: Run tests to verify they fail**
 
 Run: `python3 -m unittest tests.test_evaluate_darktable_vs_rawpy -v`
-Expected: FAIL with `ModuleNotFoundError: No module named 'tools.evaluate_darktable_vs_rawpy'`
+Expected: FAIL with `ModuleNotFoundError: No module named 'tools.research.evaluate_darktable_vs_rawpy'`
 
 - [ ] **Step 3: Write the implementation**
 
-Create `tools/evaluate_darktable_vs_rawpy.py`:
+Create `tools/research/evaluate_darktable_vs_rawpy.py`:
 
 ```python
 """rawpy(decode_raw) vs darktable-cli(decode_raw_darktable) RAW 디코드
@@ -314,7 +314,7 @@ Create `tools/evaluate_darktable_vs_rawpy.py`:
 darktable-cli는 시스템 패키지(apt-get install darktable)로 설치돼야
 한다 - requirements.txt로 안 잡히는 이 실험 전용 의존성이다.
 
-  python3 -m tools.evaluate_darktable_vs_rawpy
+  python3 -m tools.research.evaluate_darktable_vs_rawpy
 """
 import csv
 import glob
@@ -464,7 +464,7 @@ Expected: all tests PASS (473 from Task 1 + 3 new = 476)
 
 - [ ] **Step 6: Run the real comparison against all 16 pairs**
 
-Run: `python3 -m tools.evaluate_darktable_vs_rawpy`
+Run: `python3 -m tools.research.evaluate_darktable_vs_rawpy`
 
 This will take several minutes (16 pairs × 2 decoders, plus the noise-floor check decodes 2 files × 2 decoders × 2 repeats — darktable-cli alone takes roughly 10-15 seconds per file). Capture the **full stdout output verbatim**: the noise-floor measurement lines, the per-pair comparison lines, and the final summary block (means, difference, win count, and the noise-floor judgment line). Do not paraphrase or round it — copy it exactly into the task report. This output is required input for Step 7.
 
@@ -539,7 +539,7 @@ In `README.md`, find the "## 설치" section (installation instructions, mention
 
 ```markdown
 
-`tools/evaluate_darktable_vs_rawpy.py`(연구용 RAW 디코더 비교 실험)를
+`tools/research/evaluate_darktable_vs_rawpy.py`(연구용 RAW 디코더 비교 실험)를
 재현하려면 `darktable-cli`가 시스템에 설치돼 있어야 한다
 (`apt-get install darktable` 또는 배포판에 맞는 방법 - Python
 `requirements.txt`로는 안 잡히는 별도 시스템 패키지다). 이 프로젝트의
@@ -554,7 +554,7 @@ Expected: all tests PASS (no code changed in Steps 7-8, but confirms the branch 
 - [ ] **Step 10: Commit**
 
 ```bash
-git add tools/evaluate_darktable_vs_rawpy.py tests/test_evaluate_darktable_vs_rawpy.py hybrid_engine/EVALUATION.md README.md
+git add tools/research/evaluate_darktable_vs_rawpy.py tests/test_evaluate_darktable_vs_rawpy.py hybrid_engine/EVALUATION.md README.md
 git commit -m "Add darktable vs rawpy RAW decode comparison (16 real pairs), record results"
 ```
 

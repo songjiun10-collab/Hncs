@@ -245,6 +245,43 @@ Still stop for decisions that are genuinely the user's: shipping a
 calibration change, deleting data, anything outward-facing. A stronger
 model resolves ambiguity, not authority.
 
+**Hit a CRITICAL hook gate (`protect_never_touch`/`protect_hook_integrity`/
+`protect_destructive`/`protect_decision_record_bypass`/`protect_push_safety`)
+while running unattended → don't stall waiting for the user.** Skip that
+one item, append it to `.superpowers/sdd/pending_signoff.md` (file/command,
+what you were trying to do, why, one line on urgency), and keep working
+the rest of the queue. Report the pending list when the user is back —
+CRITICAL still means a human decides, it just doesn't mean the whole run
+blocks on one item while nobody's there to answer.
+
+**Hit a MEDIUM/HIGH hook gate (`protect_claim_evidence`/
+`protect_generated_files`/`protect_branch`/`protect_experiment_integrity`/
+`protect_test_coverage`/`protect_reviewer_prejudging`/
+`protect_ready_without_review`/`protect_rubber_stamp_approval`) while
+unattended → these already don't require the user; use the approval path
+already built into `_hook_common.py` instead of stalling on it.** Write
+the decision record first (mandatory regardless of tier), then:
+- **MEDIUM** (`protect_claim_evidence`/`protect_generated_files`):
+  dispatch one `opus` subagent to actually review the change. If it
+  agrees, its response must end with the literal marker
+  `MEDIUM-APPROVE: <hook_name> :: <target> :: <caution>` (`<hook_name>`
+  = the failing hook's filename without `.py`, `<target>` = the exact
+  path/string the hook denied) — `record_agent_approval.py` only accepts
+  a direct, non-nested opus dispatch. Retry the guarded action right
+  after.
+- **HIGH** (the other six): dispatch *two independent* opus subagents
+  (separate framing/context each — not the same prompt twice), each
+  ending with `CONSENSUS-VERDICT: <hook_name> :: <target> :: <A|B> ::
+  <SAFE|RISKY> :: <reasoning>`. Both `SAFE` → retry, allowed
+  automatically (`allow_with_consensus()`). Either `RISKY`, or they
+  disagree → that's a real no, not a gate to route around: handle it
+  like a CRITICAL hit above (log to `pending_signoff.md`, move on) —
+  don't keep re-dispatching agents hoping for a different verdict.
+
+This never touches CRITICAL — none of those five hooks call
+`medium_approval()`/`consensus_verdict()`; only a human sign-off or the
+defer-to-ledger path above ever gets them through.
+
 **`/loop [interval]`** — don't poll harness-tracked work (it notifies);
 set a long fallback (1200s+) and arm a `Monitor` for the real signal.
 Match interval to state-change rate only for external polling. Quiet →

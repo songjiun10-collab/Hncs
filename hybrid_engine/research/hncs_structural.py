@@ -22,7 +22,7 @@ docs/superpowers/specs/2026-07-28-hncs-structural-research-design.md.
 
 - 이 모듈은 조사된 **단계 구성**을 흉내낼 뿐, Phocus의 실제 매트릭스/LUT
   값을 재현하지 않는다. 값은 우리 13쌍으로 새로 피팅한 근사치다.
-- 평가(tools/evaluate_hncs_structural.py)의 정답지는 **카메라 내장
+- 평가(tools/research/evaluate_hncs_structural.py)의 정답지는 **카메라 내장
   JPEG**이지 Phocus/HNCS의 출력이 아니다. 따라서 ΔE가 낮아진다고 해서
   "진짜 HNCS에 더 가깝다"는 뜻이 되지 않는다 - 재는 건 "카메라 JPEG에
   얼마나 가까운가"뿐이다.
@@ -97,7 +97,7 @@ def apply_hncs_structural(raw_path, illuminant_matrices, chroma_lut_params,
     -> 클러스터별 chroma LUT -> 공유 필름커브.
 
     illuminant_matrices/chroma_lut_params는 {"cluster_a": ..., "cluster_b": ...}
-    형태의 피팅 결과를 받는다(피팅 자체는 tools/evaluate_hncs_structural.py).
+    형태의 피팅 결과를 받는다(피팅 자체는 tools/research/evaluate_hncs_structural.py).
     필름커브만 클러스터로 안 나누고 공유 - 톤(밝기 분포)은 조명보다
     노출/장면에 더 좌우된다고 보는 판단(v11에서 apply_hncs()의
     toe_lift/shoulder_start를 표본이 작아 바꾸지 않은 전례와 같은

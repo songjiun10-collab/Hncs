@@ -1,0 +1,149 @@
+{
+  "warning": "SYNTHETIC ATTACK ONLY; no real calibration or independent replication",
+  "source_files": 24,
+  "target_files": 24,
+  "initial_matching_hashes": 48,
+  "actual_controls_executed": 0,
+  "actual_independent_replications": 0,
+  "claimed_metrics_computed_from_images": false,
+  "intact_fabrication": {
+    "classification": {
+      "evidence_tier": "A",
+      "ship_gate_passed": true,
+      "classification": "Supported",
+      "checks": {
+        "validation": true,
+        "lockbox": true,
+        "ci_positive": true,
+        "sign_test": true,
+        "effect_threshold": true,
+        "subgroups": true,
+        "controls": true,
+        "robustness": true,
+        "tier_supports_ship": true,
+        "trusted_provenance": false
+      }
+    },
+    "paired": {
+      "n_scenes": 24,
+      "mean_improvement_pct": 19.999999999999996,
+      "ci95": [
+        2.0549999999999997,
+        2.098333333333333
+      ],
+      "sign_test_p": 1.1920928955078125e-07
+    }
+  },
+  "replication_flag_removed": {
+    "classification": {
+      "evidence_tier": "A",
+      "ship_gate_passed": true,
+      "classification": "Supported",
+      "checks": {
+        "validation": true,
+        "lockbox": true,
+        "ci_positive": true,
+        "sign_test": true,
+        "effect_threshold": true,
+        "subgroups": true,
+        "controls": true,
+        "robustness": true,
+        "tier_supports_ship": true,
+        "trusted_provenance": false
+      }
+    },
+    "paired": {
+      "n_scenes": 24,
+      "mean_improvement_pct": 19.999999999999996,
+      "ci95": [
+        2.0549999999999997,
+        2.098333333333333
+      ],
+      "sign_test_p": 1.1920928955078125e-07
+    }
+  },
+  "honest_failed_control": {
+    "classification": {
+      "evidence_tier": "A",
+      "ship_gate_passed": false,
+      "classification": "Rejected",
+      "checks": {
+        "validation": true,
+        "lockbox": true,
+        "ci_positive": true,
+        "sign_test": true,
+        "effect_threshold": true,
+        "subgroups": true,
+        "controls": false,
+        "robustness": true,
+        "tier_supports_ship": true,
+        "trusted_provenance": false
+      }
+    },
+    "paired": {
+      "n_scenes": 24,
+      "mean_improvement_pct": 19.999999999999996,
+      "ci95": [
+        2.0549999999999997,
+        2.098333333333333
+      ],
+      "sign_test_p": 1.1920928955078125e-07
+    }
+  },
+  "all_source_hashes_wrong": {
+    "classification": {
+      "evidence_tier": "A",
+      "ship_gate_passed": true,
+      "classification": "Supported",
+      "checks": {
+        "validation": true,
+        "lockbox": true,
+        "ci_positive": true,
+        "sign_test": true,
+        "effect_threshold": true,
+        "subgroups": true,
+        "controls": true,
+        "robustness": true,
+        "tier_supports_ship": true,
+        "trusted_provenance": false
+      }
+    },
+    "paired": {
+      "n_scenes": 24,
+      "mean_improvement_pct": 19.999999999999996,
+      "ci95": [
+        2.0549999999999997,
+        2.098333333333333
+      ],
+      "sign_test_p": 1.1920928955078125e-07
+    }
+  },
+  "all_image_files_missing": {
+    "classification": {
+      "evidence_tier": "A",
+      "ship_gate_passed": true,
+      "classification": "Supported",
+      "checks": {
+        "validation": true,
+        "lockbox": true,
+        "ci_positive": true,
+        "sign_test": true,
+        "effect_threshold": true,
+        "subgroups": true,
+        "controls": true,
+        "robustness": true,
+        "tier_supports_ship": true,
+        "trusted_provenance": false
+      }
+    },
+    "paired": {
+      "n_scenes": 24,
+      "mean_improvement_pct": 19.999999999999996,
+      "ci95": [
+        2.0549999999999997,
+        2.098333333333333
+      ],
+      "sign_test_p": 1.1920928955078125e-07
+    }
+  }
+}

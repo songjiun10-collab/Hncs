@@ -698,7 +698,7 @@ git commit -m "docs: document the 2-agent consensus controller workflow"
   `human_judgment` is deliberately NOT a `write_decision_record()`
   parameter - per the 2026-08-19 brainstorming decision it's populated
   later (a human reviewing the outcome, not the agent self-reporting at
-  decision time) - it belongs in `tools/eval_hook_judgments.py`'s output
+  decision time) - it belongs in `tools/maintenance/eval_hook_judgments.py`'s output
   schema (phase 2 concern, not this plan) or a manual log-annotation
   step, not the sentinel write path.
 

@@ -13,11 +13,12 @@
      서로 얼마나 가까운지(소스 간 표준편차) - 작을수록 "소스가 뭐든
      타깃 정체성으로 잘 수렴한다"는 신호
   2. **지문 소거(fingerprint erasure)**: 변환 전/후로 소스 간 노이즈
-     시그니처(tools.iso_noise.estimate_noise_sigma) 분산이 줄어드는지 -
+     시그니처(tools.research.iso_noise.estimate_noise_sigma) 분산이 줄어드는지 -
      안 줄면 톤/색만 바뀌고 카메라 고유 렌더링 특성은 안 지워진 것
 
-**데이터 제약(정직하게 명시)**: 이 환경엔 실제 RAW가 Fuji(raw_calib_cache_fuji/)
-뿐이라 그 경로는 hybrid_engine의 RAW 입력 경로(HybridCameraEngine, 브랜드
+**데이터 제약(정직하게 명시)**: 이 환경에서 실제 RAW는 Fuji이며
+legacy `raw_calib_cache_fuji/`와 `datasets/fuji/contributed/*/raw/`에서
+발견한다. 그 경로는 hybrid_engine의 RAW 입력 경로(HybridCameraEngine, 브랜드
 역산 불필요 - 카메라 무관)로 진짜 raw 기반 테스트를 한다. Sony/Nikon/Canon은
 raw+jpeg 페어를 이 프로젝트가 여러 번 찾아봤지만 못 구해서(brands/canon.py,
 nikon.py docstring), 각 브랜드의 apply_*_look()을 공통 테스트 사진에
@@ -40,6 +41,8 @@ nikon.py docstring), 각 브랜드의 apply_*_look()을 공통 테스트 사진�
 버전의 알려진 한계로만 기록.
 
   python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad --base-image photo.jpg
+  # 실제 RAW만 허용하는 실행(합성 소스가 없으면 fail closed)
+  python3 -m hybrid_engine.evaluation.cross_camera --target hasselblad --real-only
 """
 import argparse
 import glob
@@ -57,10 +60,14 @@ from hybrid_engine.core.preset_inverse import BRAND_FUNCS, convert_between_brand
 from hybrid_engine.pipeline.engine import HybridCameraEngine
 from hybrid_engine.utils.io import decode_raw
 from core.stats import image_stats
-from tools.iso_noise import estimate_noise_sigma
+from tools.research.iso_noise import estimate_noise_sigma
 
 _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_FUJI_RAW_GLOB = os.path.join(_REPO_ROOT, "raw_calib_cache_fuji", "*", "raw", "*.RAF")
+_FUJI_RAW_GLOBS = (
+    os.path.join(_REPO_ROOT, "raw_calib_cache_fuji", "*", "raw", "*.RAF"),
+    os.path.join(_REPO_ROOT, "datasets", "fuji", "contributed", "*", "raw", "*.raf"),
+    os.path.join(_REPO_ROOT, "datasets", "fuji", "contributed", "*", "raw", "*.RAF"),
+)
 _SYNTHETIC_SOURCES = ("sony", "nikon", "canon")  # 이 환경에 real RAW가 없는 브랜드
 
 
@@ -85,19 +92,21 @@ def _noise_sigma(img_bgr):
     return estimate_noise_sigma(cv2.cvtColor(img_bgr, cv2.COLOR_BGR2GRAY).astype(np.float64))
 
 
-def run_generalization(target_brand, base_image_path, target_profile=None):
+def _find_fuji_raw_files():
+    """Return unique Fuji RAW paths from legacy and contributed-data locations."""
+
+    return sorted({path for pattern in _FUJI_RAW_GLOBS for path in glob.glob(pattern)})
+
+
+def run_generalization(target_brand, base_image_path=None, target_profile=None,
+                       include_synthetic=True):
     if target_brand not in BRAND_FUNCS:
         raise ValueError(f"알 수 없는 타깃 브랜드: {target_brand}")
-
-    base_img = cv2.imread(base_image_path)
-    if base_img is None:
-        raise FileNotFoundError(base_image_path)
-    base_img = _resize_max_dim(base_img, 1200)
 
     results = {}
 
     # 실제 RAW 경로 (Fuji) - HybridCameraEngine으로 브랜드 역산 없이 직접
-    raw_files = sorted(glob.glob(_FUJI_RAW_GLOB))
+    raw_files = _find_fuji_raw_files()
     if raw_files:
         raw_path = raw_files[0]
         linear = _resize_max_dim(decode_raw(raw_path), 1200)
@@ -114,26 +123,38 @@ def run_generalization(target_brand, base_image_path, target_profile=None):
         results["fuji"] = {
             "path": "raw_direct (HybridCameraEngine, no brand inversion needed)",
             "is_real_raw": True,
+            "raw_file_count": len(raw_files),
             "pre_stats": image_stats(source_render),
             "post_stats": image_stats(converted_u8),
             "pre_noise_sigma": _noise_sigma(source_render),
             "post_noise_sigma": _noise_sigma(converted_u8),
         }
     else:
-        print("  fuji: RAW 없음(raw_calib_cache_fuji/), 스킵")
+        print("  fuji: RAW 없음(legacy/contributed Fuji 경로), 스킵")
 
-    # 합성 소스 경로 (Sony/Nikon/Canon) - real RAW 없어서 apply_*_look()으로 근사
-    for brand in _SYNTHETIC_SOURCES:
-        source_img = BRAND_FUNCS[brand](base_img)
-        converted = convert_between_brands(source_img, brand, target_brand)
-        results[brand] = {
-            "path": "synthetic (apply_*_look on common test image, NOT real camera data)",
-            "is_real_raw": False,
-            "pre_stats": image_stats(source_img),
-            "post_stats": image_stats(converted),
-            "pre_noise_sigma": _noise_sigma(source_img),
-            "post_noise_sigma": _noise_sigma(converted),
-        }
+    if include_synthetic:
+        if not base_image_path:
+            raise ValueError("base_image_path is required when synthetic sources are enabled")
+        base_img = cv2.imread(base_image_path)
+        if base_img is None:
+            raise FileNotFoundError(base_image_path)
+        base_img = _resize_max_dim(base_img, 1200)
+
+        # 합성 소스 경로 (Sony/Nikon/Canon) - real RAW 없어서 apply_*_look()으로 근사
+        for brand in _SYNTHETIC_SOURCES:
+            source_img = BRAND_FUNCS[brand](base_img)
+            converted = convert_between_brands(source_img, brand, target_brand)
+            results[brand] = {
+                "path": "synthetic (apply_*_look on common test image, NOT real camera data)",
+                "is_real_raw": False,
+                "pre_stats": image_stats(source_img),
+                "post_stats": image_stats(converted),
+                "pre_noise_sigma": _noise_sigma(source_img),
+                "post_noise_sigma": _noise_sigma(converted),
+            }
+
+    if not results:
+        raise RuntimeError("no real RAW source found for Protocol 2R real-only evaluation")
 
     return results
 
@@ -157,8 +178,20 @@ def _convergence_summary(results):
     post_sat = [r["post_stats"]["sat"] for r in results.values()]
     pre_noise = [r["pre_noise_sigma"] for r in results.values()]
     post_noise = [r["post_noise_sigma"] for r in results.values()]
+    real_sources = [name for name, result in results.items() if result.get("is_real_raw") is True]
+    synthetic_sources = [name for name, result in results.items() if result.get("is_real_raw") is not True]
+    real_raw_file_counts = {
+        name: int(result.get("raw_file_count", 0)) for name, result in results.items()
+        if result.get("is_real_raw") is True
+    }
     return {
         "n_sources": len(results),
+        # Protocol 2R requires same-physical-scene target references. This
+        # legacy distribution probe has neither, so it is never a ship claim.
+        "classification": "Exploratory",
+        "real_raw_sources": real_sources,
+        "real_raw_file_counts": real_raw_file_counts,
+        "synthetic_sources_excluded_from_claim": synthetic_sources,
         "post_b2_std_across_sources": float(np.std(post_b2)),
         "post_w995_std_across_sources": float(np.std(post_w995)),
         "post_sat_std_across_sources": float(np.std(post_sat)),
@@ -174,15 +207,21 @@ def main():
     parser = argparse.ArgumentParser(
         description="Protocol 2: 소스 카메라 간 hybrid_engine 변환 결과 수렴성 평가")
     parser.add_argument("--target", required=True, help="타깃 브랜드 (예: hasselblad)")
-    parser.add_argument("--base-image", required=True,
+    parser.add_argument("--base-image",
                          help="합성 소스(Sony/Nikon/Canon)를 만들 공통 테스트 사진 경로")
+    parser.add_argument("--real-only", action="store_true",
+                        help="합성 소스를 제외하고 발견된 실제 RAW만 평가")
     parser.add_argument("--out", default=None, help="JSON 리포트 저장 경로")
     args = parser.parse_args()
 
     print(f"Cross-camera generalization 평가 중... (target={args.target})")
-    print("주의: fuji만 실제 RAW, sony/nikon/canon은 apply_*_look 합성 소스(진짜 카메라 데이터 아님)\n")
+    if args.real_only:
+        print("모드: real-only (합성 소스 제외)\n")
+    else:
+        print("주의: fuji만 실제 RAW, sony/nikon/canon은 apply_*_look 합성 소스(진짜 카메라 데이터 아님)\n")
 
-    results = run_generalization(args.target, args.base_image)
+    results = run_generalization(args.target, args.base_image,
+                                 include_synthetic=not args.real_only)
     for src, r in results.items():
         tag = "REAL RAW" if r["is_real_raw"] else "synthetic"
         print(f"  {src:8s} [{tag:9s}] pre b2={r['pre_stats']['b2']:6.1f} -> "
@@ -190,6 +229,10 @@ def main():
               f"pre_noise={r['pre_noise_sigma']:.3f} -> post_noise={r['post_noise_sigma']:.3f}")
 
     summary = _convergence_summary(results)
+    print("분류: Exploratory (Protocol 2R 일반화/ship 근거로 사용 금지)")
+    if summary["real_raw_file_counts"]:
+        print(f"실제 RAW 파일 수(현재 구현은 소스별 대표 1개를 평가): "
+              f"{summary['real_raw_file_counts']}")
     print(f"\n=== 수렴성 요약 (n={summary['n_sources']}) ===")
     print(f"변환 후 소스 간 b2 표준편차: {summary['post_b2_std_across_sources']:.2f} "
           f"(작을수록 잘 수렴)")

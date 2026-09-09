@@ -37,7 +37,7 @@ manifest에 기록) - manifest.csv와 검증 결과만 커밋.
 | `download_url` | O | 원본 파일 호스팅 위치 |
 | `notes` | X | 자유 기록 |
 
-## 자동 검증 (`python3 -m tools.verify_contributed_pairs <세트 디렉토리>`)
+## 자동 검증 (`python3 -m tools.data.verify_contributed_pairs <세트 디렉토리>`)
 
 1. manifest의 모든 필수 컬럼 존재 + 파일 실재 여부
 2. **EXIF 대조**: raw/jpeg 각각의 EXIF Make/Model이 manifest `camera`와
@@ -46,7 +46,7 @@ manifest에 기록) - manifest.csv와 검증 결과만 커밋.
 3. **페어 동기 검증**: raw와 jpeg의 `DateTimeOriginal`이 2초 이내인지
    (동시 촬영 확인)
 4. **편집 오염 검사**: jpeg의 EXIF Software에 Photoshop/Lightroom류
-   흔적이 없는지 (`tools.analyze._check_genuine_bytes`와 동일 기준)
+   흔적이 없는지 (`tools.cli.analyze._check_genuine_bytes`와 동일 기준)
 
 검증 통과분만 `hasselblad_raw_jpeg_pairs.csv`에 편입한다.
 
@@ -62,7 +62,7 @@ manifest에 기록) - manifest.csv와 검증 결과만 커밋.
    베이스라인 불확실성을 정량화 (이슈 #4 4번 지적의 해소) - **완료**,
    `kmichels-x2dii-2026-07/`(ColorChecker Classic 차트 10장)로 실행함.
    `hybrid_engine/core/chart_baseline.py` +
-   `tools/analyze_colorchecker_matrix.py`, 결과는
+   `tools/fit/analyze_colorchecker_matrix.py`, 결과는
    `hybrid_engine/EVALUATION.md` 후속 실측 9 참고 - 요약: 보정 없는
    raw 베이스라인 ΔE00 7.58, 차트 매트릭스로 교차검증 기준 2.78(-63.3%).
 
@@ -81,7 +81,7 @@ ColorChecker 차트 반복 촬영이라 그 데이터로는 미실행이었다 -
   차트 10장, X2D II. camera-to-XYZ 매트릭스 특성화용 (위 2번 항목)
 - **`local-mixed-2026-07/`** (프로젝트 소유자 개인 라이브러리): 실사진
   raw+jpeg 61쌍 (CFV 100C/907X 30, X2D 100C 24, X1D II 50C 6, X1D 1).
-  `tools/build_local_manifest.py`로 EXIF 시각 매칭 + 자동 검증까지
+  `tools/data/build_local_manifest.py`로 EXIF 시각 매칭 + 자동 검증까지
   한 번에 생성 - 후보 104쌍 중 43쌍(41%)이 Lightroom/Photoshop 편집
   흔적으로 탈락. 위 1번 항목(세대 간 pooling 판정)에 사용됨.
 - **`owner-x2dii-2026-08/`** (프로젝트 소유자, Google Drive 폴더로 공유):
@@ -100,7 +100,7 @@ ColorChecker 차트 반복 촬영이라 그 데이터로는 미실행이었다 -
   (164쌍, dpreview 재다운로드분): **파일명 기준 109개가 MD5까지
   완전히 일치하는 중복**(2026-08 발견) - `local-work-2026-08`가
   "개인 라이브러리"라 적어놨지만 최소 109장은 실제로 같은 dpreview
-  원본이었다(`local-mixed-2026-07`과 같은 패턴). `tools/calibrate.py`의
+  원본이었다(`local-mixed-2026-07`과 같은 패턴). `tools/fit/calibrate.py`의
   `collect_local_pairs()`가 `filename_raw` 기준으로 자동 dedup하도록
   고쳐서(정렬 순서상 `local-work-2026-08`가 우선) 이 함수를 쓰는 모든
   분석은 안전하지만, 이 함수를 거치지 않고 두 세트를 직접 읽는 코드를

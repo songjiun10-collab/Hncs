@@ -20,7 +20,7 @@ illuminant1 스냅 근본원인 확정" 절):
 따라서 "Adobe DNG SDK와 같은 계열"이 정확한 서술이고, "RT와 같다"는
 아니다.
 
-`tools/refit_x2dii_dual_illuminant.py`가 처음 배포할 때 쓴
+`tools/x2dii/refit_x2dii_dual_illuminant.py`가 처음 배포할 때 쓴
 "측정 R/G를 두 기준 클러스터 R/G 사이에서 선형보간"은 이 프로젝트가
 급조한 근사였다 - 이 모듈이 그걸 실제 알고리즘으로 교체한다
 (`hybrid_engine/EVALUATION.md` "X2D II 100C dual-illuminant" 절

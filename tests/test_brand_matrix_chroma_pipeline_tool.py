@@ -1,4 +1,4 @@
-"""`tools/fit_brand_matrix_chroma_pipeline.py`의 순수 부분만 검증 - RAW
+"""`tools/fit/fit_brand_matrix_chroma_pipeline.py`의 순수 부분만 검증 - RAW
 디코드는 CI에 데이터가 없어서(tests/CLAUDE.md) 제외."""
 import os
 import sys
@@ -6,7 +6,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tools.fit_brand_matrix_chroma_pipeline import _sign_test_p, BRAND_CONFIG
+from tools.fit.fit_brand_matrix_chroma_pipeline import _sign_test_p, BRAND_CONFIG
 
 
 class TestSignTestP(unittest.TestCase):

@@ -3,7 +3,7 @@ import os
 import tempfile
 import unittest
 
-from tools.evaluate_fuji_demosaic import load_pairs
+from tools.fuji.evaluate_fuji_demosaic import load_pairs
 
 _FIELDS = ["camera", "datetime", "film_mode", "raw_path", "jpeg_path"]
 

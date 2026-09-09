@@ -1,0 +1,121 @@
+{
+  "schema": "hncs.nare-registration-selection-sensitivity/v1",
+  "source_develop_sha": "860abb164b7001c80fe67b44c39d5383f14d150d",
+  "candidate": "Fujifilm GFX100RF Provia",
+  "inputs": {
+    "exploratory_metrics_512px": "nare_provia_exploratory_metrics_512px_2026-09.json",
+    "registration_512px": "nare_provia_exploratory_registration_512px_2026-09.json",
+    "registered_report_512px": "nare_provia_registered_report_512px_2026-09.json",
+    "registered_report_1024px": "nare_provia_registered_report_1024px_2026-09.json"
+  },
+  "registration_gate": {
+    "n_input": 51,
+    "n_passed": 32,
+    "n_failed": 19,
+    "n_aspect_ratio_failed": 9,
+    "n_geometry_failed": 10
+  },
+  "pre_registration_exploratory_metrics": {
+    "all_51": {
+      "mean_baseline_delta_e00": 20.714990929015055,
+      "mean_candidate_delta_e00": 17.61033402431603,
+      "mean_absolute_improvement_delta_e00": 3.1046569046990222,
+      "aggregate_relative_improvement_pct": 14.987488603484733,
+      "wins": 42,
+      "losses": 9
+    },
+    "registration_pass_32": {
+      "mean_baseline_delta_e00": 18.594997257239328,
+      "mean_candidate_delta_e00": 14.703302861137185,
+      "mean_absolute_improvement_delta_e00": 3.8916943961021397,
+      "aggregate_relative_improvement_pct": 20.928717236497807,
+      "wins": 28,
+      "losses": 4
+    },
+    "registration_fail_19": {
+      "mean_baseline_delta_e00": 24.28550658674259,
+      "mean_candidate_delta_e00": 22.50638650966987,
+      "mean_absolute_improvement_delta_e00": 1.7791200770727182,
+      "aggregate_relative_improvement_pct": 7.325851205607281,
+      "wins": 14,
+      "losses": 5
+    },
+    "aspect_ratio_fail_9": {
+      "mean_baseline_delta_e00": 23.47810127515244,
+      "mean_candidate_delta_e00": 20.877660090783014,
+      "mean_absolute_improvement_delta_e00": 2.60044118436943,
+      "aggregate_relative_improvement_pct": 11.076028482429068,
+      "wins": 8,
+      "losses": 1
+    },
+    "geometry_fail_10": {
+      "mean_baseline_delta_e00": 25.012171367173718,
+      "mean_candidate_delta_e00": 23.972240286668043,
+      "mean_absolute_improvement_delta_e00": 1.0399310805056778,
+      "aggregate_relative_improvement_pct": 4.157700126229313,
+      "wins": 6,
+      "losses": 4
+    }
+  },
+  "selection_sensitivity": {
+    "pass_minus_fail_mean_absolute_improvement_delta_e00": 2.1125743190294215,
+    "bootstrap_95ci": [
+      0.61942192,
+      3.56687431
+    ],
+    "two_sided_permutation_p": 0.012179939100304498,
+    "aggregate_relative_improvement_shift_pp_all_to_pass": 5.941228633013074,
+    "aggregate_relative_improvement_pass_minus_fail_pp": 13.602866030890524,
+    "mean_per_scene_relative_improvement_pass_pct": 20.869114489203035,
+    "mean_per_scene_relative_improvement_fail_pct": 6.145015886906249,
+    "mean_per_scene_relative_difference_pp": 14.724098602296786,
+    "mean_per_scene_relative_difference_bootstrap_95ci_pp": [
+      7.50612246,
+      21.74777332
+    ],
+    "mean_per_scene_relative_difference_permutation_p": 0.0009899950500247498,
+    "bootstrap_draws": 200000,
+    "permutation_draws": 200000,
+    "seed_absolute": 0,
+    "seed_relative": 1
+  },
+  "post_registration_current_reports": {
+    "512px": {
+      "n_scenes": 32,
+      "mean_baseline_delta_e00": 15.931793794298834,
+      "mean_candidate_delta_e00": 11.051151262196903,
+      "mean_absolute_improvement_delta_e00": 4.880642532101932,
+      "aggregate_relative_improvement_pct": 30.634607722882166,
+      "bootstrap_95ci_absolute_improvement": [
+        3.9863925883616704,
+        5.738710855086144
+      ],
+      "sign_test_p": 1.5366822481155396e-08
+    },
+    "1024px": {
+      "n_scenes": 32,
+      "mean_baseline_delta_e00": 16.078743521242657,
+      "mean_candidate_delta_e00": 11.464537406459886,
+      "mean_absolute_improvement_delta_e00": 4.614206114782769,
+      "aggregate_relative_improvement_pct": 28.697554063765285,
+      "bootstrap_95ci_absolute_improvement": [
+        3.7250394275085563,
+        5.463555638740317
+      ],
+      "sign_test_p": 1.5366822481155396e-08
+    },
+    "resolution_difference_relative_improvement_pp_1024_minus_512": -1.937053659116881
+  },
+  "interpretation": {
+    "claim": "Registration eligibility is associated with a materially larger apparent Provia improvement in the pre-registration exploratory metrics, and geometric registration further changes the measured effect on the accepted subset.",
+    "non_claim": "This does not show that registration causes model performance to improve or that failed scenes are a valid evaluation set. Their pre-registration metrics are geometry-contaminated by definition.",
+    "policy": "Report the full intake count, registration exclusions and pass/fail sensitivity beside registered NARE effects. Do not compare the old 51-frame unregistered +14.99% directly with the current 32-frame registered +30.63% as if only the candidate changed."
+  },
+  "classification": "methodology_sensitivity_only_not_ship_evidence",
+  "input_sha256": {
+    "exploratory_metrics_512px": "d2258f0552a34a869c0460efbf9f970d3facfcfb3264eb4e168034659a6da70a",
+    "registration_512px": "d91f952615961161275c33a7de5ab999fe704e134e56bbd6a22489de9e76e94e",
+    "registered_report_512px": "c062905c4136ba92aac8f3be0db24e42c9b7cd5b320d67dbbe0d814d61439752",
+    "registered_report_1024px": "8ed23edb7ba96ab5b717965113ea94cf5f472ed62b6a2805c96de619110fb083"
+  }
+}

@@ -3,7 +3,9 @@ from unittest.mock import patch
 
 import numpy as np
 
-from hybrid_engine.evaluation.cross_camera import run_generalization, _convergence_summary
+from hybrid_engine.evaluation.cross_camera import (
+    _convergence_summary, _find_fuji_raw_files, run_generalization,
+)
 
 
 def _test_image(seed=0, shape=(24, 24, 3)):
@@ -20,6 +22,9 @@ class TestConvergenceSummary(unittest.TestCase):
                       "pre_noise_sigma": 2.0, "post_noise_sigma": 1.0},
         }
         summary = _convergence_summary(results)
+        self.assertEqual(summary["classification"], "Exploratory")
+        self.assertEqual(summary["real_raw_file_counts"], {})
+        self.assertEqual(summary["synthetic_sources_excluded_from_claim"], ["sony", "nikon"])
         self.assertEqual(summary["post_b2_std_across_sources"], 0.0)
         self.assertEqual(summary["post_w995_std_across_sources"], 0.0)
         self.assertEqual(summary["post_sat_std_across_sources"], 0.0)
@@ -33,6 +38,19 @@ class TestConvergenceSummary(unittest.TestCase):
         }
         summary = _convergence_summary(results)
         self.assertLess(summary["fingerprint_erasure_ratio"], 1.0)
+
+    def test_real_raw_file_count_is_reported_separately_from_source_count(self):
+        results = {
+            "fuji": {"is_real_raw": True, "raw_file_count": 329,
+                     "post_stats": {"b2": 10, "w995": 220, "sat": 50},
+                     "pre_noise_sigma": 1.0, "post_noise_sigma": 1.0},
+            "sony": {"is_real_raw": False,
+                     "post_stats": {"b2": 10, "w995": 220, "sat": 50},
+                     "pre_noise_sigma": 1.0, "post_noise_sigma": 1.0},
+        }
+        summary = _convergence_summary(results)
+        self.assertEqual(summary["n_sources"], 2)
+        self.assertEqual(summary["real_raw_file_counts"], {"fuji": 329})
 
     def test_zero_pre_noise_variance_gives_none_ratio(self):
         results = {
@@ -66,6 +84,23 @@ class TestRunGeneralizationSyntheticOnly(unittest.TestCase):
             self.assertIn(brand, results)
             self.assertFalse(results[brand]["is_real_raw"])
             self.assertIn("b2", results[brand]["post_stats"])
+
+    def test_real_only_requires_a_real_raw_source(self):
+        import tempfile
+        import cv2
+        with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
+            cv2.imwrite(f.name, _test_image())
+            with patch("hybrid_engine.evaluation.cross_camera.glob.glob", return_value=[]):
+                with self.assertRaisesRegex(RuntimeError, "no real RAW source"):
+                    run_generalization("hasselblad", f.name, include_synthetic=False)
+
+    def test_raw_discovery_includes_contributed_dataset_and_deduplicates(self):
+        with patch(
+            "hybrid_engine.evaluation.cross_camera.glob.glob",
+            side_effect=lambda pattern: ["/tmp/fuji.raf"]
+            if "datasets/fuji/contributed" in pattern else [],
+        ):
+            self.assertEqual(_find_fuji_raw_files(), ["/tmp/fuji.raf"])
 
 
 if __name__ == "__main__":
