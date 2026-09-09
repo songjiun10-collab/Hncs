@@ -7,6 +7,7 @@ Registration, semantic masks, and spatial metrics remain separate NARE gates.
 
 from collections.abc import Callable, Iterable, Mapping
 from typing import Any
+from statistics import mean
 
 import cv2
 
@@ -22,6 +23,23 @@ from .nare_registration import register_to_target
 
 
 ImageTransform = Callable[[Any], Any]
+
+
+def _aggregate_scene_metrics(metrics: list[dict[str, float | str]]) -> list[dict[str, float | str]]:
+    """Collapse multiple photographs belonging to one scene into one record."""
+    grouped: dict[str, list[dict[str, float | str]]] = {}
+    for metric in metrics:
+        grouped.setdefault(str(metric["scene_id"]), []).append(metric)
+    aggregated = []
+    for scene_id, rows in grouped.items():
+        result = {"scene_id": scene_id}
+        for key in ("raw_delta_e00", "foundation_delta_e00", "candidate_delta_e00"):
+            result[key] = mean(float(row[key]) for row in rows)
+        registrations = [row.get("registration") for row in rows]
+        result["registration"] = (registrations[0] if len(rows) == 1
+                                  else {"frames": registrations})
+        aggregated.append(result)
+    return aggregated
 
 
 def _evaluation_rows(manifest_rows: Iterable[Mapping[str, Any]],
@@ -93,4 +111,4 @@ def run_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]], expected_pictur
             "candidate_delta_e00": mean_delta_e(candidate_linear, target_linear),
             "registration": registration,
         })
-    return metrics
+    return _aggregate_scene_metrics(metrics)

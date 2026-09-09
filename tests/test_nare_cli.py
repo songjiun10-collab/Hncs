@@ -49,10 +49,20 @@ class TestNARECLI(unittest.TestCase):
         self.assertEqual(report["paired"]["bootstrap_draws"], 200)
         self.assertEqual(report["paired"]["bootstrap_seed"], 0)
 
-    def test_valid_receipt_supports_nare_without_claiming_trusted_signer(self):
+    def test_self_signed_fabrication_with_matching_files_is_rejected(self):
         manifest, metrics, controls = self._data()
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
+            import hashlib
+            for row in manifest:
+                source = root / row["source_path"]
+                target = root / row["target_path"]
+                source.write_bytes(row["source_path"].encode())
+                target.write_bytes(row["target_path"].encode())
+                row["source_path"] = str(source)
+                row["target_path"] = str(target)
+                row["source_sha256"] = hashlib.sha256(source.read_bytes()).hexdigest()
+                row["target_sha256"] = hashlib.sha256(target.read_bytes()).hexdigest()
             paths = {}
             for name, value in {"manifest": manifest, "metrics": metrics, "controls": controls}.items():
                 path = root / f"{name}.json"
@@ -73,14 +83,9 @@ class TestNARECLI(unittest.TestCase):
                 "--controls", str(paths["controls"]), "--bootstrap", "100", "--seed", "0",
                 "--receipt", str(receipt_path), "--receipt-public-key", str(public_path),
                 "--git-sha", "a" * 40]
-            proc = subprocess.run(command, capture_output=True, text=True, check=True)
-            report = json.loads(proc.stdout)
-            self.assertTrue(report["classification"]["ship_gate_passed"])
-            self.assertEqual(report["classification"]["classification"], "Supported")
-            self.assertTrue(report["classification"]["checks"]["receipt_integrity"])
-            self.assertFalse(report["paired"]["trusted_provenance"])
-            self.assertTrue(report["evidence_receipt"]["signature_valid"])
-            self.assertFalse(report["evidence_receipt"]["trusted"])
+            proc = subprocess.run(command, capture_output=True, text=True)
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn('NARE replay failed', proc.stderr)
             mismatched = list(command)
             mismatched[mismatched.index("100")] = "101"
             failed = subprocess.run(mismatched, capture_output=True, text=True)

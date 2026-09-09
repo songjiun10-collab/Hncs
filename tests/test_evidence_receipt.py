@@ -62,6 +62,47 @@ class TestEvidenceReceipt(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "metrics"):
                 validate_receipt(receipt_path, paths, public_path)
 
+    def test_manifest_mutation_invalidates_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths, receipt_path, public_path = self._signed(Path(directory))
+            paths["manifest"].write_text("tampered", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "manifest"):
+                validate_receipt(receipt_path, paths, public_path)
+
+    def test_expected_git_revision_is_bound_to_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths, receipt_path, public_path = self._signed(Path(directory))
+            with self.assertRaisesRegex(ValueError, "git_sha"):
+                validate_receipt(receipt_path, paths, public_path,
+                                 expected_git_sha="c" * 40)
+
+    def test_run_configuration_mutation_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = self._bundle(root)
+            private = Ed25519PrivateKey.generate()
+            receipt = build_receipt(
+                paths, git_sha="a" * 40, evaluator_sha256="b" * 64,
+                command=["evaluate"], run_id="run-config", timestamp="now",
+                run_config={"bootstrap": 100, "seed": 0})
+            signed = sign_receipt(receipt, private, key_id="ci-test")
+            receipt_path = root / "receipt.json"
+            receipt_path.write_text(json.dumps(signed), encoding="utf-8")
+            public_path = root / "public.key"
+            public_path.write_text(
+                base64.b64encode(private.public_key().public_bytes_raw()).decode("ascii"),
+                encoding="ascii")
+            with self.assertRaisesRegex(ValueError, "run_config"):
+                validate_receipt(receipt_path, paths, public_path,
+                                 expected_run_config={"bootstrap": 101, "seed": 0})
+
+    def test_trusted_evaluator_fingerprint_is_checked(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths, receipt_path, public_path = self._signed(Path(directory))
+            with self.assertRaisesRegex(ValueError, "evaluator"):
+                validate_receipt(receipt_path, paths, public_path,
+                                 trusted_evaluator_sha256="c" * 64)
+
     def test_unsigned_receipt_cannot_validate(self):
         with tempfile.TemporaryDirectory() as directory:
             paths = self._bundle(Path(directory))

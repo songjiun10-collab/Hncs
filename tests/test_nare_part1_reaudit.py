@@ -3,7 +3,9 @@ import json
 import math
 import tempfile
 import unittest
+import base64
 from pathlib import Path
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from hybrid_engine.evaluation.nare import (
     classify_nare_result, summarize_nare_subgroups,
@@ -11,6 +13,7 @@ from hybrid_engine.evaluation.nare import (
 from hybrid_engine.evaluation.nare_cli import build_report
 from hybrid_engine.evaluation.eager import classify_result, evaluate_paired, SceneMetric
 from hybrid_engine.evaluation.eager_cli import build_report as eager_report
+from hybrid_engine.evaluation.evidence_receipt import build_receipt, sign_receipt
 
 
 def evidence():
@@ -92,6 +95,67 @@ class TestPart1Reaudit(unittest.TestCase):
     def test_plausible_report_without_receipt_stays_inconclusive(self):
         result = report(*evidence())
         self.assertFalse(result['classification']['ship_gate_passed'])
+        self.assertEqual(result['classification']['classification'], 'Inconclusive')
+
+    def test_fabricated_metrics_without_receipt_cannot_reach_supported(self):
+        manifest, metrics = evidence()
+        for row in metrics:
+            row['raw_delta_e00'] = 100.0
+            row['candidate_delta_e00'] = 1.0
+        result = report(manifest, metrics)
+        self.assertFalse(result['classification']['ship_gate_passed'])
+        self.assertEqual(result['classification']['classification'], 'Inconclusive')
+
+    def test_metrics_and_manifest_scene_sets_must_match(self):
+        manifest, metrics = evidence()
+        metrics[-1] = dict(metrics[-1], scene_id='forged-scene')
+        with self.assertRaisesRegex(ValueError, 'scene IDs'):
+            report(manifest, metrics)
+
+    def test_duplicate_scene_rows_are_allowed_for_scene_level_aggregation(self):
+        manifest, metrics = evidence()
+        manifest.append(dict(manifest[0], source_sha256='c' * 64, target_sha256='d' * 64))
+        result = report(manifest, metrics)
+        self.assertEqual(result['paired']['n_scenes'], 12)
+
+    def test_receipt_report_requires_manifest_files_and_hashes(self):
+        manifest, metrics = evidence()
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            controls = dict(subgroups_passed=True, controls_passed=True, provenance_passed=True)
+            paths = {}
+            for name, value in [('manifest', manifest), ('metrics', metrics), ('controls', controls)]:
+                path = root / f'{name}.json'
+                path.write_text(json.dumps(value), encoding='utf-8')
+                paths[name] = path
+            private = Ed25519PrivateKey.generate()
+            public_path = root / 'public.key'
+            public_path.write_text(base64.b64encode(private.public_key().public_bytes_raw()).decode('ascii'))
+            receipt = sign_receipt(build_receipt(
+                paths, git_sha='a' * 40, evaluator_sha256='b' * 64,
+                command=['nare-evaluator'], run_id='run-1', timestamp='now',
+                run_config={'bootstrap': 100, 'seed': 0},
+                required_artifacts=('manifest', 'metrics', 'controls')), private, key_id='ci')
+            receipt_path = root / 'receipt.json'
+            receipt_path.write_text(json.dumps(receipt), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, 'source_path'):
+                build_report(str(paths['manifest']), str(paths['metrics']), str(paths['controls']),
+                             n_bootstrap=100, receipt_path=str(receipt_path),
+                             receipt_public_key_path=str(public_path), expected_git_sha='a' * 40)
+
+    def test_registration_correlation_upper_boundary_is_enforced(self):
+        manifest, metrics = evidence()
+        metrics[0]['registration']['ecc_correlation'] = 1.01
+        result = report(manifest, metrics)
+        self.assertFalse(result['paired']['registration_passed'])
+        self.assertFalse(result['classification']['ship_gate_passed'])
+
+    def test_registration_shift_is_relative_to_recorded_scale(self):
+        manifest, metrics = evidence()
+        metrics[0]['registration']['shift_x_px'] = 26
+        metrics[0]['registration']['long_edge_px'] = 512
+        result = report(manifest, metrics)
+        self.assertFalse(result['paired']['registration_passed'])
         self.assertEqual(result['classification']['classification'], 'Inconclusive')
 
     def test_registration_shift_missing_scale_and_false_status_blocked(self):

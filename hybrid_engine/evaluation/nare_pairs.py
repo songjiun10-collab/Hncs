@@ -17,6 +17,10 @@ from .eager import sha256_file
 _REQUIRED = ("DateTimeOriginal", "Make", "Model", "ISO")
 _RAW_EXTENSIONS = {".3fr", ".arw", ".cr2", ".cr3", ".dng", ".nef", ".orf", ".raf", ".rw2"}
 _JPEG_EXTENSIONS = {".jpg", ".jpeg"}
+_NON_CAMERA_RENDERERS = (
+    "adobe camera raw", "capture one", "darktable", "dcraw", "lightroom",
+    "luminar", "phocus", "photoshop", "rawpy",
+)
 
 
 def _read_exif_many(paths: Iterable[str]) -> dict[str, dict]:
@@ -26,7 +30,7 @@ def _read_exif_many(paths: Iterable[str]) -> dict[str, dict]:
         return {}
     completed = subprocess.run(
         ["exiftool", "-json", "-DateTimeOriginal", "-Make", "-Model", "-ISO",
-         "-LensModel", "-ExposureTime", "-WhiteBalance", "-FilmMode", *paths],
+         "-Software", "-LensModel", "-ExposureTime", "-WhiteBalance", "-FilmMode", *paths],
         capture_output=True, text=True, timeout=60, check=False,
     )
     if completed.returncode or not completed.stdout.strip():
@@ -41,6 +45,18 @@ def _capture_key(metadata: dict) -> tuple[str, str, str, str] | None:
         return None
     timestamp, make, model, iso = values
     return timestamp, make.lower(), model.lower(), iso
+
+
+def _jpeg_provenance_ok(metadata: dict) -> bool:
+    """Reject known non-camera renderers before a JPEG can become a pair.
+
+    A matching capture timestamp cannot distinguish a SOOC JPEG from an
+    embedded-preview extraction or an edited export.  The EXIF Software tag
+    is only a fail-closed signal for known renderers; it does not prove that a
+    JPEG with an absent or unfamiliar tag is SOOC.
+    """
+    software = str(metadata.get("Software", "")).strip().lower()
+    return not software or not any(token in software for token in _NON_CAMERA_RENDERERS)
 
 
 def find_strict_pairs(raw_paths: Iterable[str], jpeg_paths: Iterable[str]) -> dict:
@@ -59,7 +75,7 @@ def find_strict_pairs(raw_paths: Iterable[str], jpeg_paths: Iterable[str]) -> di
                                         (jpeg_paths, jpeg_by_key, invalid_jpeg)):
         for path in sorted(map(str, paths)):
             key = _capture_key(metadata.get(path, {}))
-            if key is None:
+            if key is None or (destination is jpeg_by_key and not _jpeg_provenance_ok(metadata.get(path, {}))):
                 invalid.append(path)
             else:
                 destination[key].append(path)
@@ -127,5 +143,6 @@ def build_nare_manifest(pairs: Iterable[dict], *, contributor: str, lighting: st
             "exposure": str(raw_meta.get("ExposureTime") or jpeg_meta.get("ExposureTime") or "unknown"),
             "white_balance": str(raw_meta.get("WhiteBalance") or jpeg_meta.get("WhiteBalance") or "unknown"),
             "iso": str(raw_meta.get("ISO") or jpeg_meta.get("ISO") or "unknown"),
+            "jpeg_software": str(jpeg_meta.get("Software") or "unknown"),
         })
     return rows

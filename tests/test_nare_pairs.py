@@ -7,9 +7,12 @@ from hybrid_engine.evaluation.nare_pairs import build_nare_manifest, find_strict
 from hybrid_engine.evaluation.nare_pairs_cli import main
 
 
-def tags(timestamp, make="FUJIFILM", model="X-T100", iso=200):
-    return {"DateTimeOriginal": timestamp, "Make": make, "Model": model,
-            "ISO": iso, "FileName": "ignored"}
+def tags(timestamp, make="FUJIFILM", model="X-T100", iso=200, software=None):
+    record = {"DateTimeOriginal": timestamp, "Make": make, "Model": model,
+              "ISO": iso, "FileName": "ignored"}
+    if software is not None:
+        record["Software"] = software
+    return record
 
 
 class TestFindStrictPairs(unittest.TestCase):
@@ -52,6 +55,73 @@ class TestFindStrictPairs(unittest.TestCase):
         self.assertEqual(report["pairs"], [])
         self.assertEqual(report["invalid_jpeg"], [jpeg[0]])
 
+    def test_rejects_jpeg_rendered_by_dcraw(self):
+        raw = ["/samples/raw/a.RAF"]
+        jpeg = ["/samples/jpeg/a.JPG"]
+        metadata = {raw[0]: tags("2018:08:19 22:16:43"),
+                    jpeg[0]: tags("2018:08:19 22:16:43", software="dcraw 9.28")}
+        with patch("hybrid_engine.evaluation.nare_pairs._read_exif_many",
+                   return_value=metadata):
+            report = find_strict_pairs(raw, jpeg)
+        self.assertEqual(report["pairs"], [])
+        self.assertEqual(report["invalid_jpeg"], jpeg)
+
+    def test_rejects_jpeg_rendered_by_rawpy(self):
+        raw = ["/samples/raw/a.RAF"]
+        jpeg = ["/samples/jpeg/a.JPG"]
+        metadata = {raw[0]: tags("2018:08:19 22:16:43"),
+                    jpeg[0]: tags("2018:08:19 22:16:43", software="rawpy 0.19.0")}
+        with patch("hybrid_engine.evaluation.nare_pairs._read_exif_many",
+                   return_value=metadata):
+            report = find_strict_pairs(raw, jpeg)
+        self.assertEqual(report["pairs"], [])
+        self.assertEqual(report["invalid_jpeg"], jpeg)
+
+    def test_rejects_jpeg_rendered_by_common_editors(self):
+        for software in ("Adobe Photoshop 26.0", "Adobe Lightroom Classic"):
+            with self.subTest(software=software):
+                raw = ["/samples/raw/a.RAF"]
+                jpeg = ["/samples/jpeg/a.JPG"]
+                metadata = {raw[0]: tags("2018:08:19 22:16:43"),
+                            jpeg[0]: tags("2018:08:19 22:16:43", software=software)}
+                with patch("hybrid_engine.evaluation.nare_pairs._read_exif_many",
+                           return_value=metadata):
+                    report = find_strict_pairs(raw, jpeg)
+                self.assertEqual(report["pairs"], [])
+                self.assertEqual(report["invalid_jpeg"], jpeg)
+
+    def test_editor_software_match_is_case_insensitive_and_trimmed(self):
+        raw = ["/samples/raw/a.RAF"]
+        jpeg = ["/samples/jpeg/a.JPG"]
+        metadata = {raw[0]: tags("2018:08:19 22:16:43"),
+                    jpeg[0]: tags("2018:08:19 22:16:43", software="  RAWPY 1.0 ")}
+        with patch("hybrid_engine.evaluation.nare_pairs._read_exif_many",
+                   return_value=metadata):
+            report = find_strict_pairs(raw, jpeg)
+        self.assertEqual(report["invalid_jpeg"], jpeg)
+
+    def test_accepts_camera_jpeg_software(self):
+        raw = ["/samples/raw/a.RAF"]
+        jpeg = ["/samples/jpeg/a.JPG"]
+        metadata = {raw[0]: tags("2018:08:19 22:16:43"),
+                    jpeg[0]: tags("2018:08:19 22:16:43", software="FUJIFILM X-T100")}
+        with patch("hybrid_engine.evaluation.nare_pairs._read_exif_many",
+                   return_value=metadata):
+            report = find_strict_pairs(raw, jpeg)
+        self.assertEqual(report["pairs"], [{"raw_path": raw[0], "jpeg_path": jpeg[0]}])
+
+    def test_rejected_render_does_not_enter_jpeg_key_map(self):
+        raw = ["/samples/raw/a.RAF"]
+        jpeg = ["/samples/jpeg/a.JPG"]
+        metadata = {raw[0]: tags("2018:08:19 22:16:43"),
+                    jpeg[0]: tags("2018:08:19 22:16:43", software="Adobe Camera Raw")}
+        with patch("hybrid_engine.evaluation.nare_pairs._read_exif_many",
+                   return_value=metadata):
+            report = find_strict_pairs(raw, jpeg)
+        self.assertEqual(report["unmatched_jpeg"], [])
+        self.assertEqual(report["invalid_jpeg"], jpeg)
+        self.assertEqual(report["ambiguous_keys"][0]["jpeg_count"], 0)
+
 
 class TestBuildNAREManifest(unittest.TestCase):
     def test_preserves_capture_provenance_and_hashes(self):
@@ -65,7 +135,8 @@ class TestBuildNAREManifest(unittest.TestCase):
                 raw: {**tags("2025:03:21 21:41:39"), "LensModel": "GF35mmF4",
                       "ExposureTime": "1/125", "WhiteBalance": "Auto", "FilmMode": "F0/Standard (Provia)"},
                 jpeg: {**tags("2025:03:21 21:41:39"), "LensModel": "GF35mmF4",
-                       "ExposureTime": "1/125", "WhiteBalance": "Auto", "FilmMode": "F0/Standard (Provia)"},
+                       "ExposureTime": "1/125", "WhiteBalance": "Auto", "FilmMode": "F0/Standard (Provia)",
+                       "Software": "FUJIFILM X-T100"},
             }
             with patch("hybrid_engine.evaluation.nare_pairs._read_exif_many",
                        return_value=metadata):
@@ -79,6 +150,7 @@ class TestBuildNAREManifest(unittest.TestCase):
         self.assertEqual(rows[0]["exposure"], "1/125")
         self.assertEqual(rows[0]["white_balance"], "Auto")
         self.assertEqual(len(rows[0]["source_sha256"]), 64)
+        self.assertEqual(rows[0]["jpeg_software"], "FUJIFILM X-T100")
 
 
 class TestNAREPairsCLI(unittest.TestCase):

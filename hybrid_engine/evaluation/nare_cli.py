@@ -6,12 +6,33 @@ from pathlib import Path
 from typing import Any
 
 from .nare import classify_nare_result, evaluate_nare_metrics
+from .eager import sha256_file
 from .evidence_receipt import validate_receipt
 from .supabase_sync import sync_evaluation_report
+from .nare_replay import replay_metrics
 
 
 def _load(path: str) -> Any:
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def _verify_manifest_files(manifest: Any) -> None:
+    """Require receipt-backed NARE rows to name the bytes that were measured."""
+    if not isinstance(manifest, list):
+        raise ValueError("NARE manifest must be a list")
+    for index, row in enumerate(manifest, 1):
+        for path_key, hash_key in (("source_path", "source_sha256"),
+                                   ("target_path", "target_sha256")):
+            path = row.get(path_key) if isinstance(row, dict) else None
+            expected = row.get(hash_key) if isinstance(row, dict) else None
+            if not isinstance(path, str) or not path.strip():
+                raise ValueError(f"NARE manifest row {index} {path_key} is missing")
+            try:
+                actual = sha256_file(path)
+            except (OSError, TypeError) as error:
+                raise ValueError(f"NARE manifest {path_key} is unavailable: {path}") from error
+            if not isinstance(expected, str) or actual != expected.lower():
+                raise ValueError(f"NARE manifest {path_key} hash does not match: {path}")
 
 
 def build_report(manifest_path: str, metrics_path: str, controls_path: str,
@@ -19,7 +40,8 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
                  receipt_path: str | None = None,
                  receipt_public_key_path: str | None = None,
                  expected_git_sha: str | None = None) -> dict[str, Any]:
-    paired = evaluate_nare_metrics(_load(manifest_path), _load(metrics_path),
+    manifest, metrics = _load(manifest_path), _load(metrics_path)
+    paired = evaluate_nare_metrics(manifest, metrics,
                                    n_bootstrap=n_bootstrap, seed=seed)
     paired["bootstrap_draws"] = n_bootstrap
     paired["bootstrap_seed"] = seed
@@ -37,6 +59,7 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
             raise ValueError("NARE receipt validation requires --receipt-public-key")
         if expected_git_sha is None:
             raise ValueError("NARE receipt validation requires --git-sha")
+        _verify_manifest_files(_load(manifest_path))
         receipt = validate_receipt(
             receipt_path,
             {"manifest": manifest_path, "metrics": metrics_path, "controls": controls_path},
@@ -46,6 +69,17 @@ def build_report(manifest_path: str, metrics_path: str, controls_path: str,
             expected_run_config={"bootstrap": n_bootstrap, "seed": seed},
         )
         receipt_valid = receipt["signature_valid"] is True
+        replayed = replay_metrics(manifest, metrics)
+        _verify_manifest_files(manifest)
+        # Bind the bytes used for the report to the receipt, including changes
+        # between initial JSON loading and signature verification.
+        if manifest != _load(manifest_path) or metrics != _load(metrics_path) or controls != _load(controls_path):
+            raise ValueError('NARE evidence changed during replay')
+        paired = evaluate_nare_metrics(manifest, replayed, n_bootstrap=n_bootstrap, seed=seed)
+        paired.update(bootstrap_draws=n_bootstrap, bootstrap_seed=seed)
+        paired.update({key: controls.get(key, False) for key in
+                       ('subgroups_passed', 'controls_passed', 'provenance_passed')})
+        receipt['replay_passed'] = True
     paired["receipt_valid"] = receipt_valid
     paired["trusted_provenance"] = False
     report = {"paired": paired, "classification": classify_nare_result(paired)}

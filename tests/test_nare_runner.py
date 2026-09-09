@@ -30,6 +30,27 @@ def _row(tmp, scene_id="scene-1", picture_style="F0/Standard (Provia)"):
 
 
 class TestNareRunner(unittest.TestCase):
+    def test_multiple_photos_with_one_scene_id_are_aggregated(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            first = _row(tmp, "first")
+            second = _row(tmp, "second")
+            second["scene_id"] = first["scene_id"]
+            neutral = np.zeros((2, 2, 3), dtype=np.uint8)
+            with patch("hybrid_engine.evaluation.nare_runner.load_neutral_render", return_value=neutral), \
+                 patch("hybrid_engine.evaluation.nare_runner.cv2.imread", return_value=neutral), \
+                 patch("hybrid_engine.evaluation.nare_runner.register_to_target",
+                       return_value=(neutral, np.ones((2, 2), dtype=bool),
+                                     {"ecc_correlation": .9, "overlap_fraction": .99,
+                                      "shift_x_px": 1, "shift_y_px": 0, "long_edge_px": 512})), \
+                 patch("hybrid_engine.evaluation.nare_runner.mean_delta_e",
+                       side_effect=[10., 8., 6., 4., 3., 2.]):
+                result = run_nare_metrics([first, second], "F0/Standard (Provia)",
+                                           candidate=lambda image: image)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["scene_id"], "first")
+        self.assertEqual(result[0]["raw_delta_e00"], 7.)
+        self.assertEqual(result[0]["candidate_delta_e00"], 4.)
+
     def test_inplace_transforms_preserve_baselines_and_compose_once(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = [_row(tmp)]
