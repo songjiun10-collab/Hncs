@@ -101,6 +101,15 @@ registered.
 
 ## Limitations
 
+> **Current fabricated-but-consistent probe (2026-09-09)**: Replacing all four
+> JSON inputs referenced by the sensitivity artifact with synthetic content and
+> recomputing `input_sha256` still passes the integrity schema. This is an
+> intentional boundary, not a validator failure. The audit checks that the
+> recorded hashes match the specified bytes; it cannot establish that those bytes
+> are a real photographic corpus or that the evaluator ran the correct algorithm.
+> Without an independently signed run and an actual RAW-runner replay, the result
+> cannot be promoted as evidence of photographic reality or accuracy.
+
 This layer authenticates that the receipt signer signed the specified artifacts
 and evaluator identity. A local receipt whose public key is not pinned to an
 independent trust anchor does not prove signer authority. It also does not
