@@ -45,7 +45,8 @@ class TestNareRunner(unittest.TestCase):
                 return image
             with patch('hybrid_engine.evaluation.nare_runner.load_neutral_render', return_value=neutral), \
                  patch('hybrid_engine.evaluation.nare_runner.register_to_target',
-                       side_effect=lambda source, target: (source, np.ones((8, 8), dtype=bool), {})):
+                       side_effect=lambda source, target: (
+                           source, np.ones((8, 8), dtype=bool), {"long_edge_px": 512})):
                 result = run_nare_metrics(manifest, 'F0/Standard (Provia)',
                                           foundation=foundation, candidate=candidate)[0]
             self.assertGreater(result['raw_delta_e00'], result['foundation_delta_e00'])
@@ -61,14 +62,15 @@ class TestNareRunner(unittest.TestCase):
             with patch("hybrid_engine.evaluation.nare_runner.load_neutral_render", return_value=neutral), \
                  patch("hybrid_engine.evaluation.nare_runner.cv2.imread", return_value=neutral), \
                  patch("hybrid_engine.evaluation.nare_runner.register_to_target",
-                       return_value=(neutral, np.ones((2, 2), dtype=bool), {})), \
+                       return_value=(neutral, np.ones((2, 2), dtype=bool),
+                                     {"long_edge_px": 512})), \
                  patch("hybrid_engine.evaluation.nare_runner.mean_delta_e", side_effect=[9.0, 8.0, 7.0]):
                 metrics = run_nare_metrics(manifest, "F0/Standard (Provia)",
                                            candidate=lambda image: image,
                                            foundation=lambda image: image, max_dim=512)
         self.assertEqual(metrics, [{"scene_id": "scene-1", "raw_delta_e00": 9.0,
                                     "foundation_delta_e00": 8.0, "candidate_delta_e00": 7.0,
-                                    "registration": {}}])
+                                    "registration": {"long_edge_px": 512}}])
 
     def test_candidate_receives_foundation_output(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -86,7 +88,8 @@ class TestNareRunner(unittest.TestCase):
                  patch("hybrid_engine.evaluation.nare_runner.cv2.imread", return_value=neutral), \
                  patch("hybrid_engine.evaluation.nare_runner.register_to_target",
                        return_value=(neutral, np.ones((2, 2), dtype=bool),
-                                     {"ecc_correlation": .9, "overlap_fraction": .99})), \
+                                     {"ecc_correlation": .9, "overlap_fraction": .99,
+                                      "long_edge_px": 512})), \
                  patch("hybrid_engine.evaluation.nare_runner.mean_delta_e", return_value=1.0):
                 run_nare_metrics(manifest, "F0/Standard (Provia)",
                                  candidate=candidate, foundation=foundation, max_dim=512)
