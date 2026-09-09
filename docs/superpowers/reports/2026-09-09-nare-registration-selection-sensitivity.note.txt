@@ -1,1 +1,0 @@
-Analysis note: statistics in the paired Korean/English report were computed only from the four frozen JSON artifacts named there. Bootstrap and permutation analyses used 200,000 draws; seeds are recorded in the machine-readable JSON artifact. This file intentionally contains no additional claims.
