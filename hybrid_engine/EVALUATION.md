@@ -5091,6 +5091,15 @@ provenance gate 미충족으로 `Inconclusive`다. 기계 판독 결과는
 > `nare_provia_registered_report_2048px_2026-09.json`에 고정했고, 최종 gate는
 > 여전히 coverage/subgroup/control/provenance 부족으로 `Inconclusive`다.
 
+> **per-scene scale 교차 확인(2026-09-09)**: 세 report의 같은 scene ID를
+> 교차하면 512/1024/2048px 모두 **31승/1패**이고 scale 사이 sign flip은
+> **0개**다. scene별 absolute improvement 상관은 512↔1024 **0.9976684473395135**,
+> 1024↔2048 **0.9989682880724691**, 512↔2048 **0.9940799935343329**였다.
+> 512→2048에서 가장 큰 절대 변화는 `gfx100rf-033`의 **6.0119463432826254 →
+> 4.810205739090804 ΔE00**였다. 따라서 고해상도에서 aggregate 개선율은
+> 감소하지만 scene별 승패 방향은 유지되며, 특정 scene의 spatial 차이가
+> 전체 결론을 뒤집는 현상은 확인되지 않았다.
+
 ## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
 
 > **재실행 확인(2026-09-09)**: 현재 checkout의 registered manifest 37행을
