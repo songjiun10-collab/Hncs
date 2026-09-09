@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import subprocess
 from hashlib import sha256
 from pathlib import Path
@@ -17,6 +18,7 @@ URL_ENV = "HNCS_SUPABASE_URL"
 KEY_ENV = "HNCS_SUPABASE_SERVICE_ROLE_KEY"
 _CLASSIFICATIONS = {"Verified", "Supported", "Inconclusive", "Rejected", "Exploratory"}
 _PROTOCOLS = {"EAGER", "NARE", "Protocol 2R", "other"}
+_FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
 class SupabaseRestClient:
@@ -182,12 +184,13 @@ def sync_evaluation_report(
         raise ValueError("metrics scene_id values must be non-empty and unique")
     if metrics_ids != manifest_ids or metrics_ids != report_ids:
         raise ValueError("metrics, manifest, and report scene_id values must match")
-    if protocol == "NARE":
+    if protocol in {"NARE", "EAGER"}:
         metrics_by_scene = dict(zip(metrics_ids, metrics_rows))
+        metric_baseline_key = "raw_delta_e00" if protocol == "NARE" else "baseline_delta_e00"
         for row in per_scene:
             metric = metrics_by_scene[row["scene_id"].strip()]
-            if all(key in metric for key in ("raw_delta_e00", "candidate_delta_e00")):
-                pairs = ((row.get("baseline_delta_e00"), metric["raw_delta_e00"]),
+            if all(key in metric for key in (metric_baseline_key, "candidate_delta_e00")):
+                pairs = ((row.get("baseline_delta_e00"), metric[metric_baseline_key]),
                          (row.get("candidate_delta_e00"), metric["candidate_delta_e00"]))
                 if any(not isinstance(left, (int, float)) or isinstance(left, bool)
                        or not isinstance(right, (int, float)) or isinstance(right, bool)
@@ -214,6 +217,10 @@ def sync_evaluation_report(
     robustness_sha = sha256_file(robustness_path) if robustness_path else None
     report_sha = sha256_file(report_path) if report_path else None
     revision = git_sha or current_git_sha() or ""
+    if revision and not isinstance(revision, str):
+        raise ValueError("git_sha must be a full 40-character commit SHA")
+    if revision and not _FULL_GIT_SHA.fullmatch(revision.lower()):
+        raise ValueError("git_sha must be a full 40-character commit SHA")
     run_key = _run_key(
         protocol, dataset_slug, candidate_name, manifest_sha, metrics_sha,
         controls_sha or "", robustness_sha or "", report_sha or "", revision,
