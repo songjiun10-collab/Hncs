@@ -62,29 +62,27 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - valid signed receipt and artifact chain: passed
 - metrics mutation after signing: rejected
 - unsigned receipt: rejected
-- valid receipt-backed EAGER report: `Verified`
+- valid receipt-backed local EAGER report: `Supported`
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
 - full suite: 1,468 tests passed (rerun on the current checkout)
 
-## NARE trusted-runner re-audit (2026-09-09)
+## Provenance trust-boundary re-audit (2026-09-09)
 
-The NARE CLI now matches EAGER: a receipt contributes to the provenance gate
-only when both the trusted receipt public-key fingerprint and evaluator
-fingerprint are pinned in the environment. A formally valid receipt signed by
-an arbitrary Ed25519 key still passes the hash-chain check but remains
-`trusted_provenance=False` and `Inconclusive`. Only matching both fingerprints
-can reach the `Supported` path. The regression coverage is two
-`tests.test_nare_cli` tests; the full suite now passes 1,468 tests.
+The local EAGER CLI separates signature/artifact integrity from signer authority.
+A valid receipt returns `signature_valid=True` and `trusted=False`, so local
+execution is capped at `Supported` and cannot reach `Verified`. NARE uses
+`receipt_integrity` as its `Supported` gate without claiming
+`trusted_provenance`. The regression coverage is in `tests.test_nare_cli`; the
+full suite now passes 1,468 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
 the provenance input.
 
-The receipt `git_sha` is also restricted to a full 40-character commit SHA.
-Abbreviated revisions remain suitable for registry metadata but cannot identify
-the code in an execution provenance receipt.
+The receipt and registry sync `git_sha` are restricted to a full 40-character
+commit SHA; abbreviated revisions are rejected.
 
 Registry sync also requires literal JSON boolean `true` for
 `ship_gate_passed`, `provenance_passed`, and `external_replication`; Python
