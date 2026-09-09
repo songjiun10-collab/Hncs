@@ -66,7 +66,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,456 tests passed (rerun on the current checkout)
+- full suite: 1,457 tests passed (rerun on the current checkout)
 
 ## NARE trusted-runner re-audit (2026-09-09)
 
@@ -76,7 +76,7 @@ fingerprint are pinned in the environment. A formally valid receipt signed by
 an arbitrary Ed25519 key still passes the hash-chain check but remains
 `trusted_provenance=False` and `Inconclusive`. Only matching both fingerprints
 can reach the `Supported` path. The regression coverage is two
-`tests.test_nare_cli` tests; the full suite now passes 1,456 tests.
+`tests.test_nare_cli` tests; the full suite now passes 1,457 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
@@ -112,3 +112,7 @@ private key in a separate runner such as GitHub CI and cap local runs at
 
 No private signing key is stored in the repository or report. This change does
 not modify shipped looks/profiles, existing datasets or the Supabase registry.
+
+The registered-report audit also rejects empty or duplicate `scene_id` values in
+`per_scene`. Matching the row count alone can therefore no longer make fabricated
+scene accounting pass registration.
