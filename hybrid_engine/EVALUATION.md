@@ -5043,6 +5043,9 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > metric을 생성했다. candidate 평균 ΔE00는 **11.989706008913073**으로 아래
 > 기록과 일치했다. 이 재실행은 metric 재현 확인이며, 배포 승인이나 독립
 > contributor/generalization 증거가 아니다.
+> 같은 registered 입력의 1024px 재실행도 37 scene을 생성했고 평균 candidate
+> ΔE00는 **12.433394684534717**이었다. 512px와 1024px 모두 gate 분류는
+> `Inconclusive`다.
 > 같은 37 scene metric을 controls `{}`로 NARE CLI에 넣은 별도 gate 실행은
 > **Inconclusive**였다. lighting/scene coverage, semantic subgroup, controls,
 > provenance가 충족되지 않았고, 따라서 metric 생성 성공을 ship gate 통과로

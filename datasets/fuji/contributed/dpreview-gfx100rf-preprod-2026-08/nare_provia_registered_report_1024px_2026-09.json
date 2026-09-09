@@ -480,6 +480,22 @@
     ],
     "mean_foundation": 16.699295353344418,
     "foundation_improvement_pct": 0.0,
+    "registration_passed": true,
+    "subgroup_metrics": {
+      "groups": {},
+      "missing_groups": [
+        "foliage",
+        "highlight",
+        "neutral",
+        "saturated",
+        "shadow",
+        "skin",
+        "sky"
+      ],
+      "catastrophic_regressions": [],
+      "passed": false
+    },
+    "subgroup_metrics_passed": false,
     "coverage": {
       "lighting": [
         "daylight"
@@ -489,11 +505,12 @@
       ]
     },
     "picture_styles": [
-      "F0/Standard (Provia)"
+      "f0/standard (provia)"
     ],
     "subgroups_passed": false,
     "controls_passed": false,
-    "provenance_passed": true
+    "provenance_passed": true,
+    "trusted_provenance": false
   },
   "classification": {
     "ship_gate_passed": false,
@@ -505,9 +522,11 @@
       "lighting_coverage": false,
       "scene_coverage": false,
       "picture_style": true,
+      "registration": true,
       "subgroups": false,
       "controls": false,
-      "provenance": true
+      "provenance": true,
+      "trusted_provenance": false
     },
     "classification": "Inconclusive"
   }
