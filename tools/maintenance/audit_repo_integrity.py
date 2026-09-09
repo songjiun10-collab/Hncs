@@ -479,9 +479,12 @@ def check_nare_selection_sensitivity():
                         valid = False
                         continue
                     candidate = os.path.realpath(os.path.join(root, value))
+                    try:
+                        hash_matches = file_sha256(candidate) == expected_hash.lower()
+                    except OSError:
+                        hash_matches = False
                     valid = valid and os.path.commonpath((artifact_dir, candidate)) == artifact_dir \
-                        and os.path.isfile(candidate) \
-                        and file_sha256(candidate) == expected_hash.lower()
+                        and os.path.isfile(candidate) and hash_matches
             else:
                 valid = False
             if isinstance(gate, dict):
