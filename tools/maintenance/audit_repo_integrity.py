@@ -273,8 +273,8 @@ def check_nare_registered_metrics():
             n_rows += len(rows)
             for row in rows:
                 registration = row.get("registration") if isinstance(row, dict) else None
-                if not isinstance(registration, dict) or not isinstance(
-                        registration.get("long_edge_px"), int):
+                scale = registration.get("long_edge_px") if isinstance(registration, dict) else None
+                if type(scale) is not int or scale <= 0:
                     problems.append(
                         f"NARE registration scale 누락: {os.path.relpath(path, BASE)}"
                     )
