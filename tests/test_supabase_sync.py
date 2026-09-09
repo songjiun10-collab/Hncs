@@ -203,6 +203,27 @@ class TestSupabaseSync(unittest.TestCase):
             )
         self.assertEqual(first["run_key"], second["run_key"])
 
+    def test_run_key_changes_when_control_artifact_changes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            controls = self._write_json(tmp, "controls.json", {"controls_passed": False})
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.,
+                                               "candidate_delta_e00": 1.}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            first = sync_evaluation_report(
+                report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                manifest_path=manifest, metrics_path=metrics, controls_path=controls,
+                client=_FakeClient())
+            controls.write_text(json.dumps({"controls_passed": True}), encoding="utf-8")
+            second = sync_evaluation_report(
+                report, protocol="NARE", dataset_slug="d", candidate_name="c",
+                manifest_path=manifest, metrics_path=metrics, controls_path=controls,
+                client=_FakeClient())
+        self.assertNotEqual(first["run_key"], second["run_key"])
+
     def test_ship_gate_cannot_be_synced_without_trusted_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
             manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s", "split": "evaluation"}])
