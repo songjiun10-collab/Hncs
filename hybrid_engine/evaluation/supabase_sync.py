@@ -215,8 +215,9 @@ def sync_evaluation_report(
             improvement = float(row.get("improvement", baseline - candidate))
         except (KeyError, TypeError, ValueError) as exc:
             raise ValueError("report per_scene ΔE values are invalid") from exc
-        if (not all(math.isfinite(value) and value >= 0
-                    for value in (baseline, candidate, improvement))
+        if (not (math.isfinite(baseline) and baseline >= 0
+                 and math.isfinite(candidate) and candidate >= 0
+                 and math.isfinite(improvement))
                 or abs(improvement - (baseline - candidate))
                 > 1e-9 * max(1.0, abs(baseline), abs(candidate))):
             raise ValueError("report per_scene ΔE values are invalid")
@@ -230,7 +231,9 @@ def sync_evaluation_report(
         expected_improvement = sum(float(row.get("improvement", float(row["baseline_delta_e00"]) - float(row["candidate_delta_e00"]))) for row in per_scene) / len(per_scene) if per_scene else 0.0
         expected_pct = 100.0 * expected_improvement / expected_baseline if expected_baseline else 0.0
         expected = (expected_baseline, expected_candidate, expected_improvement, expected_pct)
-        if (not all(math.isfinite(value) and value >= 0 for value in aggregate)
+        if (not (math.isfinite(aggregate[0]) and aggregate[0] >= 0
+                 and math.isfinite(aggregate[1]) and aggregate[1] >= 0
+                 and math.isfinite(aggregate[2]) and math.isfinite(aggregate[3]))
                 or any(abs(actual - wanted) > 1e-9 * max(1.0, abs(wanted))
                        for actual, wanted in zip(aggregate, expected))):
             raise ValueError("report aggregate metrics do not match per_scene")
