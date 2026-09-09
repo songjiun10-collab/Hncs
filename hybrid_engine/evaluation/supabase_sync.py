@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import subprocess
 from hashlib import sha256
@@ -181,6 +182,19 @@ def sync_evaluation_report(
         raise ValueError("metrics scene_id values must be non-empty and unique")
     if metrics_ids != manifest_ids or metrics_ids != report_ids:
         raise ValueError("metrics, manifest, and report scene_id values must match")
+    if protocol == "NARE":
+        metrics_by_scene = dict(zip(metrics_ids, metrics_rows))
+        for row in per_scene:
+            metric = metrics_by_scene[row["scene_id"].strip()]
+            if all(key in metric for key in ("raw_delta_e00", "candidate_delta_e00")):
+                pairs = ((row.get("baseline_delta_e00"), metric["raw_delta_e00"]),
+                         (row.get("candidate_delta_e00"), metric["candidate_delta_e00"]))
+                if any(not isinstance(left, (int, float)) or isinstance(left, bool)
+                       or not isinstance(right, (int, float)) or isinstance(right, bool)
+                       or not math.isfinite(float(left)) or not math.isfinite(float(right))
+                       or abs(float(left) - float(right)) > 1e-9 * max(1.0, abs(float(right)))
+                       for left, right in pairs):
+                    raise ValueError("NARE metrics values do not match report per_scene")
     n_scenes = paired.get("n_scenes")
     if n_scenes is not None and (type(n_scenes) is not int or n_scenes != len(report_ids)):
         raise ValueError("report n_scenes must match per_scene row count")
