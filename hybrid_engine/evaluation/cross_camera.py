@@ -16,8 +16,9 @@
      시그니처(tools.research.iso_noise.estimate_noise_sigma) 분산이 줄어드는지 -
      안 줄면 톤/색만 바뀌고 카메라 고유 렌더링 특성은 안 지워진 것
 
-**데이터 제약(정직하게 명시)**: 이 환경엔 실제 RAW가 Fuji(raw_calib_cache_fuji/)
-뿐이라 그 경로는 hybrid_engine의 RAW 입력 경로(HybridCameraEngine, 브랜드
+**데이터 제약(정직하게 명시)**: 이 환경에서 실제 RAW는 Fuji이며
+legacy `raw_calib_cache_fuji/`와 `datasets/fuji/contributed/*/raw/`에서
+발견한다. 그 경로는 hybrid_engine의 RAW 입력 경로(HybridCameraEngine, 브랜드
 역산 불필요 - 카메라 무관)로 진짜 raw 기반 테스트를 한다. Sony/Nikon/Canon은
 raw+jpeg 페어를 이 프로젝트가 여러 번 찾아봤지만 못 구해서(brands/canon.py,
 nikon.py docstring), 각 브랜드의 apply_*_look()을 공통 테스트 사진에
