@@ -79,6 +79,10 @@ evaluator fingerprint가 환경에 pin되어 있을 때만 receipt를 provenance
 지정해야 한다. 한쪽만 지정한 호출은 receipt를 묵살한 채 진행하지 않고 즉시
 실패한다.
 
+receipt의 `git_sha`도 이제 축약형을 받지 않고 40자리 full commit SHA만 받는다.
+짧은 revision 표기는 registry 메타데이터에만 남기고, 실행 provenance identity에는
+사용하지 않는다.
+
 ## 한계
 
 이 계층은 “지정된 artifact와 evaluator identity를 trusted runner가 서명했다”는

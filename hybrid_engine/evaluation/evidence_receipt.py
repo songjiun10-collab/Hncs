@@ -25,7 +25,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
 _SCHEMA = "hncs.evidence-receipt/v1"
 _REQUIRED_ARTIFACTS = ("manifest", "metrics", "controls", "robustness")
 _HEX64 = re.compile(r"^[0-9a-f]{64}$")
-_HEX_SHA = re.compile(r"^[0-9a-f]{7,64}$")
+_FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
 def _canonical(value: Mapping[str, Any]) -> bytes:
@@ -64,8 +64,8 @@ def build_receipt(
         raise ValueError(f"receipt missing artifact paths: {', '.join(missing)}")
     if not isinstance(command, list) or not command or not all(isinstance(v, str) and v for v in command):
         raise ValueError("receipt command must be a non-empty string list")
-    if not isinstance(git_sha, str) or not _HEX_SHA.fullmatch(git_sha.lower()):
-        raise ValueError("receipt git_sha must be a hexadecimal commit SHA")
+    if not isinstance(git_sha, str) or not _FULL_GIT_SHA.fullmatch(git_sha.lower()):
+        raise ValueError("receipt git_sha must be a full 40-character commit SHA")
     if not isinstance(evaluator_sha256, str) or not _HEX64.fullmatch(evaluator_sha256.lower()):
         raise ValueError("receipt evaluator_sha256 must be a SHA-256 digest")
     if not isinstance(run_id, str) or not run_id.strip() or not isinstance(timestamp, str) or not timestamp.strip():
@@ -123,8 +123,8 @@ def validate_receipt(
     if not isinstance(receipt, dict) or receipt.get("schema") != _SCHEMA:
         raise ValueError("receipt schema is unsupported")
     if (not isinstance(receipt.get("git_sha"), str)
-            or not _HEX_SHA.fullmatch(receipt["git_sha"].lower())):
-        raise ValueError("receipt git_sha is missing or invalid")
+            or not _FULL_GIT_SHA.fullmatch(receipt["git_sha"].lower())):
+        raise ValueError("receipt git_sha is missing or not a full commit SHA")
     if expected_git_sha is not None and receipt["git_sha"].lower() != expected_git_sha.lower():
         raise ValueError("receipt git_sha does not match expected git_sha")
     if (not isinstance(receipt.get("evaluator_sha256"), str)
