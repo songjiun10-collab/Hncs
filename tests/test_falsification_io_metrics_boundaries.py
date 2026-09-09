@@ -1,6 +1,7 @@
 import contextlib
 import io
 import sys
+import types
 import unittest
 from unittest import mock
 
@@ -8,6 +9,7 @@ import numpy as np
 
 from hybrid_engine.evaluation import metrics
 from hybrid_engine.utils import io as io_utils
+from tools.cli import analyze as analyze_cli
 from tools.cli import denoise as denoise_cli
 from tools.cli import lens_correction as lens_cli
 from tools.cli import raw_pipeline as raw_pipeline_cli
@@ -87,6 +89,19 @@ class TestCliFailureContracts(unittest.TestCase):
             with self.assertRaises(SystemExit) as raised:
                 raw_pipeline_cli.main()
         self.assertEqual(raised.exception.code, 1)
+
+    def test_analyze_fallback_returns_false_when_tiff_write_fails(self):
+        fake_tifffile = types.SimpleNamespace(
+            imread=lambda path: np.zeros((4, 4, 3), dtype=np.uint16)
+        )
+        with mock.patch.object(analyze_cli, "download_file", return_value=False), \
+                mock.patch.dict(sys.modules, {"tifffile": fake_tifffile}), \
+                mock.patch.object(analyze_cli.cv2, "imwrite", return_value=False), \
+                contextlib.redirect_stdout(io.StringIO()):
+            ok = analyze_cli._hasselblad_download(
+                "https://example.invalid/sample.tif", "missing/out.jpg"
+            )
+        self.assertFalse(ok)
 
 
 class TestLibraryWriteContracts(unittest.TestCase):
