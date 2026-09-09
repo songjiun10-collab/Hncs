@@ -24,8 +24,21 @@ def build_report(manifest_rows: list[dict], *, max_dim: int = 512) -> dict:
         if target is None:
             diagnostic = {"passed": False, "failure_reason": "unreadable_target"}
         else:
-            target = cv2.resize(target, (source.shape[1], source.shape[0]), interpolation=cv2.INTER_AREA)
-            diagnostic = inspect_registration(source, target)
+            source_ratio = source.shape[1] / source.shape[0]
+            target_ratio = target.shape[1] / target.shape[0]
+            ratio_error = abs(target_ratio / source_ratio - 1.0)
+            if ratio_error > 0.01:
+                diagnostic = {
+                    "passed": False,
+                    "failure_reason": (
+                        "aspect_ratio_mismatch: "
+                        f"{source_ratio:.6f} vs {target_ratio:.6f} "
+                        f"(error={ratio_error:.3%})"
+                    ),
+                }
+            else:
+                target = cv2.resize(target, (source.shape[1], source.shape[0]), interpolation=cv2.INTER_AREA)
+                diagnostic = inspect_registration(source, target)
         records.append({"scene_id": row["scene_id"], **diagnostic})
     failures = Counter(record["failure_reason"] for record in records if not record["passed"])
     return {"max_dim": max_dim, "n_input": len(records),

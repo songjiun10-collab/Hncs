@@ -68,6 +68,17 @@ def run_nare_metrics(manifest_rows: Iterable[Mapping[str, Any]], expected_pictur
         target = cv2.imread(str(row["target_path"]), cv2.IMREAD_COLOR)
         if target is None:
             raise ValueError(f"registration_failure: unreadable target JPEG: {row['target_path']}")
+        neutral_ratio = neutral.shape[1] / neutral.shape[0]
+        target_ratio = target.shape[1] / target.shape[0]
+        ratio_error = abs(target_ratio / neutral_ratio - 1.0)
+        # RAW decoders can crop a few border pixels while JPEG dimensions are
+        # rounded independently.  Allow that small (<1%) discrepancy, but do
+        # not resize a genuinely different crop or panorama into alignment.
+        if ratio_error > 0.01:
+            raise ValueError(
+                "registration_failure: source and target aspect ratios differ "
+                f"({neutral_ratio:.6f} vs {target_ratio:.6f}, error={ratio_error:.3%})"
+            )
         target = cv2.resize(target, (neutral.shape[1], neutral.shape[0]), interpolation=cv2.INTER_AREA)
         neutral, valid, registration = register_to_target(neutral, target)
         target_linear = bgr_u8_to_linear_rgb(target)[valid]

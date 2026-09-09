@@ -5035,6 +5035,25 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > `nare_provia_registered_report_1024px_2026-09.json`에 per-scene 결과를
 > 고정했다.
 
+> **정정(2026-09-09, runner geometry gate 재감사)**: 위 preflight도 target을
+> source render 크기로 무조건 resize한 뒤 ECC를 수행하고 있어 aspect-ratio가
+> 다른 crop/panorama를 통과시키는 결함이 있었다. runner와 preflight에 동일한
+> 상대 aspect-ratio gate(1% 이하 허용)를 적용해 재실행한 결과 exploratory
+> 51개 중 **32개만 통과**, 19개는 geometry mismatch로 제외됐다. 기존 registered
+> manifest의 37행 중 5행(`gfx100rf-007`, `010`, `050`, `051`, `052`)도 이
+> 재감사에서 제거했다. 새 32-scene manifest, 512/1024px metrics와 reports를
+> `nare_provia_registered_*_2026-09.json`에 덮어썼고 두 report 모두
+> `Inconclusive`다. 이는 기존 37-scene 수치를 그대로 재사용할 수 없다는
+> 정정이며, color metric 개선이나 ship 승인 주장을 강화하지 않는다.
+> 새 512px report는 B0 **15.931793794298834** → C
+> **11.051151262196903**, 상대 개선 **+30.634607722882166%**, 95% CI
+> **[+3.9863925883616704, +5.738710855086144]**, sign test
+> **p=1.5366822481155396e-08**다. 1024px는 B0 **16.078743521242657** → C
+> **11.464537406459886**, 상대 개선 **+28.697554063765285%**, 95% CI
+> **[+3.7250394275085563, +5.463555638740317]**다. 두 결과 모두 coverage,
+> subgroup, controls, provenance/trusted-runner gate가 부족해 ship 판정은
+> `Inconclusive`로 유지된다.
+
 ## GFX100RF Provia session-level holdout fit - 개선 없음, 배포 보류 (2026-09-08)
 
 > **재실행 확인(2026-09-09)**: 현재 checkout의 registered manifest 37행을
@@ -5062,21 +5081,26 @@ subgroup, positive-control gate를 해소하지 않으므로 판정은 그대로
 > 색 오차로 환산하면 안 되며, registration failure로 남기는 것이 맞다.
 > 1024px registration도 동일하게 **37/51 pass, 동일한 14 scene fail**이었다.
 > 실패 집합이 scale 사이에서 변하지 않아 단순 downsample artifact보다는
-> 원본 geometry/aspect-ratio 불일치로 해석하는 근거가 강화됐다. 결과는
-> 개별 결과와 교차 scale 요약을 각각 `nare_provia_exploratory_registration_1024px_2026-09.json`,
+> 원본 geometry/aspect-ratio 불일치로 해석하는 근거가 강화됐다. **후속 정정
+> (2026-09-09)**: 위 37/51 수치는 resize를 포함한 구 preflight 결과다. 새
+> runner/preflight 공통 aspect-ratio gate를 적용한 현재 결과는 **32/51 pass,
+> 19 scene fail**이며, 실패 집합에는 기존 14건과 aspect-ratio mismatch 5건이
+> 포함된다. 현재 registered manifest·metrics·reports는 이 32-scene 결과로
+> 갱신되어 있다.
+> 기존 개별 결과와 교차 scale 요약은 각각 `nare_provia_exploratory_registration_1024px_2026-09.json`,
 > `nare_provia_exploratory_registration_multiscale_2026-09.json`에 보존했다.
 
-registration을 통과한 37개 scene을 11개 capture-date session으로 묶어
+새 geometry gate를 통과한 32개 scene을 10개 capture-date session으로 묶어
 leave-one-session-out 검증을 수행했다. 각 fold에서 train session만 사용해
 `shoulder_start ∈ {0.66, 0.70, 0.74, 0.78, 0.82}`와
 `clahe_clip ∈ {1.25, 2.0, 3.0}` grid를 선택하고, held-out session에는
 선택 결과를 한 번만 적용했다. 이 연구용 fit은 `apply_provia`나 shipped
 profile을 수정하지 않는다.
 
-현재 look의 scene-level 평균 ΔE00은 **11.989706008913075**, session-holdout
-후보는 **11.997309940688302**로 상대 변화가 **-0.06342050230067402%**였다.
-20,000회 scene bootstrap 95% CI는 **[-0.02051282700178119,
-+0.00462789732822533]**, 개선 7 scene/악화 10 scene, exact paired sign test는
+현재 look의 scene-level 평균 ΔE00은 **11.051151262196903**, session-holdout
+후보는 **11.05994330831201**로 상대 변화가 **-0.07955773933871704%**였다.
+20,000회 scene bootstrap 95% CI는 **[-0.023592727755224207,
++0.0052896295400972175]**, 개선 7 scene/악화 10 scene, exact paired sign test는
 **p=0.629058837890625**였다. CI가 0을 포함하고 sign test도 통과하지 못하므로
 후보를 fit하거나 배포하지 않는다. 현행 shipped Provia를 유지한다.
 
