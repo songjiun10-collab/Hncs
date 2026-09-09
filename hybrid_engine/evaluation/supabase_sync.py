@@ -276,6 +276,14 @@ def sync_evaluation_report(
     metrics_sha = sha256_file(metrics_path)
     controls_sha = sha256_file(controls_path) if controls_path else None
     robustness_sha = sha256_file(robustness_path) if robustness_path else None
+    if report_path:
+        try:
+            report_file_value = json.loads(Path(report_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise ValueError("report_path is not valid JSON") from exc
+        if (not isinstance(report_file_value, Mapping)
+                or sha256_json(report_file_value) != sha256_json(report)):
+            raise ValueError("report_path content does not match report")
     report_sha = sha256_file(report_path) if report_path else sha256_json(report)
     revision = git_sha or current_git_sha() or ""
     if revision and not isinstance(revision, str):
