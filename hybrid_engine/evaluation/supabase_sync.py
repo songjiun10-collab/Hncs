@@ -77,6 +77,12 @@ def sha256_file(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def sha256_json(value: Mapping[str, Any]) -> str:
+    payload = json.dumps(value, ensure_ascii=False, sort_keys=True,
+                         separators=(",", ":")).encode("utf-8")
+    return sha256(payload).hexdigest()
+
+
 def current_git_sha() -> str | None:
     env_sha = os.environ.get("GITHUB_SHA", "").strip()
     if env_sha:
@@ -267,7 +273,7 @@ def sync_evaluation_report(
     metrics_sha = sha256_file(metrics_path)
     controls_sha = sha256_file(controls_path) if controls_path else None
     robustness_sha = sha256_file(robustness_path) if robustness_path else None
-    report_sha = sha256_file(report_path) if report_path else None
+    report_sha = sha256_file(report_path) if report_path else sha256_json(report)
     revision = git_sha or current_git_sha() or ""
     if revision and not isinstance(revision, str):
         raise ValueError("git_sha must be a full 40-character commit SHA")

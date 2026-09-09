@@ -66,7 +66,7 @@ existing EAGER JSON path remains compatible through `Supported`, while
 - external-replication claim without receipt: `Supported`
 - plausible NARE metrics without a receipt: `Inconclusive`
 - valid receipt-backed NARE report: `Supported`
-- full suite: 1,469 tests passed (rerun on the current checkout)
+- full suite: 1,470 tests passed (rerun on the current checkout)
 
 ## Provenance trust-boundary re-audit (2026-09-09)
 
@@ -75,7 +75,7 @@ A valid receipt returns `signature_valid=True` and `trusted=False`, so local
 execution is capped at `Supported` and cannot reach `Verified`. NARE uses
 `receipt_integrity` as its `Supported` gate without claiming
 `trusted_provenance`. The regression coverage is in `tests.test_nare_cli`; the
-full suite now passes 1,469 tests.
+full suite now passes 1,470 tests.
 
 The NARE CLI also requires `--receipt` and `--receipt-public-key` to be supplied
 together. A one-sided invocation fails immediately instead of silently ignoring
@@ -144,3 +144,5 @@ Supabase sync also validates finite ordered CI bounds and the sign-test p range 
 Supabase sync rejects registry writes when recorded bootstrap draws/seed differ from the sync configuration.
 
 Supabase sync rejects mixed-split manifests instead of collapsing them into an ambiguous `split=None` registry value.
+
+When `report_path` is omitted, the Supabase run key still includes a canonical report hash so report mutations get a distinct execution identity.
