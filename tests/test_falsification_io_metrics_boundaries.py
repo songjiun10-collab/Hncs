@@ -1,7 +1,6 @@
 import contextlib
 import io
 import sys
-import types
 import unittest
 from unittest import mock
 
@@ -90,18 +89,20 @@ class TestCliFailureContracts(unittest.TestCase):
                 raw_pipeline_cli.main()
         self.assertEqual(raised.exception.code, 1)
 
-    def test_analyze_fallback_returns_false_when_tiff_write_fails(self):
-        fake_tifffile = types.SimpleNamespace(
-            imread=lambda path: np.zeros((4, 4, 3), dtype=np.uint16)
-        )
-        with mock.patch.object(analyze_cli, "download_file", return_value=False), \
-                mock.patch.dict(sys.modules, {"tifffile": fake_tifffile}), \
+    def test_analyze_download_reports_tiff_write_failure(self):
+        image = np.zeros((8, 8, 3), dtype=np.uint8)
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b"fake-jpeg-bytes"
+        with mock.patch.object(analyze_cli.urllib.request, "urlopen", return_value=response), \
+                mock.patch.object(analyze_cli, "_check_genuine_bytes", return_value=True), \
+                mock.patch.object(analyze_cli.cv2, "imdecode", return_value=image), \
                 mock.patch.object(analyze_cli.cv2, "imwrite", return_value=False), \
                 contextlib.redirect_stdout(io.StringIO()):
-            ok = analyze_cli._hasselblad_download(
-                "https://example.invalid/sample.tif", "missing/out.jpg"
+            ok, reason = analyze_cli._hasselblad_download(
+                "https://example.invalid/sample.jpg", "missing/out.jpg"
             )
         self.assertFalse(ok)
+        self.assertEqual(reason, "write")
 
 
 class TestLibraryWriteContracts(unittest.TestCase):
