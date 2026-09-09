@@ -174,6 +174,15 @@ class TestNareRegisteredMetrics(unittest.TestCase):
             with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
                 self.assertEqual(check_nare_registered_metrics(), [])
 
+    def test_boolean_or_nonpositive_registration_scale_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "nare_registered_metrics_512px.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                import json
+                json.dump([{"scene_id": "s", "registration": {"long_edge_px": True}}], handle)
+            with patch("tools.maintenance.audit_repo_integrity.DATASETS", directory):
+                self.assertEqual(len(check_nare_registered_metrics()), 1)
+
 
 if __name__ == "__main__":
     unittest.main()
