@@ -179,9 +179,10 @@ def sync_evaluation_report(
     controls_sha = sha256_file(controls_path) if controls_path else None
     robustness_sha = sha256_file(robustness_path) if robustness_path else None
     report_sha = sha256_file(report_path) if report_path else None
+    revision = git_sha or current_git_sha() or ""
     run_key = _run_key(
         protocol, dataset_slug, candidate_name, manifest_sha, metrics_sha,
-        controls_sha or "", robustness_sha or "", report_sha or "",
+        controls_sha or "", robustness_sha or "", report_sha or "", revision,
     )
     client = client or SupabaseRestClient()
 
