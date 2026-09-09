@@ -335,7 +335,7 @@ class TestNareSelectionSensitivity(unittest.TestCase):
     def _payload(self):
         return {
             "schema": "hncs.nare-registration-selection-sensitivity/v1",
-            "source_develop_sha": "a" * 40,
+            "source_develop_sha": "68df31818f7b4a4c3e2d663d6d04eb7b51e03d10",
             "inputs": {
                 "exploratory_metrics_512px": "exploratory.json",
                 "registration_512px": "registration.json",
@@ -400,6 +400,7 @@ class TestNareSelectionSensitivity(unittest.TestCase):
                 mean_absolute_improvement_delta_e00=99.0),
             lambda payload: payload["post_registration_current_reports"]["512px"].update(
                 mean_candidate_delta_e00=-1.0, mean_absolute_improvement_delta_e00=11.0),
+            lambda payload: payload.update(source_develop_sha="f" * 40),
         ):
             with self.subTest(mutate=mutate), tempfile.TemporaryDirectory() as directory:
                 payload = self._payload()
