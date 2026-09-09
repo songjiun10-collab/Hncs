@@ -10,7 +10,7 @@
     "classification": {
       "evidence_tier": "A",
       "ship_gate_passed": true,
-      "classification": "Verified",
+      "classification": "Supported",
       "checks": {
         "validation": true,
         "lockbox": true,
@@ -20,7 +20,8 @@
         "subgroups": true,
         "controls": true,
         "robustness": true,
-        "tier_supports_ship": true
+        "tier_supports_ship": true,
+        "trusted_provenance": false
       }
     },
     "paired": {
@@ -47,7 +48,8 @@
         "subgroups": true,
         "controls": true,
         "robustness": true,
-        "tier_supports_ship": true
+        "tier_supports_ship": true,
+        "trusted_provenance": false
       }
     },
     "paired": {
@@ -74,7 +76,8 @@
         "subgroups": true,
         "controls": false,
         "robustness": true,
-        "tier_supports_ship": true
+        "tier_supports_ship": true,
+        "trusted_provenance": false
       }
     },
     "paired": {
@@ -91,7 +94,7 @@
     "classification": {
       "evidence_tier": "A",
       "ship_gate_passed": true,
-      "classification": "Verified",
+      "classification": "Supported",
       "checks": {
         "validation": true,
         "lockbox": true,
@@ -101,7 +104,8 @@
         "subgroups": true,
         "controls": true,
         "robustness": true,
-        "tier_supports_ship": true
+        "tier_supports_ship": true,
+        "trusted_provenance": false
       }
     },
     "paired": {
@@ -118,7 +122,7 @@
     "classification": {
       "evidence_tier": "A",
       "ship_gate_passed": true,
-      "classification": "Verified",
+      "classification": "Supported",
       "checks": {
         "validation": true,
         "lockbox": true,
@@ -128,7 +132,8 @@
         "subgroups": true,
         "controls": true,
         "robustness": true,
-        "tier_supports_ship": true
+        "tier_supports_ship": true,
+        "trusted_provenance": false
       }
     },
     "paired": {

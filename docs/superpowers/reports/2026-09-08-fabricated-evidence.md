@@ -9,9 +9,10 @@
 > 이는 암호학적 인증이 아니라 fail-closed 정책 경계이며, 이미 신뢰된 caller가
 > 거짓말하는 문제는 남아 있고 보고서에 명시한다.
 
-기준 commit: `0da0c44086d0805e3ea87de536d66e1ed5a9c03f`.
-실제 EAGER CLI subprocess를 호출했다. classifier/통계/파일 읽기를 mock하지 않았다.
-결과: **공격 성공. 가짜 증거가 Verified에 도달한다.**
+기준 commit: `0da0c44086d0805e3ea87de536d66e1ed5a9c03f`는 최초 공격 재현이다.
+현재 회귀 실행은 실제 EAGER CLI subprocess를 호출하며 classifier/통계/파일 읽기를
+mock하지 않는다. 현재 결과: **receipt 없는 가짜 bundle은 Supported까지만 도달하고
+Verified에는 도달하지 않는다.**
 
 ## 구성과 결과
 
@@ -28,11 +29,11 @@ controls·robustness는 전부 실제 boolean True로 작성했다.
 
 | CLI에 공급한 조건 | 실제 관측 분류 |
 |---|---|
-| 파일 존재·48/48 hash 일치·조작 지표·모든 attestation | Verified |
+| 파일 존재·48/48 hash 일치·조작 지표·모든 attestation | Supported |
 | 위 조건에서 external-replication flag만 제거 | Supported |
 | shuffle control을 실제 boolean False로 변경 | ship gate 실패 |
-| 모든 source 파일을 변조하여 24개 hash 불일치 | Verified |
-| source/target 이미지 48개 모두 삭제 | Verified |
+| 모든 source 파일을 변조하여 24개 hash 불일치 | Supported |
+| source/target 이미지 48개 모두 삭제 | Supported |
 
 조작 지표에서 CLI가 실제 계산한 값:
 
@@ -72,6 +73,6 @@ registry 등록도 수행하지 않았다. 임시 합성 입력과 CLI 전체 re
 ~/.hncs-hybrid-venv312/bin/python3 docs/superpowers/reports/2026-09-08-fabricated-evidence-probe.py --out /tmp/hncs-fabricated-evidence-results.json
 ```
 
-문서에 기록된 원래 실행은 취약 동작의 historical characterization이다.
+문서의 최초 `Verified` 결과는 trusted-provenance gate 이전의 historical characterization이다.
 현재 스크립트는 같은 합성 bundle을 다시 실행해 receipt 없는 결과가
-`Verified`로 올라가지 않는지를 assert하는 보안 회귀 probe로 갱신됐다.
+`Verified`로 올라가지 않는지를 assert하는 보안 회귀 probe다.
