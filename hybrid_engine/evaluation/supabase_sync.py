@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import subprocess
 from hashlib import sha256
 from pathlib import Path
@@ -17,6 +18,7 @@ URL_ENV = "HNCS_SUPABASE_URL"
 KEY_ENV = "HNCS_SUPABASE_SERVICE_ROLE_KEY"
 _CLASSIFICATIONS = {"Verified", "Supported", "Inconclusive", "Rejected", "Exploratory"}
 _PROTOCOLS = {"EAGER", "NARE", "Protocol 2R", "other"}
+_FULL_GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
 class SupabaseRestClient:
@@ -215,6 +217,10 @@ def sync_evaluation_report(
     robustness_sha = sha256_file(robustness_path) if robustness_path else None
     report_sha = sha256_file(report_path) if report_path else None
     revision = git_sha or current_git_sha() or ""
+    if revision and not isinstance(revision, str):
+        raise ValueError("git_sha must be a full 40-character commit SHA")
+    if revision and not _FULL_GIT_SHA.fullmatch(revision.lower()):
+        raise ValueError("git_sha must be a full 40-character commit SHA")
     run_key = _run_key(
         protocol, dataset_slug, candidate_name, manifest_sha, metrics_sha,
         controls_sha or "", robustness_sha or "", report_sha or "", revision,

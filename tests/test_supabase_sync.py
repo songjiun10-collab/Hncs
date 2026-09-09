@@ -165,7 +165,7 @@ class TestSupabaseSync(unittest.TestCase):
                 evidence_tier="C",
                 brand="Fujifilm",
                 camera_model="GFX100RF",
-                git_sha="79bf33e",
+                git_sha="7777777777777777777777777777777777777777",
                 bootstrap_draws=20_000,
                 bootstrap_seed=0,
                 client=client,
@@ -185,7 +185,7 @@ class TestSupabaseSync(unittest.TestCase):
         self.assertEqual(run_conflict, "run_key")
         self.assertEqual(run_rows[0]["classification"], "Inconclusive")
         self.assertFalse(run_rows[0]["ship_gate"])
-        self.assertEqual(run_rows[0]["git_sha"], "79bf33e")
+        self.assertEqual(run_rows[0]["git_sha"], "7777777777777777777777777777777777777777")
 
         scene_rows, scene_conflict = by_table["hncs_scene_metrics"]
         self.assertEqual(scene_conflict, "run_id,scene_id")
@@ -219,12 +219,12 @@ class TestSupabaseSync(unittest.TestCase):
             }
             first = sync_evaluation_report(
                 report, protocol="EAGER", dataset_slug="d", candidate_name="c",
-                manifest_path=manifest, metrics_path=metrics, git_sha="abcdef1",
+                manifest_path=manifest, metrics_path=metrics, git_sha="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 client=_FakeClient(),
             )
             second = sync_evaluation_report(
                 report, protocol="EAGER", dataset_slug="d", candidate_name="c",
-                manifest_path=manifest, metrics_path=metrics, git_sha="abcdef1",
+                manifest_path=manifest, metrics_path=metrics, git_sha="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                 client=_FakeClient(),
             )
         self.assertEqual(first["run_key"], second["run_key"])
@@ -261,13 +261,28 @@ class TestSupabaseSync(unittest.TestCase):
             }
             first = sync_evaluation_report(
                 report, protocol="NARE", dataset_slug="d", candidate_name="c",
-                manifest_path=manifest, metrics_path=metrics, git_sha="aaaaaaa",
+                manifest_path=manifest, metrics_path=metrics, git_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
                 client=_FakeClient())
             second = sync_evaluation_report(
                 report, protocol="NARE", dataset_slug="d", candidate_name="c",
-                manifest_path=manifest, metrics_path=metrics, git_sha="bbbbbbb",
+                manifest_path=manifest, metrics_path=metrics, git_sha="cccccccccccccccccccccccccccccccccccccccc",
                 client=_FakeClient())
         self.assertNotEqual(first["run_key"], second["run_key"])
+
+    def test_registry_rejects_abbreviated_git_sha(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = self._write_json(tmp, "manifest.json", [{"scene_id": "s"}])
+            metrics = self._write_json(tmp, "metrics.json", [{"scene_id": "s"}])
+            report = {
+                "paired": {"per_scene": [{"scene_id": "s", "baseline_delta_e00": 2.0,
+                                            "candidate_delta_e00": 1.0}]},
+                "classification": {"ship_gate_passed": False, "classification": "Exploratory"},
+            }
+            with self.assertRaisesRegex(ValueError, "full 40-character"):
+                sync_evaluation_report(
+                    report, protocol="EAGER", dataset_slug="d", candidate_name="c",
+                    manifest_path=manifest, metrics_path=metrics, git_sha="abc1234",
+                    client=_FakeClient())
 
     def test_ship_gate_cannot_be_synced_without_trusted_provenance(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -284,7 +299,7 @@ class TestSupabaseSync(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "trusted provenance"):
                 sync_evaluation_report(
                     report, protocol="EAGER", dataset_slug="d", candidate_name="c",
-                    manifest_path=manifest, metrics_path=metrics, git_sha="abcdef1",
+                    manifest_path=manifest, metrics_path=metrics, git_sha="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                     client=_FakeClient(),
                 )
 
@@ -301,7 +316,7 @@ class TestSupabaseSync(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "trusted provenance"):
                 sync_evaluation_report(
                     report, protocol="EAGER", dataset_slug="d", candidate_name="c",
-                    manifest_path=manifest, metrics_path=metrics, git_sha="abcdef1",
+                    manifest_path=manifest, metrics_path=metrics, git_sha="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
                     client=_FakeClient(),
                 )
 
