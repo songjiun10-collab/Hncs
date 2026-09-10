@@ -100,6 +100,7 @@ class TestCliFailureContracts(unittest.TestCase):
             with mock.patch.object(analyze_cli.urllib.request, "urlopen", return_value=response), \
                     mock.patch.object(analyze_cli, "_check_genuine_bytes", return_value=True), \
                     mock.patch.object(analyze_cli.cv2, "imdecode", return_value=image), \
+                    mock.patch.object(analyze_cli, "is_image_array_usable", return_value=True), \
                     mock.patch.object(analyze_cli.cv2, "imwrite", return_value=False), \
                     contextlib.redirect_stdout(io.StringIO()):
                 ok, reason = analyze_cli._hasselblad_download(
