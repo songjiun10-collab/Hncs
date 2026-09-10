@@ -1,6 +1,8 @@
 import contextlib
 import io
+import os
 import sys
+import tempfile
 import unittest
 from unittest import mock
 
@@ -89,18 +91,20 @@ class TestCliFailureContracts(unittest.TestCase):
                 raw_pipeline_cli.main()
         self.assertEqual(raised.exception.code, 1)
 
-    def test_analyze_download_reports_tiff_write_failure(self):
+    def test_analyze_download_reports_jpeg_write_failure(self):
         image = np.zeros((8, 8, 3), dtype=np.uint8)
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = b"fake-jpeg-bytes"
-        with mock.patch.object(analyze_cli.urllib.request, "urlopen", return_value=response), \
-                mock.patch.object(analyze_cli, "_check_genuine_bytes", return_value=True), \
-                mock.patch.object(analyze_cli.cv2, "imdecode", return_value=image), \
-                mock.patch.object(analyze_cli.cv2, "imwrite", return_value=False), \
-                contextlib.redirect_stdout(io.StringIO()):
-            ok, reason = analyze_cli._hasselblad_download(
-                "https://example.invalid/sample.jpg", "missing/out.jpg"
-            )
+        with tempfile.TemporaryDirectory() as tmp:
+            output = os.path.join(tmp, "out.jpg")
+            with mock.patch.object(analyze_cli.urllib.request, "urlopen", return_value=response), \
+                    mock.patch.object(analyze_cli, "_check_genuine_bytes", return_value=True), \
+                    mock.patch.object(analyze_cli.cv2, "imdecode", return_value=image), \
+                    mock.patch.object(analyze_cli.cv2, "imwrite", return_value=False), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                ok, reason = analyze_cli._hasselblad_download(
+                    "https://example.invalid/sample.jpg", output
+                )
         self.assertFalse(ok)
         self.assertEqual(reason, "write")
 
