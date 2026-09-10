@@ -28,12 +28,14 @@ def main():
 
     img = cv2.imread(args.input)
     if img is None:
-        print(f"이미지를 못 읽음: {args.input}")
-        return
+        print(f"이미지를 못 읽음: {args.input}", file=sys.stderr)
+        sys.exit(1)
 
     print(f"denoise 중... (method={args.method}, strength={args.strength})")
     out = denoise(img, strength=args.strength, method=args.method)
-    cv2.imwrite(args.output, out)
+    if not cv2.imwrite(args.output, out):
+        print(f"이미지를 저장하지 못함: {args.output}", file=sys.stderr)
+        sys.exit(1)
     print(f"저장: {args.output}")
 
 

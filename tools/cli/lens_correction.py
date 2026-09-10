@@ -133,7 +133,9 @@ def main():
         print(f"보정 실패: {info['reason']} ({info})", file=sys.stderr)
         sys.exit(1)
 
-    cv2.imwrite(args.output, corrected)
+    if not cv2.imwrite(args.output, corrected):
+        print(f"이미지를 저장하지 못함: {args.output}", file=sys.stderr)
+        sys.exit(1)
     print(f"매치된 DB 프로파일: 카메라={info['camera']}  렌즈={info['lens']}")
     print(f"저장: {args.output}")
 

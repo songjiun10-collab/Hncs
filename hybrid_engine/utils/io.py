@@ -100,7 +100,8 @@ def save_tiff16(rgb_linear, path, apply_srgb_encoding=True):
         clipped = colour.cctf_encoding(clipped, function="sRGB")
     u16 = (np.clip(clipped, 0.0, 1.0) * 65535.0 + 0.5).astype(np.uint16)
     bgr = u16[:, :, ::-1]
-    cv2.imwrite(path, bgr)
+    if not cv2.imwrite(path, bgr):
+        raise OSError(f"이미지를 저장하지 못함: {path}")
 
 
 def save_jpeg8(rgb_linear, path, quality=95):
@@ -111,7 +112,8 @@ def save_jpeg8(rgb_linear, path, quality=95):
     encoded = colour.cctf_encoding(clipped, function="sRGB")
     u8 = (np.clip(encoded, 0.0, 1.0) * 255.0 + 0.5).astype(np.uint8)
     bgr = u8[:, :, ::-1]
-    cv2.imwrite(path, bgr, [cv2.IMWRITE_JPEG_QUALITY, quality])
+    if not cv2.imwrite(path, bgr, [cv2.IMWRITE_JPEG_QUALITY, quality]):
+        raise OSError(f"이미지를 저장하지 못함: {path}")
 
 
 def load_image_linear(path, resize_to=None):

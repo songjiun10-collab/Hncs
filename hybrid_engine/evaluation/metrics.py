@@ -15,6 +15,25 @@ import colour
 _SRGB = colour.RGB_COLOURSPACES["sRGB"]
 
 
+def _validate_rgb(image, name):
+    value = np.asarray(image)
+    if value.ndim < 3 or value.shape[-1] != 3:
+        raise ValueError(f"{name} must have shape (..., 3)")
+    if value.size == 0:
+        raise ValueError(f"{name} must not be empty")
+    if not np.issubdtype(value.dtype, np.number) or not np.isfinite(value).all():
+        raise ValueError(f"{name} must contain finite numeric values")
+    return value
+
+
+def _validate_pair(rgb_a_linear, rgb_b_linear):
+    rgb_a_linear = _validate_rgb(rgb_a_linear, "rgb_a_linear")
+    rgb_b_linear = _validate_rgb(rgb_b_linear, "rgb_b_linear")
+    if rgb_a_linear.shape != rgb_b_linear.shape:
+        raise ValueError(f"shape mismatch: {rgb_a_linear.shape} vs {rgb_b_linear.shape}")
+    return rgb_a_linear, rgb_b_linear
+
+
 def _to_lab(rgb_linear):
     # Evaluation thresholds and SSIM constants below use reference-scale Lab
     # (L*=0..100).  Freeze Colour's domain locally so unrelated caller state
@@ -34,8 +53,7 @@ def _delta_e(lab_a, lab_b, method):
 def delta_e_stats(rgb_a_linear, rgb_b_linear, method="CIE 2000"):
     """픽셀별 ΔE 분포 요약 - 평균만이 아니라 median/p95/max까지. p95/max가
     큰데 평균은 낮으면 국소적으로 심하게 틀린 영역이 있다는 신호."""
-    if rgb_a_linear.shape != rgb_b_linear.shape:
-        raise ValueError(f"shape mismatch: {rgb_a_linear.shape} vs {rgb_b_linear.shape}")
+    rgb_a_linear, rgb_b_linear = _validate_pair(rgb_a_linear, rgb_b_linear)
     lab_a = _to_lab(rgb_a_linear).reshape(-1, 3)
     lab_b = _to_lab(rgb_b_linear).reshape(-1, 3)
     d = _delta_e(lab_a, lab_b, method)
@@ -51,6 +69,7 @@ def delta_e_by_zone(rgb_a_linear, rgb_b_linear, method="CIE 2000"):
     """rgb_a(기준/타깃)의 L채널을 기준으로 그림자(L<33)/미드톤/
     하이라이트(L>66) 셋으로 나눠 구간별 평균 ΔE를 계산. 존별 표본이
     없으면 해당 구간은 None."""
+    rgb_a_linear, rgb_b_linear = _validate_pair(rgb_a_linear, rgb_b_linear)
     lab_a = _to_lab(rgb_a_linear).reshape(-1, 3)
     lab_b = _to_lab(rgb_b_linear).reshape(-1, 3)
     d = _delta_e(lab_a, lab_b, method)
@@ -68,6 +87,7 @@ def delta_e_by_zone(rgb_a_linear, rgb_b_linear, method="CIE 2000"):
 def saturation_hue_delta(rgb_a_linear, rgb_b_linear):
     """Lab a/b로 chroma(채도 프록시)와 hue 각도 차이를 계산.
     반환: 평균 |Δchroma|, 평균 |Δhue|(도 단위, wraparound 처리)."""
+    rgb_a_linear, rgb_b_linear = _validate_pair(rgb_a_linear, rgb_b_linear)
     lab_a = _to_lab(rgb_a_linear).reshape(-1, 3)
     lab_b = _to_lab(rgb_b_linear).reshape(-1, 3)
 
@@ -91,6 +111,7 @@ def ssim_L(rgb_a_linear, rgb_b_linear):
     """L채널(지각 균등 명도) 기준 SSIM - 색이 아니라 대비/계조 보존
     여부를 본다. skimage 없이 표준 11x11 가우시안 윈도우 공식을 직접
     구현(skimage.metrics.structural_similarity와 동일 정의)."""
+    rgb_a_linear, rgb_b_linear = _validate_pair(rgb_a_linear, rgb_b_linear)
     L_a = _to_lab(rgb_a_linear)[..., 0].astype(np.float64)
     L_b = _to_lab(rgb_b_linear)[..., 0].astype(np.float64)
 

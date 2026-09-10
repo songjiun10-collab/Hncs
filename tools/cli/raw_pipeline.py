@@ -197,7 +197,9 @@ def main():
         write_exr(log_img, args.output, compression=args.exr_compression)
     else:
         bgr16 = to_16bit_bgr(log_img)
-        cv2.imwrite(args.output, bgr16)
+        if not cv2.imwrite(args.output, bgr16):
+            print(f"이미지를 저장하지 못함: {args.output}", file=sys.stderr)
+            sys.exit(1)
     print(f"저장: {args.output}")
 
 
