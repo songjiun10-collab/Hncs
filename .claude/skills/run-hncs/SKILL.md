@@ -1,13 +1,16 @@
 ---
 name: run-hncs
-description: Run, build, test, smoke-test or screenshot the Hncs camera color-science project - apply a brand look to a photo, render a contact sheet of all 24 shipped looks, run the CLI tools (LUT export, RAW→Log, video, brand classifier), or check which entry points work in this checkout. Use when asked to run Hncs, render/preview a brand look, verify apply_* output, or reproduce a research experiment.
+description: Run, build, test, smoke-test or screenshot the Hncs camera color-science project - apply a brand look to a photo, render a contact sheet of every shipped look, run the CLI tools (LUT export, RAW→Log, video, brand classifier), or check which entry points work in this checkout. Use when asked to run Hncs, render/preview a brand look, verify apply_* output, or reproduce a research experiment.
 ---
 
 # Running Hncs
 
 Python image-in/image-out library (`brands/*.py` `apply_*` functions) plus
-~24 CLI tools. No server, no GUI — so the equivalent of a screenshot here
-is **a rendered output image you actually open and look at**.
+9 user-facing CLIs under `tools/cli/` (plus ~140 research scripts elsewhere
+under `tools/`). No server. There is a Tkinter GUI (`python3 -m gui`), but it
+needs a display and a Python built with `tkinter`, so it isn't the agent
+path — the equivalent of a screenshot here is **a rendered output image you
+actually open and look at**.
 
 Driven by `.claude/skills/run-hncs/driver.py`. All paths below are
 relative to the repo root, and everything must run from the repo root
@@ -70,7 +73,7 @@ failure. Takes ~1 min (the `denoise` step dominates). Verified output:
 
 ```bash
 python3 .claude/skills/run-hncs/driver.py sheet
-# -> /tmp/hncs_run/contact_sheet.png   (25 tiles: original + 24 looks)
+# -> /tmp/hncs_run/contact_sheet.png   (57 tiles: original + 56 looks, 2026-09-25)
 ```
 
 **Then open the PNG and look at it.** Distinct looks should be obvious:
@@ -111,7 +114,7 @@ cv2.imwrite('/tmp/out.png', apply_hncs(src))
 ### Tests
 
 ```bash
-python3 -m unittest discover -s tests     # 534 tests, ~30s, no external data needed
+python3 -m unittest discover -s tests     # 1442 tests (2026-09-25), ~40s, no external data needed
 ```
 
 ## Run (CLI tools individually)
