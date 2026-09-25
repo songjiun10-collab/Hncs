@@ -12,7 +12,9 @@ class TestIntegrityAuditReadFailures(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             source_path = os.path.join(tmp, "probe.py")
             with open(source_path, "w", encoding="utf-8") as handle:
-                handle.write('PROFILE = "hybrid_engine/assets/profiles/missing.json"\n')
+                # 확장자를 쪼개 둔다 - 통째로 쓰면 이 파일 자체가 실제 저장소
+                # 감사(check_asset_refs)에 '참조 대상 없음'으로 잡힌다.
+                handle.write('PROFILE = "hybrid_engine/assets/profiles/missing.' + 'json"\n')
 
             real_open = builtins.open
 

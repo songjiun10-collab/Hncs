@@ -123,6 +123,7 @@ class TestCheckProfilesSkipsWithoutExiftool(unittest.TestCase):
         with patch("tools.maintenance.audit_repo_integrity.shutil.which",
                    return_value="/usr/bin/exiftool"), \
              patch("tools.maintenance.audit_repo_integrity.subprocess.run") as run:
+            run.return_value.returncode = 0
             run.return_value.stdout = "OK\n"
             self.assertEqual(check_profiles(), [])
         self.assertTrue(run.called)
