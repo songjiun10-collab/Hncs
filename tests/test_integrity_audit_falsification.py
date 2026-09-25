@@ -29,6 +29,22 @@ class TestIntegrityAuditReadFailures(unittest.TestCase):
         self.assertIn("읽기 실패", problems[0])
         self.assertIn("probe.py", problems[0])
 
+    def test_exiftool_nonzero_exit_is_failure_even_if_stdout_says_ok(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            profile_path = os.path.join(tmp, "probe.dcp")
+            with open(profile_path, "wb") as handle:
+                handle.write(b"probe")
+
+            result = mock.Mock(returncode=1, stdout="OK\n", stderr="synthetic failure")
+            with mock.patch.object(audit, "PROFILES", tmp), \
+                    mock.patch.object(audit.shutil, "which", return_value="/usr/bin/exiftool"), \
+                    mock.patch.object(audit.subprocess, "run", return_value=result):
+                problems = audit.check_profiles()
+
+        self.assertEqual(len(problems), 1)
+        self.assertIn("exiftool 종료코드", problems[0])
+        self.assertIn("probe.dcp", problems[0])
+
 
 if __name__ == "__main__":
     unittest.main()
