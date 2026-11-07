@@ -141,7 +141,8 @@ def check_asset_refs():
             try:
                 with open(path, encoding="utf-8") as source:
                     text = source.read()
-            except Exception:
+            except Exception as exc:
+                problems.append(f"읽기 실패: {os.path.relpath(path, BASE)}: {exc}")
                 continue
             for ref in ASSET_REF.findall(text):
                 if ref.startswith("/") or "{" in ref or "%" in ref:
@@ -242,9 +243,19 @@ def check_profiles():
         return None
     for path in _binary_profiles():
         n_bin += 1
-        out = subprocess.run(["exiftool", "-validate", "-s3", path],
-                             capture_output=True, text=True,
-                             timeout=120).stdout.strip()
+        try:
+            result = subprocess.run(["exiftool", "-validate", "-s3", path],
+                                    capture_output=True, text=True,
+                                    timeout=120)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            problems.append(f"exiftool 실행 실패: {os.path.basename(path)}: {exc}")
+            continue
+        out = result.stdout.strip()
+        if result.returncode != 0:
+            detail = (result.stderr or "").strip() or out or "(출력 없음)"
+            problems.append(f"exiftool 종료코드 {result.returncode}: "
+                            f"{os.path.basename(path)}: {detail}")
+            continue
         # 정상은 정확히 "OK" - 출력 유무로 판정하면 안 된다(위 독스트링).
         if out != "OK":
             problems.append(f"구조 검증 실패: {os.path.basename(path)}: "
